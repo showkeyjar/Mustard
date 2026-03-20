@@ -174,15 +174,24 @@ class DesktopBridgeController:
         timestamp = datetime.now(timezone.utc).isoformat()
         event_id = datetime.now(timezone.utc).strftime("bridge-%Y%m%dT%H%M%S%fZ")
         prompt = self._build_prompt(digest)
+        display_summary = digest.logic_summary or digest.multimodal_summary or digest.semantic_summary or digest.summary
         event = BridgeEvent(
             event_id=event_id,
             timestamp_utc=timestamp,
             kind="desktop_digest",
-            summary=digest.summary,
+            summary=display_summary,
             prompt=prompt,
             source="desktop",
             metadata={
+                "raw_summary": digest.summary,
+                "logic_summary": digest.logic_summary,
                 "top_apps": list(digest.top_apps),
+                "focus_window": digest.focus_window,
+                "focus_process": digest.focus_process,
+                "focus_class_name": digest.focus_class_name,
+                "focus_pid": digest.focus_pid,
+                "window_sequence": list(digest.window_sequence),
+                "window_observations": list(digest.window_observations),
                 "event_types": list(digest.event_types),
                 "semantic_summary": digest.semantic_summary,
                 "semantic_tags": list(multimodal_signal.tags),
@@ -192,9 +201,13 @@ class DesktopBridgeController:
                 "multimodal_tags": list(digest.multimodal_tags),
                 "multimodal_artifact_path": digest.multimodal_artifact_path,
                 "suggested_tool": multimodal_signal.suggested_tool,
+                "reasoning_clues": list(digest.reasoning_clues),
+                "evidence_items": list(digest.evidence_items),
                 "clipboard_seen": digest.clipboard_seen,
+                "clipboard_preview": digest.clipboard_preview,
                 "mouse_active": digest.mouse_active,
                 "keyboard_active": digest.keyboard_active,
+                "modifier_keys": list(digest.modifier_keys),
             },
         )
         self.event_store.append(event)
@@ -281,6 +294,14 @@ class DesktopBridgeController:
         events = self.event_store.load_all()
         return [event for event in events if event.status == "open"][-limit:]
 
+    def event_display_summary(self, event: BridgeEvent) -> str:
+        metadata = event.metadata if isinstance(event.metadata, dict) else {}
+        logic_summary = str(metadata.get("logic_summary", "")).strip()
+        multimodal_summary = str(metadata.get("multimodal_summary", "")).strip()
+        semantic_summary = str(metadata.get("semantic_summary", "")).strip()
+        raw_summary = str(metadata.get("raw_summary", "")).strip()
+        return logic_summary or multimodal_summary or semantic_summary or event.summary or raw_summary
+
     def load_recent_messages(self, limit: int = 50) -> list[BridgeMessage]:
         return self.message_store.load_recent(limit=limit)
 
@@ -291,9 +312,12 @@ class DesktopBridgeController:
 
     def suggest_goal_for_event(self, event: BridgeEvent) -> str:
         metadata = event.metadata if isinstance(event.metadata, dict) else {}
+        logic_summary = str(metadata.get("logic_summary", "")).strip("。 ")
         semantic_summary = str(metadata.get("semantic_summary", "")).strip("。 ")
         semantic_tags = [str(item) for item in metadata.get("semantic_tags", []) if str(item).strip()]
         top_apps = metadata.get("top_apps", [])
+        if logic_summary:
+            return f"当前逻辑线索={logic_summary}"
         if semantic_summary:
             if semantic_tags:
                 return f"当前可能在进行{semantic_summary}，标签={','.join(semantic_tags)}"
@@ -331,6 +355,19 @@ class DesktopBridgeController:
     def _build_prompt(self, digest: DesktopDigest) -> str:
         app_text = "、".join(digest.top_apps) if digest.top_apps else "当前无明显窗口焦点"
         signals: list[str] = []
+        signals.append(f"逻辑摘要={digest.logic_summary}")
+        if digest.focus_window:
+            signals.append(f"当前焦点={digest.focus_window}")
+        if digest.focus_process:
+            signals.append(f"焦点进程={digest.focus_process}")
+        if digest.focus_class_name:
+            signals.append(f"焦点类名={digest.focus_class_name}")
+        if digest.focus_pid:
+            signals.append(f"焦点PID={digest.focus_pid}")
+        if digest.window_sequence:
+            signals.append(f"窗口时序={' -> '.join(digest.window_sequence[:4])}")
+        if digest.window_observations:
+            signals.append(f"窗口观测={'; '.join(digest.window_observations[:3])}")
         if digest.semantic_tags:
             signals.append(f"语义标签={','.join(digest.semantic_tags)}")
         if digest.modality_hints:
@@ -338,6 +375,8 @@ class DesktopBridgeController:
         signals.append(f"语义置信度={digest.semantic_confidence}")
         if digest.multimodal_summary:
             signals.append(f"视觉摘要={digest.multimodal_summary}")
+        if digest.evidence_items:
+            signals.append(f"证据清单={'; '.join(digest.evidence_items[:4])}")
         if digest.clipboard_seen:
             signals.append("发生过剪贴板变化")
         if digest.mouse_active:

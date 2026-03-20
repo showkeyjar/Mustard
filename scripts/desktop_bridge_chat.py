@@ -121,7 +121,8 @@ class BridgeChatApp:
         events = self.controller.load_open_events()
         self.event_list.delete(0, tk.END)
         for event in events:
-            self.event_list.insert(tk.END, f"[{event.kind}] {event.summary}")
+            display_summary = self.controller.event_display_summary(event)
+            self.event_list.insert(tk.END, f"[{event.kind}] {display_summary}")
         self._events = events
         self._render_messages()
 

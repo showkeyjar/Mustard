@@ -32,7 +32,7 @@ class MultimodalAdapter:
             suggested_tool = "calculator"
         return MultimodalSignal(
             source="desktop",
-            semantic_text=digest.semantic_summary,
+            semantic_text=digest.logic_summary or digest.semantic_summary,
             tags=tags,
             confidence=digest.semantic_confidence,
             modality_hints=list(digest.modality_hints),
@@ -82,12 +82,26 @@ class ScreenObservationAdapter:
         merged_tags = sorted(set(digest.semantic_tags + signal.tags))
         merged_hints = sorted(set(digest.modality_hints + signal.modality_hints))
         merged_multimodal_tags = sorted(set(digest.multimodal_tags + signal.tags))
+        merged_evidence = list(digest.evidence_items)
+        visual_evidence = signal.semantic_text.strip()
+        if visual_evidence:
+            clipped = visual_evidence if len(visual_evidence) <= 180 else f"{visual_evidence[:177]}..."
+            merged_evidence.append(f"视觉证据={clipped}")
         confidence = self._merge_confidence(digest.semantic_confidence, signal.confidence)
+        merged_logic_summary = digest.logic_summary
+        if visual_evidence:
+            merged_logic_summary = (
+                f"{digest.logic_summary}；视觉证据: {clipped}"
+                if digest.logic_summary
+                else f"视觉证据: {clipped}"
+            )
         return replace(
             digest,
             semantic_tags=merged_tags,
             semantic_confidence=confidence,
             modality_hints=merged_hints,
+            logic_summary=merged_logic_summary,
+            evidence_items=merged_evidence,
             multimodal_summary=signal.semantic_text,
             multimodal_tags=merged_multimodal_tags,
             multimodal_artifact_path=image_path.as_posix(),

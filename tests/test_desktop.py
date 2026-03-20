@@ -69,7 +69,12 @@ class DesktopTests(unittest.TestCase):
         self.assertTrue(digest.mouse_active)
         self.assertTrue(digest.keyboard_active)
         self.assertIn("VS Code", digest.top_apps)
-        self.assertIn("用户可能正在", digest.semantic_summary)
+        self.assertEqual(digest.focus_window, "VS Code")
+        self.assertEqual(digest.window_observations, ["VS Code"])
+        self.assertIn("观察摘要：", digest.semantic_summary)
+        self.assertIn("事实:", digest.logic_summary)
+        self.assertIn("证据:", digest.logic_summary)
+        self.assertIn("推理线索:", digest.logic_summary)
         self.assertIn("coding", digest.semantic_tags)
         self.assertEqual(digest.semantic_confidence, "high")
         self.assertIn("desktop", digest.modality_hints)
@@ -84,8 +89,112 @@ class DesktopTests(unittest.TestCase):
             ]
         )
         assert digest is not None
-        self.assertEqual(digest.top_apps, ["Visual Studio Code"])
+        self.assertEqual(digest.top_apps, ["main.py - Visual Studio Code"])
         self.assertNotIn("tasklist.exe", digest.summary.lower())
+
+    def test_summarizer_includes_specific_window_anchors(self) -> None:
+        summarizer = DesktopSummarizer()
+        digest = summarizer.summarize(
+            [
+                DesktopEvent(
+                    "2026-03-20T00:00:00+00:00",
+                    "window_focus",
+                    "desktop/window",
+                    {
+                        "title": "README.md - Mustard - Visual Studio Code",
+                        "process_name": "Code.exe",
+                        "class_name": "Chrome_WidgetWin_1",
+                        "pid": 4242,
+                    },
+                ),
+                DesktopEvent(
+                    "2026-03-20T00:00:01+00:00",
+                    "window_focus",
+                    "desktop/window",
+                    {
+                        "title": "碳寻大模型与涡动通量AI技术交流 - Google Chrome",
+                        "process_name": "chrome.exe",
+                        "class_name": "Chrome_WidgetWin_1",
+                        "pid": 5252,
+                    },
+                ),
+                DesktopEvent(
+                    "2026-03-20T00:00:02+00:00",
+                    "input_activity",
+                    "desktop/input",
+                    {"mouse_active": True, "keyboard_active": False},
+                ),
+            ]
+        )
+        assert digest is not None
+        self.assertEqual(digest.focus_process, "chrome.exe")
+        self.assertEqual(digest.focus_class_name, "Chrome_WidgetWin_1")
+        self.assertEqual(digest.focus_pid, 5252)
+        self.assertIn("Visual Studio Code（README.md - Mustard）", digest.semantic_summary)
+        self.assertIn("Google Chrome（碳寻大模型与涡动通量AI技术交流）", digest.semantic_summary)
+        self.assertIn("进程=Code.exe", digest.semantic_summary)
+        self.assertIn("窗口时序=", digest.semantic_summary)
+        self.assertIn("最近切换序列=", digest.logic_summary)
+
+    def test_summarizer_preserves_reasoning_ready_evidence(self) -> None:
+        summarizer = DesktopSummarizer()
+        digest = summarizer.summarize(
+            [
+                DesktopEvent(
+                    "2026-03-20T00:00:00+00:00",
+                    "window_focus",
+                    "desktop/window",
+                    {
+                        "title": "README.md - Mustard - Visual Studio Code",
+                        "process_name": "Code.exe",
+                        "class_name": "Chrome_WidgetWin_1",
+                        "pid": 4242,
+                    },
+                ),
+                DesktopEvent(
+                    "2026-03-20T00:00:01+00:00",
+                    "window_focus",
+                    "desktop/window",
+                    {
+                        "title": "碳寻大模型与涡动通量AI技术交流 - Google Chrome",
+                        "process_name": "chrome.exe",
+                        "class_name": "Chrome_WidgetWin_1",
+                        "pid": 5252,
+                    },
+                ),
+                DesktopEvent(
+                    "2026-03-20T00:00:02+00:00",
+                    "clipboard",
+                    "desktop/clipboard",
+                    {"preview": "PostgreSQL 与 MySQL 对比方案", "length": 23},
+                ),
+                DesktopEvent(
+                    "2026-03-20T00:00:03+00:00",
+                    "input_activity",
+                    "desktop/input",
+                    {
+                        "mouse_active": True,
+                        "keyboard_active": True,
+                        "modifiers": {"ctrl": True, "shift": False, "alt": False},
+                    },
+                ),
+            ]
+        )
+        assert digest is not None
+        self.assertEqual(
+            digest.window_sequence,
+            [
+                "README.md - Mustard - Visual Studio Code",
+                "碳寻大模型与涡动通量AI技术交流 - Google Chrome",
+            ],
+        )
+        self.assertEqual(digest.clipboard_preview, "PostgreSQL 与 MySQL 对比方案")
+        self.assertEqual(digest.modifier_keys, ["ctrl"])
+        self.assertTrue(any("进程=Code.exe" in item for item in digest.window_observations))
+        self.assertIn("剪贴板预览=PostgreSQL 与 MySQL 对比方案", digest.logic_summary)
+        self.assertIn("修饰键=ctrl", digest.logic_summary)
+        self.assertIn("焦点进程=chrome.exe", digest.logic_summary)
+        self.assertTrue(any("窗口时序=" in item for item in digest.evidence_items))
 
     def test_observer_uses_injected_clipboard_reader(self) -> None:
         observer = WindowsDesktopObserver(
@@ -123,6 +232,10 @@ class DesktopTests(unittest.TestCase):
             self.assertTrue((Path(temp_dir) / "bridge_events.jsonl").exists())
             self.assertEqual(len(runner.prompts), 1)
             self.assertIn("观察学习任务", runner.prompts[0])
+            self.assertIn("逻辑摘要=", runner.prompts[0])
+            self.assertIn("焦点进程=", runner.prompts[0])
+            self.assertIn("窗口观测=", runner.prompts[0])
+            self.assertIn("证据清单=", runner.prompts[0])
             self.assertIn("语义标签=", runner.prompts[0])
             self.assertIn("多模态摘要=", runner.prompts[0])
 
@@ -166,7 +279,8 @@ class DesktopTests(unittest.TestCase):
             digest = DesktopDigest(
                 timestamp_utc="2026-03-20T00:00:00+00:00",
                 summary="事件数=2；类型=window_focus,clipboard；主要窗口=VS Code",
-                semantic_summary="用户可能正在查资料并修改代码。",
+                semantic_summary="观察摘要：场景标签=代码编辑与网页检索；关键窗口=VS Code；观察到剪贴板变化。",
+                logic_summary="事实: 窗口=VS Code | 事件=window_focus,clipboard | 标签=coding,research | 信号=clipboard_changed；关系: 焦点集中=VS Code；推理线索: 存在文本复制或整理行为 | 当前任务主要集中在 VS Code",
                 event_count=2,
                 event_types=["window_focus", "clipboard"],
                 top_apps=["VS Code"],
@@ -181,6 +295,8 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(feedback_lines[-1]["feedback_type"], "useful")
             self.assertTrue(any("反馈学习任务" in prompt for prompt in runner.prompts))
             self.assertIn("coding", event.metadata["semantic_tags"])
+            self.assertIn("事实:", event.summary)
+            self.assertIn("evidence_items", event.metadata)
 
     def test_bridge_controller_submits_user_message(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -225,6 +341,31 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(updated.pending_suggestion, "")
             self.assertTrue(any("目标确认任务" in prompt for prompt in runner.prompts))
 
+    def test_bridge_controller_prefers_semantic_display_summary(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = FakeRunner()
+            controller = DesktopBridgeController(
+                runner,
+                BridgeEventStore(Path(temp_dir) / "bridge_events.jsonl"),
+                BridgeFeedbackStore(Path(temp_dir) / "bridge_feedback.jsonl"),
+                BridgeMessageStore(Path(temp_dir) / "bridge_messages.jsonl"),
+                BridgeStateStore(Path(temp_dir) / "bridge_state.json"),
+            )
+            event = controller.ingest_digest(
+                DesktopDigest(
+                    timestamp_utc="2026-03-20T00:00:00+00:00",
+                    summary="事件数=1；主要窗口=VS Code",
+                    semantic_summary="观察摘要：场景标签=代码编辑；关键窗口=VS Code。",
+                    logic_summary="事实: 窗口=VS Code | 标签=coding；关系: 焦点集中=VS Code；推理线索: 当前任务主要集中在 VS Code",
+                    event_count=1,
+                    top_apps=["VS Code"],
+                    semantic_tags=["coding"],
+                    semantic_confidence="medium",
+                    modality_hints=["desktop"],
+                )
+            )
+            self.assertEqual(controller.event_display_summary(event), "事实: 窗口=VS Code | 标签=coding；关系: 焦点集中=VS Code；推理线索: 当前任务主要集中在 VS Code")
+
     def test_multimodal_adapter_compresses_desktop_digest(self) -> None:
         adapter = MultimodalAdapter()
         signal = adapter.from_desktop_digest(
@@ -232,6 +373,7 @@ class DesktopTests(unittest.TestCase):
                 timestamp_utc="2026-03-20T00:00:00+00:00",
                 summary="事件数=1；主要窗口=VS Code",
                 semantic_summary="用户可能正在查资料并修改代码。",
+                logic_summary="事实: 窗口=VS Code | 标签=coding,research；关系: 焦点集中=VS Code；推理线索: 代码编辑与资料检索同时存在，可视为问题求解链",
                 event_count=1,
                 top_apps=["VS Code"],
                 semantic_tags=["coding", "research"],
@@ -261,6 +403,7 @@ class DesktopTests(unittest.TestCase):
                 timestamp_utc="2026-03-20T00:00:00+00:00",
                 summary="事件数=1；主要窗口=VS Code",
                 semantic_summary="用户可能正在编写或阅读代码。",
+                logic_summary="事实: 窗口=VS Code | 标签=coding；关系: 焦点集中=VS Code；推理线索: 当前任务主要集中在 VS Code",
                 event_count=1,
                 top_apps=["VS Code"],
                 semantic_tags=["coding"],
@@ -294,6 +437,7 @@ class DesktopTests(unittest.TestCase):
                 timestamp_utc="2026-03-20T00:00:00+00:00",
                 summary="事件数=1；主要窗口=VS Code",
                 semantic_summary="用户可能正在查资料并修改代码。",
+                logic_summary="事实: 窗口=VS Code | 标签=coding,research；关系: 焦点集中=VS Code；推理线索: 代码编辑与资料检索同时存在，可视为问题求解链",
                 event_count=1,
                 top_apps=["VS Code"],
                 semantic_tags=["coding", "research"],
@@ -302,6 +446,7 @@ class DesktopTests(unittest.TestCase):
             )
         )
         self.assertIn("屏幕识别到文字", digest.multimodal_summary)
+        self.assertIn("视觉证据:", digest.logic_summary)
         self.assertIn("ocr", digest.multimodal_tags)
         self.assertIn("image", digest.modality_hints)
 
