@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 
 data/control/
+data/desktop/
 data/review/
 data/experience/*.jsonl
 data/experience/*_state.json

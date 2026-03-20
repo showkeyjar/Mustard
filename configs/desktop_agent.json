@@ -1,0 +1,28 @@
+{
+  "poll_interval_s": 2.0,
+  "digest_interval_s": 30.0,
+  "max_buffer_events": 64,
+  "paths": {
+    "events": "data/desktop/events.jsonl",
+    "digests": "data/desktop/digests.jsonl"
+  },
+  "bridge_paths": {
+    "events": "data/desktop/bridge_events.jsonl",
+    "feedback": "data/desktop/bridge_feedback.jsonl",
+    "messages": "data/desktop/bridge_messages.jsonl",
+    "state": "data/desktop/bridge_state.json"
+  },
+  "proactive": {
+    "cooldown_s": 120,
+    "min_goal_overlap": 1,
+    "initial_budget": 2,
+    "max_budget": 3,
+    "feedback_window": 6,
+    "negative_feedback_limit": 2
+  },
+  "multimodal": {
+    "screen_enabled": true,
+    "screen_capture_dir": "data/desktop/screens",
+    "image_describer_command": []
+  }
+}
