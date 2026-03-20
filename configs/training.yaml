@@ -1,0 +1,3 @@
+training:
+  mode: scaffold
+  note: Replace heuristic policy/core with trainable modules in later phases.

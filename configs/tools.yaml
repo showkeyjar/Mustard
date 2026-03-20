@@ -1,0 +1,6 @@
+tools:
+  enabled:
+    - search
+    - calculator
+    - code_executor
+    - bigmodel_proxy

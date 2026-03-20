@@ -1,0 +1,13 @@
+model:
+  name: heuristic-carm-mvp
+  max_steps: 8
+  memory_slots: 16
+  action_space:
+    - THINK
+    - READ_MEM
+    - WRITE_MEM
+    - CALL_TOOL
+    - CALL_BIGMODEL
+    - VERIFY
+    - ROLLBACK
+    - ANSWER
