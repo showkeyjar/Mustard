@@ -1,0 +1,64 @@
+{
+  "rollout_tool_gate": {
+    "default": {
+      "min_tool_match_rate": 0.5,
+      "tool_match_drop_limit": -0.25
+    },
+    "by_tag": {
+      "numeric": {
+        "min_tool_match_rate": 0.9,
+        "tool_match_drop_limit": -0.1
+      },
+      "comparison": {
+        "min_tool_match_rate": 0.8,
+        "tool_match_drop_limit": -0.15
+      },
+      "coding": {
+        "min_tool_match_rate": 0.5,
+        "tool_match_drop_limit": -0.25
+      }
+    }
+  },
+  "prompt_sets": {
+    "default": [
+      {
+        "id": "calc-basic",
+        "prompt": "请计算 12 + 30 / 3",
+        "tag": "numeric",
+        "expected_tool": "calculator"
+      },
+      {
+        "id": "compare-db",
+        "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+        "tag": "comparison",
+        "expected_tool": "search"
+      },
+      {
+        "id": "naming-json-parser",
+        "prompt": "请给一个 Python 函数命名建议，用于解析 JSON 配置",
+        "tag": "coding",
+        "expected_tool": ""
+      }
+    ],
+    "tool_heavy": [
+      {
+        "id": "calc-large",
+        "prompt": "请计算 256 * 19 - 7",
+        "tag": "numeric",
+        "expected_tool": "calculator"
+      },
+      {
+        "id": "compare-cache",
+        "prompt": "比较 Redis 和 Memcached 的主要差异",
+        "tag": "comparison",
+        "expected_tool": "search"
+      },
+      {
+        "id": "python-dedupe",
+        "prompt": "请写一个 Python 列表去重函数，并解释时间复杂度",
+        "tag": "coding",
+        "expected_tool": "code_executor"
+      }
+    ]
+  }
+}

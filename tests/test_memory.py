@@ -22,7 +22,9 @@ class MemoryBoardTests(unittest.TestCase):
 
         draft = board.latest("DRAFT")
         self.assertIsNotNone(draft)
-        self.assertEqual(draft.content, "draft text")
+        payload = board.parse_content(draft)
+        self.assertEqual(payload.get("kind"), "draft")
+        self.assertEqual(payload.get("summary"), "draft text")
 
 
 if __name__ == "__main__":
