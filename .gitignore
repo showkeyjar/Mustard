@@ -6,5 +6,6 @@ __pycache__/
 data/control/
 data/desktop/
 data/review/
+data/pretrain/
 data/experience/*.jsonl
 data/experience/*_state.json

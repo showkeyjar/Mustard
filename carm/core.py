@@ -37,7 +37,13 @@ class AdaptiveReasoningCore:
         if not any(self.feature_weights[slot] for slot in self.SLOT_TYPES):
             self._bootstrap()
 
-    def step(self, observation: dict[str, str], memory: MemoryBoard, state: AgentState) -> AgentState:
+    def step(
+        self,
+        observation: dict[str, str],
+        memory: MemoryBoard,
+        state: AgentState,
+        guidance: dict[str, object] | None = None,
+    ) -> AgentState:
         next_state = state.snapshot()
         next_state.step_idx += 1
         next_state.phase = "REASONING"
@@ -51,9 +57,9 @@ class AdaptiveReasoningCore:
             next_state.answer_ready = 0.0
             return next_state
 
-        features = self.extract_features(user_input, memory, state)
+        features = self.extract_features(user_input, memory, state, guidance)
         next_state.latent = self.update_latent(state.latent, features)
-        slot_type = self.choose_slot(user_input, features)
+        slot_type = self.choose_slot(user_input, features, guidance)
         candidate = self.render_candidate(slot_type, memory, user_input)
 
         next_state.hidden["candidate"] = candidate
@@ -62,6 +68,10 @@ class AdaptiveReasoningCore:
         next_state.hidden["latent_summary"] = self.describe_latent(next_state.latent)
         next_state.uncertainty = self.estimate_uncertainty(slot_type, memory)
         next_state.answer_ready = self.estimate_answer_ready(slot_type, memory)
+        if state.hidden.get("verified") == "1" and memory.latest("DRAFT") is not None and memory.latest("CONFLICT") is None:
+            next_state.hidden["verified"] = "1"
+            next_state.uncertainty = min(next_state.uncertainty, 0.2)
+            next_state.answer_ready = max(next_state.answer_ready, 0.95)
         return next_state
 
     def learn(self, user_input: str, steps: list[StepRecord], success: bool) -> None:
@@ -90,8 +100,15 @@ class AdaptiveReasoningCore:
 
         self._save()
 
-    def extract_features(self, user_input: str, memory: MemoryBoard, state: AgentState) -> dict[str, float]:
+    def extract_features(
+        self,
+        user_input: str,
+        memory: MemoryBoard,
+        state: AgentState,
+        guidance: dict[str, object] | None = None,
+    ) -> dict[str, float]:
         lower = user_input.lower()
+        preferred_slot = str((guidance or {}).get("preferred_slot", ""))
         return {
             "bias": 1.0,
             "step_idx": min(state.step_idx / 8.0, 1.0),
@@ -106,16 +123,25 @@ class AdaptiveReasoningCore:
             "code_signal": 1.0 if any(token in lower for token in ("python", "code", "script", "代码")) else 0.0,
             "need_structure": 1.0 if memory.latest("PLAN") is None else 0.0,
             "need_external": 1.0 if memory.latest("RESULT") is None else 0.0,
+            "user_prefers_plan": 1.0 if preferred_slot == "PLAN" else 0.0,
+            "user_prefers_hyp": 1.0 if preferred_slot == "HYP" else 0.0,
+            "user_prefers_draft": 1.0 if preferred_slot == "DRAFT" else 0.0,
         }
 
-    def choose_slot(self, user_input: str, features: dict[str, float]) -> str:
-        scores = self.score_slots(user_input, features)
+    def choose_slot(self, user_input: str, features: dict[str, float], guidance: dict[str, object] | None = None) -> str:
+        scores = self.score_slots(user_input, features, guidance)
         return max(scores, key=scores.get)
 
-    def score_slots(self, user_input: str, features: dict[str, float]) -> dict[str, float]:
+    def score_slots(
+        self,
+        user_input: str,
+        features: dict[str, float],
+        guidance: dict[str, object] | None = None,
+    ) -> dict[str, float]:
         scores: dict[str, float] = {}
         token_counts = Counter(self.tokenize(user_input))
         latent = self.update_latent([0.0] * self.LATENT_DIM, features)
+        preferred_slot = str((guidance or {}).get("preferred_slot", ""))
         for slot_type in self.SLOT_TYPES:
             score = self.slot_bias[slot_type]
             for feature_name, feature_value in features.items():
@@ -123,6 +149,8 @@ class AdaptiveReasoningCore:
             for token, count in token_counts.items():
                 score += self.token_slot_weights.get(token, {}).get(slot_type, 0.0) * min(count, 3)
             score += self.dot(self.slot_readout_weights[slot_type], latent)
+            if preferred_slot and preferred_slot == slot_type:
+                score += 0.9
             scores[slot_type] = score
         return scores
 
@@ -397,8 +425,11 @@ class AdaptiveReasoningCore:
                 "answer_ready": 0.7,
                 "need_external": -0.8,
                 "has_plan": 0.2,
+                "user_prefers_draft": 0.9,
             }
         )
+        plan_weights["user_prefers_plan"] = 0.85
+        hyp_weights["user_prefers_hyp"] = 0.85
         self.token_slot_weights = {
             "比较": {"PLAN": 0.4},
             "对比": {"PLAN": 0.4},

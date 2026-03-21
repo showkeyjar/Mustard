@@ -15,12 +15,13 @@ Provide a runnable architecture prototype for a compact reasoning-centric agent 
 - Heuristic encoder and core, plus a lightweight online-trainable policy head
 - Text-backed memory slots for interpretability
 - Deterministic tools with predictable outputs for testability
-- Single-process agent loop for simplicity
+- Single-process agent loop for simplicity, but with explicit separation between pretraining and online evolution
 - Persistent experience store and local policy state
+- Structured user evolution signals for goals, corrections, and tool preferences
 
 ## Next steps
 
-1. Add explicit trajectory dataset export and offline replay training script.
+1. Upgrade offline replay pretraining into a reproducible batch-training pipeline.
 2. Replace heuristic core with a recurrent or state-space module.
-3. Add reward shaping based on user feedback instead of internal heuristics only.
+3. Expand user evolution signals into richer reward shaping and safety constraints.
 4. Add persistent multi-session working memory and evaluation harness.

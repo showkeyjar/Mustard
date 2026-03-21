@@ -20,6 +20,19 @@ class ExperienceStore:
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
+    def load_all(self) -> list[EpisodeRecord]:
+        if not self.path.exists():
+            return []
+
+        episodes: list[EpisodeRecord] = []
+        with self.path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                payload = normalize_episode_payload(json.loads(line))
+                episodes.append(self._decode_episode(payload))
+        return episodes
+
     def recall(self, query: str, limit: int = 2) -> list[EpisodeRecord]:
         if not self.path.exists():
             return []

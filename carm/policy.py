@@ -43,10 +43,16 @@ class OnlinePolicy:
         self.bias: dict[str, float] = {action.value: 0.0 for action in Action}
         self._load()
 
-    def decide(self, state: AgentState, memory: MemoryBoard, user_input: str) -> ActionDecision:
+    def decide(
+        self,
+        state: AgentState,
+        memory: MemoryBoard,
+        user_input: str,
+        guidance: dict[str, object] | None = None,
+    ) -> ActionDecision:
         context = PolicyContext(user_input=user_input, state=state, memory=memory)
-        features = self.extract_features(context)
-        priors = self.heuristic_priors(context)
+        features = self.extract_features(context, guidance)
+        priors = self.heuristic_priors(context, guidance)
         concept_priors = self.concepts.action_priors(user_input)
 
         scores: dict[str, float] = {}
@@ -58,10 +64,10 @@ class OnlinePolicy:
             scores[action.value] = score
 
         chosen = max(scores, key=scores.get)
-        decision = self._build_decision(Action(chosen), scores[chosen], features, context)
+        decision = self._build_decision(Action(chosen), scores[chosen], features, context, guidance)
         return self._enforce_constraints(decision, context)
 
-    def extract_features(self, context: PolicyContext) -> dict[str, float]:
+    def extract_features(self, context: PolicyContext, guidance: dict[str, object] | None = None) -> dict[str, float]:
         user_input = context.user_input
         lower = user_input.lower()
         memory = context.memory
@@ -69,6 +75,7 @@ class OnlinePolicy:
 
         semantic_pressure = self.concepts.action_priors(user_input)
         preferred_tool = self.concepts.preferred_tool(user_input)
+        guided_tool = str((guidance or {}).get("preferred_tool", ""))
 
         return {
             "bias": 1.0,
@@ -81,11 +88,22 @@ class OnlinePolicy:
             "has_draft": 1.0 if memory.latest("DRAFT") else 0.0,
             "has_conflict": 1.0 if memory.latest("CONFLICT") else 0.0,
             "needs_compare": 1.0 if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")) else 0.0,
-            "needs_calc": 1.0 if any(token in user_input for token in ("多少", "计算", "price", "cost", "数字")) else 0.0,
+            "needs_calc": 1.0
+            if any(token in user_input for token in ("多少", "计算", "price", "cost", "数字", "预算", "总价", "每席位", "按年", "每月", "分几批"))
+            or ("*" in user_input or "/" in user_input or "+" in user_input or "-" in user_input)
+            else 0.0,
             "needs_code": 1.0 if any(token in lower for token in ("python", "code", "script", "代码")) else 0.0,
+            "needs_formal_synthesis": 1.0
+            if any(token in user_input for token in ("负责人", "管理层", "正式", "简洁", "组织", "结论", "几份资料", "材料"))
+            else 0.0,
             "concept_tool_search": 1.0 if preferred_tool == "search" else 0.0,
             "concept_tool_calc": 1.0 if preferred_tool == "calculator" else 0.0,
             "concept_tool_code": 1.0 if preferred_tool == "code_executor" else 0.0,
+            "concept_tool_bigmodel": 1.0 if preferred_tool == "bigmodel_proxy" else 0.0,
+            "user_tool_search": 1.0 if guided_tool == "search" else 0.0,
+            "user_tool_calc": 1.0 if guided_tool == "calculator" else 0.0,
+            "user_tool_code": 1.0 if guided_tool == "code_executor" else 0.0,
+            "user_tool_bigmodel": 1.0 if guided_tool == "bigmodel_proxy" else 0.0,
             "concept_call_tool": min(max(semantic_pressure.get(Action.CALL_TOOL.value, 0.0), 0.0), 1.0),
             "concept_call_bigmodel": min(max(semantic_pressure.get(Action.CALL_BIGMODEL.value, 0.0), 0.0), 1.0),
             "glance_prefer_tool": 1.0 if state.hidden.get("glance_suggestion") == "prefer_tool" else 0.0,
@@ -94,9 +112,10 @@ class OnlinePolicy:
             "glance_mark_conflict": 1.0 if state.hidden.get("glance_suggestion") == "mark_conflict" else 0.0,
             "last_verify": 1.0 if state.last_action == Action.VERIFY.value else 0.0,
             "last_tool": 1.0 if state.last_action in {Action.CALL_TOOL.value, Action.CALL_BIGMODEL.value} else 0.0,
+            "block_learning": 1.0 if bool((guidance or {}).get("block_learning")) else 0.0,
         }
 
-    def heuristic_priors(self, context: PolicyContext) -> dict[str, float]:
+    def heuristic_priors(self, context: PolicyContext, guidance: dict[str, object] | None = None) -> dict[str, float]:
         state = context.state
         memory = context.memory
         candidate_slot = state.hidden.get("slot_type", "")
@@ -113,6 +132,10 @@ class OnlinePolicy:
         if state.uncertainty > 0.7 and memory.latest("RESULT") is None:
             priors[Action.CALL_TOOL.value] = 0.55 + float(self.controls.get("call_tool_bonus", 0.0))
             priors[Action.CALL_BIGMODEL.value] = 0.45
+
+        preferred_tool = str((guidance or {}).get("preferred_tool", ""))
+        if preferred_tool:
+            priors[Action.CALL_TOOL.value] = max(priors[Action.CALL_TOOL.value], 1.0)
 
         if state.hidden.get("glance_suggestion") == "prefer_tool":
             priors[Action.CALL_TOOL.value] = max(priors[Action.CALL_TOOL.value], 1.1)
@@ -146,12 +169,13 @@ class OnlinePolicy:
         score: float,
         features: dict[str, float],
         context: PolicyContext,
+        guidance: dict[str, object] | None = None,
     ) -> ActionDecision:
         state = context.state
         memory = context.memory
         candidate_slot = state.hidden.get("slot_type", "")
         user_input = context.user_input
-        preferred_tool = self.concepts.preferred_tool(user_input)
+        preferred_tool = str((guidance or {}).get("preferred_tool", "")) or self.concepts.preferred_tool(user_input)
 
         decision = ActionDecision(
             action=action,
@@ -167,14 +191,57 @@ class OnlinePolicy:
             return decision
 
         if action == Action.CALL_TOOL:
-            if preferred_tool == "calculator" or features["needs_calc"] > 0.0:
+            if preferred_tool == "calculator":
                 decision.tool_call = ToolCall(
                     tool_name="calculator",
                     query=user_input,
                     reason="Need precise calculation support.",
                 )
                 decision.reason = "Use calculator for precision."
-            elif preferred_tool == "code_executor" or features["needs_code"] > 0.0:
+            elif preferred_tool == "bigmodel_proxy":
+                decision.tool_call = ToolCall(
+                    tool_name="bigmodel_proxy",
+                    query=user_input,
+                    reason="Need stronger external synthesis support.",
+                )
+                decision.reason = "Use larger model for formal synthesis."
+            elif preferred_tool == "code_executor":
+                decision.tool_call = ToolCall(
+                    tool_name="code_executor",
+                    query="print('mock code execution')",
+                    reason="Need executable confirmation.",
+                )
+                decision.reason = "Use code executor for implementation validation."
+            elif preferred_tool:
+                decision.tool_call = ToolCall(
+                    tool_name=preferred_tool,
+                    query=user_input,
+                    arguments={"top_k": 3},
+                    reason="Use the learned preferred tool for this task shape.",
+                )
+                decision.reason = f"Use {preferred_tool} from learned preference."
+            elif features["needs_formal_synthesis"] > 0.0:
+                decision.tool_call = ToolCall(
+                    tool_name="bigmodel_proxy",
+                    query=user_input,
+                    reason="Need polished synthesis for higher-stakes communication.",
+                )
+                decision.reason = "Use larger model for formal synthesis."
+            elif features["needs_calc"] > 0.0 and features["needs_code"] == 0.0:
+                decision.tool_call = ToolCall(
+                    tool_name="calculator",
+                    query=user_input,
+                    reason="Need precise calculation support.",
+                )
+                decision.reason = "Use calculator for precision."
+            elif features["needs_calc"] > 0.0 and any(token in user_input for token in ("分几批", "预算", "总价", "每席位", "按年", "每月")):
+                decision.tool_call = ToolCall(
+                    tool_name="calculator",
+                    query=user_input,
+                    reason="Budgeting and batching questions should prefer exact arithmetic.",
+                )
+                decision.reason = "Use calculator for arithmetic-heavy task."
+            elif features["needs_code"] > 0.0:
                 decision.tool_call = ToolCall(
                     tool_name="code_executor",
                     query="print('mock code execution')",
@@ -265,6 +332,19 @@ class OnlinePolicy:
     def _enforce_constraints(self, decision: ActionDecision, context: PolicyContext) -> ActionDecision:
         memory = context.memory
         state = context.state
+
+        if (
+            state.last_action == Action.VERIFY.value
+            and memory.latest("DRAFT") is not None
+            and memory.latest("CONFLICT") is None
+            and (state.answer_ready >= 0.8 or state.uncertainty <= 0.3 or state.hidden.get("verified") == "1")
+        ):
+            return self._build_decision(
+                Action.ANSWER,
+                decision.score,
+                decision.feature_snapshot,
+                context,
+            )
 
         if memory.latest("RESULT") is not None and memory.latest("DRAFT") is None:
             return ActionDecision(

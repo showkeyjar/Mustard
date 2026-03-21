@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from carm.evolution import EvolutionSignal
 from carm.runner import AgentRunner
 from tools.base import ToolManager
 from tools.bigmodel_tool import BigModelProxyTool
@@ -11,6 +12,21 @@ from tools.search_tool import SearchTool
 
 
 def build_runner(temp_dir: str) -> AgentRunner:
+    training_config_path = Path(temp_dir) / "training.json"
+    training_config_path.write_text(
+        (
+            '{'
+            '"training":{'
+            '"mode":"two_stage",'
+            '"online_evolution":{'
+            f'"signal_state_path":"{(Path(temp_dir) / "evolution_state.json").as_posix()}",'
+            f'"signal_log_path":"{(Path(temp_dir) / "signals.jsonl").as_posix()}"'
+            "}"
+            "}"
+            "}"
+        ),
+        encoding="utf-8",
+    )
     return AgentRunner(
         ToolManager(
             [
@@ -26,6 +42,7 @@ def build_runner(temp_dir: str) -> AgentRunner:
         core_state_path=Path(temp_dir) / "core_state.json",
         review_path=Path(temp_dir) / "reviews.jsonl",
         controls_path=Path(temp_dir) / "runtime_controls.json",
+        training_config_path=training_config_path,
     )
 
 
@@ -69,6 +86,36 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue((Path(temp_dir) / "concept_state.json").exists())
             self.assertTrue((Path(temp_dir) / "core_state.json").exists())
             self.assertTrue((Path(temp_dir) / "reviews.jsonl").exists())
+
+    def test_structured_signal_biases_future_tool_choice(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(temp_dir)
+            runner.apply_user_signal(
+                EvolutionSignal(
+                    source="test",
+                    query="数据库选型",
+                    preferred_tool="search",
+                    reward=1.0,
+                )
+            )
+
+            _, trace = runner.run("数据库选型建议")
+            self.assertIn("CALL_TOOL", trace.actions)
+            self.assertTrue(any(step.selected_tool == "search" for step in trace.steps))
+
+    def test_budget_prompt_prefers_calculator_even_with_natural_language(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(temp_dir)
+            _, trace = runner.run("我们团队 9 个人，某 SaaS 每席位 129 元/月，如果按年预算估算请按 129 * 9 * 12 计算。")
+
+            self.assertTrue(any(step.selected_tool == "calculator" for step in trace.steps))
+
+    def test_formal_summary_prompt_can_use_bigmodel_proxy(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(temp_dir)
+            _, trace = runner.run("我已经收集了官方文档、社区最佳实践和故障复盘，现在要写给负责人一份简洁但正式的结论，应该怎么组织？")
+
+            self.assertTrue(any(step.selected_tool == "bigmodel_proxy" for step in trace.steps))
 
 
 if __name__ == "__main__":

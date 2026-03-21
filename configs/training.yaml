@@ -1,3 +1,33 @@
-training:
-  mode: scaffold
-  note: Replace heuristic policy/core with trainable modules in later phases.
+{
+  "training": {
+    "mode": "two_stage",
+    "pretraining": {
+      "enabled": true,
+      "artifact_dir": "data/pretrain",
+      "replay_success_only": true,
+      "max_episodes": 500,
+      "dataset_path": "data/pretrain/pretrain_corpus.jsonl",
+      "review_pack_path": "data/pretrain/review_pack.jsonl",
+      "max_synthetic_samples": 2000,
+      "reset_artifacts": true,
+      "count_per_task_type": 24,
+      "seed": 7,
+      "min_quality_score": 0.72,
+      "max_dataset_samples": 5000,
+      "auto_sample_from_experience": true,
+      "experience_path": "data/experience/episodes.jsonl",
+      "min_experience_value_score": 0.72,
+      "max_experience_samples": 300,
+      "auto_export_real_prompt_candidates": true,
+      "real_prompt_candidate_path": "data/eval/real_prompt_candidates.json",
+      "max_real_prompt_candidates": 50
+    },
+    "online_evolution": {
+      "enabled": true,
+      "allow_episode_learning": true,
+      "allow_user_signals": true,
+      "signal_state_path": "data/evolution/state.json",
+      "signal_log_path": "data/evolution/signals.jsonl"
+    }
+  }
+}

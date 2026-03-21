@@ -32,10 +32,14 @@ from carm.multimodal import MultimodalAdapter, ScreenObservationAdapter
 class FakeRunner:
     def __init__(self) -> None:
         self.prompts: list[str] = []
+        self.signals: list[object] = []
 
     def run(self, prompt: str):
         self.prompts.append(prompt)
         return "ok", None
+
+    def apply_user_signal(self, signal) -> None:
+        self.signals.append(signal)
 
 
 class FakeObserver:
@@ -294,6 +298,7 @@ class DesktopTests(unittest.TestCase):
             feedback_lines = [json.loads(line) for line in (Path(temp_dir) / "bridge_feedback.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
             self.assertEqual(feedback_lines[-1]["feedback_type"], "useful")
             self.assertTrue(any("反馈学习任务" in prompt for prompt in runner.prompts))
+            self.assertEqual(len(runner.signals), 1)
             self.assertIn("coding", event.metadata["semantic_tags"])
             self.assertIn("事实:", event.summary)
             self.assertIn("evidence_items", event.metadata)
@@ -340,6 +345,7 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(updated.current_goal, "修复 Python 代码问题")
             self.assertEqual(updated.pending_suggestion, "")
             self.assertTrue(any("目标确认任务" in prompt for prompt in runner.prompts))
+            self.assertEqual(len(runner.signals), 1)
 
     def test_bridge_controller_prefers_semantic_display_summary(self) -> None:
         with TemporaryDirectory() as temp_dir:

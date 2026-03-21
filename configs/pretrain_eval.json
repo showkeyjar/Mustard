@@ -1,0 +1,88 @@
+{
+  "prompts": [
+    {
+      "id": "compare-db",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "calc-basic",
+      "prompt": "请计算 12 + 30 / 3",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "code-debug",
+      "prompt": "帮我理解这段 Python 脚本为什么会报空指针错误",
+      "expected_tool": "code_executor",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "plan-migration",
+      "prompt": "如何规划一次低风险的数据库迁移",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "fact-check",
+      "prompt": "如何判断一篇教程里的代码建议是否过时",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "constraint-plan",
+      "prompt": "如果需求里同时要求低成本、快速上线和后期可扩展，应该怎么先拆约束？",
+      "expected_tool": "search",
+      "logic_skill": "constraint_planning"
+    },
+    {
+      "id": "conflict-check",
+      "prompt": "多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "result-integration",
+      "prompt": "拿到若干检索结果后，如何整合成一份带风险说明的结论？",
+      "expected_tool": "search",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "termination",
+      "prompt": "什么时候应该停止继续检索并开始形成结论？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "code-looking-search",
+      "prompt": "有篇博客说 Python 3.13 默认已经启用无 GIL 构建，这种说法更应该查官方资料还是直接本地跑个脚本？",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "search-looking-calc",
+      "prompt": "套餐说明写着每席位 79 元，12 人团队按年付总价是多少？请按 79 * 12 * 12 精确计算，不要泛泛比较。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "stop-when-enough",
+      "prompt": "我已经拿到官方文档、发布日期和迁移指南三项证据，还要继续检索才能判断这个功能是否可用吗？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "conflict-no-answer",
+      "prompt": "两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "integrate-for-exec",
+      "prompt": "我已经收集了几份检索材料，请把它们整合成一份面向管理层的正式结论，语言要完整稳妥。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    }
+  ]
+}

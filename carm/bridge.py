@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from carm.multimodal import MultimodalAdapter
 from carm.runner import AgentRunner
+from carm.evolution import EvolutionSignal
 
 if TYPE_CHECKING:
     from carm.desktop import DesktopDigest
@@ -284,6 +285,25 @@ class DesktopBridgeController:
                     state.proactive_status = "收到负向反馈，主动追问会暂时收缩。"
                 self.state_store.save(state)
 
+        event = next((item for item in self.event_store.load_all() if item.event_id == event_id), None)
+        if event is not None:
+            metadata = event.metadata if isinstance(event.metadata, dict) else {}
+            reward = 1.0 if feedback_type == "useful" else -1.0 if feedback_type == "misread" else -0.5
+            self.runner.apply_user_signal(
+                EvolutionSignal(
+                    source="bridge_feedback",
+                    query=self.event_display_summary(event),
+                    goal=self.load_state().current_goal,
+                    preferred_tool=str(metadata.get("suggested_tool", "")) if feedback_type == "useful" else "",
+                    preferred_slot="PLAN" if feedback_type == "useful" else "",
+                    reward=reward,
+                    learn=feedback_type != "dismiss",
+                    correction=note if feedback_type == "misread" else "",
+                    note=note or feedback_type,
+                    metadata={"event_id": event_id, "feedback_type": feedback_type},
+                )
+            )
+
         learning_prompt = (
             f"反馈学习任务: event_id={event_id}，反馈={feedback_type}，说明={note or '无'}。"
             "请据此调整对用户桌面行为的偏好理解。"
@@ -346,6 +366,17 @@ class DesktopBridgeController:
             state.pending_question_event_id = ""
         if self.state_store is not None:
             self.state_store.save(state)
+        self.runner.apply_user_signal(
+            EvolutionSignal(
+                source="goal_confirm",
+                query=goal_text,
+                goal=goal_text,
+                preferred_slot="PLAN",
+                reward=1.0,
+                note="user confirmed current goal",
+                metadata={"event_id": event_id},
+            )
+        )
         self.submit_user_message(
             f"目标确认任务: 当前用户明确目标为 {goal_text}。请更新当前任务偏好并据此协助。",
             source="goal_confirm",

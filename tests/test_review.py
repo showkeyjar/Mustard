@@ -16,6 +16,21 @@ from tools.search_tool import SearchTool
 class ReviewTests(unittest.TestCase):
     def test_runner_emits_review_record(self) -> None:
         with TemporaryDirectory() as temp_dir:
+            training_config_path = Path(temp_dir) / "training.json"
+            training_config_path.write_text(
+                (
+                    '{'
+                    '"training":{'
+                    '"mode":"two_stage",'
+                    '"online_evolution":{'
+                    f'"signal_state_path":"{(Path(temp_dir) / "evolution_state.json").as_posix()}",'
+                    f'"signal_log_path":"{(Path(temp_dir) / "signals.jsonl").as_posix()}"'
+                    "}"
+                    "}"
+                    "}"
+                ),
+                encoding="utf-8",
+            )
             runner = AgentRunner(
                 ToolManager([SearchTool(), CalculatorTool(), CodeExecutorTool(), BigModelProxyTool()]),
                 experience_path=Path(temp_dir) / "episodes.jsonl",
@@ -23,6 +38,7 @@ class ReviewTests(unittest.TestCase):
                 concept_state_path=Path(temp_dir) / "concept_state.json",
                 core_state_path=Path(temp_dir) / "core_state.json",
                 review_path=Path(temp_dir) / "reviews.jsonl",
+                training_config_path=training_config_path,
             )
             runner.run("请计算 12 + 30 / 3")
 

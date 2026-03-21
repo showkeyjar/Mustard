@@ -1,0 +1,40 @@
+{
+  "prompts": [
+    {
+      "id": "real-doc-check",
+      "prompt": "我手里有一篇 2023 年的 Python 教程，它建议所有项目都继续用 requirements.txt，这个建议现在还可靠吗？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "real-budget",
+      "prompt": "我们团队 9 个人，某 SaaS 每席位 129 元/月，如果按年预算估算请按 129 * 9 * 12 计算。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "real-plan",
+      "prompt": "我要在两周内把一个内部脚本工具交付给运营团队，帮我先拆计划，再告诉我哪些地方必须查资料。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "real-conflict",
+      "prompt": "两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "real-exec-summary",
+      "prompt": "我已经收集了三份资料：官方文档、社区最佳实践、一次故障复盘。现在要写给负责人一份简洁但正式的结论，应该怎么组织？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "real-mixed",
+      "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    }
+  ]
+}

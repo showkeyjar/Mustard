@@ -2,11 +2,11 @@
 
 Compact Agentic Reasoning Model（CARM）的在线学习原型。
 
-这个仓库提供了一套可运行的小型智能体脚手架，核心由“推理内核 + 工作记忆 + 工具总线”组成。当前版本是混合式方案：
+这个仓库提供了一套可运行的小型智能体脚手架，核心由“推理内核 + 工作记忆 + 工具总线”组成。当前版本已经升级为两段式方案：
 
-- 用启发式先验提供冷启动行为
-- 用轻量在线动作头在每轮对话后更新策略
-- 用可持久化轨迹把对话沉淀成经验记忆
+- 预训练环节负责把历史 episode / review / evolution signal 回放成稳定初始能力
+- 在线进化环节负责把用户显式目标、纠偏和偏好信号精确传给模型
+- 运行时仍保留轻量在线更新，但现在受结构化用户信号约束
 
 ## 当前包含
 
@@ -18,6 +18,8 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 - 带 `action_items / unknowns / evidence_targets / confidence_band` 的结构化中间表示
 - 搜索、计算器、代码执行和大模型代理的模拟工具
 - 用于动作奖励和对话摘要的经验回放存储
+- 离线预训练脚本与预训练产物清单
+- 结构化在线进化信号管理器
 - 可直接运行的本地入口
 - 覆盖记忆流、代理主循环和桌面桥梁的测试
 
@@ -47,7 +49,75 @@ python -m scripts.desktop_agent_control launch
 ```powershell
 python -m scripts.run_local_agent "比较 PostgreSQL 和 MySQL 在中小团队里的适用性"
 python -m scripts.interactive_agent
+python -m scripts.build_pretrain_dataset
+python -m scripts.apply_pretrain_review_feedback
+python -m scripts.pretrain_carm
+python -m scripts.evaluate_pretraining
+python -m scripts.evaluate_real_prompts
+python -m scripts.build_real_prompt_candidates
 ```
+
+如果你手头已经有公开任务语料的本地文件，也可以直接导入：
+
+```powershell
+$env:CARM_PRETRAIN_IMPORT_PATHS="data/raw/public_tasks.jsonl;data/raw/prompts.txt"
+python -m scripts.build_pretrain_dataset
+```
+
+支持本地 `jsonl / json / txt`。构建时会自动做任务类型推断、结构化标注、去重、质量过滤，并额外导出一份人工抽检包 `data/pretrain/review_pack.jsonl`。
+默认预训练会先重置 `data/pretrain/` 下的权重产物，再从当前数据集重新训练，避免旧状态把新评估结果污染。
+当前默认也会自动从 `data/experience/episodes.jsonl` 抽取高价值成功 episode，转成一批 `experience_auto` 训练样本，并顺手导出 `data/eval/real_prompt_candidates.json` 作为真实回归候选集。
+
+如果你已经人工修改了 `review_pack.jsonl` 里的字段，可以把修订结果回流到主训练集：
+
+```powershell
+python -m scripts.apply_pretrain_review_feedback
+```
+
+`review_pack.jsonl` 当前支持这些人工反馈字段：
+
+- `review_status`: `pending / accept / reject / edit`
+- `review_note`
+- `override_task_type`
+- `override_expected_tool`
+- `override_target_slot`
+- `override_plan_summary`
+- `override_action_items`
+- `override_unknowns`
+- `override_evidence_targets`
+- `override_draft_summary`
+
+`interactive_agent` 现在支持三类显式进化命令：
+
+```text
+/goal 修复桌面桥梁里的误判链路
+/prefer search 数据库选型
+/evolve {"source":"interactive_cli","query":"数据库选型","preferred_tool":"search","reward":1.0}
+```
+
+如果你想先看这套闭环有没有效果，再决定是否继续扩展，直接运行：
+
+```powershell
+python -m scripts.evaluate_pretraining
+python -m scripts.evaluate_real_prompts
+```
+
+它会用一组小规模基准任务，对比 `baseline` 和 `pretrained` 两个状态的：
+
+- `tool_match_rate`
+- `structured_write_rate`
+- `avg_step_count`
+- 每题的动作轨迹和工具选择差异
+
+其中 `evaluate_real_prompts` 会按“每条 prompt 单独起隔离 runner”的方式做回归，更适合评估真实 prompt，避免会话内经验记忆把后一题带偏。默认基准在 [real_prompt_eval.json](d:/codes/Mustard/configs/real_prompt_eval.json)。
+
+如果你想把实际使用过程中表现较好的 prompt 沉淀成下一批真实回归候选集，可以运行：
+
+```powershell
+python -m scripts.build_real_prompt_candidates
+```
+
+它会从 `data/experience/episodes.jsonl` 里抽取高价值、成功、且已显式使用工具的真实 episode，自动推断 `logic_skill`，并导出到 `data/eval/real_prompt_candidates.json`，方便你挑选后并入 [real_prompt_eval.json](d:/codes/Mustard/configs/real_prompt_eval.json)。
 
 ### 桌面常驻
 
@@ -126,8 +196,34 @@ python -m unittest discover -s tests -v
 
 ## 当前状态
 
-这是一套在线学习脚手架。当前版本已经可以在推理时更新动作头，从成功对话里学习概念层的动作/工具偏好，用轻量自适应推理核学习 `PLAN`、`HYP`、`DRAFT` 的槽位形成倾向，并把这些状态收敛到更适合训练的结构化 schema 里。同时，运行时控制项已经支持版本化、审计和回滚。
+这是一套两段式学习脚手架。当前版本已经可以：
+
+- 把历史成功轨迹回放成预训练产物
+- 用低成本模板生成 + 程序化标注自动产出通用任务理解/规划预训练集
+- 从成功对话里学习概念层的动作/工具偏好
+- 用轻量自适应推理核学习 `PLAN`、`HYP`、`DRAFT` 的槽位形成倾向
+- 用结构化在线信号把 `goal / preferred_tool / preferred_slot / reward / learn` 精确回喂到运行中的模型
+- 把这些状态收敛到更适合训练和审计的结构化 schema 里
+
+低成本预训练数据方案现在默认会生成一份 `data/pretrain/pretrain_corpus.jsonl`，覆盖 `compare / calculate / coding / planning / summarize / fact_check` 六类通用任务。每条样本都会自动带上：
+
+- `expected_tool`
+- `target_slot`
+- `plan_action_items`
+- `plan_unknowns`
+- `evidence_targets`
+- `draft_summary`
+- `quality_score`
+
+你也可以把公开语料先放到本地，再通过导入器并入同一份数据集。当前导入器会优先读取：
+
+- `prompt`
+- `question`
+- `instruction`
+- `input`
+
+然后自动推断任务类型并转成统一的 CARM 训练结构。
 
 下一步的重点仍然是两条：
 - 用真正的递归核或状态空间模块替换当前轻量推理核
-- 增加轨迹监督训练，让中间状态和动作决策更少依赖启发式
+- 把当前离线回放式预训练升级成可重复的数据集导出 + 批训练流程

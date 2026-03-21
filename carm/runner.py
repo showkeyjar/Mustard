@@ -13,6 +13,8 @@ from carm.memory import MemoryBoard, MemorySlot
 from carm.policy import OnlinePolicy
 from carm.review import ReviewStore
 from carm.runtime_controls import load_control_state, load_controls
+from carm.training import load_training_config
+from carm.evolution import EvolutionSignal, OnlineEvolutionManager
 from carm.schemas import EpisodeRecord, ReviewRecord, StepRecord
 from carm.state import AgentState
 from carm.verifier import SimpleVerifier
@@ -43,11 +45,14 @@ class AgentRunner:
         core_state_path: str | Path = "data/experience/core_state.json",
         review_path: str | Path = "data/review/reviews.jsonl",
         controls_path: str | Path = "data/control/runtime_controls.json",
+        training_config_path: str | Path = "configs/training.yaml",
     ) -> None:
         self.controls_path = Path(controls_path)
         self.controls = load_controls(self.controls_path)
         self.control_state = load_control_state(self.controls_path.parent / "control_state.json")
         self.control_version = str(self.control_state.get("current_version", ""))
+        self.training_config = load_training_config(training_config_path)
+        online_config = self.training_config.get("training", {}).get("online_evolution", {})
         self.encoder = SimpleEncoder()
         self.core = AdaptiveReasoningCore(core_state_path, self.controls.get("core", {}))
         self.policy = OnlinePolicy(policy_state_path, concept_state_path, self.controls.get("policy", {}))
@@ -58,6 +63,10 @@ class AgentRunner:
         self.max_steps = max_steps
         self.experience_store = ExperienceStore(experience_path)
         self.review_store = ReviewStore(review_path)
+        self.evolution = OnlineEvolutionManager(
+            Path(str(online_config.get("signal_state_path", "data/evolution/state.json"))),
+            Path(str(online_config.get("signal_log_path", "data/evolution/signals.jsonl"))),
+        )
 
     def run(self, user_input: str) -> tuple[str, RunTrace]:
         state = AgentState(glance_budget=int(self.controls.get("glance", {}).get("budget", 1)))
@@ -65,12 +74,13 @@ class AgentRunner:
         trace = RunTrace()
         rollback_stack: list[RollbackCheckpoint] = []
         self._hydrate_from_experience(user_input, memory)
+        guidance = self.evolution.guidance_for(user_input)
 
         for _ in range(self.max_steps):
             observation = self.encoder.encode(user_input, memory)
-            state = self.core.step(observation, memory, state)
+            state = self.core.step(observation, memory, state, guidance)
             state = self._apply_glance(state, memory)
-            decision = self.policy.decide(state, memory, user_input)
+            decision = self.policy.decide(state, memory, user_input, guidance)
 
             trace.actions.append(decision.action.value)
             trace.notes.append(decision.reason)
@@ -102,6 +112,7 @@ class AgentRunner:
                 rollback_stack.append(self._checkpoint(state, memory))
                 memory.write_from_state(state, decision.target_slot, "policy")
                 state.last_action = decision.action.value
+                state.hidden.pop("verified", None)
                 continue
 
             if decision.action in {Action.CALL_TOOL, Action.CALL_BIGMODEL} and decision.tool_call:
@@ -114,6 +125,7 @@ class AgentRunner:
                 memory.store_result(result.result, result.confidence, result.source)
                 state.last_action = decision.action.value
                 state.uncertainty = max(0.2, state.uncertainty - 0.3)
+                state.hidden.pop("verified", None)
                 continue
 
             if decision.action == Action.VERIFY:
@@ -122,6 +134,9 @@ class AgentRunner:
                 if ok:
                     state.answer_ready = max(state.answer_ready, 0.95)
                     state.uncertainty = min(state.uncertainty, 0.2)
+                    state.hidden["verified"] = "1"
+                else:
+                    state.hidden.pop("verified", None)
                 state.last_action = decision.action.value
                 continue
 
@@ -174,8 +189,12 @@ class AgentRunner:
         success = memory.latest("DRAFT") is not None and memory.latest("CONFLICT") is None
         value_score = self._value_score(state, memory, trace)
         self._assign_rewards(trace, state, memory, value_score)
-        self.core.learn(user_input, trace.steps, success)
-        self.policy.learn(trace.steps)
+        online_config = self.training_config.get("training", {}).get("online_evolution", {})
+        allow_episode_learning = bool(online_config.get("allow_episode_learning", True))
+        guidance = self.evolution.guidance_for(user_input)
+        if allow_episode_learning and not bool(guidance.get("block_learning")):
+            self.core.learn(user_input, trace.steps, success)
+            self.policy.learn(trace.steps)
 
         summary = self._summarize_episode(memory, trace)
         episode_features = self._episode_features(user_input, memory, trace)
@@ -193,6 +212,27 @@ class AgentRunner:
         self.experience_store.append(episode)
         review = self._review_episode(user_input, trace, success, value_score, episode_features, outcome_signature)
         self.review_store.append(review)
+
+    def apply_user_signal(self, signal: EvolutionSignal) -> None:
+        online_config = self.training_config.get("training", {}).get("online_evolution", {})
+        if not bool(online_config.get("allow_user_signals", True)):
+            return
+
+        synthetic_steps = self.evolution.apply_signal(signal)
+        if not synthetic_steps:
+            return
+
+        scale = float(self.evolution.guidance_for(signal.query or signal.goal or signal.note).get("learning_rate_scale", 1.0))
+        for step in synthetic_steps:
+            step.reward *= scale
+            step.score *= max(scale, 0.1)
+
+        self.policy.learn(synthetic_steps)
+        self.core.learn(
+            signal.query or signal.goal or signal.note,
+            synthetic_steps,
+            success=signal.reward >= 0.0,
+        )
 
     def _assign_rewards(
         self,
