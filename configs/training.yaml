@@ -20,7 +20,10 @@
       "max_experience_samples": 300,
       "auto_export_real_prompt_candidates": true,
       "real_prompt_candidate_path": "data/eval/real_prompt_candidates.json",
-      "max_real_prompt_candidates": 50
+      "max_real_prompt_candidates": 50,
+      "teacher_distill_enabled": true,
+      "teacher_distill_limit": 120,
+      "teacher_dataset_path": "data/pretrain/teacher_distill.jsonl"
     },
     "online_evolution": {
       "enabled": true,
@@ -28,6 +31,15 @@
       "allow_user_signals": true,
       "signal_state_path": "data/evolution/state.json",
       "signal_log_path": "data/evolution/signals.jsonl"
+    },
+    "automation": {
+      "report_dir": "data/train_runs",
+      "run_apply_review_feedback": true,
+      "run_pretrain_eval": true,
+      "run_real_prompt_eval": true,
+      "pretrain_eval_path": "configs/pretrain_eval.json",
+      "real_eval_path": "configs/real_prompt_eval.json",
+      "import_paths_env": "CARM_PRETRAIN_IMPORT_PATHS"
     }
   }
 }

@@ -14,6 +14,7 @@ from carm.pretrain_data import (
     sample_to_episode,
     save_pretrain_samples,
 )
+from carm.teacher_distill import distill_prompt_with_teacher
 
 
 class PretrainDataTests(unittest.TestCase):
@@ -78,6 +79,14 @@ class PretrainDataTests(unittest.TestCase):
 
             merged = apply_review_feedback(dataset_path, review_pack_path)
             self.assertTrue(any(sample.expected_tool == "code_executor" for sample in merged))
+
+    def test_teacher_distill_generates_structured_sample(self) -> None:
+        sample = distill_prompt_with_teacher("我们团队 9 个人，某 SaaS 每席位 129 元/月，如果按年预算估算请按 129 * 9 * 12 计算。")
+
+        self.assertEqual(sample.expected_tool, "calculator")
+        self.assertEqual(sample.target_slot, "HYP")
+        self.assertTrue(sample.plan_action_items)
+        self.assertEqual(sample.source_type, "teacher_distill")
 
 
 if __name__ == "__main__":

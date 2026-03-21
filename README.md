@@ -55,6 +55,7 @@ python -m scripts.pretrain_carm
 python -m scripts.evaluate_pretraining
 python -m scripts.evaluate_real_prompts
 python -m scripts.build_real_prompt_candidates
+python -m scripts.auto_train
 ```
 
 如果你手头已经有公开任务语料的本地文件，也可以直接导入：
@@ -67,12 +68,55 @@ python -m scripts.build_pretrain_dataset
 支持本地 `jsonl / json / txt`。构建时会自动做任务类型推断、结构化标注、去重、质量过滤，并额外导出一份人工抽检包 `data/pretrain/review_pack.jsonl`。
 默认预训练会先重置 `data/pretrain/` 下的权重产物，再从当前数据集重新训练，避免旧状态把新评估结果污染。
 当前默认也会自动从 `data/experience/episodes.jsonl` 抽取高价值成功 episode，转成一批 `experience_auto` 训练样本，并顺手导出 `data/eval/real_prompt_candidates.json` 作为真实回归候选集。
+同时也会启用 `teacher_distill`，借助已有 `bigmodel_proxy` 把当前 prompt 池蒸馏成一批结构化 teacher 样本，输出到 `data/pretrain/teacher_distill.jsonl`，再并入主预训练集。
+如果你配置了真实 Gemini API，`bigmodel_proxy` 会优先直连真实大模型；未配置时才回退到仓库内置代理。
+
+接入真实大模型最简单的方式是设置：
+
+```powershell
+$env:GEMINI_API_KEY="你的密钥"
+$env:GEMINI_MODEL="gemini-2.5-flash"
+python -m scripts.auto_train
+```
+
+可选环境变量：
+
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+- `GEMINI_TIMEOUT_S`
+
+如果你现在还不准备接真实大模型，也可以先不配这些环境变量。此时 `bigmodel_proxy` 会自动回退到仓库内置代理，整条训练流水线仍然可以跑通，只是 teacher distillation 的上限会低一些。
 
 如果你已经人工修改了 `review_pack.jsonl` 里的字段，可以把修订结果回流到主训练集：
 
 ```powershell
 python -m scripts.apply_pretrain_review_feedback
 ```
+
+如果你希望把建样本、反馈回流、离线预训练、标准评估、真实 prompt 评估一次跑完，直接使用：
+
+```powershell
+python -m scripts.auto_train
+```
+
+它会输出一份完整训练报告到 `data/train_runs/auto_train_latest.json`，并按时间戳保留历史运行记录。
+
+### 训练前清单
+
+如果你之后想回来直接开始训练，最短路径就是：
+
+1. 准备 Gemini API Key，并在当前终端设置 `GEMINI_API_KEY`
+2. 可选设置 `GEMINI_MODEL=gemini-2.5-flash`
+3. 运行 `python -m scripts.auto_train`
+4. 查看 `data/train_runs/auto_train_latest.json`
+
+这份报告会至少包含：
+
+- 当前训练集样本数
+- teacher distill 样本数
+- 标准逻辑基准评估结果
+- 真实 prompt 隔离评估结果
+- 预训练产物目录位置
 
 `review_pack.jsonl` 当前支持这些人工反馈字段：
 
