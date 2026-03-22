@@ -8,6 +8,8 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 - 在线进化环节负责把用户显式目标、纠偏和偏好信号精确传给模型
 - 运行时仍保留轻量在线更新，但现在受结构化用户信号约束
 
+当前仓库也已经包含一套最小可运行的 `Claw Team` 骨架，用来持续发现问题、整理证据、生成改进提案，并把高风险决策交给人类审批。
+
 ## 当前包含
 
 - 结构化智能体状态与动作协议
@@ -25,6 +27,24 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 
 ## 快速开始
 
+### 0. 环境要求
+
+想在任意机器上正确启动本项目，先满足这几个条件：
+
+- 安装 Python `3.10+`
+- 能在命令行里直接运行 `python`
+- 已把仓库完整拉取到本地
+- 当前终端工作目录位于仓库根目录
+
+检查 Python 版本：
+
+```powershell
+python --version
+```
+
+如果你要运行 `Claw Team`，上面这些条件就够了。
+如果你还要运行桌面常驻代理，请额外注意：桌面代理当前是 Windows 优先路径，`Claw Team` 本身则是跨平台的纯 Python 入口。
+
 第一次使用只看这一条就够了：
 
 双击仓库根目录下的 [start_carm.vbs](d:/codes/Mustard/start_carm.vbs)。
@@ -41,6 +61,112 @@ python -m scripts.desktop_agent_control launch
 ```
 
 如果你必须从批处理入口启动，也可以使用 [start_carm.cmd](d:/codes/Mustard/start_carm.cmd)，但它会短暂经过命令行窗口，不如 `start_carm.vbs` 干净。
+
+### 1. 跨机器启动 Claw Team
+
+如果你的目标是“在任意机器上启动 Claw Team 来持续完善项目”，推荐只使用下面这条跨平台命令：
+
+```powershell
+python -m scripts.claw_team_control run
+```
+
+这条命令会自动完成：
+
+- 初始化 `team/`、`memory/`、`backlog/` 工作区
+- 读取当前训练、评测、控制和桥梁信号
+- 生成当天的团队日报到 `memory/daily/`
+- 在命中条件时生成改进提案到 `backlog/proposals/`
+
+如果你想先检查当前机器是否已经具备正确启动条件，先运行：
+
+```powershell
+python -m scripts.claw_team_control doctor
+```
+
+如果你想只初始化团队目录，不跑周期：
+
+```powershell
+python -m scripts.claw_team_control bootstrap
+```
+
+如果你想查看当前团队状态：
+
+```powershell
+python -m scripts.claw_team_control status
+```
+
+Windows 下也可以直接双击：
+
+- [start_claw_team.cmd](d:/codes/Mustard/start_claw_team.cmd)
+- [start_claw_team.vbs](d:/codes/Mustard/start_claw_team.vbs)
+
+但为了确保在任意机器上都能复用，仍然建议优先记住统一命令：
+
+```powershell
+python -m scripts.claw_team_control run
+```
+
+### 2. 判断 Claw Team 是否启动成功
+
+一次成功启动至少应满足下面 4 个结果：
+
+1. 命令正常退出，没有 Python traceback
+2. 生成或更新 `memory/daily/YYYY-MM-DD.md`
+3. `team/`、`memory/`、`backlog/` 目录存在
+4. `doctor` 返回的 `missing_files` 为空
+
+最短验证路径：
+
+```powershell
+python -m scripts.claw_team_control doctor
+python -m scripts.claw_team_control run
+python -m scripts.claw_team_control status
+```
+
+### 3. Claw Team 在做什么
+
+当前第一版 `Claw Team` 不会自动改主分支，也不会自动修改默认运行时行为。它只负责：
+
+- 汇总系统状态
+- 观察回归与风险信号
+- 生成日报
+- 生成候选提案
+- 标记哪些提案必须经过人类审批
+
+这意味着你可以安全地在新机器上先把它跑起来，而不用担心它直接改坏默认行为。
+
+### 4. 推荐的跨机器启动顺序
+
+在一台全新的机器上，推荐按这个顺序启动：
+
+1. `git clone <repo>`
+2. `cd Mustard`
+3. `python --version`
+4. `python -m unittest tests.test_team_conductor -v`
+5. `python -m scripts.claw_team_control doctor`
+6. `python -m scripts.claw_team_control run`
+7. `python -m scripts.claw_team_control status`
+
+如果第 4 步和第 5 步都通过，基本就说明这台机器已经具备运行 Claw Team 的条件。
+
+### 5. 推荐的人机协作方式
+
+为了让 Claw Team 真正持续完善项目，建议固定这个节奏：
+
+1. 先运行 `python -m scripts.claw_team_control run`
+2. 查看 `memory/daily/` 和 `backlog/proposals/`
+3. 人类只挑高价值或高风险提案做审批
+4. 再针对被批准的提案运行训练、评测或控制脚本
+
+对应的高频命令通常是：
+
+```powershell
+python -m scripts.claw_team_control run
+python -m scripts.auto_train
+python -m scripts.evaluate_real_prompts
+python -m scripts.run_control_cycle
+python -m scripts.judge_control_rollout
+```
 
 ## 常用命令
 
@@ -191,6 +317,7 @@ python -m scripts.system_status
 
 ```powershell
 python -m scripts.migrate_experience_schema
+python -m unittest tests.test_team_conductor -v
 python -m unittest discover -s tests -v
 ```
 

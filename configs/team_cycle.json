@@ -1,0 +1,21 @@
+{
+  "team_name": "mustard-claw",
+  "heartbeat": {
+    "daily_digest": true,
+    "max_new_proposals_per_cycle": 3
+  },
+  "risk_policy": {
+    "human_gate_required_change_types": [
+      "runtime_control",
+      "desktop_behavior",
+      "training_data_policy",
+      "default_model_or_tooling"
+    ]
+  },
+  "focus_areas": [
+    "real_prompt_regression",
+    "desktop_bridge_quality",
+    "training_data_quality",
+    "runtime_control_safety"
+  ]
+}
