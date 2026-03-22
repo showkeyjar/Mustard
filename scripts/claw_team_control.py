@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+from scripts.claw_team_github import automerge_pr, doctor as github_doctor
+from scripts.claw_team_github import load_github_config, review_pr, submit_pr
 from scripts.team_conductor import (
     DEFAULT_CONFIG_PATH,
     bootstrap_workspace,
@@ -62,11 +64,47 @@ def status(root: Path) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Control the Mustard Claw Team workflow.")
-    parser.add_argument("command", choices=["bootstrap", "run", "status", "doctor"])
-    parser.add_argument("--root", default=".", help="Repository root. Defaults to current directory.")
-    parser.add_argument("--json", action="store_true", dest="as_json")
-    args = parser.parse_args()
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
+    bootstrap_parser = subparsers.add_parser("bootstrap")
+    bootstrap_parser.add_argument("--root", default=".")
+
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--root", default=".")
+
+    status_parser = subparsers.add_parser("status")
+    status_parser.add_argument("--root", default=".")
+
+    doctor_parser = subparsers.add_parser("doctor")
+    doctor_parser.add_argument("--root", default=".")
+
+    github_doctor_parser = subparsers.add_parser("github-doctor")
+    github_doctor_parser.add_argument("--root", default=".")
+
+    deliver_parser = subparsers.add_parser("deliver")
+    deliver_parser.add_argument("--root", default=".")
+    deliver_parser.add_argument("--title", default="")
+    deliver_parser.add_argument("--body", default="")
+    deliver_parser.add_argument("--commit-message", default="")
+    deliver_parser.add_argument("--branch", default="")
+    deliver_parser.add_argument("--reviewer", action="append", default=[])
+    deliver_parser.add_argument("--draft", action="store_true")
+
+    review_parser = subparsers.add_parser("review")
+    review_parser.add_argument("--root", default=".")
+    review_parser.add_argument("--pr", required=True, type=int)
+    review_parser.add_argument("--event", choices=["auto", "APPROVE", "COMMENT", "REQUEST_CHANGES"], default="auto")
+    review_parser.add_argument("--body", default="")
+    review_parser.add_argument("--check-command", action="append", default=[])
+
+    merge_parser = subparsers.add_parser("merge")
+    merge_parser.add_argument("--root", default=".")
+    merge_parser.add_argument("--pr", required=True, type=int)
+    merge_parser.add_argument("--method", choices=["merge", "squash", "rebase"], default="")
+    merge_parser.add_argument("--commit-title", default="")
+    merge_parser.add_argument("--commit-message", default="")
+
+    args = parser.parse_args()
     root = Path(args.root).resolve()
 
     if args.command == "bootstrap":
@@ -80,13 +118,82 @@ def main() -> int:
         payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
     elif args.command == "status":
         payload = status(root)
+    elif args.command == "github-doctor":
+        payload = github_doctor(root)
+    elif args.command == "deliver":
+        cycle_payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
+        github_payload = github_doctor(root)
+        if not github_payload.get("ok", False):
+            payload = {
+                "cycle": cycle_payload,
+                "delivery": {
+                    "submitted": False,
+                    "reason": "github_doctor_failed",
+                    "github": github_payload,
+                },
+            }
+        else:
+            github_config = load_github_config(root)
+            base_branch = str(github_config.get("base_branch", "main"))
+            title = str(args.title).strip() or f"Claw Team: automated delivery {Path(root).name}"
+            body = str(args.body).strip() or "Automated delivery created by Mustard Claw Team."
+            commit_message = str(args.commit_message).strip() or title
+            delivery_payload = submit_pr(
+                root,
+                title=title,
+                body=body,
+                base_branch=base_branch,
+                commit_message=commit_message,
+                branch_name=str(args.branch).strip() or None,
+                draft=bool(args.draft),
+                reviewers=list(args.reviewer),
+            )
+            payload = {
+                "cycle": cycle_payload,
+                "delivery": {
+                    "submitted": True,
+                    **delivery_payload,
+                },
+            }
+    elif args.command == "review":
+        github_config = load_github_config(root)
+        auto_review = github_config.get("auto_review", {})
+        if not isinstance(auto_review, dict):
+            auto_review = {}
+        check_commands = list(args.check_command) or list(auto_review.get("check_commands", []))
+        payload = review_pr(
+            root,
+            pr_number=int(args.pr),
+            requested_event=str(args.event),
+            check_commands=check_commands,
+            body=str(args.body),
+        )
+    elif args.command == "merge":
+        github_payload = github_doctor(root)
+        if not github_payload.get("ok", False):
+            payload = {
+                "merged": False,
+                "reason": "github_doctor_failed",
+                "github": github_payload,
+            }
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
+        github_config = load_github_config(root)
+        auto_merge = github_config.get("auto_merge", {})
+        if not isinstance(auto_merge, dict):
+            auto_merge = {}
+        merge_method = str(args.method).strip() or str(auto_merge.get("merge_method", "squash"))
+        payload = automerge_pr(
+            root,
+            pr_number=int(args.pr),
+            merge_method=merge_method,
+            commit_title=str(args.commit_title),
+            commit_message=str(args.commit_message),
+        )
     else:
         payload = doctor(root)
 
-    if args.as_json:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
-    else:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 

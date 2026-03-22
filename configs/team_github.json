@@ -1,0 +1,19 @@
+{
+  "base_branch": "main",
+  "default_reviewers": [],
+  "auto_review": {
+    "enabled": true,
+    "same_repo_only": true,
+    "check_commands": [
+      "python -m unittest discover -s tests -v"
+    ]
+  },
+  "auto_merge": {
+    "enabled": true,
+    "same_repo_only": true,
+    "required_label": "claw-automerge",
+    "require_approved_review": true,
+    "require_clean_status": true,
+    "merge_method": "squash"
+  }
+}

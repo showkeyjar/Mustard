@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from scripts.claw_team_control import doctor, status
 from scripts.team_conductor import bootstrap_workspace
@@ -31,6 +32,22 @@ class ClawTeamControlTests(unittest.TestCase):
             self.assertEqual(payload["team_name"], "mustard-claw")
             self.assertEqual(payload["proposal_count"], 0)
             self.assertEqual(payload["daily_digest_count"], 0)
+
+    @patch("scripts.claw_team_control.github_doctor", return_value={"ok": False, "token_present": False})
+    @patch("scripts.claw_team_control.run_cycle", return_value={"team_name": "mustard-claw", "proposal_count": 0})
+    def test_deliver_mode_can_stop_before_submit_when_github_not_ready(self, run_cycle_mock, doctor_mock) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            payload = {
+                "cycle": run_cycle_mock.return_value,
+                "delivery": {
+                    "submitted": False,
+                    "reason": "github_doctor_failed",
+                    "github": doctor_mock.return_value,
+                },
+            }
+            self.assertFalse(payload["delivery"]["submitted"])
+            self.assertEqual(payload["delivery"]["reason"], "github_doctor_failed")
 
 
 if __name__ == "__main__":
