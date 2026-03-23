@@ -10,3 +10,4 @@ data/review/
 data/pretrain/
 data/experience/*.jsonl
 data/experience/*_state.json
+logs/
