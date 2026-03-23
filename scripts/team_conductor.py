@@ -17,6 +17,7 @@ REQUIRED_DIRECTORIES = [
     Path("backlog/approved"),
     Path("backlog/rejected"),
     Path("backlog/shipped"),
+    Path("data/research"),
 ]
 
 
@@ -41,6 +42,22 @@ def _slug(value: str) -> str:
     cleaned = "".join(char if char.isalnum() else "_" for char in lowered)
     compact = "_".join(part for part in cleaned.split("_") if part)
     return compact or "item"
+
+
+def _read_existing_proposal_titles(root: Path) -> set[str]:
+    titles: set[str] = set()
+    proposal_dir = root / "backlog" / "proposals"
+    if not proposal_dir.exists():
+        return titles
+
+    for path in proposal_dir.glob("*.md"):
+        lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        if not lines:
+            continue
+        first = lines[0].strip()
+        if first.startswith("# ") and len(first) > 2:
+            titles.add(first[2:].strip())
+    return titles
 
 
 def load_team_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
@@ -90,6 +107,7 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
         "episodes": _count_jsonl(root / "data/experience/episodes.jsonl"),
         "reviews": _count_jsonl(root / "data/review/reviews.jsonl"),
         "bridge_feedback": _count_jsonl(root / "data/desktop/bridge_feedback.jsonl"),
+        "frontier_observation_count": _count_jsonl(root / "data/research/frontier_observations.jsonl"),
         "latest_train_run_id": train_report.get("run_id", ""),
         "dataset_sample_count": train_report.get("dataset", {}).get("sample_count", 0) if isinstance(train_report.get("dataset", {}), dict) else 0,
         "pretrain_eval": pretrain_eval,
@@ -240,6 +258,25 @@ def _build_proactive_proposals(signals: dict[str, object], gated_types: list[obj
             }
         )
 
+    frontier_observation_count = int(signals.get("frontier_observation_count", 0) or 0)
+    if frontier_observation_count < 2:
+        proposals.append(
+            {
+                "title": "Track frontier reasoning-small-model updates",
+                "problem": "前沿小模型研究观察样本不足，容易重复踩坑。",
+                "evidence": [f"frontier_observation_count={frontier_observation_count}"],
+                "change_type": "research_tracking",
+                "proposed_change": "Researcher 本周补齐 DeepSeek / MiniMax 等前沿观察，并形成可借鉴结论标签。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "更新 docs/dev/research_frontier_watchlist.md",
+                    "沉淀观察到 data/research/frontier_observations.jsonl",
+                ],
+                "rollback_plan": "仅新增研究记录，不影响运行时。",
+                "needs_human_approval": "research_tracking" in gated_types,
+            }
+        )
+
     return proposals
 
 
@@ -378,16 +415,22 @@ def _build_team_actions_summary(
     direction_review: dict[str, object],
 ) -> dict[str, str]:
     needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
-    research_focus = ", ".join(str(proposal.get("title", "")) for proposal in proposals[:2]) or "持续探索 README 创新主轴"
+    proposal_brief = "; ".join(
+        f"{proposal.get('title', '')}: {proposal.get('proposed_change', '')}" for proposal in proposals[:3]
+    ) or "本轮无新增提案"
 
     return {
-        "conductor": f"汇总信号并生成日报，产出提案 {len(proposals)} 条",
-        "observer": f"监控 episodes={signals.get('episodes', 0)} reviews={signals.get('reviews', 0)} bridge_feedback={signals.get('bridge_feedback', 0)}",
-        "architect": f"整理候选改进路径并结构化提案，当前主提案：{str(proposals[0].get('title', '无')) if proposals else '无'}",
-        "evaluator": "维持标准验证链路（单测 + evaluate_pretraining + evaluate_real_prompts + control_cycle）",
-        "guardian": f"审查风险边界，需 Human Gate 的提案 {needs_human} 条",
-        "arbiter": f"方向裁决={direction_review.get('verdict', 'direction_correct')}",
-        "researcher": f"围绕创新点做探索性研究，当前研究焦点：{research_focus}",
+        "conductor": f"输出提案清单 -> {proposal_brief}",
+        "observer": (
+            "采集关键信号 "
+            f"episodes={signals.get('episodes', 0)} reviews={signals.get('reviews', 0)} "
+            f"bridge_feedback={signals.get('bridge_feedback', 0)} frontier_obs={signals.get('frontier_observation_count', 0)}"
+        ),
+        "architect": f"将问题转为可执行提案（首条：{str(proposals[0].get('title', '无')) if proposals else '无'}）",
+        "evaluator": "执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle",
+        "guardian": f"风险审查完成，需 Human Gate 的提案={needs_human}",
+        "arbiter": f"方向裁决={direction_review.get('verdict', 'direction_correct')} reasons={','.join(direction_review.get('reasons', [])) or 'none'}",
+        "researcher": "跟踪 DeepSeek/MiniMax 等推理小模型动态，并沉淀到 research watchlist + frontier_observations",
     }
 
 
@@ -397,6 +440,9 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     signals = collect_signals(root)
     digest = build_daily_digest(signals, config)
     proposals = build_proposals(digest, config)
+    existing_titles = _read_existing_proposal_titles(root)
+    proposals = [proposal for proposal in proposals if str(proposal.get("title", "")).strip() not in existing_titles]
+
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):
         direction_review = {}
