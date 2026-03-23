@@ -222,3 +222,34 @@
     "pushed": true
   }
 }
+{
+  "team_name": "mustard-claw",
+  "digest_path": "D:\\codes\\Mustard\\memory\\daily\\2026-03-23.md",
+  "proposal_paths": [],
+  "proposal_count": 0,
+  "alerts": [],
+  "direction_review": {
+    "owner": "arbiter",
+    "verdict": "direction_correct",
+    "reasons": [],
+    "escalate_to_human": false
+  },
+  "team_actions": {
+    "conductor": "输出提案清单 -> 本轮无新增提案",
+    "observer": "采集关键信号 episodes=578 reviews=562 bridge_feedback=0 frontier_obs=0",
+    "architect": "将问题转为可执行提案（首条：无）",
+    "evaluator": "执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle",
+    "guardian": "风险审查完成，需 Human Gate 的提案=0",
+    "arbiter": "方向裁决=direction_correct reasons=none",
+    "researcher": "跟踪 DeepSeek/MiniMax 等推理小模型动态，并沉淀到 research watchlist + frontier_observations"
+  },
+  "auto_commit": {
+    "enabled": true,
+    "verdict": "direction_correct",
+    "branch": "main",
+    "commit_message": "Claw Team: update daily digest 2026-03-23.md\n\nTeam actions:\n- conductor: 输出提案清单 -> 本轮无新增提案\n- observer: 采集关键信号 episodes=578 reviews=562 bridge_feedback=0 frontier_obs=0\n- architect: 将问题转为可执行提案（首条：无）\n- evaluator: 执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle\n- guardian: 风险审查完成，需 Human Gate 的提案=0\n- arbiter: 方向裁决=direction_correct reasons=none\n- researcher: 跟踪 DeepSeek/MiniMax 等推理小模型动态，并沉淀到 research watchlist + frontier_observations",
+    "committed": true,
+    "commit_sha": "f04e079af76da6b284fa9241b3a9c28cfc8d4d77",
+    "pushed": true
+  }
+}
