@@ -71,6 +71,23 @@ def status(root: Path) -> dict[str, object]:
     }
 
 
+def _derive_auto_commit_message(root: Path, cycle_payload: dict[str, object]) -> str:
+    proposal_paths = cycle_payload.get("proposal_paths", [])
+    if isinstance(proposal_paths, list) and proposal_paths:
+        first = Path(str(proposal_paths[0]))
+        candidate = first if first.is_absolute() else (root / first)
+        if candidate.exists():
+            first_line = candidate.read_text(encoding="utf-8").splitlines()[0].strip()
+            if first_line.startswith("# ") and len(first_line) > 2:
+                return f"Claw Team: {first_line[2:]}"
+
+    digest_path = cycle_payload.get("digest_path", "")
+    if isinstance(digest_path, str) and digest_path:
+        return f"Claw Team: update daily digest {Path(digest_path).name}"
+
+    return "Claw Team: update team cycle outputs"
+
+
 def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, auto_push: bool = False) -> dict[str, object]:
     direction_review = cycle_payload.get("direction_review", {})
     if not isinstance(direction_review, dict):
@@ -94,7 +111,7 @@ def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, aut
             "verdict": verdict,
         }
 
-    commit_message = "Claw Team: auto checkpoint (arbiter-approved)"
+    commit_message = _derive_auto_commit_message(root, cycle_payload)
     commit_result = commit_all_changes(root, commit_message)
     branch = get_current_branch(root)
 
@@ -102,6 +119,7 @@ def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, aut
         "enabled": True,
         "verdict": verdict,
         "branch": branch,
+        "commit_message": commit_message,
         **commit_result,
     }
 
