@@ -31,6 +31,9 @@ REQUIRED_FILES = [
     Path("team/OBSERVER.md"),
     Path("team/ARBITER.md"),
     Path("team/RESEARCHER.md"),
+    Path("team/BENCHMARK_OWNER.md"),
+    Path("team/FAILURE_MINER.md"),
+    Path("team/TRAINER.md"),
     Path("team/GUARDIAN.md"),
     Path("memory/MEMORY.md"),
 ]
@@ -92,7 +95,7 @@ def _derive_auto_commit_message(root: Path, cycle_payload: dict[str, object]) ->
     team_actions = cycle_payload.get("team_actions", {})
     if isinstance(team_actions, dict) and team_actions:
         body_lines = ["", "Team actions:"]
-        for role in ["conductor", "observer", "architect", "evaluator", "guardian", "arbiter", "researcher"]:
+        for role in ["conductor", "observer", "failure_miner", "benchmark_owner", "architect", "trainer", "evaluator", "guardian", "arbiter", "researcher"]:
             action = team_actions.get(role)
             if isinstance(action, str) and action.strip():
                 body_lines.append(f"- {role}: {action}")

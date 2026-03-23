@@ -426,7 +426,10 @@ def _build_team_actions_summary(
             f"episodes={signals.get('episodes', 0)} reviews={signals.get('reviews', 0)} "
             f"bridge_feedback={signals.get('bridge_feedback', 0)} frontier_obs={signals.get('frontier_observation_count', 0)}"
         ),
+        "failure_miner": "从 episodes/reviews/real_prompt_eval 挖掘失败模式并输出 failure_patterns",
+        "benchmark_owner": "维护北极星指标与top_gap（逻辑推理、工具调用、多步成功率、延迟）",
         "architect": f"将问题转为可执行提案（首条：{str(proposals[0].get('title', '无')) if proposals else '无'}）",
+        "trainer": "执行训练/蒸馏流水线并产出可对比训练报告",
         "evaluator": "执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle",
         "guardian": f"风险审查完成，需 Human Gate 的提案={needs_human}",
         "arbiter": f"方向裁决={direction_review.get('verdict', 'direction_correct')} reasons={','.join(direction_review.get('reasons', [])) or 'none'}",
