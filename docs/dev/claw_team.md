@@ -1,6 +1,7 @@
 # Claw Team 开发协作与自动交付说明
 
 > 说明：CARM 是项目目标，Claw Team 是自动优化该项目的工程手段。
+> 团队角色编排见：[docs/dev/llm_team_topology.md](llm_team_topology.md)
 
 ### 1. 跨机器启动 Claw Team
 
