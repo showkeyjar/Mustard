@@ -11,6 +11,7 @@ from scripts.claw_team_github import (
     get_current_branch,
     get_worktree_status,
     load_github_config,
+    push_branch,
     review_pr,
     submit_pr,
 )
@@ -70,7 +71,7 @@ def status(root: Path) -> dict[str, object]:
     }
 
 
-def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object]) -> dict[str, object]:
+def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, auto_push: bool = False) -> dict[str, object]:
     direction_review = cycle_payload.get("direction_review", {})
     if not isinstance(direction_review, dict):
         direction_review = {}
@@ -95,12 +96,24 @@ def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object]) -> dic
 
     commit_message = "Claw Team: auto checkpoint (arbiter-approved)"
     commit_result = commit_all_changes(root, commit_message)
-    return {
+    branch = get_current_branch(root)
+
+    payload: dict[str, object] = {
         "enabled": True,
         "verdict": verdict,
-        "branch": get_current_branch(root),
+        "branch": branch,
         **commit_result,
     }
+
+    if auto_push and bool(commit_result.get("committed", False)):
+        try:
+            push_branch(root, branch)
+            payload["pushed"] = True
+        except Exception as exc:  # pragma: no cover - defensive runtime path
+            payload["pushed"] = False
+            payload["push_error"] = str(exc)
+
+    return payload
 
 
 def main() -> int:
@@ -113,6 +126,7 @@ def main() -> int:
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--root", default=".")
     run_parser.add_argument("--auto-commit", action="store_true")
+    run_parser.add_argument("--auto-push", action="store_true")
 
     status_parser = subparsers.add_parser("status")
     status_parser.add_argument("--root", default=".")
@@ -159,7 +173,11 @@ def main() -> int:
     elif args.command == "run":
         payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
         if bool(getattr(args, "auto_commit", False)):
-            payload["auto_commit"] = _auto_commit_if_allowed(root, payload)
+            payload["auto_commit"] = _auto_commit_if_allowed(
+                root,
+                payload,
+                auto_push=bool(getattr(args, "auto_push", False)),
+            )
     elif args.command == "status":
         payload = status(root)
     elif args.command == "github-doctor":
