@@ -60,6 +60,12 @@ def _read_existing_proposal_titles(root: Path) -> set[str]:
     return titles
 
 
+def _write_if_changed(path: Path, content: str) -> None:
+    if path.exists() and path.read_text(encoding="utf-8") == content:
+        return
+    path.write_text(content, encoding="utf-8")
+
+
 def load_team_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     config = _read_json(config_path)
     if config:
@@ -437,6 +443,87 @@ def _build_team_actions_summary(
     }
 
 
+def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
+    incidents_path = root / "backlog" / "incidents" / "auto_failure_patterns.json"
+
+    patterns: list[dict[str, object]] = []
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            prompt_count = int(summary.get("prompt_count", 0) or 0)
+            if prompt_count < 20:
+                patterns.append(
+                    {
+                        "id": "eval_coverage_too_low",
+                        "severity": "high",
+                        "evidence": {"prompt_count": prompt_count, "target_min": 20},
+                        "impact": "真实场景覆盖不足，回归结果不稳定。",
+                    }
+                )
+
+    frontier_observation_count = int(signals.get("frontier_observation_count", 0) or 0)
+    if frontier_observation_count < 2:
+        patterns.append(
+            {
+                "id": "frontier_research_blindspot",
+                "severity": "high",
+                "evidence": {"frontier_observation_count": frontier_observation_count, "target_min": 2},
+                "impact": "缺少前沿对标，容易重复走弯路。",
+            }
+        )
+
+    bridge_feedback = int(signals.get("bridge_feedback", 0) or 0)
+    if bridge_feedback == 0:
+        patterns.append(
+            {
+                "id": "no_tool_feedback_loop",
+                "severity": "medium",
+                "evidence": {"bridge_feedback": bridge_feedback},
+                "impact": "缺少用户纠偏信号，工具调用场景改进缓慢。",
+            }
+        )
+
+    payload = {
+        "pattern_count": len(patterns),
+        "patterns": patterns,
+    }
+    _write_if_changed(incidents_path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    return incidents_path
+
+
+def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
+    top_gap_path = root / "backlog" / "opportunities" / "auto_top_gap.md"
+
+    prompt_count = 0
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            prompt_count = int(summary.get("prompt_count", 0) or 0)
+
+    lines = [
+        "# Top Gap Action Card",
+        "",
+        "- gap_id: eval_coverage_too_low",
+        "- problem: 真实工具调用场景回归样本覆盖不足，当前无法证明可替代性提升。",
+        f"- current: prompt_count={prompt_count}",
+        "- target: prompt_count>=20（优先本地工具调用场景）",
+        "- owner: benchmark_owner + failure_miner + trainer",
+        "- action_plan:",
+        "  - 1) 运行 python -m scripts.build_real_prompt_candidates 生成候选集",
+        "  - 2) 合并候选集到 configs/real_prompt_eval.json（去重后保留高价值工具调用样本）",
+        "  - 3) 运行 python -m scripts.evaluate_real_prompts 并记录前后对比",
+        "- acceptance:",
+        "  - real_prompt_eval.summary.prompt_count >= 20",
+        "  - 产出一份前后指标对比摘要（match_rate / avg_steps）",
+        "- rollback: 若样本质量下降，回退 real_prompt_eval.json 到上一版并重新评测",
+    ]
+
+    _write_if_changed(top_gap_path, "\n".join(lines) + "\n")
+    return top_gap_path
+
+
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
@@ -453,6 +540,9 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     team_actions = _build_team_actions_summary(signals, proposals, direction_review)
     digest["team_actions"] = team_actions
 
+    failure_patterns_path = _write_failure_patterns(root, signals)
+    top_gap_path = _write_top_gap_action_card(root, signals)
+
     digest_path = write_daily_digest(root, digest)
     proposal_paths = write_proposals(root, proposals)
 
@@ -461,6 +551,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "digest_path": str(digest_path),
         "proposal_paths": [str(path) for path in proposal_paths],
         "proposal_count": len(proposal_paths),
+        "failure_patterns_path": str(failure_patterns_path),
+        "top_gap_path": str(top_gap_path),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
         "team_actions": team_actions,

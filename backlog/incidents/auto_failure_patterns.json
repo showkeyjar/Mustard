@@ -1,0 +1,31 @@
+{
+  "pattern_count": 3,
+  "patterns": [
+    {
+      "id": "eval_coverage_too_low",
+      "severity": "high",
+      "evidence": {
+        "prompt_count": 6,
+        "target_min": 20
+      },
+      "impact": "真实场景覆盖不足，回归结果不稳定。"
+    },
+    {
+      "id": "frontier_research_blindspot",
+      "severity": "high",
+      "evidence": {
+        "frontier_observation_count": 0,
+        "target_min": 2
+      },
+      "impact": "缺少前沿对标，容易重复走弯路。"
+    },
+    {
+      "id": "no_tool_feedback_loop",
+      "severity": "medium",
+      "evidence": {
+        "bridge_feedback": 0
+      },
+      "impact": "缺少用户纠偏信号，工具调用场景改进缓慢。"
+    }
+  ]
+}
