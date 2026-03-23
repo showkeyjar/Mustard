@@ -30,6 +30,7 @@ REQUIRED_FILES = [
     Path("team/CONDUCTOR.md"),
     Path("team/OBSERVER.md"),
     Path("team/ARBITER.md"),
+    Path("team/RESEARCHER.md"),
     Path("team/GUARDIAN.md"),
     Path("memory/MEMORY.md"),
 ]
@@ -72,6 +73,8 @@ def status(root: Path) -> dict[str, object]:
 
 
 def _derive_auto_commit_message(root: Path, cycle_payload: dict[str, object]) -> str:
+    subject = "Claw Team: update team cycle outputs"
+
     proposal_paths = cycle_payload.get("proposal_paths", [])
     if isinstance(proposal_paths, list) and proposal_paths:
         first = Path(str(proposal_paths[0]))
@@ -79,13 +82,24 @@ def _derive_auto_commit_message(root: Path, cycle_payload: dict[str, object]) ->
         if candidate.exists():
             first_line = candidate.read_text(encoding="utf-8").splitlines()[0].strip()
             if first_line.startswith("# ") and len(first_line) > 2:
-                return f"Claw Team: {first_line[2:]}"
+                subject = f"Claw Team: {first_line[2:]}"
 
-    digest_path = cycle_payload.get("digest_path", "")
-    if isinstance(digest_path, str) and digest_path:
-        return f"Claw Team: update daily digest {Path(digest_path).name}"
+    if subject == "Claw Team: update team cycle outputs":
+        digest_path = cycle_payload.get("digest_path", "")
+        if isinstance(digest_path, str) and digest_path:
+            subject = f"Claw Team: update daily digest {Path(digest_path).name}"
 
-    return "Claw Team: update team cycle outputs"
+    team_actions = cycle_payload.get("team_actions", {})
+    if isinstance(team_actions, dict) and team_actions:
+        body_lines = ["", "Team actions:"]
+        for role in ["conductor", "observer", "architect", "evaluator", "guardian", "arbiter", "researcher"]:
+            action = team_actions.get(role)
+            if isinstance(action, str) and action.strip():
+                body_lines.append(f"- {role}: {action}")
+        if len(body_lines) > 2:
+            return subject + "\n" + "\n".join(body_lines)
+
+    return subject
 
 
 def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, auto_push: bool = False) -> dict[str, object]:

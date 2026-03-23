@@ -333,6 +333,12 @@ def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
             ]
         )
 
+    team_actions = digest.get("team_actions", {})
+    if isinstance(team_actions, dict) and team_actions:
+        lines.append("- team_actions:")
+        for role, action in team_actions.items():
+            lines.append(f"  - {role}: {action}")
+
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return output_path
 
@@ -366,17 +372,40 @@ def write_proposals(root: Path, proposals: list[dict[str, object]]) -> list[Path
     return written
 
 
+def _build_team_actions_summary(
+    signals: dict[str, object],
+    proposals: list[dict[str, object]],
+    direction_review: dict[str, object],
+) -> dict[str, str]:
+    needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
+    research_focus = ", ".join(str(proposal.get("title", "")) for proposal in proposals[:2]) or "持续探索 README 创新主轴"
+
+    return {
+        "conductor": f"汇总信号并生成日报，产出提案 {len(proposals)} 条",
+        "observer": f"监控 episodes={signals.get('episodes', 0)} reviews={signals.get('reviews', 0)} bridge_feedback={signals.get('bridge_feedback', 0)}",
+        "architect": f"整理候选改进路径并结构化提案，当前主提案：{str(proposals[0].get('title', '无')) if proposals else '无'}",
+        "evaluator": "维持标准验证链路（单测 + evaluate_pretraining + evaluate_real_prompts + control_cycle）",
+        "guardian": f"审查风险边界，需 Human Gate 的提案 {needs_human} 条",
+        "arbiter": f"方向裁决={direction_review.get('verdict', 'direction_correct')}",
+        "researcher": f"围绕创新点做探索性研究，当前研究焦点：{research_focus}",
+    }
+
+
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
     signals = collect_signals(root)
     digest = build_daily_digest(signals, config)
     proposals = build_proposals(digest, config)
-    digest_path = write_daily_digest(root, digest)
-    proposal_paths = write_proposals(root, proposals)
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):
         direction_review = {}
+
+    team_actions = _build_team_actions_summary(signals, proposals, direction_review)
+    digest["team_actions"] = team_actions
+
+    digest_path = write_daily_digest(root, digest)
+    proposal_paths = write_proposals(root, proposals)
 
     return {
         "team_name": config.get("team_name", "mustard-claw"),
@@ -385,6 +414,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "proposal_count": len(proposal_paths),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
+        "team_actions": team_actions,
     }
 
 
