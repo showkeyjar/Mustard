@@ -93,3 +93,38 @@
     "pushed": true
   }
 }
+{
+  "team_name": "mustard-claw",
+  "digest_path": "D:\\codes\\Mustard\\memory\\daily\\2026-03-23.md",
+  "proposal_paths": [
+    "D:\\codes\\Mustard\\backlog\\proposals\\20260323T085602Z_scale_pretraining_corpus_from_real_episodes.md",
+    "D:\\codes\\Mustard\\backlog\\proposals\\20260323T085602Z_expand_real_prompt_regression_coverage.md",
+    "D:\\codes\\Mustard\\backlog\\proposals\\20260323T085602Z_kickstart_desktop_bridge_feedback_loop.md"
+  ],
+  "proposal_count": 3,
+  "alerts": [],
+  "direction_review": {
+    "owner": "arbiter",
+    "verdict": "direction_correct",
+    "reasons": [],
+    "escalate_to_human": false
+  },
+  "team_actions": {
+    "conductor": "汇总信号并生成日报，产出提案 3 条",
+    "observer": "监控 episodes=578 reviews=562 bridge_feedback=0",
+    "architect": "整理候选改进路径并结构化提案，当前主提案：Scale pretraining corpus from real episodes",
+    "evaluator": "维持标准验证链路（单测 + evaluate_pretraining + evaluate_real_prompts + control_cycle）",
+    "guardian": "审查风险边界，需 Human Gate 的提案 1 条",
+    "arbiter": "方向裁决=direction_correct",
+    "researcher": "围绕创新点做探索性研究，当前研究焦点：Scale pretraining corpus from real episodes, Expand real-prompt regression coverage"
+  },
+  "auto_commit": {
+    "enabled": true,
+    "verdict": "direction_correct",
+    "branch": "main",
+    "commit_message": "Claw Team: Scale pretraining corpus from real episodes\n\nTeam actions:\n- conductor: 汇总信号并生成日报，产出提案 3 条\n- observer: 监控 episodes=578 reviews=562 bridge_feedback=0\n- architect: 整理候选改进路径并结构化提案，当前主提案：Scale pretraining corpus from real episodes\n- evaluator: 维持标准验证链路（单测 + evaluate_pretraining + evaluate_real_prompts + control_cycle）\n- guardian: 审查风险边界，需 Human Gate 的提案 1 条\n- arbiter: 方向裁决=direction_correct\n- researcher: 围绕创新点做探索性研究，当前研究焦点：Scale pretraining corpus from real episodes, Expand real-prompt regression coverage",
+    "committed": true,
+    "commit_sha": "66f95b6ca86cb591e96392abbf4b774695f16ba1",
+    "pushed": true
+  }
+}
