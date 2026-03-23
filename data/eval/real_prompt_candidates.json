@@ -1,3 +1,138 @@
 {
-  "prompts": []
+  "prompts": [
+    {
+      "id": "candidate-885534",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "experience",
+      "value_score": 0.96,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-527918",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=13；类型=input_activity,window_focus；主要窗口=系统托盘溢出窗口。; MiniMax Agent; README.md - Mustard - Visual Studio Code；检测到鼠标活动，窗口=系统托盘溢出窗口。; MiniMax Agent; README.md - Mustard - Visual Studio Code，事件类型=input_activity,window_focus",
+      "expected_tool": "code_executor",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-792742",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=17；类型=clipboard,input_activity,window_focus；主要窗口=CARM Bridge; Mustard - 文件资源管理器; 系统托盘溢出窗口。；检测到剪贴板变化；检测到鼠标活动，窗口=CARM Bridge; Mustard - 文件资源管理器; 系统托盘溢出窗口。，事件类型=clipboard,input_activity,window_focus",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-440222",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=10；类型=input_activity,window_focus；主要窗口=README.md - Mustard - Visual Studio Code；检测到鼠标活动，窗口=README.md - Mustard - Visual Studio Code，事件类型=input_activity,window_focus",
+      "expected_tool": "code_executor",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-421800",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=10；类型=input_activity,window_focus；主要窗口=MiniMax Agent；检测到鼠标活动，窗口=MiniMax Agent，事件类型=input_activity,window_focus",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-251497",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=10；类型=input_activity,window_focus；主要窗口=CARM Bridge；检测到鼠标活动，窗口=CARM Bridge，事件类型=input_activity,window_focus",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-129663",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=9；类型=input_activity；检测到鼠标活动，窗口=无，事件类型=input_activity",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-032403",
+      "prompt": "观察学习任务: 基于用户桌面活动摘要更新经验偏好，摘要=事件数=9；类型=input_activity，窗口=无，事件类型=input_activity",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.94,
+      "action_sequence": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    },
+    {
+      "id": "candidate-282755",
+      "prompt": "请计算 12 + 30 / 3",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection",
+      "source": "experience",
+      "value_score": 0.74,
+      "action_sequence": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ]
+    }
+  ]
 }

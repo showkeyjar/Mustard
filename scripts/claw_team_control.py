@@ -6,7 +6,14 @@ import sys
 from pathlib import Path
 
 from scripts.claw_team_github import automerge_pr, doctor as github_doctor
-from scripts.claw_team_github import load_github_config, review_pr, submit_pr
+from scripts.claw_team_github import (
+    commit_all_changes,
+    get_current_branch,
+    get_worktree_status,
+    load_github_config,
+    review_pr,
+    submit_pr,
+)
 from scripts.team_conductor import (
     DEFAULT_CONFIG_PATH,
     bootstrap_workspace,
@@ -21,6 +28,7 @@ REQUIRED_FILES = [
     Path("team/AGENTS.md"),
     Path("team/CONDUCTOR.md"),
     Path("team/OBSERVER.md"),
+    Path("team/ARBITER.md"),
     Path("team/GUARDIAN.md"),
     Path("memory/MEMORY.md"),
 ]
@@ -62,6 +70,39 @@ def status(root: Path) -> dict[str, object]:
     }
 
 
+def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object]) -> dict[str, object]:
+    direction_review = cycle_payload.get("direction_review", {})
+    if not isinstance(direction_review, dict):
+        direction_review = {}
+
+    verdict = str(direction_review.get("verdict", "direction_correct"))
+    if verdict != "direction_correct":
+        return {
+            "enabled": True,
+            "committed": False,
+            "reason": "direction_not_approved",
+            "verdict": verdict,
+        }
+
+    status = get_worktree_status(root)
+    if not status.strip():
+        return {
+            "enabled": True,
+            "committed": False,
+            "reason": "clean_worktree",
+            "verdict": verdict,
+        }
+
+    commit_message = "Claw Team: auto checkpoint (arbiter-approved)"
+    commit_result = commit_all_changes(root, commit_message)
+    return {
+        "enabled": True,
+        "verdict": verdict,
+        "branch": get_current_branch(root),
+        **commit_result,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Control the Mustard Claw Team workflow.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -71,6 +112,7 @@ def main() -> int:
 
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--root", default=".")
+    run_parser.add_argument("--auto-commit", action="store_true")
 
     status_parser = subparsers.add_parser("status")
     status_parser.add_argument("--root", default=".")
@@ -116,6 +158,8 @@ def main() -> int:
         }
     elif args.command == "run":
         payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
+        if bool(getattr(args, "auto_commit", False)):
+            payload["auto_commit"] = _auto_commit_if_allowed(root, payload)
     elif args.command == "status":
         payload = status(root)
     elif args.command == "github-doctor":

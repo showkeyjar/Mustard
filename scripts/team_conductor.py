@@ -99,6 +99,45 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
     }
 
 
+def _arbiter_direction_review(signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
+    decision_policy = config.get("decision_policy", {})
+    if not isinstance(decision_policy, dict):
+        decision_policy = {}
+
+    min_real_prompt = float(decision_policy.get("min_real_prompt_match_rate", 0.9) or 0.9)
+    min_pretrain = float(decision_policy.get("min_pretrain_tool_match_rate", 0.95) or 0.95)
+
+    reasons: list[str] = []
+
+    pretrain_eval = signals.get("pretrain_eval", {})
+    if isinstance(pretrain_eval, dict):
+        pretrained = pretrain_eval.get("pretrained", {})
+        if isinstance(pretrained, dict):
+            pretrain_match = float(pretrained.get("tool_match_rate", 0.0) or 0.0)
+            if pretrain_match < min_pretrain:
+                reasons.append(f"pretrain_tool_match_below_threshold:{pretrain_match:.4f}<{min_pretrain:.2f}")
+
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            real_prompt_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+            if real_prompt_match < min_real_prompt:
+                reasons.append(f"real_prompt_match_below_threshold:{real_prompt_match:.4f}<{min_real_prompt:.2f}")
+
+    control_state = signals.get("control_state", {})
+    if isinstance(control_state, dict) and str(control_state.get("rollout_status", "stable")) == "candidate":
+        reasons.append("runtime_candidate_active")
+
+    verdict = "direction_correct" if not reasons else "uncertain_needs_human"
+    return {
+        "owner": str(decision_policy.get("owner", "arbiter")),
+        "verdict": verdict,
+        "reasons": reasons,
+        "escalate_to_human": verdict == "uncertain_needs_human" and bool(decision_policy.get("escalate_on_uncertain_direction", True)),
+    }
+
+
 def build_daily_digest(signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
     focus_areas = config.get("focus_areas", [])
     if not isinstance(focus_areas, list):
@@ -121,13 +160,87 @@ def build_daily_digest(signals: dict[str, object], config: dict[str, object]) ->
     if isinstance(control_state, dict) and str(control_state.get("rollout_status", "stable")) == "candidate":
         alerts.append("candidate_rollout_active")
 
+    direction_review = _arbiter_direction_review(signals, config)
+    if bool(direction_review.get("escalate_to_human", False)):
+        alerts.append("arbiter_uncertain_needs_human")
+
     return {
         "timestamp_utc": utc_now().isoformat(),
         "team_name": config.get("team_name", "mustard-claw"),
         "focus_areas": focus_areas,
         "signals": signals,
         "alerts": alerts,
+        "direction_review": direction_review,
     }
+
+
+def _build_proactive_proposals(signals: dict[str, object], gated_types: list[object]) -> list[dict[str, object]]:
+    proposals: list[dict[str, object]] = []
+
+    dataset_sample_count = int(signals.get("dataset_sample_count", 0) or 0)
+    if dataset_sample_count < 250:
+        proposals.append(
+            {
+                "title": "Scale pretraining corpus from real episodes",
+                "problem": "当前预训练样本规模偏小，可能限制两段式学习上限。",
+                "evidence": [f"dataset_sample_count={dataset_sample_count}"],
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "执行自动训练流水线并将高价值真实 episode 回流到预训练集，提升创新链路覆盖。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.auto_train",
+                    "python -m scripts.evaluate_pretraining",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "仅新增训练产物与评测报告，不修改默认运行时策略。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+            }
+        )
+
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    prompt_count = 0
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            prompt_count = int(summary.get("prompt_count", 0) or 0)
+    if prompt_count < 12:
+        proposals.append(
+            {
+                "title": "Expand real-prompt regression coverage",
+                "problem": "真实回归样本覆盖偏窄，难以持续发现创新能力退化。",
+                "evidence": [f"real_prompt_prompt_count={prompt_count}"],
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "从近期高价值 episode 构建候选真实回归集，并合并到 real_prompt_eval 基准。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_real_prompt_candidates",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "仅修改评测集配置，可回退到上一版配置文件。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+            }
+        )
+
+    bridge_feedback = int(signals.get("bridge_feedback", 0) or 0)
+    if bridge_feedback == 0:
+        proposals.append(
+            {
+                "title": "Kickstart desktop-bridge feedback loop",
+                "problem": "桌面桥梁暂无反馈样本，创新闭环缺少用户纠偏信号。",
+                "evidence": [f"bridge_feedback={bridge_feedback}"],
+                "change_type": "desktop_behavior",
+                "proposed_change": "优先采集并整理 bridge useful/misread 反馈，形成可训练的反馈样本包。",
+                "risk_level": "medium",
+                "evaluation_plan": [
+                    "python -m scripts.desktop_agent_control snapshot",
+                    "python -m scripts.desktop_bridge_chat",
+                ],
+                "rollback_plan": "仅进行反馈采集与标注，不调整桌面采样或主动追问默认策略。",
+                "needs_human_approval": "desktop_behavior" in gated_types,
+            }
+        )
+
+    return proposals
 
 
 def build_proposals(digest: dict[str, object], config: dict[str, object]) -> list[dict[str, object]]:
@@ -186,6 +299,9 @@ def build_proposals(digest: dict[str, object], config: dict[str, object]) -> lis
             }
         )
 
+    if not proposals:
+        proposals.extend(_build_proactive_proposals(signals, gated_types))
+
     max_new = config.get("heartbeat", {}).get("max_new_proposals_per_cycle", 3) if isinstance(config.get("heartbeat", {}), dict) else 3
     return proposals[: int(max_new)]
 
@@ -193,10 +309,16 @@ def build_proposals(digest: dict[str, object], config: dict[str, object]) -> lis
 def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
     stamp = datetime.fromisoformat(str(digest["timestamp_utc"]))
     output_path = root / "memory" / "daily" / f"{stamp.strftime('%Y-%m-%d')}.md"
+    direction_review = digest.get("direction_review", {})
+    if not isinstance(direction_review, dict):
+        direction_review = {}
+
     lines = [
         f"# {stamp.strftime('%Y-%m-%d')} Daily Digest",
         "",
         f"- team: {digest.get('team_name', 'mustard-claw')}",
+        f"- direction_verdict: {direction_review.get('verdict', 'direction_correct')}",
+        f"- direction_owner: {direction_review.get('owner', 'arbiter')}",
         f"- alerts: {', '.join(digest.get('alerts', [])) or 'none'}",
     ]
 
@@ -252,12 +374,17 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     proposals = build_proposals(digest, config)
     digest_path = write_daily_digest(root, digest)
     proposal_paths = write_proposals(root, proposals)
+    direction_review = digest.get("direction_review", {})
+    if not isinstance(direction_review, dict):
+        direction_review = {}
+
     return {
         "team_name": config.get("team_name", "mustard-claw"),
         "digest_path": str(digest_path),
         "proposal_paths": [str(path) for path in proposal_paths],
         "proposal_count": len(proposal_paths),
         "alerts": digest.get("alerts", []),
+        "direction_review": direction_review,
     }
 
 
