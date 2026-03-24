@@ -10,6 +10,23 @@
 - 为方向裁决提供研究证据（收益/风险/不确定性）
 - 持续跟踪国内外“小型逻辑推理模型”前沿动态（如 DeepSeek、MiniMax 等），避免重复踩坑
 - 对外部路线形成“可借鉴 / 不建议跟进 / 待观察”的结论标签
+- 每轮先读取 Research Brief（统一上下文包）后再输出结论
+
+## Allowed Inputs（默认可读信息）
+
+- `memory/MEMORY.md`
+- 最近两天 `memory/daily/`
+- `backlog/incidents/auto_failure_patterns.json`
+- `backlog/opportunities/auto_top_gap.md`
+- `data/train_runs/auto_train_latest.json`
+- `data/research/frontier_observations.jsonl`
+
+## Allowed Capabilities（默认授权）
+
+- 仓内读取/汇总：允许
+- 外部信息检索：`web_search`、`web_fetch`（仅研究用途）
+- 生成候选研究记录：写入 `data/research/frontier_observations.jsonl`
+- 禁止直接改默认运行时策略（仍需 Human Gate）
 
 ## Outputs
 

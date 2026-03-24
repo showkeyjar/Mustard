@@ -639,6 +639,50 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
     return incidents_path
 
 
+def _write_research_brief(root: Path, signals: dict[str, object], config: dict[str, object]) -> Path:
+    brief_path = root / "backlog" / "opportunities" / "research_brief.md"
+
+    rp_count = 0
+    rp_match = 0.0
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            rp_count = int(summary.get("prompt_count", 0) or 0)
+            rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+
+    researcher_policy = config.get("researcher_policy", {})
+    if not isinstance(researcher_policy, dict):
+        researcher_policy = {}
+
+    lines = [
+        "# Research Brief",
+        "",
+        "## Current Signals",
+        f"- dataset_sample_count: {int(signals.get('dataset_sample_count', 0) or 0)}",
+        f"- bridge_feedback: {int(signals.get('bridge_feedback', 0) or 0)}",
+        f"- frontier_observation_count: {int(signals.get('frontier_observation_count', 0) or 0)}",
+        f"- real_prompt_count: {rp_count}",
+        f"- real_prompt_match_rate: {rp_match:.4f}",
+        "",
+        "## Research Constraints",
+        "- 必须绑定 Top Gap 或 failure pattern",
+        "- 必须给出可证伪实验",
+        "- 必须说明 relative_to_last_round 与 scenario_fit",
+        "",
+        "## Policy",
+        f"- min_frontier_observations: {int(researcher_policy.get('min_frontier_observations', 3) or 3)}",
+        f"- allow_external_search: {bool(researcher_policy.get('allow_external_search', True))}",
+        f"- allow_external_fetch: {bool(researcher_policy.get('allow_external_fetch', True))}",
+        "",
+        "## Required Output",
+        "- 按 team/RESEARCHER_OUTPUT_TEMPLATE.md 提交",
+    ]
+
+    _write_if_changed(brief_path, "\n".join(lines) + "\n")
+    return brief_path
+
+
 def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
     top_gap_path = root / "backlog" / "opportunities" / "auto_top_gap.md"
 
@@ -691,6 +735,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
 
     failure_patterns_path = _write_failure_patterns(root, signals)
     top_gap_path = _write_top_gap_action_card(root, signals)
+    research_brief_path = _write_research_brief(root, signals, config)
 
     digest_path = write_daily_digest(root, digest)
     proposal_paths = write_proposals(root, proposals)

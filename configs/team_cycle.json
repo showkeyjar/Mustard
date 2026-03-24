@@ -23,6 +23,12 @@
     "stagnation_rounds_to_pivot": 2,
     "force_max_landing_after_rounds": 3
   },
+  "researcher_policy": {
+    "min_frontier_observations": 3,
+    "require_research_brief": true,
+    "allow_external_search": true,
+    "allow_external_fetch": true
+  },
   "focus_areas": [
     "real_prompt_regression",
     "desktop_bridge_quality",
