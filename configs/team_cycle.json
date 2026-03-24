@@ -29,6 +29,13 @@
     "allow_external_search": true,
     "allow_external_fetch": true
   },
+  "role_evolution": {
+    "enabled": true,
+    "window_rounds": 5,
+    "underperform_threshold": 0.45,
+    "promote_threshold": 0.8,
+    "max_underperform_rounds": 3
+  },
   "focus_areas": [
     "real_prompt_regression",
     "desktop_bridge_quality",

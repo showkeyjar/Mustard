@@ -567,11 +567,14 @@ def _build_team_actions_summary(
         stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
 
     frontier_obs = int(signals.get('frontier_observation_count', 0) or 0)
-    researcher_action = (
-        "基于 Research Brief 提交 Value Gate 研究包（可用 web_search/web_fetch 增强证据）"
-        if frontier_obs >= 3
-        else "研究产出不足：本轮先补齐 frontier_observations>=3（可用 web_search/web_fetch），再提交 Value Gate 研究包"
-    )
+    if researcher_artifact_path:
+        researcher_action = f"已提交研究产物: {researcher_artifact_path}"
+    else:
+        researcher_action = (
+            "研究产出不足：本轮先补齐 frontier_observations>=3（可用 web_search/web_fetch），再提交 Value Gate 研究包"
+            if frontier_obs < 3
+            else "研究产出不足：未生成 research artifact，请检查 researcher_run"
+        )
 
     return {
         "conductor": f"输出提案清单(mode={recursive_mode}, stagnation_rounds={stagnation_rounds}) -> {proposal_brief}",
@@ -716,6 +719,197 @@ def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
     return top_gap_path
 
 
+def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dict[str, object]) -> Path:
+    output_dir = root / "backlog" / "opportunities"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / f"research_{utc_now().strftime('%Y%m%dT%H%M%SZ')}.md"
+
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    rp_count = 0
+    rp_match = 0.0
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            rp_count = int(summary.get("prompt_count", 0) or 0)
+            rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+
+    frontier_obs = int(signals.get("frontier_observation_count", 0) or 0)
+    stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+
+    lines = [
+        "# Research Artifact",
+        "",
+        f"- from_top_gap: eval_coverage_too_low",
+        f"- from_failure_pattern: frontier_research_blindspot",
+        f"- relative_to_last_round: 强制从‘状态描述’改为‘带可证伪条件的实验卡’",
+        f"- scenario_fit: 日常工作流中工具调用真实场景覆盖不足导致改进不可验证",
+        "",
+        "## Hypothesis",
+        f"- 在 real_prompt_count 从 {rp_count} 扩充到 >=20 前，方向判断可靠性不足；优先扩充样本可提升改进决策质量。",
+        "- falsifiable_condition: 若扩充后 match_rate 仍无改善且失败模式分布不变，则该路径失败。",
+        "",
+        "## Evidence",
+        f"- real_prompt_count={rp_count}",
+        f"- real_prompt_match_rate={rp_match:.4f}",
+        f"- frontier_observation_count={frontier_obs}",
+        f"- stagnation_rounds={stagnation_rounds}",
+        "",
+        "## Experiment Plan",
+        "- python -m scripts.build_real_prompt_candidates",
+        "- python -m scripts.evaluate_real_prompts",
+        "- pass_criteria: prompt_count>=20 且可观察到失败模式重排",
+        "- fail_criteria: prompt_count增长但关键指标/失败模式无变化",
+        "",
+        "## Landing",
+        "- proposed_change: 生成并合并真实场景回归候选集，优先覆盖高频工具调用链路",
+        "- rollback_plan: 回退 real_prompt_eval 配置到上一版",
+    ]
+
+    _write_if_changed(path, "\n".join(lines) + "\n")
+    return path
+
+
+def _write_role_artifacts(
+    root: Path,
+    signals: dict[str, object],
+    proposals: list[dict[str, object]],
+    direction_review: dict[str, object],
+) -> dict[str, Path]:
+    role_dir = root / "backlog" / "role_outputs"
+    role_dir.mkdir(parents=True, exist_ok=True)
+
+    observer_path = role_dir / "observer_latest.md"
+    _write_if_changed(
+        observer_path,
+        "\n".join(
+            [
+                "# Observer Output",
+                "",
+                f"- episodes: {int(signals.get('episodes', 0) or 0)}",
+                f"- reviews: {int(signals.get('reviews', 0) or 0)}",
+                f"- bridge_feedback: {int(signals.get('bridge_feedback', 0) or 0)}",
+                f"- frontier_observation_count: {int(signals.get('frontier_observation_count', 0) or 0)}",
+            ]
+        )
+        + "\n",
+    )
+
+    benchmark_path = role_dir / "benchmark_owner_latest.md"
+    rp_count = 0
+    rp_match = 0.0
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            rp_count = int(summary.get("prompt_count", 0) or 0)
+            rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+    _write_if_changed(
+        benchmark_path,
+        "\n".join(
+            [
+                "# Benchmark Owner Output",
+                "",
+                "- top_gap: eval_coverage_too_low",
+                f"- real_prompt_count: {rp_count}",
+                f"- real_prompt_match_rate: {rp_match:.4f}",
+                "- target_real_prompt_count: 20",
+                f"- gap: {max(0, 20 - rp_count)}",
+            ]
+        )
+        + "\n",
+    )
+
+    evaluator_path = role_dir / "evaluator_latest.md"
+    pretrain_eval = signals.get("pretrain_eval", {})
+    pretrain_match = 0.0
+    if isinstance(pretrain_eval, dict):
+        pretrained = pretrain_eval.get("pretrained", {})
+        if isinstance(pretrained, dict):
+            pretrain_match = float(pretrained.get("tool_match_rate", 0.0) or 0.0)
+    _write_if_changed(
+        evaluator_path,
+        "\n".join(
+            [
+                "# Evaluator Output",
+                "",
+                "- checks: evaluate_pretraining + evaluate_real_prompts",
+                f"- pretrain_tool_match_rate: {pretrain_match:.4f}",
+                f"- real_prompt_match_rate: {rp_match:.4f}",
+                "- verdict: soft_pass" if rp_count < 20 else "- verdict: pass",
+            ]
+        )
+        + "\n",
+    )
+
+    trainer_path = role_dir / "trainer_latest.md"
+    _write_if_changed(
+        trainer_path,
+        "\n".join(
+            [
+                "# Trainer Output",
+                "",
+                f"- latest_train_run_id: {signals.get('latest_train_run_id', '')}",
+                f"- dataset_sample_count: {int(signals.get('dataset_sample_count', 0) or 0)}",
+                "- next_action: expand real prompt candidates and rerun eval",
+            ]
+        )
+        + "\n",
+    )
+
+    architect_path = role_dir / "architect_latest.md"
+    _write_if_changed(
+        architect_path,
+        "\n".join(
+            [
+                "# Architect Output",
+                "",
+                f"- proposal_count_this_round: {len(proposals)}",
+                "- note: no new proposal" if not proposals else "- note: proposals generated",
+            ]
+        )
+        + "\n",
+    )
+
+    guardian_path = role_dir / "guardian_latest.md"
+    needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
+    _write_if_changed(
+        guardian_path,
+        "\n".join(
+            [
+                "# Guardian Output",
+                "",
+                f"- needs_human_approval_count: {needs_human}",
+                "- status: clear" if needs_human == 0 else "- status: pending_human_gate",
+            ]
+        )
+        + "\n",
+    )
+
+    arbiter_path = role_dir / "arbiter_latest.md"
+    _write_if_changed(
+        arbiter_path,
+        "\n".join(
+            [
+                "# Arbiter Output",
+                "",
+                f"- verdict: {direction_review.get('verdict', 'direction_correct')}",
+                f"- reasons: {','.join(direction_review.get('reasons', [])) if isinstance(direction_review.get('reasons', []), list) else ''}",
+            ]
+        )
+        + "\n",
+    )
+
+    return {
+        "observer": observer_path,
+        "benchmark_owner": benchmark_path,
+        "evaluator": evaluator_path,
+        "trainer": trainer_path,
+        "architect": architect_path,
+        "guardian": guardian_path,
+        "arbiter": arbiter_path,
+    }
+
+
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
@@ -723,6 +917,12 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     recursive_state = _update_recursive_state(root, signals, config)
     digest = build_daily_digest(signals, config)
     digest["recursive_state"] = recursive_state
+
+    failure_patterns_path = _write_failure_patterns(root, signals)
+    top_gap_path = _write_top_gap_action_card(root, signals)
+    research_brief_path = _write_research_brief(root, signals, config)
+    researcher_artifact_path = _run_researcher(root, signals, recursive_state)
+
     proposals = build_proposals(digest, config, recursive_state=recursive_state)
     existing_titles = _read_existing_proposal_titles(root)
     proposals = [proposal for proposal in proposals if str(proposal.get("title", "")).strip() not in existing_titles]
@@ -731,12 +931,45 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     if not isinstance(direction_review, dict):
         direction_review = {}
 
-    team_actions = _build_team_actions_summary(signals, proposals, direction_review, recursive_state=recursive_state)
-    digest["team_actions"] = team_actions
+    if not researcher_artifact_path.exists():
+        direction_review["verdict"] = "uncertain_needs_human"
+        reasons = direction_review.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        reasons.append("researcher_artifact_missing")
+        direction_review["reasons"] = reasons
+        direction_review["escalate_to_human"] = True
+        alerts = digest.get("alerts", [])
+        if not isinstance(alerts, list):
+            alerts = []
+        alerts.append("researcher_artifact_missing")
+        digest["alerts"] = alerts
 
-    failure_patterns_path = _write_failure_patterns(root, signals)
-    top_gap_path = _write_top_gap_action_card(root, signals)
-    research_brief_path = _write_research_brief(root, signals, config)
+    role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review)
+    role_output_status = {role: path.exists() for role, path in role_artifacts.items()}
+    missing_roles = [role for role, ok in role_output_status.items() if not ok]
+    if missing_roles:
+        direction_review["verdict"] = "uncertain_needs_human"
+        reasons = direction_review.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        reasons.append("role_artifact_missing:" + ",".join(missing_roles))
+        direction_review["reasons"] = reasons
+        direction_review["escalate_to_human"] = True
+        alerts = digest.get("alerts", [])
+        if not isinstance(alerts, list):
+            alerts = []
+        alerts.append("role_artifact_missing")
+        digest["alerts"] = alerts
+
+    team_actions = _build_team_actions_summary(
+        signals,
+        proposals,
+        direction_review,
+        recursive_state=recursive_state,
+        researcher_artifact_path=str(researcher_artifact_path),
+    )
+    digest["team_actions"] = team_actions
 
     digest_path = write_daily_digest(root, digest)
     proposal_paths = write_proposals(root, proposals)
@@ -749,9 +982,12 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "failure_patterns_path": str(failure_patterns_path),
         "top_gap_path": str(top_gap_path),
         "research_brief_path": str(research_brief_path),
+        "researcher_artifact_path": str(researcher_artifact_path),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
         "team_actions": team_actions,
+        "role_artifact_paths": {role: str(path) for role, path in role_artifacts.items()},
+        "role_output_status": role_output_status,
     }
 
 
