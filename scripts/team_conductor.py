@@ -553,6 +553,7 @@ def _build_team_actions_summary(
     proposals: list[dict[str, object]],
     direction_review: dict[str, object],
     recursive_state: dict[str, object] | None = None,
+    researcher_artifact_path: str = "",
 ) -> dict[str, str]:
     needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
     proposal_brief = "; ".join(
