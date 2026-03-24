@@ -22,3 +22,19 @@
 - 至少 1 条研究假设：`假设 -> 证据 -> 实验命令 -> 通过阈值`
 - 至少 1 条结论标签：`可借鉴 / 不建议跟进 / 待观察`
 - 若无新结论，必须明确写出“证据不足点”和下一步补证计划
+
+## Value Gate（价值门槛）
+
+Researcher 的输出只有满足以下条件才算“有价值”：
+
+1. 直接绑定当前 Top Gap 或 failure pattern（不能泛泛而谈）
+2. 给出可证伪实验（有明确失败条件，不是只写成功路径）
+3. 产出可执行落地项（可直接进入 Architect 提案）
+4. 标注与上一轮差异：`relative_to_last_round`
+5. 标注真实场景适配：`scenario_fit`
+
+## Escalation & Replacement（升级与替换）
+
+- 连续 2 轮未通过 Value Gate：Researcher 进入 `needs_redefinition`
+- 连续 3 轮未通过 Value Gate：Researcher 降级为“资料采集”，由 Benchmark Owner + Architect 接管假设生成
+- 被降级期间，Researcher 仅可提交证据，不可单独驱动提案

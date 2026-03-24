@@ -41,6 +41,7 @@
 - 连续 2 轮无有效产出的角色，自动进入 `needs_redefinition`，Conductor 必须在日报中给出原因与修复动作。
 - 连续 3 轮无有效产出的角色，默认降级为按需触发，不再占用“关键角色”名额。
 - 关键角色（Researcher / Failure Miner / Benchmark Owner / Trainer / Arbiter）任一缺席，团队不得给出“方向明确且可持续推进”的结论。
+- Researcher 若未通过 Value Gate，不计为“有效出席”。
 
 ## Done Definition（DoD）
 
