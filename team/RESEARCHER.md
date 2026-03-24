@@ -16,6 +16,7 @@
 - `backlog/opportunities/` 中的研究机会条目
 - 可复现实验步骤（脚本命令 + 验证指标）
 - 供 Arbiter 使用的研究结论摘要
+- 统一使用模板：`team/RESEARCHER_OUTPUT_TEMPLATE.md`
 
 ## Mandatory Output（每轮）
 

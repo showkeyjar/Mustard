@@ -565,6 +565,13 @@ def _build_team_actions_summary(
         recursive_mode = str(recursive_state.get("last_mode", "normal"))
         stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
 
+    frontier_obs = int(signals.get('frontier_observation_count', 0) or 0)
+    researcher_action = (
+        "提交 Value Gate 研究包（绑定Top Gap/失败模式 + 可证伪实验 + 场景适配）"
+        if frontier_obs >= 2
+        else "研究产出不足：本轮必须先补齐 frontier_observations>=2，再提交 Value Gate 研究包"
+    )
+
     return {
         "conductor": f"输出提案清单(mode={recursive_mode}, stagnation_rounds={stagnation_rounds}) -> {proposal_brief}",
         "observer": (
@@ -579,7 +586,7 @@ def _build_team_actions_summary(
         "evaluator": "执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle",
         "guardian": f"风险审查完成，需 Human Gate 的提案={needs_human}",
         "arbiter": f"方向裁决={direction_review.get('verdict', 'direction_correct')} reasons={','.join(direction_review.get('reasons', [])) or 'none'}",
-        "researcher": "跟踪 DeepSeek/MiniMax 等推理小模型动态，并沉淀到 research watchlist + frontier_observations",
+        "researcher": researcher_action + "（模板: team/RESEARCHER_OUTPUT_TEMPLATE.md）",
     }
 
 
