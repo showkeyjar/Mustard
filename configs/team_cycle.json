@@ -36,6 +36,10 @@
     "promote_threshold": 0.8,
     "max_underperform_rounds": 3
   },
+  "eval_pipeline": {
+    "auto_sync_real_prompt_eval": false,
+    "min_new_candidates_to_merge": 4
+  },
   "focus_areas": [
     "real_prompt_regression",
     "desktop_bridge_quality",
