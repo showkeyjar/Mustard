@@ -103,6 +103,52 @@ def _append_jsonl(path: Path, payload: dict[str, object]) -> None:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def _cleanup_low_value_artifacts(root: Path) -> dict[str, int]:
+    removed_research = 0
+    opportunities = root / "backlog" / "opportunities"
+    if opportunities.exists():
+        for p in opportunities.glob("research_20*.md"):
+            try:
+                p.unlink()
+                removed_research += 1
+            except OSError:
+                pass
+
+    removed_proposals = 0
+    proposals_dir = root / "backlog" / "proposals"
+    if proposals_dir.exists():
+        files = sorted(proposals_dir.glob("*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
+        seen: set[str] = set()
+        for p in files:
+            lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+            title = p.stem
+            if lines:
+                first = lines[0].strip()
+                if first.startswith("# "):
+                    title = first[2:].strip()
+            key = _slug(title)
+            target = proposals_dir / f"{key}.md"
+            if key in seen:
+                try:
+                    p.unlink()
+                    removed_proposals += 1
+                except OSError:
+                    pass
+                continue
+            seen.add(key)
+            if p != target:
+                if target.exists():
+                    try:
+                        p.unlink()
+                        removed_proposals += 1
+                    except OSError:
+                        pass
+                else:
+                    p.rename(target)
+
+    return {"removed_research": removed_research, "removed_proposals": removed_proposals}
+
+
 def _build_signal_signature(signals: dict[str, object]) -> str:
     real_prompt_match = 0.0
     real_prompt_count = 0
@@ -560,7 +606,7 @@ def write_proposals(root: Path, proposals: list[dict[str, object]]) -> list[Path
     written: list[Path] = []
     for proposal in proposals:
         title = str(proposal.get("title", "proposal"))
-        filename = f"{utc_now().strftime('%Y%m%dT%H%M%SZ')}_{_slug(title)}.md"
+        filename = f"{_slug(title)}.md"
         path = root / "backlog" / "proposals" / filename
         lines = [
             f"# {title}",
@@ -946,7 +992,7 @@ def _record_and_validate_role_divergence(
 def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dict[str, object]) -> Path:
     output_dir = root / "backlog" / "opportunities"
     output_dir.mkdir(parents=True, exist_ok=True)
-    path = output_dir / f"research_{utc_now().strftime('%Y%m%dT%H%M%SZ')}.md"
+    path = output_dir / "research_latest.md"
 
     real_prompt_eval = signals.get("real_prompt_eval", {})
     rp_count = 0
@@ -1160,6 +1206,7 @@ def _write_role_artifacts(
 
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
+    cleanup_stats = _cleanup_low_value_artifacts(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
     signals = collect_signals(root)
     recursive_state = _update_recursive_state(root, signals, config)
@@ -1272,6 +1319,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "role_content_history_path": str(divergence.get("history_path", "")),
         "researcher_changed_vs_last": bool(divergence.get("researcher_changed", False)),
         "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
+        "cleanup_stats": cleanup_stats,
     }
 
 
