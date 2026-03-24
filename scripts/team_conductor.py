@@ -724,7 +724,7 @@ def _write_carm_gap_map(root: Path, signals: dict[str, object]) -> Path:
         f"- current: frontier_observation_count={frontier_obs}",
         "- target: >=10 条可比较观察",
         "- blocker: 外部路线跟踪未形成固定节奏",
-        "- owner: CARM Owner + Researcher",
+        "- owner: Arbiter(CARM Track) + Researcher",
         "- next_action: 每轮补充 3 条前沿观察并打标签",
         "- acceptance: 形成可借鉴/不建议/待观察三类结论",
         "",
@@ -1039,12 +1039,12 @@ def _write_role_artifacts(
         + "\n",
     )
 
-    carm_owner_path = role_dir / "carm_owner_latest.md"
+    arbiter_carm_track_path = role_dir / "arbiter_carm_track_latest.md"
     _write_if_changed(
-        carm_owner_path,
+        arbiter_carm_track_path,
         "\n".join(
             [
-                "# CARM Owner Output",
+                "# Arbiter CARM Track Output",
                 "",
                 "- artifact: backlog/opportunities/carm_gap_map.md",
                 "- objective: close top gaps towards CARM blueprint",
@@ -1062,7 +1062,7 @@ def _write_role_artifacts(
         "architect": architect_path,
         "guardian": guardian_path,
         "arbiter": arbiter_path,
-        "carm_owner": carm_owner_path,
+        "arbiter_carm_track": arbiter_carm_track_path,
     }
 
 

@@ -35,8 +35,12 @@
     "carm_owner": {
       "last_score": 0.6000000000000001,
       "underperform_rounds": 0
+    },
+    "arbiter_carm_track": {
+      "last_score": 0.6000000000000001,
+      "underperform_rounds": 0
     }
   },
   "suggestions": [],
-  "updated_at_utc": "2026-03-24T06:23:04.906932+00:00"
+  "updated_at_utc": "2026-03-24T06:28:04.163362+00:00"
 }

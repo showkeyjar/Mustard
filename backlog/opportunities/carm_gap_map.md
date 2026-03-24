@@ -22,7 +22,7 @@
 - current: frontier_observation_count=0
 - target: >=10 条可比较观察
 - blocker: 外部路线跟踪未形成固定节奏
-- owner: CARM Owner + Researcher
+- owner: Arbiter(CARM Track) + Researcher
 - next_action: 每轮补充 3 条前沿观察并打标签
 - acceptance: 形成可借鉴/不建议/待观察三类结论
 

@@ -20,7 +20,7 @@
 8. 由 Arbiter 对团队方向做周期性裁决：方向明确则团队自驱执行，方向不明确才升级给 Human Gate。
 9. Researcher 负责围绕 README 创新点持续做探索性研究并提出可验证实验路径。
 10. Benchmark Owner 维护北极星指标与替代性门槛，Failure Miner 持续产出失败模式，Trainer 负责把改动转成可训练可评估产物。
-11. CARM Owner 负责 CARM 原型蓝图收敛：维护 Gap Map、定义最小可落地增量并跟踪闭环。
+11. Arbiter 负责 CARM Track：维护 Gap Map、定义最小可落地增量并跟踪闭环。
 12. 没有 failure_patterns + top_gap + 指标对比的轮次，不得宣称“有价值改进”。
 
 ## Cycle Deliverables（每轮必交）
