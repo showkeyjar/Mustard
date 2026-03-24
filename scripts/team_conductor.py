@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -64,6 +66,41 @@ def _write_if_changed(path: Path, content: str) -> None:
     if path.exists() and path.read_text(encoding="utf-8") == content:
         return
     path.write_text(content, encoding="utf-8")
+
+
+def _normalize_text(value: str) -> str:
+    value = value.strip().lower()
+    value = re.sub(r"\s+", " ", value)
+    return value
+
+
+def _content_hash(path: Path) -> str:
+    if not path.exists():
+        return ""
+    normalized = _normalize_text(path.read_text(encoding="utf-8", errors="ignore"))
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _load_jsonl(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    items: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+            if isinstance(payload, dict):
+                items.append(payload)
+        except json.JSONDecodeError:
+            continue
+    return items
+
+
+def _append_jsonl(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def _build_signal_signature(signals: dict[str, object]) -> str:
@@ -859,6 +896,53 @@ def _update_role_evolution(
     return path, next_state
 
 
+def _record_and_validate_role_divergence(
+    root: Path,
+    researcher_path: Path,
+    arbiter_path: Path,
+) -> dict[str, object]:
+    history_path = root / "data" / "team" / "role_content_history.jsonl"
+    history = _load_jsonl(history_path)
+
+    last_researcher_hash = ""
+    last_arbiter_hash = ""
+    for item in reversed(history):
+        if not last_researcher_hash and item.get("role") == "researcher":
+            last_researcher_hash = str(item.get("content_hash", ""))
+        if not last_arbiter_hash and item.get("role") == "arbiter":
+            last_arbiter_hash = str(item.get("content_hash", ""))
+        if last_researcher_hash and last_arbiter_hash:
+            break
+
+    researcher_hash = _content_hash(researcher_path)
+    arbiter_hash = _content_hash(arbiter_path)
+
+    researcher_changed = bool(researcher_hash) and researcher_hash != last_researcher_hash
+    arbiter_changed = bool(arbiter_hash) and arbiter_hash != last_arbiter_hash
+
+    now = utc_now().isoformat()
+    _append_jsonl(history_path, {
+        "timestamp_utc": now,
+        "role": "researcher",
+        "path": str(researcher_path),
+        "content_hash": researcher_hash,
+        "changed": researcher_changed,
+    })
+    _append_jsonl(history_path, {
+        "timestamp_utc": now,
+        "role": "arbiter",
+        "path": str(arbiter_path),
+        "content_hash": arbiter_hash,
+        "changed": arbiter_changed,
+    })
+
+    return {
+        "history_path": str(history_path),
+        "researcher_changed": researcher_changed,
+        "arbiter_changed": arbiter_changed,
+    }
+
+
 def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dict[str, object]) -> Path:
     output_dir = root / "backlog" / "opportunities"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -914,6 +998,7 @@ def _write_role_artifacts(
     signals: dict[str, object],
     proposals: list[dict[str, object]],
     direction_review: dict[str, object],
+    recursive_state: dict[str, object],
 ) -> dict[str, Path]:
     role_dir = root / "backlog" / "role_outputs"
     role_dir.mkdir(parents=True, exist_ok=True)
@@ -1026,6 +1111,9 @@ def _write_role_artifacts(
     )
 
     arbiter_path = role_dir / "arbiter_latest.md"
+    stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+    recursive_mode = str(recursive_state.get("last_mode", "normal"))
+    delta_focus = "expand_real_prompt_coverage" if stagnation_rounds % 3 == 0 else ("close_feedback_loop" if stagnation_rounds % 3 == 1 else "frontier_benchmarking")
     _write_if_changed(
         arbiter_path,
         "\n".join(
@@ -1034,6 +1122,10 @@ def _write_role_artifacts(
                 "",
                 f"- verdict: {direction_review.get('verdict', 'direction_correct')}",
                 f"- reasons: {','.join(direction_review.get('reasons', [])) if isinstance(direction_review.get('reasons', []), list) else ''}",
+                f"- recursive_mode: {recursive_mode}",
+                f"- stagnation_rounds: {stagnation_rounds}",
+                f"- delta_focus_this_round: {delta_focus}",
+                f"- new_action: {delta_focus} -> owner=arbiter, deadline=next_cycle",
             ]
         )
         + "\n",
@@ -1102,7 +1194,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         alerts.append("researcher_artifact_missing")
         digest["alerts"] = alerts
 
-    role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review)
+    role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review, recursive_state)
     role_artifacts["researcher"] = researcher_artifact_path
     role_output_status = {role: path.exists() for role, path in role_artifacts.items()}
     missing_roles = [role for role, ok in role_output_status.items() if not ok]
@@ -1118,6 +1210,28 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         if not isinstance(alerts, list):
             alerts = []
         alerts.append("role_artifact_missing")
+        digest["alerts"] = alerts
+
+    divergence = _record_and_validate_role_divergence(
+        root,
+        researcher_artifact_path,
+        role_artifacts.get("arbiter", root / "backlog" / "role_outputs" / "arbiter_latest.md"),
+    )
+    if not bool(divergence.get("researcher_changed", False)) or not bool(divergence.get("arbiter_changed", False)):
+        direction_review["verdict"] = "uncertain_needs_human"
+        reasons = direction_review.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        if not bool(divergence.get("researcher_changed", False)):
+            reasons.append("researcher_output_not_changed")
+        if not bool(divergence.get("arbiter_changed", False)):
+            reasons.append("arbiter_output_not_changed")
+        direction_review["reasons"] = reasons
+        direction_review["escalate_to_human"] = True
+        alerts = digest.get("alerts", [])
+        if not isinstance(alerts, list):
+            alerts = []
+        alerts.append("role_output_not_changed")
         digest["alerts"] = alerts
 
     role_scores = _score_role_outputs(signals, role_artifacts)
@@ -1155,6 +1269,9 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "role_scores": role_scores,
         "role_evolution_path": str(role_evolution_path),
         "role_evolution_suggestions": role_evolution_state.get("suggestions", []),
+        "role_content_history_path": str(divergence.get("history_path", "")),
+        "researcher_changed_vs_last": bool(divergence.get("researcher_changed", False)),
+        "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
     }
 
 

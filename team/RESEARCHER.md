@@ -56,3 +56,4 @@ Researcher 的输出只有满足以下条件才算“有价值”：
 - 连续 2 轮未通过 Value Gate：Researcher 进入 `needs_redefinition`
 - 连续 3 轮未通过 Value Gate：Researcher 降级为“资料采集”，由 Benchmark Owner + Architect 接管假设生成
 - 被降级期间，Researcher 仅可提交证据，不可单独驱动提案
+- 若与上一轮产物文本重复（规范化后一致），本轮记为 `incomplete`
