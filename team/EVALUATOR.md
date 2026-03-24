@@ -16,3 +16,9 @@
 - `soft_pass`
 - `fail`
 - `needs_human_review`
+
+## Mandatory Output（每轮）
+
+- 验证结果必须给出：执行命令、关键日志、结论理由
+- `soft_pass` 必须附带剩余风险与下一轮补测项
+- 若无可评测改动，明确写 `no_candidate_change`，禁止空白结论

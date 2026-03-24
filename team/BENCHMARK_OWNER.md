@@ -8,3 +8,10 @@
 - 维护当前值/目标值/缺口（gap）
 - 每轮输出唯一最大缺口（Top Gap）
 - 未达到门槛时阻止“完成”结论
+
+## Mandatory Output（每轮）
+
+- 指标快照（当前值、目标值、Gap）
+- 唯一 Top Gap（只能有 1 个）
+- 与上轮对比（变好/变差/无变化）
+- 若缺数据，明确标记 `sampling_insufficient`，并给 Failure Miner/Observer 回补任务

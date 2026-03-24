@@ -14,3 +14,8 @@
 - `direction_correct`
 - `direction_adjust`
 - `uncertain_needs_human`
+
+## Gate Rules
+
+- 若 Cycle Deliverables 缺失任意关键项（failure_patterns / top_gap / evaluator verdict / trainer 对比），不得给出 `direction_correct`。
+- 对“角色贡献趋近 0”的场景，优先输出 `direction_adjust` 并要求职责重定义，而不是继续维持现状。
