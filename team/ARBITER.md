@@ -19,3 +19,4 @@
 
 - 若 Cycle Deliverables 缺失任意关键项（failure_patterns / top_gap / evaluator verdict / trainer 对比），不得给出 `direction_correct`。
 - 对“角色贡献趋近 0”的场景，优先输出 `direction_adjust` 并要求职责重定义，而不是继续维持现状。
+- 若本轮未更新 `carm_gap_map` 或未给出 `carm_mvi`，不得给出“向 CARM 蓝图收敛”的结论。

@@ -36,7 +36,7 @@
 7. Evaluator：统一验证结论（pass/soft_pass/fail/needs_human_review）
 8. Arbiter：方向裁决（direction_correct/direction_adjust/uncertain_needs_human）
 9. Conductor：每日汇总写入 `memory/daily/`（含 blockers 与 next actions）
-10. CARM Owner：更新 `backlog/opportunities/carm_gap_map.md` 并提交 1 条 `carm_mvi`
+10. Arbiter（CARM Track）：更新 `backlog/opportunities/carm_gap_map.md` 并提交 1 条 `carm_mvi`
 
 ## Role Activation Rules（防空转）
 

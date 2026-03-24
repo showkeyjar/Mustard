@@ -1039,6 +1039,21 @@ def _write_role_artifacts(
         + "\n",
     )
 
+    carm_owner_path = role_dir / "carm_owner_latest.md"
+    _write_if_changed(
+        carm_owner_path,
+        "\n".join(
+            [
+                "# CARM Owner Output",
+                "",
+                "- artifact: backlog/opportunities/carm_gap_map.md",
+                "- objective: close top gaps towards CARM blueprint",
+                "- status: updated",
+            ]
+        )
+        + "\n",
+    )
+
     return {
         "observer": observer_path,
         "benchmark_owner": benchmark_path,
@@ -1047,6 +1062,7 @@ def _write_role_artifacts(
         "architect": architect_path,
         "guardian": guardian_path,
         "arbiter": arbiter_path,
+        "carm_owner": carm_owner_path,
     }
 
 
@@ -1060,6 +1076,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
 
     failure_patterns_path = _write_failure_patterns(root, signals)
     top_gap_path = _write_top_gap_action_card(root, signals)
+    carm_gap_map_path = _write_carm_gap_map(root, signals)
     research_brief_path = _write_research_brief(root, signals, config)
     researcher_artifact_path = _run_researcher(root, signals, recursive_state)
 
@@ -1129,6 +1146,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "top_gap_path": str(top_gap_path),
         "research_brief_path": str(research_brief_path),
         "researcher_artifact_path": str(researcher_artifact_path),
+        "carm_gap_map_path": str(carm_gap_map_path),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
         "team_actions": team_actions,
