@@ -2,7 +2,7 @@
 
 - gap_id: eval_coverage_too_low
 - problem: 真实工具调用场景回归样本覆盖不足，当前无法证明可替代性提升。
-- current: prompt_count=8
+- current: prompt_count=6
 - target: prompt_count>=20（优先本地工具调用场景）
 - owner: benchmark_owner + failure_miner + trainer
 - action_plan:

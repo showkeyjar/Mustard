@@ -228,6 +228,35 @@ def _sync_real_prompt_eval_pipeline(root: Path) -> dict[str, object]:
     return stats
 
 
+def _track_eval_config_stability(root: Path) -> dict[str, object]:
+    eval_path = root / "configs" / "real_prompt_eval.json"
+    history_path = root / "data" / "team" / "eval_config_history.jsonl"
+
+    current_hash = _content_hash(eval_path)
+    history = _load_jsonl(history_path)
+    last_hash = ""
+    if history:
+        last = history[-1]
+        if isinstance(last, dict):
+            last_hash = str(last.get("content_hash", ""))
+
+    changed = bool(current_hash) and bool(last_hash) and current_hash != last_hash
+    payload = {
+        "timestamp_utc": utc_now().isoformat(),
+        "path": str(eval_path),
+        "content_hash": current_hash,
+        "changed_vs_last": changed,
+    }
+    _append_jsonl(history_path, payload)
+
+    return {
+        "eval_config_path": str(eval_path),
+        "eval_config_hash": current_hash,
+        "eval_config_changed_vs_last": changed,
+        "eval_config_history_path": str(history_path),
+    }
+
+
 def _cleanup_low_value_artifacts(root: Path) -> dict[str, int]:
     removed_research = 0
     opportunities = root / "backlog" / "opportunities"
@@ -363,6 +392,10 @@ def load_team_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, objec
             "enabled": True,
             "stagnation_rounds_to_pivot": 2,
             "force_max_landing_after_rounds": 3,
+        },
+        "eval_pipeline": {
+            "auto_sync_real_prompt_eval": False,
+            "min_new_candidates_to_merge": 4,
         },
         "focus_areas": [],
     }
@@ -1332,8 +1365,21 @@ def _write_role_artifacts(
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
     cleanup_stats = _cleanup_low_value_artifacts(root)
-    pipeline_stats = _sync_real_prompt_eval_pipeline(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
+
+    eval_pipeline = config.get("eval_pipeline", {})
+    if not isinstance(eval_pipeline, dict):
+        eval_pipeline = {}
+    auto_sync = bool(eval_pipeline.get("auto_sync_real_prompt_eval", False))
+
+    pipeline_stats: dict[str, object]
+    if auto_sync:
+        pipeline_stats = _sync_real_prompt_eval_pipeline(root)
+    else:
+        pipeline_stats = {"skipped": True, "reason": "auto_sync_disabled"}
+
+    eval_stability = _track_eval_config_stability(root)
+
     signals = collect_signals(root)
     rp_payload = pipeline_stats.get("real_prompt_eval")
     if isinstance(rp_payload, dict):
@@ -1355,6 +1401,20 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):
         direction_review = {}
+
+    if bool(eval_stability.get("eval_config_changed_vs_last", False)) and not auto_sync:
+        direction_review["verdict"] = "uncertain_needs_human"
+        reasons = direction_review.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        reasons.append("eval_config_changed_while_auto_sync_disabled")
+        direction_review["reasons"] = reasons
+        direction_review["escalate_to_human"] = True
+        alerts = digest.get("alerts", [])
+        if not isinstance(alerts, list):
+            alerts = []
+        alerts.append("eval_config_unexpected_change")
+        digest["alerts"] = alerts
 
     if not researcher_artifact_path.exists():
         direction_review["verdict"] = "uncertain_needs_human"
@@ -1450,6 +1510,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
         "cleanup_stats": cleanup_stats,
         "pipeline_stats": pipeline_stats,
+        "eval_stability": eval_stability,
     }
 
 

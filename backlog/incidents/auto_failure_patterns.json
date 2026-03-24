@@ -5,7 +5,7 @@
       "id": "eval_coverage_too_low",
       "severity": "high",
       "evidence": {
-        "prompt_count": 8,
+        "prompt_count": 6,
         "target_min": 20
       },
       "impact": "真实场景覆盖不足，回归结果不稳定。"

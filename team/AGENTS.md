@@ -62,6 +62,7 @@
 - 若连续 3 轮核心信号无变化，自动切换到 `max_landing` 模式（只做 24 小时内可验证落地动作）。
 - 未注明与上一轮差异点的提案，不得进入 Builder 阶段。
 - Researcher 与 Arbiter 每轮产物必须落盘记录，并与上一轮内容不同；若重复则本轮直接标记 `incomplete`。
+- 评测集采用冻结基线：默认不自动改 `configs/real_prompt_eval.json`；若检测到配置变化且未开启自动同步，自动触发 `uncertain_needs_human`。
 
 ## Startup Order
 

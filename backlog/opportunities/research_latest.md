@@ -6,14 +6,14 @@
 - scenario_fit: 日常工作流中工具调用真实场景覆盖不足导致改进不可验证
 
 ## Hypothesis
-- 在 real_prompt_count 从 8 扩充到 >=20 前，方向判断可靠性不足；优先扩充样本可提升改进决策质量。
+- 在 real_prompt_count 从 6 扩充到 >=20 前，方向判断可靠性不足；优先扩充样本可提升改进决策质量。
 - falsifiable_condition: 若扩充后 match_rate 仍无改善且失败模式分布不变，则该路径失败。
 
 ## Evidence
-- real_prompt_count=8
+- real_prompt_count=6
 - real_prompt_match_rate=1.0000
 - frontier_observation_count=0
-- stagnation_rounds=14
+- stagnation_rounds=3
 
 ## Experiment Plan
 - python -m scripts.build_real_prompt_candidates
