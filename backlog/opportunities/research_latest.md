@@ -13,7 +13,7 @@
 - real_prompt_count=8
 - real_prompt_match_rate=1.0000
 - frontier_observation_count=0
-- stagnation_rounds=9
+- stagnation_rounds=10
 
 ## Experiment Plan
 - python -m scripts.build_real_prompt_candidates
