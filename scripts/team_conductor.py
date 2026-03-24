@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -101,6 +102,130 @@ def _append_jsonl(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _sync_real_prompt_eval_pipeline(root: Path) -> dict[str, object]:
+    """Build candidates -> merge into config -> run evaluation.
+    Returns pipeline stats and latest real_prompt_eval payload when available.
+    """
+    stats: dict[str, object] = {"candidates": 0, "merged_prompt_count": 0}
+    candidates_path = root / "data" / "eval" / "real_prompt_candidates.json"
+    eval_config_path = root / "configs" / "real_prompt_eval.json"
+
+    try:
+        subprocess.run(["python", "-m", "scripts.build_real_prompt_candidates"], cwd=str(root), check=True, capture_output=True, text=True)
+    except Exception as exc:
+        stats["pipeline_error"] = f"build_candidates_failed:{exc}"
+        return stats
+
+    candidates_payload = _read_json(candidates_path)
+    candidates = candidates_payload.get("prompts", []) if isinstance(candidates_payload, dict) else []
+    if not isinstance(candidates, list):
+        candidates = []
+    stats["candidates"] = len(candidates)
+
+    # Candidate quality filter: drop noisy observer-learning prompts and unstable tool labels
+    filtered_candidates: list[dict[str, object]] = []
+    dropped: list[dict[str, object]] = []
+    allowed_tools = {"search", "calculator", "bigmodel_proxy"}
+
+    def _quality_reasons(item: dict[str, object]) -> list[str]:
+        prompt = str(item.get("prompt", ""))
+        expected_tool = str(item.get("expected_tool", "")).strip()
+        reasons: list[str] = []
+        if prompt.startswith("观察学习任务"):
+            reasons.append("observer_learning_noise")
+        if expected_tool not in allowed_tools:
+            reasons.append(f"tool_not_allowed:{expected_tool or 'empty'}")
+        if len(prompt) < 8:
+            reasons.append("prompt_too_short")
+        return reasons
+
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
+        prompt = str(item.get("prompt", ""))
+        expected_tool = str(item.get("expected_tool", "")).strip()
+        reasons = _quality_reasons(item)
+
+        if reasons:
+            dropped.append({
+                "id": str(item.get("id", "")),
+                "expected_tool": expected_tool,
+                "reasons": reasons,
+                "prompt_preview": prompt[:80],
+            })
+            continue
+
+        filtered_candidates.append(item)
+
+    stats["filtered_candidates"] = len(filtered_candidates)
+    stats["dropped_candidates"] = len(dropped)
+
+    quality_report_path = root / "backlog" / "opportunities" / "candidate_quality_report.md"
+    lines = [
+        "# Candidate Quality Report",
+        "",
+        f"- total_candidates: {len(candidates)}",
+        f"- filtered_candidates: {len(filtered_candidates)}",
+        f"- dropped_candidates: {len(dropped)}",
+        "",
+        "## Drop Details",
+    ]
+    if dropped:
+        for item in dropped:
+            lines.append(f"- {item.get('id','')} | tool={item.get('expected_tool','')} | reasons={','.join(item.get('reasons', []))}")
+    else:
+        lines.append("- none")
+    _write_if_changed(quality_report_path, "\n".join(lines) + "\n")
+    stats["candidate_quality_report"] = str(quality_report_path)
+
+    existing_payload = _read_json(eval_config_path)
+    existing_prompts = existing_payload.get("prompts", []) if isinstance(existing_payload, dict) else []
+    if not isinstance(existing_prompts, list):
+        existing_prompts = []
+
+    merged: list[dict[str, object]] = []
+    seen: set[str] = set()
+
+    def _prompt_key(item: dict[str, object]) -> str:
+        return _normalize_text(str(item.get("prompt", "")))
+
+    for item in existing_prompts + filtered_candidates:
+        if not isinstance(item, dict):
+            continue
+        reasons = _quality_reasons(item)
+        if reasons:
+            continue
+        key = _prompt_key(item)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(
+            {
+                "id": str(item.get("id", f"merged-{len(merged)+1:03d}")),
+                "prompt": str(item.get("prompt", "")),
+                "expected_tool": str(item.get("expected_tool", "search")),
+                "logic_skill": str(item.get("logic_skill", "tool_selection")),
+            }
+        )
+
+    merged = merged[:20]
+    eval_config_path.write_text(json.dumps({"prompts": merged}, ensure_ascii=False, indent=2), encoding="utf-8")
+    stats["merged_prompt_count"] = len(merged)
+
+    try:
+        proc = subprocess.run(["python", "-m", "scripts.evaluate_real_prompts"], cwd=str(root), check=True, capture_output=True, text=True)
+        payload = json.loads(proc.stdout)
+        latest_path = root / "data" / "eval" / "real_prompt_eval_latest.json"
+        latest_path.parent.mkdir(parents=True, exist_ok=True)
+        latest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        stats["real_prompt_eval_path"] = str(latest_path)
+        stats["real_prompt_eval"] = payload
+    except Exception as exc:
+        stats["pipeline_error"] = f"evaluate_real_prompts_failed:{exc}"
+
+    return stats
 
 
 def _cleanup_low_value_artifacts(root: Path) -> dict[str, int]:
@@ -1207,8 +1332,12 @@ def _write_role_artifacts(
 def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     bootstrap_workspace(root)
     cleanup_stats = _cleanup_low_value_artifacts(root)
+    pipeline_stats = _sync_real_prompt_eval_pipeline(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
     signals = collect_signals(root)
+    rp_payload = pipeline_stats.get("real_prompt_eval")
+    if isinstance(rp_payload, dict):
+        signals["real_prompt_eval"] = rp_payload
     recursive_state = _update_recursive_state(root, signals, config)
     digest = build_daily_digest(signals, config)
     digest["recursive_state"] = recursive_state
@@ -1320,6 +1449,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "researcher_changed_vs_last": bool(divergence.get("researcher_changed", False)),
         "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
         "cleanup_stats": cleanup_stats,
+        "pipeline_stats": pipeline_stats,
     }
 
 

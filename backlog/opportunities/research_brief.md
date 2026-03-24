@@ -4,7 +4,7 @@
 - dataset_sample_count: 186
 - bridge_feedback: 0
 - frontier_observation_count: 0
-- real_prompt_count: 6
+- real_prompt_count: 8
 - real_prompt_match_rate: 1.0000
 
 ## Research Constraints

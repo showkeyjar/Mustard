@@ -35,6 +35,18 @@
       "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
       "expected_tool": "calculator",
       "logic_skill": "tool_selection"
+    },
+    {
+      "id": "candidate-379152",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "candidate-420926",
+      "prompt": "请计算 12 + 30 / 3",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
     }
   ]
 }

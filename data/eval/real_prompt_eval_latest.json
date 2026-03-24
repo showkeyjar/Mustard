@@ -1,0 +1,179 @@
+{
+  "summary": {
+    "prompt_count": 8,
+    "baseline_match_rate": 0.875,
+    "pretrained_match_rate": 1.0,
+    "baseline_avg_steps": 5.0,
+    "pretrained_avg_steps": 3.0
+  },
+  "rows": [
+    {
+      "id": "real-doc-check",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "real-budget",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "real-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "real-mixed",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "code_executor",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "candidate-420926",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    }
+  ]
+}
