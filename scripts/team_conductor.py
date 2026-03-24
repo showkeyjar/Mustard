@@ -567,9 +567,9 @@ def _build_team_actions_summary(
 
     frontier_obs = int(signals.get('frontier_observation_count', 0) or 0)
     researcher_action = (
-        "提交 Value Gate 研究包（绑定Top Gap/失败模式 + 可证伪实验 + 场景适配）"
-        if frontier_obs >= 2
-        else "研究产出不足：本轮必须先补齐 frontier_observations>=2，再提交 Value Gate 研究包"
+        "基于 Research Brief 提交 Value Gate 研究包（可用 web_search/web_fetch 增强证据）"
+        if frontier_obs >= 3
+        else "研究产出不足：本轮先补齐 frontier_observations>=3（可用 web_search/web_fetch），再提交 Value Gate 研究包"
     )
 
     return {
@@ -747,6 +747,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "proposal_count": len(proposal_paths),
         "failure_patterns_path": str(failure_patterns_path),
         "top_gap_path": str(top_gap_path),
+        "research_brief_path": str(research_brief_path),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
         "team_actions": team_actions,
