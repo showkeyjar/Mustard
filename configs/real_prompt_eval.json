@@ -56,7 +56,7 @@
     },
     {
       "id": "real-cost-forecast",
-      "prompt": "一个服务当前月成本 18600 元，计划下月扩容 35%，请计算下月预计成本。",
+      "prompt": "请严格做数值计算：当前月成本18600元，下月扩容35%，只需给出计算结果（18600*1.35）。",
       "expected_tool": "calculator",
       "logic_skill": "tool_selection"
     },
@@ -68,7 +68,7 @@
     },
     {
       "id": "real-multi-source-summary",
-      "prompt": "我会提供日志、告警和复盘纪要三份材料，请整合成面向管理层的结论摘要。",
+      "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
       "expected_tool": "bigmodel_proxy",
       "logic_skill": "result_integration"
     }

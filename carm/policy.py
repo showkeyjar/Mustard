@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -191,7 +192,28 @@ class OnlinePolicy:
             return decision
 
         if action == Action.CALL_TOOL:
-            if preferred_tool == "calculator":
+            normalized = user_input.lower()
+            hard_calc = (
+                any(token in user_input for token in ("计算", "总成本", "总价", "预算", "每席位", "扩容", "乘", "*", "÷", "/"))
+                or bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
+            )
+            hard_bigmodel = any(token in user_input for token in ("管理层", "正式", "结论摘要", "决策建议", "日志", "告警", "复盘"))
+
+            if hard_calc and "代码" not in user_input and "python" not in normalized:
+                decision.tool_call = ToolCall(
+                    tool_name="calculator",
+                    query=user_input,
+                    reason="Hard rule: arithmetic/forecast phrasing requires calculator.",
+                )
+                decision.reason = "Use calculator by hard rule for arithmetic-heavy request."
+            elif hard_bigmodel:
+                decision.tool_call = ToolCall(
+                    tool_name="bigmodel_proxy",
+                    query=user_input,
+                    reason="Hard rule: formal management summary requires bigmodel synthesis.",
+                )
+                decision.reason = "Use bigmodel by hard rule for formal synthesis."
+            elif preferred_tool == "calculator":
                 decision.tool_call = ToolCall(
                     tool_name="calculator",
                     query=user_input,

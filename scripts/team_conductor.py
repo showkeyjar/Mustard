@@ -421,6 +421,10 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
     if not isinstance(real_prompt_eval, dict):
         real_prompt_eval = {}
 
+    latest_real_prompt_eval = _read_json(root / "data/eval/real_prompt_eval_latest.json")
+    if isinstance(latest_real_prompt_eval, dict) and latest_real_prompt_eval.get("summary"):
+        real_prompt_eval = latest_real_prompt_eval
+
     comparison = control_metrics.get("comparison", {})
     if not isinstance(comparison, dict):
         comparison = {}

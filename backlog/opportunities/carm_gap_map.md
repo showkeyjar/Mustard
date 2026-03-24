@@ -3,7 +3,7 @@
 ## Top Gaps
 
 ### Gap 1: 真实场景覆盖不足
-- current: real_prompt_count=6
+- current: real_prompt_count=12
 - target: >=20
 - blocker: 候选样本构建与筛选未形成稳定流水线
 - owner: CARM Owner + Benchmark Owner

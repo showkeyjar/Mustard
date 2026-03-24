@@ -1,11 +1,11 @@
 # Research Artifact (Actionable)
 
 ## Why this round matters
-- Top gap remains eval_coverage_too_low; current_count=6, target=20, gap=14
-- stagnation_rounds=9; frontier_observation_count=0
+- Top gap remains eval_coverage_too_low; current_count=12, target=20, gap=8
+- stagnation_rounds=1; frontier_observation_count=0
 
 ## New findings (not template text)
-- pretrained_match_rate=1.0000, baseline_match_rate=0.8333, delta=+0.1667
+- pretrained_match_rate=1.0000, baseline_match_rate=0.9167, delta=+0.0833
 - mismatch_case_count=0
 - candidate_pipeline_snapshot:
   - total_candidates: 9

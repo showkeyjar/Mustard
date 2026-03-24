@@ -19,6 +19,8 @@ class AdaptiveConceptModel:
         self._load()
         if not self.token_action_weights:
             self._bootstrap()
+        else:
+            self._ensure_seed_tokens()
 
     def action_priors(self, user_input: str) -> dict[str, float]:
         priors = {action.value: 0.0 for action in Action}
@@ -75,8 +77,8 @@ class AdaptiveConceptModel:
                     chinese_tokens.append(part[idx : idx + size])
         return list(dict.fromkeys(ascii_tokens + chinese_tokens))
 
-    def _bootstrap(self) -> None:
-        seeds = {
+    def _seed_map(self) -> dict[str, tuple[str, str, float]]:
+        return {
             "比较": ("CALL_TOOL", "search", 0.45),
             "区别": ("CALL_TOOL", "search", 0.45),
             "对比": ("CALL_TOOL", "search", 0.45),
@@ -87,27 +89,54 @@ class AdaptiveConceptModel:
             "冲突": ("CALL_TOOL", "search", 0.5),
             "教程": ("CALL_TOOL", "search", 0.45),
             "过时": ("CALL_TOOL", "search", 0.55),
-            "计算": ("CALL_TOOL", "calculator", 0.55),
-            "数字": ("CALL_TOOL", "calculator", 0.45),
-            "预算": ("CALL_TOOL", "calculator", 0.55),
-            "总价": ("CALL_TOOL", "calculator", 0.55),
-            "每席位": ("CALL_TOOL", "calculator", 0.55),
-            "按年": ("CALL_TOOL", "calculator", 0.5),
-            "每月": ("CALL_TOOL", "calculator", 0.45),
-            "分几批": ("CALL_TOOL", "calculator", 0.5),
+            "计算": ("CALL_TOOL", "calculator", 0.75),
+            "数字": ("CALL_TOOL", "calculator", 0.55),
+            "预算": ("CALL_TOOL", "calculator", 0.75),
+            "总价": ("CALL_TOOL", "calculator", 0.75),
+            "每席位": ("CALL_TOOL", "calculator", 0.75),
+            "按年": ("CALL_TOOL", "calculator", 0.65),
+            "每月": ("CALL_TOOL", "calculator", 0.55),
+            "扩容": ("CALL_TOOL", "calculator", 0.75),
+            "乘": ("CALL_TOOL", "calculator", 0.7),
+            "x": ("CALL_TOOL", "calculator", 0.65),
+            "*": ("CALL_TOOL", "calculator", 0.65),
+            "分几批": ("CALL_TOOL", "calculator", 0.65),
             "代码": ("CALL_TOOL", "code_executor", 0.5),
             "python": ("CALL_TOOL", "code_executor", 0.5),
-            "负责人": ("CALL_BIGMODEL", "bigmodel_proxy", 0.55),
-            "管理层": ("CALL_BIGMODEL", "bigmodel_proxy", 0.55),
-            "正式": ("CALL_BIGMODEL", "bigmodel_proxy", 0.5),
-            "简洁": ("CALL_BIGMODEL", "bigmodel_proxy", 0.4),
-            "组织": ("CALL_BIGMODEL", "bigmodel_proxy", 0.4),
-            "几份资料": ("CALL_BIGMODEL", "bigmodel_proxy", 0.5),
+            "负责人": ("CALL_BIGMODEL", "bigmodel_proxy", 0.7),
+            "管理层": ("CALL_BIGMODEL", "bigmodel_proxy", 0.75),
+            "正式": ("CALL_BIGMODEL", "bigmodel_proxy", 0.65),
+            "摘要": ("CALL_BIGMODEL", "bigmodel_proxy", 0.7),
+            "结论": ("CALL_BIGMODEL", "bigmodel_proxy", 0.65),
+            "决策建议": ("CALL_BIGMODEL", "bigmodel_proxy", 0.75),
+            "日志": ("CALL_BIGMODEL", "bigmodel_proxy", 0.6),
+            "告警": ("CALL_BIGMODEL", "bigmodel_proxy", 0.6),
+            "复盘": ("CALL_BIGMODEL", "bigmodel_proxy", 0.6),
+            "组织": ("CALL_BIGMODEL", "bigmodel_proxy", 0.5),
+            "几份资料": ("CALL_BIGMODEL", "bigmodel_proxy", 0.55),
         }
+
+    def _bootstrap(self) -> None:
+        seeds = self._seed_map()
         for token, (action_name, tool_name, weight) in seeds.items():
             self.token_action_weights[token] = {action_name: weight}
             self.token_tool_weights[token] = {tool_name: weight}
         self._save()
+
+    def _ensure_seed_tokens(self) -> None:
+        seeds = self._seed_map()
+        changed = False
+        for token, (action_name, tool_name, weight) in seeds.items():
+            action_bucket = self.token_action_weights.setdefault(token, {})
+            tool_bucket = self.token_tool_weights.setdefault(token, {})
+            if action_bucket.get(action_name, 0.0) < weight:
+                action_bucket[action_name] = weight
+                changed = True
+            if tool_bucket.get(tool_name, 0.0) < weight:
+                tool_bucket[tool_name] = weight
+                changed = True
+        if changed:
+            self._save()
 
     def _load(self) -> None:
         if not self.path.exists():
