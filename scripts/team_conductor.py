@@ -719,6 +719,96 @@ def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
     return top_gap_path
 
 
+def _load_role_evolution_state(root: Path) -> dict[str, object]:
+    path = root / "data" / "team" / "role_evolution_state.json"
+    if not path.exists():
+        return {"roles": {}, "updated_at_utc": ""}
+    payload = _read_json(path)
+    if not isinstance(payload, dict):
+        return {"roles": {}, "updated_at_utc": ""}
+    return payload
+
+
+def _score_role_outputs(signals: dict[str, object], role_artifacts: dict[str, Path]) -> dict[str, float]:
+    scores: dict[str, float] = {}
+    for role, path in role_artifacts.items():
+        if not path.exists():
+            scores[role] = 0.0
+            continue
+        content = path.read_text(encoding="utf-8", errors="ignore").strip()
+        base = 0.4 if content else 0.0
+        # simple role-specific signal bonus
+        bonus = 0.0
+        if role == "observer":
+            bonus = 0.3 if int(signals.get("episodes", 0) or 0) > 0 else 0.0
+        elif role == "benchmark_owner":
+            rp = signals.get("real_prompt_eval", {})
+            if isinstance(rp, dict):
+                s = rp.get("summary", {})
+                if isinstance(s, dict) and int(s.get("prompt_count", 0) or 0) > 0:
+                    bonus = 0.3
+        elif role == "researcher":
+            bonus = 0.3 if int(signals.get("frontier_observation_count", 0) or 0) >= 1 else 0.1
+        else:
+            bonus = 0.2
+        scores[role] = min(1.0, base + bonus)
+    return scores
+
+
+def _update_role_evolution(
+    root: Path,
+    config: dict[str, object],
+    role_scores: dict[str, float],
+) -> tuple[Path, dict[str, object]]:
+    policy = config.get("role_evolution", {})
+    if not isinstance(policy, dict):
+        policy = {}
+
+    enabled = bool(policy.get("enabled", True))
+    under = float(policy.get("underperform_threshold", 0.45) or 0.45)
+    promote = float(policy.get("promote_threshold", 0.8) or 0.8)
+    max_under = int(policy.get("max_underperform_rounds", 3) or 3)
+
+    state = _load_role_evolution_state(root)
+    roles = state.get("roles", {})
+    if not isinstance(roles, dict):
+        roles = {}
+
+    suggestions: list[str] = []
+    for role, score in role_scores.items():
+        item = roles.get(role, {})
+        if not isinstance(item, dict):
+            item = {}
+        under_rounds = int(item.get("underperform_rounds", 0) or 0)
+
+        if enabled:
+            if score < under:
+                under_rounds += 1
+            else:
+                under_rounds = 0
+
+            if under_rounds >= max_under:
+                suggestions.append(f"demote_or_redefine:{role}")
+            elif score >= promote:
+                suggestions.append(f"promote_weight:{role}")
+
+        roles[role] = {
+            "last_score": score,
+            "underperform_rounds": under_rounds,
+        }
+
+    next_state = {
+        "roles": roles,
+        "suggestions": suggestions,
+        "updated_at_utc": utc_now().isoformat(),
+    }
+
+    path = root / "data" / "team" / "role_evolution_state.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_if_changed(path, json.dumps(next_state, ensure_ascii=False, indent=2) + "\n")
+    return path, next_state
+
+
 def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dict[str, object]) -> Path:
     output_dir = root / "backlog" / "opportunities"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -946,6 +1036,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         digest["alerts"] = alerts
 
     role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review)
+    role_artifacts["researcher"] = researcher_artifact_path
     role_output_status = {role: path.exists() for role, path in role_artifacts.items()}
     missing_roles = [role for role, ok in role_output_status.items() if not ok]
     if missing_roles:
@@ -962,6 +1053,9 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         alerts.append("role_artifact_missing")
         digest["alerts"] = alerts
 
+    role_scores = _score_role_outputs(signals, role_artifacts)
+    role_evolution_path, role_evolution_state = _update_role_evolution(root, config, role_scores)
+
     team_actions = _build_team_actions_summary(
         signals,
         proposals,
@@ -969,6 +1063,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         recursive_state=recursive_state,
         researcher_artifact_path=str(researcher_artifact_path),
     )
+    if isinstance(role_evolution_state.get("suggestions"), list) and role_evolution_state.get("suggestions"):
+        team_actions["conductor"] += " | evolution=" + ",".join(role_evolution_state.get("suggestions", []))
     digest["team_actions"] = team_actions
 
     digest_path = write_daily_digest(root, digest)
@@ -988,6 +1084,9 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "team_actions": team_actions,
         "role_artifact_paths": {role: str(path) for role, path in role_artifacts.items()},
         "role_output_status": role_output_status,
+        "role_scores": role_scores,
+        "role_evolution_path": str(role_evolution_path),
+        "role_evolution_suggestions": role_evolution_state.get("suggestions", []),
     }
 
 
