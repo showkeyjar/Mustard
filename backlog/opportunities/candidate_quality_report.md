@@ -5,10 +5,10 @@
 - dropped_candidates: 7
 
 ## Drop Details
-- candidate-604665 | tool=code_executor | reasons=observer_learning_noise,tool_not_allowed:code_executor
-- candidate-806792 | tool=search | reasons=observer_learning_noise
-- candidate-065865 | tool=code_executor | reasons=observer_learning_noise,tool_not_allowed:code_executor
-- candidate-411236 | tool=search | reasons=observer_learning_noise
-- candidate-766859 | tool=search | reasons=observer_learning_noise
-- candidate-596096 | tool=search | reasons=observer_learning_noise
-- candidate-041292 | tool=search | reasons=observer_learning_noise
+- candidate-247451 | tool=code_executor | reasons=observer_learning_noise,tool_not_allowed:code_executor
+- candidate-823645 | tool=search | reasons=observer_learning_noise
+- candidate-276211 | tool=code_executor | reasons=observer_learning_noise,tool_not_allowed:code_executor
+- candidate-936588 | tool=search | reasons=observer_learning_noise
+- candidate-484193 | tool=search | reasons=observer_learning_noise
+- candidate-509096 | tool=search | reasons=observer_learning_noise
+- candidate-109696 | tool=search | reasons=observer_learning_noise
