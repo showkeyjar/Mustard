@@ -51,6 +51,14 @@
 - 有至少一项验证通过的改动（Evaluator=pass 或 soft_pass）
 - 无触发 Human Gate 的未处理高风险项
 
+## Recursive Improvement Rules（递归改进规则）
+
+- 每轮洞见必须写明 `relative_to_last_round`（相对上一轮有什么新增/修正）。
+- 每轮提案必须写明 `scenario_fit`（对应哪个真实使用场景与痛点）。
+- 若连续 2 轮核心信号无变化，自动切换到 `pivot` 模式（强制场景化与差异化）。
+- 若连续 3 轮核心信号无变化，自动切换到 `max_landing` 模式（只做 24 小时内可验证落地动作）。
+- 未注明与上一轮差异点的提案，不得进入 Builder 阶段。
+
 ## Startup Order
 
 1. `team/AGENTS.md`

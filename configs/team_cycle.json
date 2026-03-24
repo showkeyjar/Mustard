@@ -18,6 +18,11 @@
     "min_real_prompt_match_rate": 0.9,
     "min_pretrain_tool_match_rate": 0.95
   },
+  "recursive_policy": {
+    "enabled": true,
+    "stagnation_rounds_to_pivot": 2,
+    "force_max_landing_after_rounds": 3
+  },
   "focus_areas": [
     "real_prompt_regression",
     "desktop_bridge_quality",

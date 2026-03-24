@@ -66,6 +66,76 @@ def _write_if_changed(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _build_signal_signature(signals: dict[str, object]) -> str:
+    real_prompt_match = 0.0
+    real_prompt_count = 0
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            real_prompt_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+            real_prompt_count = int(summary.get("prompt_count", 0) or 0)
+
+    return "|".join(
+        [
+            str(int(signals.get("dataset_sample_count", 0) or 0)),
+            str(int(signals.get("bridge_feedback", 0) or 0)),
+            str(int(signals.get("frontier_observation_count", 0) or 0)),
+            str(real_prompt_count),
+            f"{real_prompt_match:.4f}",
+        ]
+    )
+
+
+def _load_recursive_state(root: Path) -> dict[str, object]:
+    path = root / "data" / "team" / "recursive_state.json"
+    if not path.exists():
+        return {"last_signature": "", "stagnation_rounds": 0, "last_mode": "normal"}
+    payload = _read_json(path)
+    if not isinstance(payload, dict):
+        return {"last_signature": "", "stagnation_rounds": 0, "last_mode": "normal"}
+    return payload
+
+
+def _update_recursive_state(root: Path, signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
+    policy = config.get("recursive_policy", {})
+    if not isinstance(policy, dict):
+        policy = {}
+
+    enabled = bool(policy.get("enabled", True))
+    pivot_rounds = int(policy.get("stagnation_rounds_to_pivot", 2) or 2)
+    force_rounds = int(policy.get("force_max_landing_after_rounds", 3) or 3)
+
+    state = _load_recursive_state(root)
+    signature = _build_signal_signature(signals)
+    last_signature = str(state.get("last_signature", ""))
+    stagnation_rounds = int(state.get("stagnation_rounds", 0) or 0)
+
+    if not enabled:
+        mode = "normal"
+        stagnation_rounds = 0
+    else:
+        stagnation_rounds = stagnation_rounds + 1 if signature == last_signature else 0
+        if stagnation_rounds >= force_rounds:
+            mode = "max_landing"
+        elif stagnation_rounds >= pivot_rounds:
+            mode = "pivot"
+        else:
+            mode = "normal"
+
+    next_state = {
+        "last_signature": signature,
+        "stagnation_rounds": stagnation_rounds,
+        "last_mode": mode,
+        "updated_at_utc": utc_now().isoformat(),
+    }
+
+    target = root / "data" / "team" / "recursive_state.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _write_if_changed(target, json.dumps(next_state, ensure_ascii=False, indent=2) + "\n")
+    return next_state
+
+
 def load_team_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, object]:
     config = _read_json(config_path)
     if config:
@@ -80,6 +150,11 @@ def load_team_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, objec
                 "training_data_policy",
                 "default_model_or_tooling",
             ]
+        },
+        "recursive_policy": {
+            "enabled": True,
+            "stagnation_rounds_to_pivot": 2,
+            "force_max_landing_after_rounds": 3,
         },
         "focus_areas": [],
     }
@@ -286,7 +361,11 @@ def _build_proactive_proposals(signals: dict[str, object], gated_types: list[obj
     return proposals
 
 
-def build_proposals(digest: dict[str, object], config: dict[str, object]) -> list[dict[str, object]]:
+def build_proposals(
+    digest: dict[str, object],
+    config: dict[str, object],
+    recursive_state: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
     risk_policy = config.get("risk_policy", {})
     if not isinstance(risk_policy, dict):
         risk_policy = {}
@@ -298,6 +377,12 @@ def build_proposals(digest: dict[str, object], config: dict[str, object]) -> lis
     signals = digest.get("signals", {})
     if not isinstance(signals, dict):
         return proposals
+
+    recursive_mode = "normal"
+    stagnation_rounds = 0
+    if isinstance(recursive_state, dict):
+        recursive_mode = str(recursive_state.get("last_mode", "normal"))
+        stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
 
     real_prompt_eval = signals.get("real_prompt_eval", {})
     if isinstance(real_prompt_eval, dict):
@@ -345,6 +430,45 @@ def build_proposals(digest: dict[str, object], config: dict[str, object]) -> lis
     if not proposals:
         proposals.extend(_build_proactive_proposals(signals, gated_types))
 
+    if recursive_mode == "pivot":
+        proposals.insert(
+            0,
+            {
+                "title": "Pivot proposal strategy to scenario-grounded changes",
+                "problem": "连续多轮核心信号无变化，提案可能进入机械重复。",
+                "evidence": [f"stagnation_rounds={stagnation_rounds}"],
+                "change_type": "process_improvement",
+                "proposed_change": "下一轮提案强制绑定真实使用场景（工作中断、误触发、高频命令），每条提案必须说明与上一轮差异点。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "在提案模板新增 previous_round_diff 字段",
+                    "抽样检查最近 3 条提案是否场景化且不重复",
+                ],
+                "rollback_plan": "仅流程约束改动，删除新增字段即可回退。",
+                "needs_human_approval": "process_improvement" in gated_types,
+            },
+        )
+
+    if recursive_mode == "max_landing":
+        proposals.insert(
+            0,
+            {
+                "title": "Force maximum landing plan after stagnation",
+                "problem": "连续多轮无显著变化，需要从探索转为最大可落地。",
+                "evidence": [f"stagnation_rounds={stagnation_rounds}"],
+                "change_type": "process_improvement",
+                "proposed_change": "暂停新增探索项 1 轮，只保留可在 24 小时内验证落地的动作：扩充 real prompts、修复 Top1 failure pattern、补齐训练前后对比。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "执行 python -m scripts.evaluate_real_prompts",
+                    "更新 memory/failure_patterns.md Top1 修复状态",
+                    "补充一份训练前后指标对比",
+                ],
+                "rollback_plan": "恢复常规提案配额并移除强制落地限制。",
+                "needs_human_approval": "process_improvement" in gated_types,
+            },
+        )
+
     max_new = config.get("heartbeat", {}).get("max_new_proposals_per_cycle", 3) if isinstance(config.get("heartbeat", {}), dict) else 3
     return proposals[: int(max_new)]
 
@@ -364,6 +488,15 @@ def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
         f"- direction_owner: {direction_review.get('owner', 'arbiter')}",
         f"- alerts: {', '.join(digest.get('alerts', [])) or 'none'}",
     ]
+
+    recursive_state = digest.get("recursive_state", {})
+    if isinstance(recursive_state, dict) and recursive_state:
+        lines.extend(
+            [
+                f"- recursive_mode: {recursive_state.get('last_mode', 'normal')}",
+                f"- stagnation_rounds: {recursive_state.get('stagnation_rounds', 0)}",
+            ]
+        )
 
     signals = digest.get("signals", {})
     if isinstance(signals, dict):
@@ -419,14 +552,21 @@ def _build_team_actions_summary(
     signals: dict[str, object],
     proposals: list[dict[str, object]],
     direction_review: dict[str, object],
+    recursive_state: dict[str, object] | None = None,
 ) -> dict[str, str]:
     needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
     proposal_brief = "; ".join(
         f"{proposal.get('title', '')}: {proposal.get('proposed_change', '')}" for proposal in proposals[:3]
     ) or "本轮无新增提案"
 
+    recursive_mode = "normal"
+    stagnation_rounds = 0
+    if isinstance(recursive_state, dict):
+        recursive_mode = str(recursive_state.get("last_mode", "normal"))
+        stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+
     return {
-        "conductor": f"输出提案清单 -> {proposal_brief}",
+        "conductor": f"输出提案清单(mode={recursive_mode}, stagnation_rounds={stagnation_rounds}) -> {proposal_brief}",
         "observer": (
             "采集关键信号 "
             f"episodes={signals.get('episodes', 0)} reviews={signals.get('reviews', 0)} "
@@ -528,8 +668,10 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     bootstrap_workspace(root)
     config = load_team_config(root / config_path if not config_path.is_absolute() else config_path)
     signals = collect_signals(root)
+    recursive_state = _update_recursive_state(root, signals, config)
     digest = build_daily_digest(signals, config)
-    proposals = build_proposals(digest, config)
+    digest["recursive_state"] = recursive_state
+    proposals = build_proposals(digest, config, recursive_state=recursive_state)
     existing_titles = _read_existing_proposal_titles(root)
     proposals = [proposal for proposal in proposals if str(proposal.get("title", "")).strip() not in existing_titles]
 
@@ -537,7 +679,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     if not isinstance(direction_review, dict):
         direction_review = {}
 
-    team_actions = _build_team_actions_summary(signals, proposals, direction_review)
+    team_actions = _build_team_actions_summary(signals, proposals, direction_review, recursive_state=recursive_state)
     digest["team_actions"] = team_actions
 
     failure_patterns_path = _write_failure_patterns(root, signals)
