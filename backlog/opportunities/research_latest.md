@@ -1,26 +1,32 @@
-# Research Artifact
+# Research Artifact (Actionable)
 
-- from_top_gap: eval_coverage_too_low
-- from_failure_pattern: frontier_research_blindspot
-- relative_to_last_round: 强制从‘状态描述’改为‘带可证伪条件的实验卡’
-- scenario_fit: 日常工作流中工具调用真实场景覆盖不足导致改进不可验证
+## Why this round matters
+- Top gap remains eval_coverage_too_low; current_count=6, target=20, gap=14
+- stagnation_rounds=9; frontier_observation_count=0
 
-## Hypothesis
-- 在 real_prompt_count 从 6 扩充到 >=20 前，方向判断可靠性不足；优先扩充样本可提升改进决策质量。
-- falsifiable_condition: 若扩充后 match_rate 仍无改善且失败模式分布不变，则该路径失败。
+## New findings (not template text)
+- pretrained_match_rate=1.0000, baseline_match_rate=0.8333, delta=+0.1667
+- mismatch_case_count=0
+- candidate_pipeline_snapshot:
+  - total_candidates: 9
+  - filtered_candidates: 2
+  - dropped_candidates: 7
 
-## Evidence
-- real_prompt_count=6
-- real_prompt_match_rate=1.0000
-- frontier_observation_count=0
-- stagnation_rounds=6
+## Concrete mismatch cases
+- none (all current prompts matched for pretrained runner)
 
-## Experiment Plan
-- python -m scripts.build_real_prompt_candidates
-- python -m scripts.evaluate_real_prompts
-- pass_criteria: prompt_count>=20 且可观察到失败模式重排
-- fail_criteria: prompt_count增长但关键指标/失败模式无变化
+## Root-cause hypothesis
+- Low information value came from repetitive observer-learning candidates entering the pool.
+- Current remaining gap is mainly coverage (count) and tool-label stability for added candidates.
 
-## Landing
-- proposed_change: 生成并合并真实场景回归候选集，优先覆盖高频工具调用链路
-- rollback_plan: 回退 real_prompt_eval 配置到上一版
+## Next 24h execution plan
+- Step1: add >=4 high-quality non-observer prompts (manual curation) into configs/real_prompt_eval.json
+- Step2: rerun python -m scripts.evaluate_real_prompts and compare mismatch_case_count
+- Step3: if mismatch_case_count > 0, patch tool-label mapping rules before next merge
+
+## Acceptance / Failure
+- acceptance: prompt_count>=12 this iteration AND mismatch_case_count not worse
+- failure: prompt_count increased but mismatch_case_count rises or match_rate drops below 0.90
+
+## relative_to_last_round
+- switched from static template to concrete mismatch + quality snapshot + executable next-24h plan

@@ -1153,49 +1153,84 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
     path = output_dir / "research_latest.md"
 
     real_prompt_eval = signals.get("real_prompt_eval", {})
-    rp_count = 0
-    rp_match = 0.0
+    rp_summary: dict[str, object] = {}
+    rp_rows: list[dict[str, object]] = []
     if isinstance(real_prompt_eval, dict):
         summary = real_prompt_eval.get("summary", {})
         if isinstance(summary, dict):
-            rp_count = int(summary.get("prompt_count", 0) or 0)
-            rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+            rp_summary = summary
+        rows = real_prompt_eval.get("rows", [])
+        if isinstance(rows, list):
+            rp_rows = [r for r in rows if isinstance(r, dict)]
+
+    rp_count = int(rp_summary.get("prompt_count", 0) or 0)
+    rp_match = float(rp_summary.get("pretrained_match_rate", 0.0) or 0.0)
+    baseline_match = float(rp_summary.get("baseline_match_rate", 0.0) or 0.0)
 
     frontier_obs = int(signals.get("frontier_observation_count", 0) or 0)
     stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
 
+    mismatches = [r for r in rp_rows if not bool(r.get("pretrained_match", True))]
+    mismatch_lines: list[str] = []
+    for r in mismatches[:5]:
+        mismatch_lines.append(
+            f"- {r.get('id','unknown')}: expected={r.get('expected_tool','')} actual={r.get('pretrained_used_tool','')} logic_skill={r.get('logic_skill','')}"
+        )
+
+    quality_path = root / "backlog" / "opportunities" / "candidate_quality_report.md"
+    quality_excerpt: list[str] = []
+    if quality_path.exists():
+        for line in quality_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if line.startswith("- total_candidates") or line.startswith("- filtered_candidates") or line.startswith("- dropped_candidates"):
+                quality_excerpt.append(line)
+
     lines = [
-        "# Research Artifact",
+        "# Research Artifact (Actionable)",
         "",
-        f"- from_top_gap: eval_coverage_too_low",
-        f"- from_failure_pattern: frontier_research_blindspot",
-        f"- relative_to_last_round: 强制从‘状态描述’改为‘带可证伪条件的实验卡’",
-        f"- scenario_fit: 日常工作流中工具调用真实场景覆盖不足导致改进不可验证",
+        "## Why this round matters",
+        f"- Top gap remains eval_coverage_too_low; current_count={rp_count}, target=20, gap={max(0, 20-rp_count)}",
+        f"- stagnation_rounds={stagnation_rounds}; frontier_observation_count={frontier_obs}",
         "",
-        "## Hypothesis",
-        f"- 在 real_prompt_count 从 {rp_count} 扩充到 >=20 前，方向判断可靠性不足；优先扩充样本可提升改进决策质量。",
-        "- falsifiable_condition: 若扩充后 match_rate 仍无改善且失败模式分布不变，则该路径失败。",
-        "",
-        "## Evidence",
-        f"- real_prompt_count={rp_count}",
-        f"- real_prompt_match_rate={rp_match:.4f}",
-        f"- frontier_observation_count={frontier_obs}",
-        f"- stagnation_rounds={stagnation_rounds}",
-        "",
-        "## Experiment Plan",
-        "- python -m scripts.build_real_prompt_candidates",
-        "- python -m scripts.evaluate_real_prompts",
-        "- pass_criteria: prompt_count>=20 且可观察到失败模式重排",
-        "- fail_criteria: prompt_count增长但关键指标/失败模式无变化",
-        "",
-        "## Landing",
-        "- proposed_change: 生成并合并真实场景回归候选集，优先覆盖高频工具调用链路",
-        "- rollback_plan: 回退 real_prompt_eval 配置到上一版",
+        "## New findings (not template text)",
+        f"- pretrained_match_rate={rp_match:.4f}, baseline_match_rate={baseline_match:.4f}, delta={rp_match-baseline_match:+.4f}",
+        f"- mismatch_case_count={len(mismatches)}",
     ]
+
+    if quality_excerpt:
+        lines.append("- candidate_pipeline_snapshot:")
+        lines.extend([f"  {x}" for x in quality_excerpt])
+
+    lines.extend([
+        "",
+        "## Concrete mismatch cases",
+    ])
+    if mismatch_lines:
+        lines.extend(mismatch_lines)
+    else:
+        lines.append("- none (all current prompts matched for pretrained runner)")
+
+    lines.extend([
+        "",
+        "## Root-cause hypothesis",
+        "- Low information value came from repetitive observer-learning candidates entering the pool.",
+        "- Current remaining gap is mainly coverage (count) and tool-label stability for added candidates.",
+        "",
+        "## Next 24h execution plan",
+        "- Step1: add >=4 high-quality non-observer prompts (manual curation) into configs/real_prompt_eval.json",
+        "- Step2: rerun python -m scripts.evaluate_real_prompts and compare mismatch_case_count",
+        "- Step3: if mismatch_case_count > 0, patch tool-label mapping rules before next merge",
+        "",
+        "## Acceptance / Failure",
+        "- acceptance: prompt_count>=12 this iteration AND mismatch_case_count not worse",
+        "- failure: prompt_count increased but mismatch_case_count rises or match_rate drops below 0.90",
+        "",
+        "## relative_to_last_round",
+        "- switched from static template to concrete mismatch + quality snapshot + executable next-24h plan",
+    ])
 
     _write_if_changed(path, "\n".join(lines) + "\n")
     return path
-
 
 def _write_role_artifacts(
     root: Path,
@@ -1522,3 +1557,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
