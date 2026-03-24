@@ -1,6 +1,6 @@
 {
   "last_signature": "186|0|0|6|1.0000",
-  "stagnation_rounds": 2,
-  "last_mode": "pivot",
-  "updated_at_utc": "2026-03-24T03:48:03.877344+00:00"
+  "stagnation_rounds": 3,
+  "last_mode": "max_landing",
+  "updated_at_utc": "2026-03-24T03:53:04.027872+00:00"
 }
