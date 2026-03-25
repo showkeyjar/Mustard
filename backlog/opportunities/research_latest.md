@@ -2,7 +2,7 @@
 
 ## Why this round matters
 - Top gap remains eval_coverage_too_low; current_count=12, target=20, gap=8
-- stagnation_rounds=190; frontier_observation_count=0
+- stagnation_rounds=191; frontier_observation_count=0
 
 ## New findings (not template text)
 - pretrained_match_rate=1.0000, baseline_match_rate=0.9167, delta=+0.0833
