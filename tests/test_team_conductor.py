@@ -16,6 +16,7 @@ class TeamConductorTests(unittest.TestCase):
         changed_paths = [
             "scripts/team_conductor.py",
             "configs/real_prompt_eval.json",
+            "configs/team_github.json",
             "data/team/role_content_history.jsonl",
             "backlog/opportunities/research_latest.md",
             "team/GITHUB_AUTOMATION.md",
@@ -24,6 +25,7 @@ class TeamConductorTests(unittest.TestCase):
         groups = _classify_delivery_paths(changed_paths)
         self.assertIn("scripts/team_conductor.py", groups["core"])
         self.assertIn("configs/real_prompt_eval.json", groups["core"])
+        self.assertIn("configs/team_github.json", groups["core"])
         self.assertIn("data/team/role_content_history.jsonl", groups["volatile"])
         self.assertIn("backlog/opportunities/research_latest.md", groups["artifacts"])
         self.assertIn("team/GITHUB_AUTOMATION.md", groups["artifacts"])

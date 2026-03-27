@@ -1,6 +1,11 @@
 {
   "base_branch": "main",
   "default_reviewers": [],
+  "github_delivery": {
+    "enabled": false,
+    "require_direction_correct": true,
+    "require_clean_alerts": true
+  },
   "auto_review": {
     "enabled": true,
     "same_repo_only": true,

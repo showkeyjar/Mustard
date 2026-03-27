@@ -2466,6 +2466,7 @@ def _classify_delivery_paths(paths: list[str]) -> dict[str, list[str]]:
             or path.startswith("tests/")
             or path == "configs/team_cycle.json"
             or path == "configs/real_prompt_eval.json"
+            or path == "configs/team_github.json"
             or path.startswith("docs/plans/")
         ):
             groups["core"].append(path)
