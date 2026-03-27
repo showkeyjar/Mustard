@@ -164,8 +164,44 @@ def _paths_for_git_delivery(decision: dict[str, object], *, include_artifacts: b
     if isinstance(core, list):
         paths.extend(str(item) for item in core if str(item).strip())
     if include_artifacts and isinstance(artifacts, list):
-        paths.extend(str(item) for item in artifacts if str(item).strip())
+        for item in artifacts:
+            value = str(item).strip()
+            if not value:
+                continue
+            if value.startswith("memory/daily/") or value.startswith("backlog/opportunities/") or value.startswith("team/"):
+                paths.append(value)
     return paths
+
+
+def _build_delivery_summary(cycle_payload: dict[str, object], git_delivery: dict[str, object] | None = None) -> dict[str, object]:
+    decision = cycle_payload.get("delivery_decision", {})
+    if not isinstance(decision, dict):
+        decision = {}
+    file_groups = decision.get("file_groups", {})
+    if not isinstance(file_groups, dict):
+        file_groups = {}
+
+    summary = {
+        "delivery_lane": str(decision.get("delivery_lane", "skip")),
+        "delivery_reason": str(decision.get("reason", "")),
+        "should_commit": bool(decision.get("should_commit", False)),
+        "should_push": bool(decision.get("should_push", False)),
+        "should_open_pr": bool(decision.get("should_open_pr", False)),
+        "core_count": len(file_groups.get("core", [])) if isinstance(file_groups.get("core", []), list) else 0,
+        "artifact_count": len(file_groups.get("artifacts", [])) if isinstance(file_groups.get("artifacts", []), list) else 0,
+        "volatile_count": len(file_groups.get("volatile", [])) if isinstance(file_groups.get("volatile", []), list) else 0,
+        "other_count": len(file_groups.get("other", [])) if isinstance(file_groups.get("other", []), list) else 0,
+    }
+    if isinstance(git_delivery, dict):
+        summary.update(
+            {
+                "git_committed": bool(git_delivery.get("committed", False)),
+                "git_pushed": bool(git_delivery.get("pushed", False)),
+                "git_commit_sha": str(git_delivery.get("commit_sha", "")),
+                "git_branch": str(git_delivery.get("branch", "")),
+            }
+        )
+    return summary
 
 
 def _auto_sync_git_from_cycle(root: Path, cycle_payload: dict[str, object], *, include_artifacts: bool = False) -> dict[str, object]:
@@ -235,6 +271,7 @@ def main() -> int:
     deliver_parser.add_argument("--branch", default="")
     deliver_parser.add_argument("--reviewer", action="append", default=[])
     deliver_parser.add_argument("--draft", action="store_true")
+    deliver_parser.add_argument("--force-pr", action="store_true")
 
     review_parser = subparsers.add_parser("review")
     review_parser.add_argument("--root", default=".")
@@ -274,6 +311,7 @@ def main() -> int:
                 payload,
                 include_artifacts=bool(getattr(args, "include_artifacts", False)),
             )
+        payload["delivery_summary"] = _build_delivery_summary(payload, payload.get("git_delivery"))
     elif args.command == "status":
         payload = status(root)
     elif args.command == "github-doctor":
@@ -281,7 +319,8 @@ def main() -> int:
     elif args.command == "deliver":
         cycle_payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
         delivery_decision = cycle_payload.get("delivery_decision", {})
-        if not isinstance(delivery_decision, dict) or str(delivery_decision.get("delivery_lane", "skip")) != "pr_delivery":
+        lane = str(delivery_decision.get("delivery_lane", "skip")) if isinstance(delivery_decision, dict) else "skip"
+        if not bool(getattr(args, "force_pr", False)) and lane != "pr_delivery":
             payload = {
                 "cycle": cycle_payload,
                 "delivery": {
@@ -321,6 +360,7 @@ def main() -> int:
                     "cycle": cycle_payload,
                     "delivery": {
                         "submitted": True,
+                        "forced": bool(getattr(args, "force_pr", False)),
                         **delivery_payload,
                     },
                 }

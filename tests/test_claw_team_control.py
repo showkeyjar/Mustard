@@ -9,6 +9,32 @@ from scripts.team_conductor import bootstrap_workspace
 
 
 class ClawTeamControlTests(unittest.TestCase):
+    def test_build_delivery_summary_reports_lane_and_git_result(self) -> None:
+        from scripts.claw_team_control import _build_delivery_summary
+
+        cycle_payload = {
+            "delivery_decision": {
+                "delivery_lane": "sync_only",
+                "reason": "core_changes_detected",
+                "should_commit": True,
+                "should_push": True,
+                "should_open_pr": False,
+                "file_groups": {
+                    "core": ["scripts/team_conductor.py"],
+                    "artifacts": ["team/GITHUB_AUTOMATION.md"],
+                    "volatile": ["data/team/role_content_history.jsonl"],
+                    "other": [],
+                },
+            }
+        }
+        git_delivery = {"committed": True, "pushed": True, "commit_sha": "abc123", "branch": "main"}
+        summary = _build_delivery_summary(cycle_payload, git_delivery)
+        self.assertEqual(summary["delivery_lane"], "sync_only")
+        self.assertEqual(summary["core_count"], 1)
+        self.assertEqual(summary["artifact_count"], 1)
+        self.assertTrue(summary["git_committed"])
+        self.assertEqual(summary["git_branch"], "main")
+
     def test_auto_sync_git_includes_artifacts_when_requested(self) -> None:
         from scripts.claw_team_control import _paths_for_git_delivery
 

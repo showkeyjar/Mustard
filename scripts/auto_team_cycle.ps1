@@ -21,6 +21,12 @@ $gitStatusBefore = @()
 $runOutput = @()
 $lastCommit = @()
 $statusOut = @()
+$deliveryLane = ''
+$deliveryReason = ''
+$gitCommitted = ''
+$gitPushed = ''
+$gitCommitSha = ''
+$gitBranch = ''
 
 try {
   Set-Location $root
@@ -31,6 +37,21 @@ try {
   Write-Log 'run: python -m scripts.claw_team_control run --auto-sync-git'
   $runOutput = python -m scripts.claw_team_control run --auto-sync-git 2>&1
   if ($runOutput) { Add-Content -Path $logPath -Value $runOutput }
+
+  try {
+    $runJson = ($runOutput -join "`n") | ConvertFrom-Json
+    if ($runJson.delivery_summary) {
+      $deliveryLane = [string]$runJson.delivery_summary.delivery_lane
+      $deliveryReason = [string]$runJson.delivery_summary.delivery_reason
+      $gitCommitted = [string]$runJson.delivery_summary.git_committed
+      $gitPushed = [string]$runJson.delivery_summary.git_pushed
+      $gitCommitSha = [string]$runJson.delivery_summary.git_commit_sha
+      $gitBranch = [string]$runJson.delivery_summary.git_branch
+    }
+  }
+  catch {
+    Write-Log 'WARN: failed to parse run output json for delivery summary'
+  }
 
   Write-Log 'last commit:'
   $lastCommit = git log --oneline -n 1 2>&1
@@ -65,6 +86,16 @@ finally {
     "## Last Commit",
     '```text',
     $(if ($lastCommit) { ($lastCommit -join "`n") } else { '(no commit info)' }),
+    '```',
+    "",
+    "## Delivery Summary",
+    '```text',
+    "lane=$deliveryLane",
+    "reason=$deliveryReason",
+    "git_committed=$gitCommitted",
+    "git_pushed=$gitPushed",
+    "git_commit_sha=$gitCommitSha",
+    "git_branch=$gitBranch",
     '```',
     "",
     "## Team Status",
