@@ -28,8 +28,8 @@ try {
   $gitStatusBefore = git status --short 2>&1
   if ($gitStatusBefore) { Add-Content -Path $logPath -Value $gitStatusBefore } else { Write-Log '(clean)' }
 
-  Write-Log 'run: python -m scripts.claw_team_control run --auto-commit --auto-push'
-  $runOutput = python -m scripts.claw_team_control run --auto-commit --auto-push 2>&1
+  Write-Log 'run: python -m scripts.claw_team_control run --auto-sync-git'
+  $runOutput = python -m scripts.claw_team_control run --auto-sync-git 2>&1
   if ($runOutput) { Add-Content -Path $logPath -Value $runOutput }
 
   Write-Log 'last commit:'

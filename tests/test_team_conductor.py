@@ -18,12 +18,16 @@ class TeamConductorTests(unittest.TestCase):
             "configs/real_prompt_eval.json",
             "data/team/role_content_history.jsonl",
             "backlog/opportunities/research_latest.md",
+            "team/GITHUB_AUTOMATION.md",
+            "docs/plans/2026-03-27-auto-delivery-lane-plan.md",
         ]
         groups = _classify_delivery_paths(changed_paths)
         self.assertIn("scripts/team_conductor.py", groups["core"])
         self.assertIn("configs/real_prompt_eval.json", groups["core"])
         self.assertIn("data/team/role_content_history.jsonl", groups["volatile"])
         self.assertIn("backlog/opportunities/research_latest.md", groups["artifacts"])
+        self.assertIn("team/GITHUB_AUTOMATION.md", groups["artifacts"])
+        self.assertIn("docs/plans/2026-03-27-auto-delivery-lane-plan.md", groups["core"])
 
         decision = _build_delivery_decision({}, {}, changed_paths, {})
         self.assertIn("should_commit", decision)
@@ -32,6 +36,17 @@ class TeamConductorTests(unittest.TestCase):
         self.assertIn("delivery_lane", decision)
         self.assertIn("file_groups", decision)
         self.assertEqual(decision["delivery_lane"], "sync_only")
+
+    def test_build_delivery_decision_selects_pr_lane_when_config_and_direction_allow(self) -> None:
+        changed_paths = ["scripts/team_conductor.py"]
+        decision = _build_delivery_decision(
+            {"alerts": []},
+            {"verdict": "direction_correct", "escalate_to_human": False},
+            changed_paths,
+            {"github_delivery": {"enabled": True, "require_direction_correct": True, "require_clean_alerts": True}},
+        )
+        self.assertEqual(decision["delivery_lane"], "pr_delivery")
+        self.assertTrue(decision["should_open_pr"])
 
     def test_run_cycle_executes_expand_eval_set_operator(self) -> None:
         with TemporaryDirectory() as temp_dir:

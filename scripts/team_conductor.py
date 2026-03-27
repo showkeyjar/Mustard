@@ -2479,8 +2479,11 @@ def _classify_delivery_paths(paths: list[str]) -> dict[str, list[str]]:
             path.startswith("backlog/")
             or path.startswith("memory/daily/")
             or path == "data/eval/real_prompt_eval_latest.json"
+            or path.startswith("team/")
         ):
             groups["artifacts"].append(path)
+        elif path.startswith("docs/"):
+            groups["core"].append(path)
         else:
             groups["other"].append(path)
 
@@ -2496,6 +2499,7 @@ def _build_delivery_decision(
     file_groups = _classify_delivery_paths(changed_paths)
     core = file_groups.get("core", [])
     artifacts = file_groups.get("artifacts", [])
+    other = file_groups.get("other", [])
 
     if not changed_paths:
         return {
@@ -2508,7 +2512,36 @@ def _build_delivery_decision(
             "file_groups": file_groups,
         }
 
+    review = direction_review if isinstance(direction_review, dict) else {}
+    verdict = str(review.get("verdict", "")).strip()
+    escalate = bool(review.get("escalate_to_human", False))
+    alerts = signals.get("alerts", []) if isinstance(signals, dict) else []
+    alerts = alerts if isinstance(alerts, list) else []
+
+    github_cfg = config.get("github_delivery", {}) if isinstance(config, dict) else {}
+    github_cfg = github_cfg if isinstance(github_cfg, dict) else {}
+    pr_enabled = bool(github_cfg.get("enabled", False))
+    require_direction_correct = bool(github_cfg.get("require_direction_correct", True))
+    require_clean_alerts = bool(github_cfg.get("require_clean_alerts", True))
+
     if core:
+        pr_ready = pr_enabled and not escalate
+        if require_direction_correct:
+            pr_ready = pr_ready and verdict == "direction_correct"
+        if require_clean_alerts:
+            pr_ready = pr_ready and not alerts
+
+        if pr_ready:
+            return {
+                "should_commit": True,
+                "should_push": True,
+                "should_open_pr": True,
+                "should_merge": False,
+                "delivery_lane": "pr_delivery",
+                "reason": "core_changes_ready_for_pr",
+                "file_groups": file_groups,
+            }
+
         return {
             "should_commit": True,
             "should_push": True,
@@ -2519,14 +2552,14 @@ def _build_delivery_decision(
             "file_groups": file_groups,
         }
 
-    if artifacts:
+    if artifacts or other:
         return {
             "should_commit": True,
             "should_push": False,
             "should_open_pr": False,
             "should_merge": False,
             "delivery_lane": "sync_with_artifacts",
-            "reason": "artifact_changes_detected",
+            "reason": "artifact_or_doc_changes_detected",
             "file_groups": file_groups,
         }
 

@@ -9,6 +9,20 @@ from scripts.team_conductor import bootstrap_workspace
 
 
 class ClawTeamControlTests(unittest.TestCase):
+    def test_auto_sync_git_includes_artifacts_when_requested(self) -> None:
+        from scripts.claw_team_control import _paths_for_git_delivery
+
+        decision = {
+            "file_groups": {
+                "core": ["scripts/team_conductor.py"],
+                "artifacts": ["backlog/opportunities/research_latest.md", "team/GITHUB_AUTOMATION.md"],
+            }
+        }
+        paths = _paths_for_git_delivery(decision, include_artifacts=True)
+        self.assertIn("scripts/team_conductor.py", paths)
+        self.assertIn("backlog/opportunities/research_latest.md", paths)
+        self.assertIn("team/GITHUB_AUTOMATION.md", paths)
+
     @patch("scripts.claw_team_control.push_current_branch", return_value={"pushed": True, "branch": "main"})
     @patch("scripts.claw_team_control.commit_selected_paths", return_value={"committed": True, "commit_sha": "abc123", "paths": ["scripts/team_conductor.py"]})
     def test_run_auto_sync_git_commits_and_pushes_selected_paths(self, commit_mock, push_mock) -> None:
