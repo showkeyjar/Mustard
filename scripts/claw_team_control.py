@@ -8,10 +8,12 @@ from pathlib import Path
 from scripts.claw_team_github import automerge_pr, doctor as github_doctor
 from scripts.claw_team_github import (
     commit_all_changes,
+    commit_selected_paths,
     get_current_branch,
     get_worktree_status,
     load_github_config,
     push_branch,
+    push_current_branch,
     review_pr,
     submit_pr,
 )
@@ -151,6 +153,57 @@ def _auto_commit_if_allowed(root: Path, cycle_payload: dict[str, object], *, aut
     return payload
 
 
+def _paths_for_git_delivery(decision: dict[str, object], *, include_artifacts: bool = False) -> list[str]:
+    file_groups = decision.get("file_groups", {})
+    if not isinstance(file_groups, dict):
+        return []
+
+    paths: list[str] = []
+    core = file_groups.get("core", [])
+    artifacts = file_groups.get("artifacts", [])
+    if isinstance(core, list):
+        paths.extend(str(item) for item in core if str(item).strip())
+    if include_artifacts and isinstance(artifacts, list):
+        paths.extend(str(item) for item in artifacts if str(item).strip())
+    return paths
+
+
+def _auto_sync_git_from_cycle(root: Path, cycle_payload: dict[str, object], *, include_artifacts: bool = False) -> dict[str, object]:
+    decision = cycle_payload.get("delivery_decision", {})
+    if not isinstance(decision, dict):
+        return {"enabled": True, "committed": False, "pushed": False, "reason": "delivery_decision_missing"}
+
+    lane = str(decision.get("delivery_lane", "skip"))
+    if lane == "skip":
+        return {"enabled": True, "committed": False, "pushed": False, "reason": str(decision.get("reason", "skip")), "lane": lane}
+
+    paths = _paths_for_git_delivery(decision, include_artifacts=include_artifacts)
+    if not paths:
+        return {"enabled": True, "committed": False, "pushed": False, "reason": "no_selected_paths", "lane": lane}
+
+    commit_message = _derive_auto_commit_message(root, cycle_payload)
+    commit_result = commit_selected_paths(root, paths, commit_message)
+    payload: dict[str, object] = {
+        "enabled": True,
+        "lane": lane,
+        "paths": paths,
+        "commit_message": commit_message,
+        **commit_result,
+    }
+
+    if bool(commit_result.get("committed", False)) and bool(decision.get("should_push", False)):
+        try:
+            push_payload = push_current_branch(root)
+            payload.update(push_payload)
+        except Exception as exc:
+            payload["pushed"] = False
+            payload["push_error"] = str(exc)
+    else:
+        payload["pushed"] = False
+
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Control the Mustard Claw Team workflow.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -162,6 +215,8 @@ def main() -> int:
     run_parser.add_argument("--root", default=".")
     run_parser.add_argument("--auto-commit", action="store_true")
     run_parser.add_argument("--auto-push", action="store_true")
+    run_parser.add_argument("--auto-sync-git", action="store_true")
+    run_parser.add_argument("--include-artifacts", action="store_true")
 
     status_parser = subparsers.add_parser("status")
     status_parser.add_argument("--root", default=".")
@@ -213,45 +268,62 @@ def main() -> int:
                 payload,
                 auto_push=bool(getattr(args, "auto_push", False)),
             )
+        if bool(getattr(args, "auto_sync_git", False)):
+            payload["git_delivery"] = _auto_sync_git_from_cycle(
+                root,
+                payload,
+                include_artifacts=bool(getattr(args, "include_artifacts", False)),
+            )
     elif args.command == "status":
         payload = status(root)
     elif args.command == "github-doctor":
         payload = github_doctor(root)
     elif args.command == "deliver":
         cycle_payload = run_cycle(root=root, config_path=DEFAULT_CONFIG_PATH)
-        github_payload = github_doctor(root)
-        if not github_payload.get("ok", False):
+        delivery_decision = cycle_payload.get("delivery_decision", {})
+        if not isinstance(delivery_decision, dict) or str(delivery_decision.get("delivery_lane", "skip")) != "pr_delivery":
             payload = {
                 "cycle": cycle_payload,
                 "delivery": {
                     "submitted": False,
-                    "reason": "github_doctor_failed",
-                    "github": github_payload,
+                    "reason": "pr_lane_not_selected",
+                    "delivery_decision": delivery_decision,
                 },
             }
         else:
-            github_config = load_github_config(root)
-            base_branch = str(github_config.get("base_branch", "main"))
-            title = str(args.title).strip() or f"Claw Team: automated delivery {Path(root).name}"
-            body = str(args.body).strip() or "Automated delivery created by Mustard Claw Team."
-            commit_message = str(args.commit_message).strip() or title
-            delivery_payload = submit_pr(
-                root,
-                title=title,
-                body=body,
-                base_branch=base_branch,
-                commit_message=commit_message,
-                branch_name=str(args.branch).strip() or None,
-                draft=bool(args.draft),
-                reviewers=list(args.reviewer),
-            )
-            payload = {
-                "cycle": cycle_payload,
-                "delivery": {
-                    "submitted": True,
-                    **delivery_payload,
-                },
-            }
+            github_payload = github_doctor(root)
+            if not github_payload.get("ok", False):
+                payload = {
+                    "cycle": cycle_payload,
+                    "delivery": {
+                        "submitted": False,
+                        "reason": "github_doctor_failed",
+                        "github": github_payload,
+                    },
+                }
+            else:
+                github_config = load_github_config(root)
+                base_branch = str(github_config.get("base_branch", "main"))
+                title = str(args.title).strip() or f"Claw Team: automated delivery {Path(root).name}"
+                body = str(args.body).strip() or "Automated delivery created by Mustard Claw Team."
+                commit_message = str(args.commit_message).strip() or title
+                delivery_payload = submit_pr(
+                    root,
+                    title=title,
+                    body=body,
+                    base_branch=base_branch,
+                    commit_message=commit_message,
+                    branch_name=str(args.branch).strip() or None,
+                    draft=bool(args.draft),
+                    reviewers=list(args.reviewer),
+                )
+                payload = {
+                    "cycle": cycle_payload,
+                    "delivery": {
+                        "submitted": True,
+                        **delivery_payload,
+                    },
+                }
     elif args.command == "review":
         github_config = load_github_config(root)
         auto_review = github_config.get("auto_review", {})

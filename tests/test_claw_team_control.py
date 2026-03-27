@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,6 +9,49 @@ from scripts.team_conductor import bootstrap_workspace
 
 
 class ClawTeamControlTests(unittest.TestCase):
+    @patch("scripts.claw_team_control.push_current_branch", return_value={"pushed": True, "branch": "main"})
+    @patch("scripts.claw_team_control.commit_selected_paths", return_value={"committed": True, "commit_sha": "abc123", "paths": ["scripts/team_conductor.py"]})
+    def test_run_auto_sync_git_commits_and_pushes_selected_paths(self, commit_mock, push_mock) -> None:
+        from scripts.claw_team_control import _auto_sync_git_from_cycle
+
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            payload = {
+                "digest_path": "memory/daily/2026-03-27.md",
+                "team_actions": {},
+                "proposal_paths": [],
+                "delivery_decision": {
+                    "delivery_lane": "sync_only",
+                    "should_push": True,
+                    "file_groups": {
+                        "core": ["scripts/team_conductor.py"],
+                        "artifacts": ["backlog/opportunities/research_latest.md"],
+                        "volatile": ["data/team/role_content_history.jsonl"],
+                    },
+                },
+            }
+            result = _auto_sync_git_from_cycle(root, payload, include_artifacts=False)
+            self.assertTrue(result["committed"])
+            self.assertTrue(result["pushed"])
+            commit_mock.assert_called_once()
+            push_mock.assert_called_once()
+
+    def test_deliver_skips_when_delivery_decision_is_not_pr_lane(self) -> None:
+        cycle_payload = {
+            "team_name": "mustard-claw",
+            "delivery_decision": {"delivery_lane": "sync_only", "reason": "core_changes_detected"},
+        }
+        payload = {
+            "cycle": cycle_payload,
+            "delivery": {
+                "submitted": False,
+                "reason": "pr_lane_not_selected",
+                "delivery_decision": cycle_payload["delivery_decision"],
+            },
+        }
+        self.assertFalse(payload["delivery"]["submitted"])
+        self.assertEqual(payload["delivery"]["reason"], "pr_lane_not_selected")
+
     def test_doctor_reports_missing_files_before_bootstrap_assets_exist(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

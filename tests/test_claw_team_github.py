@@ -8,12 +8,47 @@ from scripts.claw_team_github import (
     build_review_body,
     can_automerge,
     choose_review_event,
+    commit_selected_paths,
     doctor,
     parse_owner_repo,
+    push_current_branch,
 )
 
 
 class ClawTeamGitHubTests(unittest.TestCase):
+    @patch("scripts.claw_team_github._git_output", side_effect=["scripts/team_conductor.py\nconfigs/real_prompt_eval.json", "abc123"])
+    @patch("scripts.claw_team_github._run")
+    def test_commit_selected_paths_stages_only_requested_paths(self, run_mock, git_output_mock) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "scripts").mkdir(parents=True, exist_ok=True)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "scripts" / "team_conductor.py").write_text("x", encoding="utf-8")
+            (root / "configs" / "real_prompt_eval.json").write_text("{}", encoding="utf-8")
+
+            payload = commit_selected_paths(
+                root,
+                ["scripts/team_conductor.py", "configs/real_prompt_eval.json"],
+                "test commit",
+            )
+
+            self.assertTrue(payload["committed"])
+            rendered_calls = [repr(call) for call in run_mock.call_args_list]
+            add_call_found = any("git', 'add', '--'" in item and "scripts/team_conductor.py" in item and "configs/real_prompt_eval.json" in item for item in rendered_calls)
+            commit_call_found = any("git', 'commit', '-m', 'test commit'" in item for item in rendered_calls)
+            self.assertTrue(add_call_found, rendered_calls)
+            self.assertTrue(commit_call_found, rendered_calls)
+
+    @patch("scripts.claw_team_github.push_branch")
+    @patch("scripts.claw_team_github.get_current_branch", return_value="main")
+    def test_push_current_branch_pushes_detected_branch(self, branch_mock, push_mock) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            payload = push_current_branch(root)
+            self.assertTrue(payload["pushed"])
+            self.assertEqual(payload["branch"], "main")
+            push_mock.assert_called_once_with(root, "main")
+
     def test_parse_owner_repo_supports_https_remote(self) -> None:
         owner, repo = parse_owner_repo("https://github.com/showkeyjar/Mustard.git")
         self.assertEqual(owner, "showkeyjar")

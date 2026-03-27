@@ -1,9 +1,13 @@
 $ErrorActionPreference = 'Continue'
 $root = 'D:\codes\Mustard'
 $logDir = 'D:\codes\Mustard\.openclaw\logs'
+$reportDir = 'D:\codes\Mustard\.openclaw\reports'
 $logPath = Join-Path $logDir 'claw_team_autorun.log'
+$runTs = Get-Date -Format 'yyyyMMdd_HHmmss'
+$reportPath = Join-Path $reportDir ("cycle_report_{0}.md" -f $runTs)
 
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+New-Item -ItemType Directory -Force -Path $reportDir | Out-Null
 
 function Write-Log($msg) {
   $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
@@ -13,15 +17,20 @@ function Write-Log($msg) {
 Write-Log '===== AUTO CYCLE START ====='
 Write-Log "pwd=$root"
 
+$gitStatusBefore = @()
+$runOutput = @()
+$lastCommit = @()
+$statusOut = @()
+
 try {
   Set-Location $root
   Write-Log 'git status --short'
-  $gitStatus = git status --short 2>&1
-  if ($gitStatus) { Add-Content -Path $logPath -Value $gitStatus } else { Write-Log '(clean)' }
+  $gitStatusBefore = git status --short 2>&1
+  if ($gitStatusBefore) { Add-Content -Path $logPath -Value $gitStatusBefore } else { Write-Log '(clean)' }
 
   Write-Log 'run: python -m scripts.claw_team_control run --auto-commit --auto-push'
-  $output = python -m scripts.claw_team_control run --auto-commit --auto-push 2>&1
-  if ($output) { Add-Content -Path $logPath -Value $output }
+  $runOutput = python -m scripts.claw_team_control run --auto-commit --auto-push 2>&1
+  if ($runOutput) { Add-Content -Path $logPath -Value $runOutput }
 
   Write-Log 'last commit:'
   $lastCommit = git log --oneline -n 1 2>&1
@@ -36,4 +45,34 @@ catch {
 }
 finally {
   Write-Log '===== AUTO CYCLE END ====='
+
+  $report = @(
+    "# Mustard Auto Cycle Report - $runTs",
+    "",
+    "- generated_at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
+    "- script: scripts/auto_team_cycle.ps1",
+    "",
+    "## Git Status (Before)",
+    '```text',
+    $(if ($gitStatusBefore) { ($gitStatusBefore -join "`n") } else { '(clean)' }),
+    '```',
+    "",
+    "## Cycle Run Output",
+    '```text',
+    $(if ($runOutput) { ($runOutput -join "`n") } else { '(no output)' }),
+    '```',
+    "",
+    "## Last Commit",
+    '```text',
+    $(if ($lastCommit) { ($lastCommit -join "`n") } else { '(no commit info)' }),
+    '```',
+    "",
+    "## Team Status",
+    '```text',
+    $(if ($statusOut) { ($statusOut -join "`n") } else { '(no status output)' }),
+    '```'
+  )
+
+  Set-Content -Path $reportPath -Value ($report -join "`r`n") -Encoding UTF8
+  Write-Log "report=$reportPath"
 }

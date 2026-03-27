@@ -2,7 +2,7 @@
   "team_name": "mustard-claw",
   "heartbeat": {
     "daily_digest": true,
-    "max_new_proposals_per_cycle": 3
+    "max_new_proposals_per_cycle": 1
   },
   "risk_policy": {
     "human_gate_required_change_types": [
@@ -39,6 +39,13 @@
   "eval_pipeline": {
     "auto_sync_real_prompt_eval": false,
     "min_new_candidates_to_merge": 4
+  },
+  "deep_cycle_policy": {
+    "enabled": true,
+    "require_positive_real_prompt_delta": true,
+    "min_real_prompt_count": 20,
+    "require_non_negative_control_success_delta": true,
+    "require_at_least_one_proposal": true
   },
   "focus_areas": [
     "real_prompt_regression",

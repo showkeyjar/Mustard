@@ -71,6 +71,54 @@
       "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
       "expected_tool": "bigmodel_proxy",
       "logic_skill": "result_integration"
+    },
+    {
+      "id": "repair-comparison-001",
+      "prompt": "从中小团队落地角度看，比较 SQLite 和 PostgreSQL 在 本地原型 里的 维护复杂度，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "prompt": "请给出一个稳妥的处理思路：多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-002",
+      "prompt": "从中小团队落地角度看，比较 Redis 和 Memcached 在 缓存服务 里的 性能表现",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "prompt": "从中小团队落地角度看，两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-003",
+      "prompt": "如果要尽快推进，比较 PostgreSQL 和 MySQL 在 中小团队 里的 成本，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "prompt": "请给出一个稳妥的处理思路：两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-004",
+      "prompt": "从中小团队落地角度看，比较 FastAPI 和 Flask 在 内部工具 里的 性能表现，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-comparison-005",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
     }
   ]
 }

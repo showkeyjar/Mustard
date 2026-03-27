@@ -142,8 +142,40 @@ def commit_all_changes(root: Path, commit_message: str) -> dict[str, object]:
     return {"committed": True, "commit_sha": commit_sha}
 
 
+def commit_selected_paths(root: Path, paths: list[str], commit_message: str) -> dict[str, object]:
+    normalized = [str(path).replace("\\", "/") for path in paths if str(path).strip()]
+    if not normalized:
+        return {"committed": False, "reason": "no_paths"}
+
+    existing: list[str] = []
+    for path in normalized:
+        candidate = root / path
+        if candidate.exists():
+            existing.append(path)
+
+    if not existing:
+        return {"committed": False, "reason": "paths_missing"}
+
+    _run(["git", "add", "--", *existing], cwd=root)
+    staged_status = _git_output(root, "diff", "--cached", "--name-only")
+    if not staged_status.strip():
+        return {"committed": False, "reason": "nothing_staged", "paths": existing}
+
+    _run(["git", "commit", "-m", commit_message], cwd=root)
+    commit_sha = _git_output(root, "rev-parse", "HEAD")
+    return {"committed": True, "commit_sha": commit_sha, "paths": existing}
+
+
 def push_branch(root: Path, branch: str) -> None:
     _run(["git", "push", "-u", "origin", branch], cwd=root)
+
+
+def push_current_branch(root: Path) -> dict[str, object]:
+    branch = get_current_branch(root)
+    if not branch.strip():
+        return {"pushed": False, "reason": "no_current_branch"}
+    push_branch(root, branch)
+    return {"pushed": True, "branch": branch}
 
 
 def create_pull_request(
