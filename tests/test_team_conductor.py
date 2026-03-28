@@ -594,10 +594,13 @@ class TeamConductorTests(unittest.TestCase):
             result = run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
             proposal_text = Path(result["proposal_paths"][0]).read_text(encoding="utf-8")
             architect_text = (root / "backlog" / "role_outputs" / "architect_latest.md").read_text(encoding="utf-8")
+            digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
             self.assertIn("- architect_handoff:", proposal_text)
             self.assertNotIn("- architect_handoff: direct_execute_if_format_passes", proposal_text)
             self.assertIn("- first_architect_handoff:", architect_text)
             self.assertTrue("- first_from_failure_pattern:" in architect_text or "- first_from_top_gap:" in architect_text)
+            self.assertIn("- primary_proposal_title:", digest_text)
+            self.assertIn("- primary_architect_handoff:", digest_text)
 
 
 if __name__ == "__main__":

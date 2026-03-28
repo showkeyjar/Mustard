@@ -1047,6 +1047,17 @@ def build_proposals(
     return ordered[:max_new]
 
 
+def _primary_proposal_summary(proposal_paths: list[Path] | None) -> dict[str, str]:
+    paths = proposal_paths or []
+    if not paths:
+        return {}
+    path = paths[0]
+    summary = _load_proposal_summary(path)
+    title = path.stem.rsplit("_", 1)[0].replace("_", " ").strip()
+    summary.setdefault("title", title)
+    return summary
+
+
 def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
     stamp = datetime.fromisoformat(str(digest["timestamp_utc"]))
     output_path = root / "memory" / "daily" / f"{stamp.strftime('%Y-%m-%d')}.md"
@@ -1096,6 +1107,17 @@ def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
         )
         if research_quality.get('degraded'):
             lines.append("- repair_action: redefine researcher output + improve failure mining inputs")
+
+    primary_proposal = digest.get("primary_proposal", {})
+    if isinstance(primary_proposal, dict) and primary_proposal:
+        lines.extend(
+            [
+                f"- primary_proposal_title: {primary_proposal.get('title', '')}",
+                f"- primary_from_failure_pattern: {primary_proposal.get('from_failure_pattern', '')}",
+                f"- primary_from_top_gap: {primary_proposal.get('from_top_gap', '')}",
+                f"- primary_architect_handoff: {primary_proposal.get('architect_handoff', '')}",
+            ]
+        )
 
     team_actions = digest.get("team_actions", {})
     if isinstance(team_actions, dict) and team_actions:
@@ -1160,11 +1182,17 @@ def _build_team_actions_summary(
     direction_review: dict[str, object],
     recursive_state: dict[str, object] | None = None,
     researcher_artifact_path: str = "",
+    primary_proposal: dict[str, str] | None = None,
 ) -> dict[str, str]:
     needs_human = sum(1 for proposal in proposals if bool(proposal.get("needs_human_approval", False)))
-    proposal_brief = "; ".join(
-        f"{proposal.get('title', '')}: {proposal.get('proposed_change', '')}" for proposal in proposals[:3]
-    ) or "本轮无新增提案"
+    primary = primary_proposal or {}
+    proposal_brief = (
+        f"{primary.get('title', '')}: {primary.get('proposed_change', '')}"
+        if primary.get('title')
+        else "; ".join(
+            f"{proposal.get('title', '')}: {proposal.get('proposed_change', '')}" for proposal in proposals[:3]
+        ) or "本轮无新增提案"
+    )
 
     recursive_mode = "normal"
     stagnation_rounds = 0
@@ -1191,7 +1219,7 @@ def _build_team_actions_summary(
         ),
         "failure_miner": "从 episodes/reviews/real_prompt_eval 挖掘失败模式并输出 failure_patterns",
         "benchmark_owner": "维护北极星指标与top_gap（逻辑推理、工具调用、多步成功率、延迟）",
-        "architect": f"将问题转为可执行提案（首条：{str(proposals[0].get('title', '无')) if proposals else '无'}）",
+        "architect": f"将问题转为可执行提案（首条：{primary.get('title', str(proposals[0].get('title', '无')) if proposals else '无')}）",
         "trainer": "执行训练/蒸馏流水线并产出可对比训练报告",
         "evaluator": "执行验证链路：unittest + evaluate_pretraining + evaluate_real_prompts + run_control_cycle",
         "guardian": f"风险审查完成，需 Human Gate 的提案={needs_human}",
@@ -3254,6 +3282,17 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
 
     role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review, recursive_state, proposal_paths=proposal_paths)
     role_artifacts["researcher"] = researcher_artifact_path
+    primary_proposal = _primary_proposal_summary(proposal_paths)
+    digest["primary_proposal"] = primary_proposal
+    team_actions = _build_team_actions_summary(
+        signals,
+        proposals,
+        direction_review,
+        recursive_state=recursive_state,
+        researcher_artifact_path=str(researcher_artifact_path),
+        primary_proposal=primary_proposal,
+    )
+    digest["team_actions"] = team_actions
     digest_path = write_daily_digest(root, digest)
     evolution_artifacts = _write_evolution_artifacts(root, signals, operator_result=operator_result)
     changed_paths = _safe_git_changed_paths(root)
