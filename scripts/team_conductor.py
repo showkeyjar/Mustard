@@ -935,25 +935,95 @@ def _run_soft_feedback_operator(root: Path, signals: dict[str, object], config: 
     return {"operator": "soft_feedback_operator", "generated_count": generated, "path": str(path)}
 
 
+def _mutation_strategies_for_logic_skill(logic_skill: str) -> list[str]:
+    mapping = {
+        "conflict_detection": ["contradictory_authority", "missing_evidence", "conflicting_sources"],
+        "comparison": ["ranking_flip", "partial_overlap", "conflicting_sources"],
+        "tool_selection": ["calculator_vs_search", "code_vs_search", "tool_boundary_shift"],
+        "termination_judgment": ["ambiguous_stop", "one_more_step_needed", "premature_finish"],
+        "result_integration": ["cross_source_summary", "missing_evidence", "partial_merge"],
+    }
+    return mapping.get(logic_skill, ["conflicting_sources", "missing_evidence", "tool_boundary_shift"])
+
+
+def _select_high_information_parent_rows(signals: dict[str, object], limit: int) -> list[dict[str, object]]:
+    source_dataset = "real_prompt_eval"
+    payload = signals.get("quality_stabilization", {})
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    if isinstance(rows, list) and rows:
+        source_dataset = "quality_stabilization"
+    if not isinstance(rows, list) or not rows:
+        focus_eval = signals.get("quality_focus_eval_result", {})
+        if isinstance(focus_eval, dict):
+            focus_payload = focus_eval.get("payload", {})
+            if isinstance(focus_payload, dict):
+                focus_rows = focus_payload.get("rows", [])
+                if isinstance(focus_rows, list) and focus_rows:
+                    rows = focus_rows
+                    source_dataset = "quality_focus_eval_result"
+    if not isinstance(rows, list) or not rows:
+        try:
+            focus_path = Path(str(signals.get("quality_focus_eval_result_path", "")))
+            if focus_path.exists():
+                focus_payload = _read_json(focus_path)
+                rows = focus_payload.get("rows", []) if isinstance(focus_payload, dict) else []
+                if isinstance(rows, list) and rows:
+                    source_dataset = "quality_focus_eval_result"
+        except Exception:
+            rows = rows if isinstance(rows, list) else []
+    if not isinstance(rows, list) or not rows:
+        real_prompt_eval = signals.get("real_prompt_eval", {})
+        rows = real_prompt_eval.get("rows", []) if isinstance(real_prompt_eval, dict) else []
+        source_dataset = "real_prompt_eval"
+    candidates = []
+    for item in rows:
+        if isinstance(item, dict):
+            enriched = dict(item)
+            enriched.setdefault("source_dataset", source_dataset)
+            candidates.append(enriched)
+    preferred_skills = {
+        "conflict_detection": 5,
+        "comparison": 4,
+        "tool_selection": 3,
+        "termination_judgment": 2,
+        "result_integration": 1,
+    }
+
+    def _rank(row: dict[str, object]) -> tuple[int, int, int]:
+        baseline_fail_pretrained_pass = int(not bool(row.get("baseline_match", True)) and bool(row.get("pretrained_match", True)))
+        separation = int(row.get("separation_score", 0) or 0)
+        skill_bonus = preferred_skills.get(str(row.get("logic_skill", "")), 0)
+        return (baseline_fail_pretrained_pass, separation, skill_bonus)
+
+    ranked = sorted(candidates, key=_rank, reverse=True)
+    selected = ranked[:limit]
+    for index, row in enumerate(selected, start=1):
+        row.setdefault("source_rank", index)
+    return selected
+
+
 def _run_high_information_sampling_operator(root: Path, signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
     policy = config.get("research_recovery_policy", {}) if isinstance(config, dict) else {}
     max_records = int(policy.get("max_high_information_variants_per_round", 4) or 4)
     path = root / "data" / "evolution" / "research_recovery_variants.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    rows = []
-    real_prompt_eval = signals.get("real_prompt_eval", {})
-    if isinstance(real_prompt_eval, dict):
-        raw_rows = real_prompt_eval.get("rows", [])
-        if isinstance(raw_rows, list):
-            rows = [item for item in raw_rows if isinstance(item, dict)]
+    rows = _select_high_information_parent_rows(signals, max_records)
     variants: list[dict[str, object]] = []
-    mutations = ["conflicting_sources", "ambiguous_stop", "tool_boundary_shift", "missing_evidence"]
-    for idx, row in enumerate(rows[:max_records]):
+    for idx, row in enumerate(rows):
+        logic_skill = str(row.get("logic_skill", "comparison"))
+        mutations = _mutation_strategies_for_logic_skill(logic_skill)
+        mutation = mutations[idx % len(mutations)]
+        baseline_fail_pretrained_pass = not bool(row.get("baseline_match", True)) and bool(row.get("pretrained_match", True))
         variants.append({
             "id": f"recovery-variant-{idx+1:02d}",
             "parent_case": str(row.get("id", f"case-{idx+1}")),
-            "logic_skill": str(row.get("logic_skill", "comparison")),
-            "mutation": mutations[idx % len(mutations)],
+            "logic_skill": logic_skill,
+            "mutation": mutation,
+            "mutation_reason": f"parent had logic_skill={logic_skill} and high recovery value under {mutation}",
+            "source_score": int(row.get("separation_score", 0) or 0),
+            "selection_reason": "baseline_fail_pretrained_pass" if baseline_fail_pretrained_pass else "high_signal_parent",
+            "source_dataset": str(row.get("source_dataset", "real_prompt_eval")),
+            "source_rank": int(row.get("source_rank", idx + 1) or (idx + 1)),
             "expected_tool": str(row.get("expected_tool", "search")),
         })
     path.write_text(json.dumps({"variants": variants}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -1242,6 +1312,22 @@ def _run_research_recovery_operators(
     ]
     for item in results:
         lines.append(f"- {item.get('operator', '')}: generated_count={item.get('generated_count', 0)} path={item.get('path', '')}")
+        if item.get("operator") == "high_information_sampling_operator":
+            variant_path = Path(str(item.get("path", "")))
+            payload = _read_json(variant_path) if variant_path.exists() else {}
+            variants = payload.get("variants", []) if isinstance(payload, dict) else []
+            if isinstance(variants, list) and variants:
+                lines.extend([
+                    "",
+                    "## High-information sampling details",
+                    f"- avg_source_score: {round(sum(int(v.get('source_score', 0) or 0) for v in variants) / max(1, len(variants)), 2)}",
+                    f"- top_mutations: {', '.join(str(v.get('mutation', '')) for v in variants[:3])}",
+                    "- top_parents:",
+                ])
+                for v in variants[:3]:
+                    lines.append(
+                        f"  - {v.get('parent_case','')} | dataset={v.get('source_dataset','')} | rank={v.get('source_rank',0)} | score={v.get('source_score',0)} | mutation={v.get('mutation','')} | selection={v.get('selection_reason','')}"
+                    )
     _write_if_changed(report_path, "\n".join(lines) + "\n")
 
     return report_path, {
@@ -3339,11 +3425,19 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
             signals["real_prompt_eval"] = refreshed_eval
 
     quality_artifacts = _write_quality_stabilization_artifacts(root, signals)
+    signals["quality_stabilization"] = quality_artifacts.get("payload", {})
     quality_operator_result = _maybe_execute_quality_operator(
         root,
         _build_real_prompt_track_state(signals),
         quality_artifacts.get("payload", {}),
     )
+    if isinstance(quality_operator_result, dict):
+        focus_result = quality_operator_result.get("quality_focus_eval_result", {})
+        if isinstance(focus_result, dict) and isinstance(focus_result.get("payload"), dict):
+            signals["quality_focus_eval_result"] = focus_result
+        result_path = focus_result.get("result_path", "") if isinstance(focus_result, dict) else ""
+        if result_path:
+            signals["quality_focus_eval_result_path"] = str(result_path)
 
     recursive_state = _update_recursive_state(root, signals, config)
     digest = build_daily_digest(signals, config)
@@ -3363,6 +3457,21 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         researcher_artifact_path=researcher_artifact_path,
     )
     digest["research_quality"] = research_quality
+    quality_artifacts = _write_quality_stabilization_artifacts(root, signals)
+    signals["quality_stabilization"] = quality_artifacts.get("payload", {})
+    quality_operator_result = _maybe_execute_quality_operator(
+        root,
+        _build_real_prompt_track_state(signals),
+        quality_artifacts.get("payload", {}),
+    )
+    if isinstance(quality_operator_result, dict):
+        focus_result = quality_operator_result.get("quality_focus_eval_result", {})
+        if isinstance(focus_result, dict) and isinstance(focus_result.get("payload"), dict):
+            signals["quality_focus_eval_result"] = focus_result
+        result_path = focus_result.get("result_path", "") if isinstance(focus_result, dict) else ""
+        if result_path:
+            signals["quality_focus_eval_result_path"] = str(result_path)
+
     research_recovery_report_path, research_recovery = _run_research_recovery_operators(
         root,
         signals,
@@ -3370,7 +3479,13 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         config,
     )
     digest["research_recovery"] = research_recovery
-    signals = collect_signals(root)
+    refreshed_signals = collect_signals(root)
+    refreshed_signals["quality_stabilization"] = signals.get("quality_stabilization", {})
+    if "quality_focus_eval_result" in signals:
+        refreshed_signals["quality_focus_eval_result"] = signals["quality_focus_eval_result"]
+    if "quality_focus_eval_result_path" in signals:
+        refreshed_signals["quality_focus_eval_result_path"] = signals["quality_focus_eval_result_path"]
+    signals = refreshed_signals
     digest["signals"] = signals
 
     proposals = build_proposals(digest, config, recursive_state=recursive_state)

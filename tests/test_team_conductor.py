@@ -10,9 +10,11 @@ from scripts.team_conductor import (
     _evaluate_research_quality,
     _load_active_failure_pattern_ids,
     _load_research_recovery_state,
+    _mutation_strategies_for_logic_skill,
     _run_frontier_intake_operator,
     _run_high_information_sampling_operator,
     _run_soft_feedback_operator,
+    _select_high_information_parent_rows,
     _select_research_recovery_operators,
     bootstrap_workspace,
     build_proposals,
@@ -326,16 +328,37 @@ class TeamConductorTests(unittest.TestCase):
             self.assertGreater(result["generated_count"], 0)
             self.assertTrue((root / "data" / "research" / "soft_bridge_feedback.jsonl").exists())
 
+    def test_select_high_information_parent_rows_prefers_high_separation_failures(self) -> None:
+        rows = _select_high_information_parent_rows(
+            {
+                "quality_stabilization": {
+                    "rows": [
+                        {"id": "easy-green", "logic_skill": "comparison", "separation_score": 0, "baseline_match": True, "pretrained_match": True, "expected_tool": "search"},
+                        {"id": "repair-conflict_detection-019", "logic_skill": "conflict_detection", "separation_score": 6, "baseline_match": False, "pretrained_match": True, "expected_tool": "search"},
+                        {"id": "real-mixed", "logic_skill": "tool_selection", "separation_score": 3, "baseline_match": False, "pretrained_match": True, "expected_tool": "calculator"},
+                    ]
+                }
+            },
+            2,
+        )
+        self.assertEqual([row["id"] for row in rows], ["repair-conflict_detection-019", "real-mixed"])
+
+    def test_mutation_strategies_for_logic_skill_are_targeted(self) -> None:
+        self.assertIn("contradictory_authority", _mutation_strategies_for_logic_skill("conflict_detection"))
+        self.assertIn("ranking_flip", _mutation_strategies_for_logic_skill("comparison"))
+        self.assertIn("code_vs_search", _mutation_strategies_for_logic_skill("tool_selection"))
+        self.assertIn("ambiguous_stop", _mutation_strategies_for_logic_skill("termination_judgment"))
+
     def test_run_high_information_sampling_operator_generates_variants(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             result = _run_high_information_sampling_operator(
                 root,
                 {
-                    "real_prompt_eval": {
+                    "quality_stabilization": {
                         "rows": [
-                            {"id": "repair-comparison-005", "logic_skill": "comparison", "expected_tool": "search"},
-                            {"id": "repair-conflict_detection-019", "logic_skill": "conflict_detection", "expected_tool": "search"},
+                            {"id": "repair-comparison-005", "logic_skill": "comparison", "expected_tool": "search", "separation_score": 6, "baseline_match": False, "pretrained_match": True},
+                            {"id": "repair-conflict_detection-019", "logic_skill": "conflict_detection", "expected_tool": "search", "separation_score": 6, "baseline_match": False, "pretrained_match": True},
                         ]
                     }
                 },
@@ -344,6 +367,13 @@ class TeamConductorTests(unittest.TestCase):
             self.assertEqual(result["operator"], "high_information_sampling_operator")
             self.assertGreater(result["generated_count"], 0)
             self.assertTrue((root / "data" / "evolution" / "research_recovery_variants.json").exists())
+            payload = json.loads((root / "data" / "evolution" / "research_recovery_variants.json").read_text(encoding="utf-8"))
+            first = payload["variants"][0]
+            self.assertIn("mutation_reason", first)
+            self.assertIn("source_score", first)
+            self.assertIn("selection_reason", first)
+            self.assertIn("source_dataset", first)
+            self.assertIn("source_rank", first)
 
     def test_evaluate_research_quality_flags_degraded_when_patterns_empty_and_zero_streaks(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -475,6 +505,10 @@ class TeamConductorTests(unittest.TestCase):
             updated_signals = result["signals"]
             self.assertGreaterEqual(int(updated_signals.get("frontier_observation_count", 0)), 1)
             self.assertGreaterEqual(int(updated_signals.get("bridge_feedback", 0)), 1)
+
+            if "high_information_sampling_operator" in result["research_recovery"]["triggered_operators"]:
+                variants = json.loads((root / "data" / "evolution" / "research_recovery_variants.json").read_text(encoding="utf-8"))["variants"]
+                self.assertTrue(any(v.get("selection_reason") for v in variants))
 
             digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
             self.assertIn("- research_quality: degraded", digest_text)
