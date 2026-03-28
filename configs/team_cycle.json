@@ -29,6 +29,14 @@
     "allow_external_search": true,
     "allow_external_fetch": true
   },
+  "research_quality_policy": {
+    "enabled": true,
+    "max_rounds_without_new_failure_pattern": 2,
+    "max_rounds_with_coverage_only_top_gap": 2,
+    "require_nonempty_failure_patterns": true,
+    "flag_zero_bridge_feedback_rounds": 3,
+    "flag_zero_frontier_observation_rounds": 3
+  },
   "role_evolution": {
     "enabled": true,
     "window_rounds": 5,

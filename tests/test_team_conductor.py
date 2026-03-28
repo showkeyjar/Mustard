@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from scripts.team_conductor import (
     _build_delivery_decision,
     _classify_delivery_paths,
+    _evaluate_research_quality,
     bootstrap_workspace,
     run_cycle,
 )

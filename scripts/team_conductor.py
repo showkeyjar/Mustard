@@ -884,6 +884,20 @@ def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
             ]
         )
 
+    research_quality = digest.get("research_quality", {})
+    if isinstance(research_quality, dict) and research_quality:
+        lines.extend(
+            [
+                f"- research_quality: {'degraded' if research_quality.get('degraded') else 'healthy'}",
+                f"- research_reasons: {', '.join(research_quality.get('reasons', [])) or 'none'}",
+                f"- new_failure_pattern_count: {research_quality.get('new_failure_pattern_count', 0)}",
+                f"- researcher_value_gate: {'fail' if research_quality.get('degraded') else 'pass'}",
+                f"- failure_miner_actionable: {'yes' if int(research_quality.get('failure_pattern_count', 0) or 0) > 0 else 'no'}",
+            ]
+        )
+        if research_quality.get('degraded'):
+            lines.append("- repair_action: redefine researcher output + improve failure mining inputs")
+
     team_actions = digest.get("team_actions", {})
     if isinstance(team_actions, dict) and team_actions:
         lines.append("- team_actions:")
@@ -1171,6 +1185,145 @@ def _load_role_evolution_state(root: Path) -> dict[str, object]:
     return payload
 
 
+def _load_research_quality_state(root: Path) -> dict[str, object]:
+    path = root / "data" / "team" / "research_quality_state.json"
+    if not path.exists():
+        return {
+            "rounds_without_new_failure_pattern": 0,
+            "coverage_only_gap_streak": 0,
+            "zero_bridge_feedback_streak": 0,
+            "zero_frontier_observation_streak": 0,
+            "updated_at_utc": "",
+        }
+    payload = _read_json(path)
+    if not isinstance(payload, dict):
+        return {
+            "rounds_without_new_failure_pattern": 0,
+            "coverage_only_gap_streak": 0,
+            "zero_bridge_feedback_streak": 0,
+            "zero_frontier_observation_streak": 0,
+            "updated_at_utc": "",
+        }
+    return payload
+
+
+def _extract_failure_pattern_ids(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    ids = re.findall(r"pattern_id:\s*([A-Za-z0-9_\-]+)", text)
+    if ids:
+        return ids
+    payload = _read_json(path)
+    patterns = payload.get("patterns", []) if isinstance(payload, dict) else []
+    if not isinstance(patterns, list):
+        return []
+    extracted: list[str] = []
+    for item in patterns:
+        if isinstance(item, dict):
+            value = str(item.get("id", "")).strip()
+            if value:
+                extracted.append(value)
+    return extracted
+
+
+def _evaluate_research_quality(
+    root: Path,
+    signals: dict[str, object],
+    config: dict[str, object],
+    failure_patterns_path: Path,
+    researcher_artifact_path: Path,
+) -> tuple[Path, dict[str, object]]:
+    policy = config.get("research_quality_policy", {})
+    if not isinstance(policy, dict):
+        policy = {}
+
+    enabled = bool(policy.get("enabled", True))
+    max_without_new = int(policy.get("max_rounds_without_new_failure_pattern", 2) or 2)
+    max_coverage_only = int(policy.get("max_rounds_with_coverage_only_top_gap", 2) or 2)
+    require_nonempty = bool(policy.get("require_nonempty_failure_patterns", True))
+    zero_bridge_limit = int(policy.get("flag_zero_bridge_feedback_rounds", 3) or 3)
+    zero_frontier_limit = int(policy.get("flag_zero_frontier_observation_rounds", 3) or 3)
+
+    prev = _load_research_quality_state(root)
+    previous_ids = prev.get("last_failure_pattern_ids", [])
+    if not isinstance(previous_ids, list):
+        previous_ids = []
+    current_ids = _extract_failure_pattern_ids(failure_patterns_path)
+    new_ids = [item for item in current_ids if item not in previous_ids]
+
+    rounds_without_new = int(prev.get("rounds_without_new_failure_pattern", 0) or 0)
+    if current_ids and new_ids:
+        rounds_without_new = 0
+    else:
+        rounds_without_new += 1
+
+    top_gap = ""
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        summary = real_prompt_eval.get("summary", {})
+        if isinstance(summary, dict):
+            prompt_count = int(summary.get("prompt_count", 0) or 0)
+            if prompt_count < 20:
+                top_gap = "eval_coverage_too_low"
+    coverage_only_streak = int(prev.get("coverage_only_gap_streak", 0) or 0)
+    if top_gap == "eval_coverage_too_low":
+        coverage_only_streak += 1
+    else:
+        coverage_only_streak = 0
+
+    zero_bridge_streak = int(prev.get("zero_bridge_feedback_streak", 0) or 0)
+    if int(signals.get("bridge_feedback", 0) or 0) == 0:
+        zero_bridge_streak += 1
+    else:
+        zero_bridge_streak = 0
+
+    zero_frontier_streak = int(prev.get("zero_frontier_observation_streak", 0) or 0)
+    if int(signals.get("frontier_observation_count", 0) or 0) == 0:
+        zero_frontier_streak += 1
+    else:
+        zero_frontier_streak = 0
+
+    reasons: list[str] = []
+    failure_text = failure_patterns_path.read_text(encoding="utf-8", errors="ignore") if failure_patterns_path.exists() else ""
+    if require_nonempty and not current_ids:
+        reasons.append("failure_patterns_empty")
+    if enabled and rounds_without_new >= max_without_new:
+        reasons.append("no_new_failure_pattern")
+    if enabled and coverage_only_streak >= max_coverage_only:
+        reasons.append("coverage_only_top_gap_repetition")
+    if enabled and zero_bridge_streak >= zero_bridge_limit:
+        reasons.append("bridge_zero_feedback_persistence")
+    if enabled and zero_frontier_streak >= zero_frontier_limit:
+        reasons.append("frontier_zero_signal_persistence")
+
+    researcher_text = researcher_artifact_path.read_text(encoding="utf-8", errors="ignore") if researcher_artifact_path.exists() else ""
+    if researcher_text and "weakness" not in researcher_text.lower() and "盲区" not in researcher_text and "采样不足" not in researcher_text:
+        reasons.append("report_style_research_without_diagnostic_novelty")
+    if failure_text and "Sampling insufficiency / blind spots" in failure_text and not current_ids:
+        reasons.append("sampling_insufficiency_active")
+
+    payload = {
+        "degraded": bool(reasons),
+        "reasons": reasons,
+        "new_failure_pattern_count": len(new_ids),
+        "new_failure_pattern_ids": new_ids,
+        "failure_pattern_count": len(current_ids),
+        "coverage_only_gap_streak": coverage_only_streak,
+        "zero_bridge_feedback_streak": zero_bridge_streak,
+        "zero_frontier_observation_streak": zero_frontier_streak,
+        "rounds_without_new_failure_pattern": rounds_without_new,
+        "top_gap": top_gap or "unknown",
+        "updated_at_utc": utc_now().isoformat(),
+        "last_failure_pattern_ids": current_ids,
+    }
+
+    path = root / "data" / "team" / "research_quality_state.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_if_changed(path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    return path, payload
+
+
 def _score_role_outputs(signals: dict[str, object], role_artifacts: dict[str, Path]) -> dict[str, float]:
     scores: dict[str, float] = {}
     for role, path in role_artifacts.items():
@@ -1336,16 +1489,43 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
             if line.startswith("- total_candidates") or line.startswith("- filtered_candidates") or line.startswith("- dropped_candidates"):
                 quality_excerpt.append(line)
 
+    blind_spot_line = "- blind_spot_if_no_failure_case: current batch is still too narrow to prove no hidden weakness" if not mismatches else "- blind_spot_if_no_failure_case: none"
+    weakness_summary = (
+        "tool-path mismatch remains the active weakness cluster"
+        if mismatches
+        else "no explicit mismatch surfaced, but sampling blind spot remains in high-information real prompts"
+    )
+
     lines = [
         "# Research Artifact (Actionable)",
         "",
-        "## Why this round matters",
-        f"- Top gap remains eval_coverage_too_low; current_count={rp_count}, target=20, gap={max(0, 20-rp_count)}",
-        f"- stagnation_rounds={stagnation_rounds}; frontier_observation_count={frontier_obs}",
+        "## 1) Meta",
+        f"- round_id: auto-{utc_now().strftime('%Y%m%dT%H%M%SZ')}",
+        f"- date: {utc_now().date().isoformat()}",
+        "- owner: researcher",
+        "- from_top_gap: eval_coverage_too_low",
+        "- from_failure_pattern: eval_coverage_too_low",
+        "- relative_to_last_round: switched from static template to concrete mismatch + quality snapshot + executable next-24h plan",
+        "- scenario_fit: real prompt regression coverage and weak-signal research diagnosis",
         "",
-        "## New findings (not template text)",
-        f"- pretrained_match_rate={rp_match:.4f}, baseline_match_rate={baseline_match:.4f}, delta={rp_match-baseline_match:+.4f}",
-        f"- mismatch_case_count={len(mismatches)}",
+        "## 2) New weakness discovered this round",
+        f"- weakness_summary: {weakness_summary}",
+        f"- weakness_cluster: {'tool_path_mismatch' if mismatches else 'sampling_blind_spot'}",
+        "- why_it_matters_now: if the system only reports aggregate wins, it cannot prove it still discovers new weaknesses under wider coverage",
+        "- why_previous_rounds_missed_it: prior output emphasized summary metrics over weakness clustering and blind-spot diagnosis",
+        "",
+        "## 3) Hypothesis（可证伪）",
+        "- hypothesis: raising high-information real-prompt coverage will expose either stable robustness or a new mismatch cluster worth patching",
+        "- falsifiable_condition: prompt_count increases but mismatch_case_count rises materially or match_rate drops below 0.90",
+        f"- expected_gain: keep pretrained_match_rate >= 0.90 while increasing prompt_count beyond {rp_count}",
+        "- risk: low-information candidates may still crowd out the prompts most likely to reveal hidden weaknesses",
+        "",
+        "## 4) Evidence chain",
+        f"- representative_case_1: pretrained_match_rate={rp_match:.4f}, baseline_match_rate={baseline_match:.4f}, delta={rp_match-baseline_match:+.4f}",
+        f"- representative_case_2: mismatch_case_count={len(mismatches)}",
+        f"- representative_case_3: stagnation_rounds={stagnation_rounds}; frontier_observation_count={frontier_obs}",
+        f"- evidence_quality_note: current evidence is useful for trend judgment but still weak for discovering unseen weakness clusters because prompt coverage is narrow",
+        blind_spot_line,
     ]
 
     if quality_excerpt:
@@ -1363,21 +1543,22 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
 
     lines.extend([
         "",
-        "## Root-cause hypothesis",
-        "- Low information value came from repetitive observer-learning candidates entering the pool.",
-        "- Current remaining gap is mainly coverage (count) and tool-label stability for added candidates.",
+        "## 5) Minimal next experiment（可执行）",
+        "- command_1: python -m scripts.evaluate_real_prompts",
+        "- command_2: python -m scripts.build_real_prompt_candidates",
+        "- metric_threshold: prompt_count increases and pretrained_match_rate stays >= 0.90",
+        "- pass_criteria: new prompts add pressure without introducing an unexplained mismatch spike",
+        "- fail_criteria: coverage expands but research still produces no new weakness or blind-spot diagnosis",
         "",
-        "## Next 24h execution plan",
-        "- Step1: add >=4 high-quality non-observer prompts (manual curation) into configs/real_prompt_eval.json",
-        "- Step2: rerun python -m scripts.evaluate_real_prompts and compare mismatch_case_count",
-        "- Step3: if mismatch_case_count > 0, patch tool-label mapping rules before next merge",
+        "## 6) Landing Candidate（可直接进 Architect）",
+        "- proposed_change: add >=4 high-quality non-observer prompts and tighten candidate filtering around low-information repeats",
+        "- change_scope: configs/real_prompt_eval.json + candidate quality rules + research reporting",
+        "- rollback_plan: revert added prompts and filtering heuristics if mismatch quality worsens or coverage signal becomes noisier",
+        "- handoff_to_architect: yes",
         "",
-        "## Acceptance / Failure",
-        "- acceptance: prompt_count>=12 this iteration AND mismatch_case_count not worse",
-        "- failure: prompt_count increased but mismatch_case_count rises or match_rate drops below 0.90",
-        "",
-        "## relative_to_last_round",
-        "- switched from static template to concrete mismatch + quality snapshot + executable next-24h plan",
+        "## 7) Decision label",
+        "- tag: 待观察",
+        "- reason: current match is strong, but the system still has insufficient evidence that its weakness discovery loop is healthy under broader coverage",
     ])
 
     _write_if_changed(path, "\n".join(lines) + "\n")
@@ -2624,6 +2805,14 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     carm_gap_map_path = _write_carm_gap_map(root, signals)
     research_brief_path = _write_research_brief(root, signals, config)
     researcher_artifact_path = _run_researcher(root, signals, recursive_state)
+    research_quality_path, research_quality = _evaluate_research_quality(
+        root,
+        signals,
+        config,
+        failure_patterns_path=root / "memory" / "failure_patterns.md",
+        researcher_artifact_path=researcher_artifact_path,
+    )
+    digest["research_quality"] = research_quality
 
     proposals = build_proposals(digest, config, recursive_state=recursive_state)
 
@@ -2699,6 +2888,20 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         alerts.append("role_output_not_changed")
         digest["alerts"] = alerts
 
+    if isinstance(research_quality, dict) and research_quality.get("degraded"):
+        if direction_review.get("verdict") != "uncertain_needs_human":
+            direction_review["verdict"] = "direction_adjust"
+        reasons = direction_review.get("reasons", [])
+        if not isinstance(reasons, list):
+            reasons = []
+        reasons.extend([f"research_quality_degraded:{item}" for item in research_quality.get("reasons", [])])
+        direction_review["reasons"] = reasons
+        alerts = digest.get("alerts", [])
+        if not isinstance(alerts, list):
+            alerts = []
+        alerts.append("research_quality_degraded")
+        digest["alerts"] = alerts
+
     role_scores = _score_role_outputs(signals, role_artifacts)
     role_evolution_path, role_evolution_state = _update_role_evolution(root, config, role_scores)
 
@@ -2754,6 +2957,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "role_scores": role_scores,
         "role_evolution_path": str(role_evolution_path),
         "role_evolution_suggestions": role_evolution_state.get("suggestions", []),
+        "research_quality_path": str(research_quality_path),
+        "research_quality": research_quality,
         "role_content_history_path": str(divergence.get("history_path", "")),
         "researcher_changed_vs_last": bool(divergence.get("researcher_changed", False)),
         "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
