@@ -9,6 +9,11 @@ from scripts.team_conductor import (
     _dedupe_and_prioritize_proposals,
     _evaluate_research_quality,
     _load_active_failure_pattern_ids,
+    _load_research_recovery_state,
+    _run_frontier_intake_operator,
+    _run_high_information_sampling_operator,
+    _run_soft_feedback_operator,
+    _select_research_recovery_operators,
     bootstrap_workspace,
     build_proposals,
     run_cycle,
@@ -256,6 +261,90 @@ class TeamConductorTests(unittest.TestCase):
             self.assertTrue(Path(result["evolution_run_path"]).exists())
 
 
+    def test_load_research_recovery_state_defaults(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            payload = _load_research_recovery_state(root)
+            self.assertEqual(payload["frontier_intake_runs"], 0)
+            self.assertEqual(payload["soft_feedback_runs"], 0)
+            self.assertEqual(payload["high_information_sampling_runs"], 0)
+            self.assertEqual(payload["last_triggered"], [])
+
+    def test_select_research_recovery_operators_maps_reasons_to_operators(self) -> None:
+        operators = _select_research_recovery_operators(
+            {
+                "reasons": [
+                    "bridge_zero_feedback_persistence",
+                    "frontier_zero_signal_persistence",
+                    "no_new_failure_pattern",
+                ]
+            },
+            {"no_tool_feedback_loop", "frontier_research_blindspot", "sampling_blind_spot"},
+            {
+                "research_recovery_policy": {
+                    "enabled": True,
+                    "allow_frontier_intake_operator": True,
+                    "allow_soft_feedback_operator": True,
+                    "allow_high_information_sampling_operator": True,
+                }
+            },
+        )
+        self.assertEqual(
+            operators,
+            [
+                "frontier_intake_operator",
+                "soft_feedback_operator",
+                "high_information_sampling_operator",
+            ],
+        )
+
+    def test_run_frontier_intake_operator_generates_stub_observations(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            result = _run_frontier_intake_operator(
+                root,
+                {"research_recovery_policy": {"max_frontier_records_per_round": 3}},
+                {"frontier_observation_count": 0},
+            )
+            self.assertEqual(result["operator"], "frontier_intake_operator")
+            self.assertGreater(result["generated_count"], 0)
+            self.assertTrue((root / "data" / "research" / "frontier_observations.jsonl").exists())
+
+    def test_run_soft_feedback_operator_extracts_proxy_feedback(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rows = [
+                {"id": "repair-conflict_detection-019", "baseline_match": False, "logic_skill": "conflict_detection", "baseline_used_tool": "bigmodel_proxy", "expected_tool": "search"},
+                {"id": "real-mixed", "baseline_match": False, "logic_skill": "tool_selection", "baseline_used_tool": "code_executor", "expected_tool": "calculator"},
+            ]
+            result = _run_soft_feedback_operator(
+                root,
+                {"real_prompt_eval": {"rows": rows}},
+                {"research_recovery_policy": {"max_soft_feedback_records_per_round": 5}},
+            )
+            self.assertEqual(result["operator"], "soft_feedback_operator")
+            self.assertGreater(result["generated_count"], 0)
+            self.assertTrue((root / "data" / "research" / "soft_bridge_feedback.jsonl").exists())
+
+    def test_run_high_information_sampling_operator_generates_variants(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            result = _run_high_information_sampling_operator(
+                root,
+                {
+                    "real_prompt_eval": {
+                        "rows": [
+                            {"id": "repair-comparison-005", "logic_skill": "comparison", "expected_tool": "search"},
+                            {"id": "repair-conflict_detection-019", "logic_skill": "conflict_detection", "expected_tool": "search"},
+                        ]
+                    }
+                },
+                {"research_recovery_policy": {"max_high_information_variants_per_round": 4}},
+            )
+            self.assertEqual(result["operator"], "high_information_sampling_operator")
+            self.assertGreater(result["generated_count"], 0)
+            self.assertTrue((root / "data" / "evolution" / "research_recovery_variants.json").exists())
+
     def test_evaluate_research_quality_flags_degraded_when_patterns_empty_and_zero_streaks(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -338,6 +427,15 @@ class TeamConductorTests(unittest.TestCase):
                             "flag_zero_bridge_feedback_rounds": 1,
                             "flag_zero_frontier_observation_rounds": 1,
                         },
+                        "research_recovery_policy": {
+                            "enabled": True,
+                            "allow_frontier_intake_operator": True,
+                            "allow_soft_feedback_operator": True,
+                            "allow_high_information_sampling_operator": True,
+                            "max_frontier_records_per_round": 2,
+                            "max_soft_feedback_records_per_round": 2,
+                            "max_high_information_variants_per_round": 2,
+                        },
                     },
                     ensure_ascii=False,
                 ),
@@ -358,7 +456,7 @@ class TeamConductorTests(unittest.TestCase):
                                     "baseline_match_rate": 0.8,
                                     "pretrained_match_rate": 1.0,
                                 },
-                                "rows": [{"id": "seed-1", "pretrained_match": True}],
+                                "rows": [{"id": "seed-1", "pretrained_match": True, "baseline_match": False, "logic_skill": "comparison", "baseline_used_tool": "bigmodel_proxy", "expected_tool": "search"}],
                             }
                         },
                     },
@@ -371,10 +469,13 @@ class TeamConductorTests(unittest.TestCase):
             self.assertIn("research_quality", result)
             self.assertTrue(result["research_quality"]["degraded"])
             self.assertIn("research_quality_degraded", result["alerts"])
+            self.assertIn("research_recovery", result)
+            self.assertTrue(result["research_recovery"]["triggered_operators"])
 
             digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
             self.assertIn("- research_quality: degraded", digest_text)
             self.assertIn("- research_reasons:", digest_text)
+            self.assertIn("- research_recovery_triggered: True", digest_text)
 
     def test_run_cycle_writes_real_failure_patterns_into_memory_file(self) -> None:
         with TemporaryDirectory() as temp_dir:

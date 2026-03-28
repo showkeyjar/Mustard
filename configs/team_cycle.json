@@ -37,6 +37,15 @@
     "flag_zero_bridge_feedback_rounds": 3,
     "flag_zero_frontier_observation_rounds": 3
   },
+  "research_recovery_policy": {
+    "enabled": true,
+    "allow_frontier_intake_operator": true,
+    "allow_soft_feedback_operator": true,
+    "allow_high_information_sampling_operator": true,
+    "max_frontier_records_per_round": 3,
+    "max_soft_feedback_records_per_round": 5,
+    "max_high_information_variants_per_round": 4
+  },
   "role_evolution": {
     "enabled": true,
     "window_rounds": 5,

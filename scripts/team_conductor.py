@@ -814,6 +814,141 @@ def _load_active_failure_pattern_ids(root: Path) -> set[str]:
     return active
 
 
+def _load_research_recovery_state(root: Path) -> dict[str, object]:
+    path = root / "data" / "team" / "research_recovery_state.json"
+    if not path.exists():
+        return {
+            "frontier_intake_runs": 0,
+            "soft_feedback_runs": 0,
+            "high_information_sampling_runs": 0,
+            "last_triggered": [],
+            "updated_at_utc": "",
+        }
+    payload = _read_json(path)
+    if not isinstance(payload, dict):
+        return {
+            "frontier_intake_runs": 0,
+            "soft_feedback_runs": 0,
+            "high_information_sampling_runs": 0,
+            "last_triggered": [],
+            "updated_at_utc": "",
+        }
+    return payload
+
+
+def _select_research_recovery_operators(
+    research_quality: dict[str, object],
+    active_patterns: set[str],
+    config: dict[str, object],
+) -> list[str]:
+    policy = config.get("research_recovery_policy", {})
+    if not isinstance(policy, dict) or not bool(policy.get("enabled", False)):
+        return []
+    reasons = research_quality.get("reasons", []) if isinstance(research_quality, dict) else []
+    if not isinstance(reasons, list):
+        reasons = []
+    operators: list[str] = []
+    if (
+        bool(policy.get("allow_frontier_intake_operator", True))
+        and ("frontier_zero_signal_persistence" in reasons or "frontier_research_blindspot" in active_patterns)
+    ):
+        operators.append("frontier_intake_operator")
+    if (
+        bool(policy.get("allow_soft_feedback_operator", True))
+        and ("bridge_zero_feedback_persistence" in reasons or "no_tool_feedback_loop" in active_patterns)
+    ):
+        operators.append("soft_feedback_operator")
+    if (
+        bool(policy.get("allow_high_information_sampling_operator", True))
+        and ("no_new_failure_pattern" in reasons or "sampling_blind_spot" in active_patterns)
+    ):
+        operators.append("high_information_sampling_operator")
+    return operators
+
+
+def _run_frontier_intake_operator(root: Path, config: dict[str, object], signals: dict[str, object]) -> dict[str, object]:
+    policy = config.get("research_recovery_policy", {}) if isinstance(config, dict) else {}
+    max_records = int(policy.get("max_frontier_records_per_round", 3) or 3)
+    path = root / "data" / "research" / "frontier_observations.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    topics = [
+        "small reasoning model routing",
+        "tool-use stability under ambiguity",
+        "conflict-aware answer suppression",
+    ]
+    generated = 0
+    for idx, topic in enumerate(topics[:max_records], start=1):
+        _append_jsonl(path, {
+            "id": f"frontier-auto-{utc_now().strftime('%Y%m%d%H%M%S')}-{idx}",
+            "topic": topic,
+            "source": "auto_recovery_operator",
+            "label": "pending_label",
+            "reason": "frontier_zero_signal_persistence",
+            "created_at_utc": utc_now().isoformat(),
+        })
+        generated += 1
+    return {"operator": "frontier_intake_operator", "generated_count": generated, "path": str(path)}
+
+
+def _run_soft_feedback_operator(root: Path, signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
+    policy = config.get("research_recovery_policy", {}) if isinstance(config, dict) else {}
+    max_records = int(policy.get("max_soft_feedback_records_per_round", 5) or 5)
+    path = root / "data" / "research" / "soft_bridge_feedback.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        raw_rows = real_prompt_eval.get("rows", [])
+        if isinstance(raw_rows, list):
+            rows = [item for item in raw_rows if isinstance(item, dict)]
+    generated = 0
+    for row in rows:
+        matched = row.get("baseline_match")
+        if matched is True:
+            continue
+        kind = "misread"
+        if str(row.get("logic_skill", "")) == "conflict_detection":
+            kind = "missing_context"
+        elif str(row.get("logic_skill", "")) == "tool_selection":
+            kind = "overreach"
+        _append_jsonl(path, {
+            "id": f"soft-feedback-{row.get('id','unknown')}",
+            "kind": kind,
+            "source_case": str(row.get("id", "unknown")),
+            "reason": f"baseline used {row.get('baseline_used_tool','')} while expected {row.get('expected_tool','')}",
+            "created_at_utc": utc_now().isoformat(),
+        })
+        generated += 1
+        if generated >= max_records:
+            break
+    return {"operator": "soft_feedback_operator", "generated_count": generated, "path": str(path)}
+
+
+def _run_high_information_sampling_operator(root: Path, signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
+    policy = config.get("research_recovery_policy", {}) if isinstance(config, dict) else {}
+    max_records = int(policy.get("max_high_information_variants_per_round", 4) or 4)
+    path = root / "data" / "evolution" / "research_recovery_variants.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    real_prompt_eval = signals.get("real_prompt_eval", {})
+    if isinstance(real_prompt_eval, dict):
+        raw_rows = real_prompt_eval.get("rows", [])
+        if isinstance(raw_rows, list):
+            rows = [item for item in raw_rows if isinstance(item, dict)]
+    variants: list[dict[str, object]] = []
+    mutations = ["conflicting_sources", "ambiguous_stop", "tool_boundary_shift", "missing_evidence"]
+    for idx, row in enumerate(rows[:max_records]):
+        variants.append({
+            "id": f"recovery-variant-{idx+1:02d}",
+            "parent_case": str(row.get("id", f"case-{idx+1}")),
+            "logic_skill": str(row.get("logic_skill", "comparison")),
+            "mutation": mutations[idx % len(mutations)],
+            "expected_tool": str(row.get("expected_tool", "search")),
+        })
+    path.write_text(json.dumps({"variants": variants}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"operator": "high_information_sampling_operator", "generated_count": len(variants), "path": str(path)}
+
+
 def build_proposals(
     digest: dict[str, object],
     config: dict[str, object],
@@ -1058,6 +1193,55 @@ def _primary_proposal_summary(proposal_paths: list[Path] | None) -> dict[str, st
     return summary
 
 
+def _run_research_recovery_operators(
+    root: Path,
+    signals: dict[str, object],
+    research_quality: dict[str, object],
+    config: dict[str, object],
+) -> tuple[Path, dict[str, object]]:
+    active_patterns = _load_active_failure_pattern_ids(root)
+    operators = _select_research_recovery_operators(research_quality, active_patterns, config)
+    state = _load_research_recovery_state(root)
+    results: list[dict[str, object]] = []
+    for operator in operators:
+        if operator == "frontier_intake_operator":
+            result = _run_frontier_intake_operator(root, config, signals)
+            state["frontier_intake_runs"] = int(state.get("frontier_intake_runs", 0) or 0) + 1
+        elif operator == "soft_feedback_operator":
+            result = _run_soft_feedback_operator(root, signals, config)
+            state["soft_feedback_runs"] = int(state.get("soft_feedback_runs", 0) or 0) + 1
+        elif operator == "high_information_sampling_operator":
+            result = _run_high_information_sampling_operator(root, signals, config)
+            state["high_information_sampling_runs"] = int(state.get("high_information_sampling_runs", 0) or 0) + 1
+        else:
+            continue
+        results.append(result)
+    state["last_triggered"] = operators
+    state["updated_at_utc"] = utc_now().isoformat()
+    state_path = root / "data" / "team" / "research_recovery_state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_if_changed(state_path, json.dumps(state, ensure_ascii=False, indent=2) + "\n")
+
+    report_path = root / "backlog" / "opportunities" / "research_recovery_report.md"
+    lines = [
+        "# Research Recovery Report",
+        "",
+        f"- triggered: {bool(operators)}",
+        f"- operators: {', '.join(operators) or 'none'}",
+    ]
+    for item in results:
+        lines.append(f"- {item.get('operator', '')}: generated_count={item.get('generated_count', 0)} path={item.get('path', '')}")
+    _write_if_changed(report_path, "\n".join(lines) + "\n")
+
+    return report_path, {
+        "triggered": bool(operators),
+        "triggered_operators": operators,
+        "results": results,
+        "state_path": str(state_path),
+        "report_path": str(report_path),
+    }
+
+
 def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
     stamp = datetime.fromisoformat(str(digest["timestamp_utc"]))
     output_path = root / "memory" / "daily" / f"{stamp.strftime('%Y-%m-%d')}.md"
@@ -1116,6 +1300,15 @@ def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
                 f"- primary_from_failure_pattern: {primary_proposal.get('from_failure_pattern', '')}",
                 f"- primary_from_top_gap: {primary_proposal.get('from_top_gap', '')}",
                 f"- primary_architect_handoff: {primary_proposal.get('architect_handoff', '')}",
+            ]
+        )
+
+    research_recovery = digest.get("research_recovery", {})
+    if isinstance(research_recovery, dict) and research_recovery:
+        lines.extend(
+            [
+                f"- research_recovery_triggered: {bool(research_recovery.get('triggered'))}",
+                f"- research_recovery_operators: {', '.join(research_recovery.get('triggered_operators', [])) or 'none'}",
             ]
         )
 
@@ -3159,6 +3352,13 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         researcher_artifact_path=researcher_artifact_path,
     )
     digest["research_quality"] = research_quality
+    research_recovery_report_path, research_recovery = _run_research_recovery_operators(
+        root,
+        signals,
+        research_quality,
+        config,
+    )
+    digest["research_recovery"] = research_recovery
 
     proposals = build_proposals(digest, config, recursive_state=recursive_state)
 
@@ -3318,6 +3518,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "role_evolution_suggestions": role_evolution_state.get("suggestions", []),
         "research_quality_path": str(research_quality_path),
         "research_quality": research_quality,
+        "research_recovery_report_path": str(research_recovery_report_path),
+        "research_recovery": research_recovery,
         "role_content_history_path": str(divergence.get("history_path", "")),
         "researcher_changed_vs_last": bool(divergence.get("researcher_changed", False)),
         "arbiter_changed_vs_last": bool(divergence.get("arbiter_changed", False)),
