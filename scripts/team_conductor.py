@@ -434,11 +434,22 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
     if not isinstance(comparison, dict):
         comparison = {}
 
+    hard_bridge_feedback = _count_jsonl(root / "data/desktop/bridge_feedback.jsonl")
+    soft_bridge_feedback = _count_jsonl(root / "data/research/soft_bridge_feedback.jsonl")
+    frontier_observation_count = _count_jsonl(root / "data/research/frontier_observations.jsonl")
+    recovery_variants_payload = _read_json(root / "data/evolution/research_recovery_variants.json")
+    recovery_variants = recovery_variants_payload.get("variants", []) if isinstance(recovery_variants_payload, dict) else []
+    if not isinstance(recovery_variants, list):
+        recovery_variants = []
+
     return {
         "episodes": _count_jsonl(root / "data/experience/episodes.jsonl"),
         "reviews": _count_jsonl(root / "data/review/reviews.jsonl"),
-        "bridge_feedback": _count_jsonl(root / "data/desktop/bridge_feedback.jsonl"),
-        "frontier_observation_count": _count_jsonl(root / "data/research/frontier_observations.jsonl"),
+        "bridge_feedback": hard_bridge_feedback + soft_bridge_feedback,
+        "bridge_feedback_hard": hard_bridge_feedback,
+        "bridge_feedback_soft": soft_bridge_feedback,
+        "frontier_observation_count": frontier_observation_count,
+        "research_recovery_variant_count": len(recovery_variants),
         "latest_train_run_id": train_report.get("run_id", ""),
         "dataset_sample_count": train_report.get("dataset", {}).get("sample_count", 0) if isinstance(train_report.get("dataset", {}), dict) else 0,
         "pretrain_eval": pretrain_eval,
@@ -3359,6 +3370,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         config,
     )
     digest["research_recovery"] = research_recovery
+    signals = collect_signals(root)
+    digest["signals"] = signals
 
     proposals = build_proposals(digest, config, recursive_state=recursive_state)
 
@@ -3510,6 +3523,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         "carm_gap_map_path": str(carm_gap_map_path),
         "alerts": digest.get("alerts", []),
         "direction_review": direction_review,
+        "signals": signals,
         "team_actions": team_actions,
         "role_artifact_paths": {role: str(path) for role, path in role_artifacts.items()},
         "role_output_status": role_output_status,

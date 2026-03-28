@@ -472,6 +472,10 @@ class TeamConductorTests(unittest.TestCase):
             self.assertIn("research_recovery", result)
             self.assertTrue(result["research_recovery"]["triggered_operators"])
 
+            updated_signals = result["signals"]
+            self.assertGreaterEqual(int(updated_signals.get("frontier_observation_count", 0)), 1)
+            self.assertGreaterEqual(int(updated_signals.get("bridge_feedback", 0)), 1)
+
             digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
             self.assertIn("- research_quality: degraded", digest_text)
             self.assertIn("- research_reasons:", digest_text)
