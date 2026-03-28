@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from scripts.team_conductor import (
     _build_delivery_decision,
     _classify_delivery_paths,
+    _cluster_recovery_variants,
     _dedupe_and_prioritize_proposals,
     _evaluate_research_quality,
     _load_active_failure_pattern_ids,
@@ -349,6 +350,18 @@ class TeamConductorTests(unittest.TestCase):
         self.assertIn("code_vs_search", _mutation_strategies_for_logic_skill("tool_selection"))
         self.assertIn("ambiguous_stop", _mutation_strategies_for_logic_skill("termination_judgment"))
 
+    def test_cluster_recovery_variants_creates_specific_pattern_ids(self) -> None:
+        clusters = _cluster_recovery_variants(
+            [
+                {"logic_skill": "conflict_detection", "mutation": "contradictory_authority", "source_score": 6},
+                {"logic_skill": "conflict_detection", "mutation": "missing_evidence", "source_score": 6},
+                {"logic_skill": "tool_selection", "mutation": "calculator_vs_search", "source_score": 3},
+            ]
+        )
+        pattern_ids = [item["pattern_id"] for item in clusters]
+        self.assertIn("repeated_conflict_detection_gap", pattern_ids)
+        self.assertIn("tool_boundary_sampling_gap", pattern_ids)
+
     def test_run_high_information_sampling_operator_generates_variants(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -507,8 +520,14 @@ class TeamConductorTests(unittest.TestCase):
             self.assertGreaterEqual(int(updated_signals.get("bridge_feedback", 0)), 1)
 
             if "high_information_sampling_operator" in result["research_recovery"]["triggered_operators"]:
-                variants = json.loads((root / "data" / "evolution" / "research_recovery_variants.json").read_text(encoding="utf-8"))["variants"]
+                variants_payload = json.loads((root / "data" / "evolution" / "research_recovery_variants.json").read_text(encoding="utf-8"))
+                variants = variants_payload["variants"]
                 self.assertTrue(any(v.get("selection_reason") for v in variants))
+                patterns_payload = json.loads((root / "backlog" / "incidents" / "auto_failure_patterns.json").read_text(encoding="utf-8"))
+                pattern_ids = [item.get("id") for item in patterns_payload.get("patterns", [])]
+                self.assertTrue(any(pid in pattern_ids for pid in ["repeated_conflict_detection_gap", "comparison_under_conflicting_sources", "tool_boundary_sampling_gap"]))
+                quality_state = json.loads((root / "data" / "team" / "research_quality_state.json").read_text(encoding="utf-8"))
+                self.assertGreaterEqual(int(quality_state.get("failure_pattern_count", 0)), 1)
 
             digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
             self.assertIn("- research_quality: degraded", digest_text)

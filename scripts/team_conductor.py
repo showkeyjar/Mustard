@@ -1002,6 +1002,44 @@ def _select_high_information_parent_rows(signals: dict[str, object], limit: int)
     return selected
 
 
+def _cluster_recovery_variants(variants: list[dict[str, object]]) -> list[dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    for item in variants:
+        if not isinstance(item, dict):
+            continue
+        logic_skill = str(item.get("logic_skill", "")).strip()
+        mutation = str(item.get("mutation", "")).strip()
+        source_score = int(item.get("source_score", 0) or 0)
+        if logic_skill == "conflict_detection":
+            pattern_id = "repeated_conflict_detection_gap"
+        elif logic_skill == "tool_selection":
+            pattern_id = "tool_boundary_sampling_gap"
+        elif logic_skill == "comparison":
+            pattern_id = "comparison_under_conflicting_sources"
+        elif logic_skill == "termination_judgment":
+            pattern_id = "termination_judgment_sampling_gap"
+        else:
+            pattern_id = f"{logic_skill or 'generic'}_sampling_gap"
+        cluster = grouped.setdefault(
+            pattern_id,
+            {
+                "pattern_id": pattern_id,
+                "logic_skill": logic_skill or "generic",
+                "count": 0,
+                "avg_source_score": 0.0,
+                "top_mutations": [],
+            },
+        )
+        cluster["count"] = int(cluster.get("count", 0) or 0) + 1
+        previous_total = float(cluster.get("avg_source_score", 0.0) or 0.0) * (cluster["count"] - 1)
+        cluster["avg_source_score"] = round((previous_total + source_score) / cluster["count"], 2)
+        mutations = cluster.get("top_mutations", [])
+        if isinstance(mutations, list) and mutation and mutation not in mutations:
+            mutations.append(mutation)
+            cluster["top_mutations"] = mutations[:3]
+    return list(grouped.values())
+
+
 def _run_high_information_sampling_operator(root: Path, signals: dict[str, object], config: dict[str, object]) -> dict[str, object]:
     policy = config.get("research_recovery_policy", {}) if isinstance(config, dict) else {}
     max_records = int(policy.get("max_high_information_variants_per_round", 4) or 4)
@@ -1026,8 +1064,9 @@ def _run_high_information_sampling_operator(root: Path, signals: dict[str, objec
             "source_rank": int(row.get("source_rank", idx + 1) or (idx + 1)),
             "expected_tool": str(row.get("expected_tool", "search")),
         })
-    path.write_text(json.dumps({"variants": variants}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return {"operator": "high_information_sampling_operator", "generated_count": len(variants), "path": str(path)}
+    clusters = _cluster_recovery_variants(variants)
+    path.write_text(json.dumps({"variants": variants, "clusters": clusters}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"operator": "high_information_sampling_operator", "generated_count": len(variants), "path": str(path), "clusters": clusters}
 
 
 def build_proposals(
@@ -1071,6 +1110,14 @@ def build_proposals(
         active_failure_pattern_ids.add("frontier_research_blindspot")
     if "no_new_failure_pattern" in reasons:
         active_failure_pattern_ids.add("sampling_blind_spot")
+    for specific_pattern in [
+        "repeated_conflict_detection_gap",
+        "tool_boundary_sampling_gap",
+        "comparison_under_conflicting_sources",
+        "termination_judgment_sampling_gap",
+    ]:
+        if specific_pattern in active_failure_pattern_ids:
+            active_failure_pattern_ids.add(specific_pattern)
 
     if "sampling_blind_spot" in active_failure_pattern_ids:
         proposals.append(
@@ -1586,6 +1633,34 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
                 "owner_role": "researcher",
             }
         )
+
+    recovery_variants_payload = _read_json(root / "data" / "evolution" / "research_recovery_variants.json")
+    recovery_clusters = recovery_variants_payload.get("clusters", []) if isinstance(recovery_variants_payload, dict) else []
+    if isinstance(recovery_clusters, list):
+        for cluster in recovery_clusters:
+            if not isinstance(cluster, dict):
+                continue
+            pattern_id = str(cluster.get("pattern_id", "")).strip()
+            if not pattern_id:
+                continue
+            if int(cluster.get("count", 0) or 0) < 1:
+                continue
+            patterns.append(
+                {
+                    "id": pattern_id,
+                    "severity": "medium",
+                    "evidence": {
+                        "logic_skill": cluster.get("logic_skill", ""),
+                        "count": cluster.get("count", 0),
+                        "avg_source_score": cluster.get("avg_source_score", 0.0),
+                        "top_mutations": cluster.get("top_mutations", []),
+                    },
+                    "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
+                    "frequency": "current_round",
+                    "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
+                    "owner_role": "failure_miner",
+                }
+            )
 
     payload = {
         "pattern_count": len(patterns),
@@ -3479,6 +3554,16 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         config,
     )
     digest["research_recovery"] = research_recovery
+    failure_patterns_path = _write_failure_patterns(root, signals)
+    research_quality_path, research_quality = _evaluate_research_quality(
+        root,
+        signals,
+        config,
+        failure_patterns_path=root / "backlog" / "incidents" / "auto_failure_patterns.json",
+        researcher_artifact_path=researcher_artifact_path,
+    )
+    digest["research_quality"] = research_quality
+    _write_if_changed(Path(research_quality_path), json.dumps(research_quality, ensure_ascii=False, indent=2) + "\n")
     refreshed_signals = collect_signals(root)
     refreshed_signals["quality_stabilization"] = signals.get("quality_stabilization", {})
     if "quality_focus_eval_result" in signals:
