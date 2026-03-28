@@ -6,8 +6,11 @@ from tempfile import TemporaryDirectory
 from scripts.team_conductor import (
     _build_delivery_decision,
     _classify_delivery_paths,
+    _dedupe_and_prioritize_proposals,
     _evaluate_research_quality,
+    _load_active_failure_pattern_ids,
     bootstrap_workspace,
+    build_proposals,
     run_cycle,
 )
 
@@ -251,6 +254,350 @@ class TeamConductorTests(unittest.TestCase):
             self.assertTrue(Path(result["evolution_candidate_path"]).exists())
             self.assertTrue(Path(result["evolution_lineage_path"]).exists())
             self.assertTrue(Path(result["evolution_run_path"]).exists())
+
+
+    def test_evaluate_research_quality_flags_degraded_when_patterns_empty_and_zero_streaks(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "memory").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "opportunities").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "team").mkdir(parents=True, exist_ok=True)
+
+            (root / "memory" / "failure_patterns.md").write_text(
+                "# Failure Patterns\n\n## Sampling insufficiency / blind spots\n- blind_spot: eval coverage still narrow\n",
+                encoding="utf-8",
+            )
+            (root / "backlog" / "opportunities" / "research_latest.md").write_text(
+                "# Research Artifact\n\nOnly summary metrics, no weakness diagnosis.\n",
+                encoding="utf-8",
+            )
+            (root / "data" / "team" / "research_quality_state.json").write_text(
+                json.dumps(
+                    {
+                        "rounds_without_new_failure_pattern": 1,
+                        "coverage_only_gap_streak": 1,
+                        "zero_bridge_feedback_streak": 2,
+                        "zero_frontier_observation_streak": 2,
+                        "last_failure_pattern_ids": [],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            path, payload = _evaluate_research_quality(
+                root,
+                {
+                    "bridge_feedback": 0,
+                    "frontier_observation_count": 0,
+                    "real_prompt_eval": {"summary": {"prompt_count": 10}},
+                },
+                {
+                    "research_quality_policy": {
+                        "enabled": True,
+                        "max_rounds_without_new_failure_pattern": 2,
+                        "max_rounds_with_coverage_only_top_gap": 2,
+                        "require_nonempty_failure_patterns": True,
+                        "flag_zero_bridge_feedback_rounds": 3,
+                        "flag_zero_frontier_observation_rounds": 3,
+                    }
+                },
+                root / "memory" / "failure_patterns.md",
+                root / "backlog" / "opportunities" / "research_latest.md",
+            )
+
+            self.assertTrue(path.exists())
+            self.assertTrue(payload["degraded"])
+            self.assertIn("failure_patterns_empty", payload["reasons"])
+            self.assertIn("coverage_only_top_gap_repetition", payload["reasons"])
+            self.assertIn("bridge_zero_feedback_persistence", payload["reasons"])
+            self.assertIn("frontier_zero_signal_persistence", payload["reasons"])
+
+    def test_run_cycle_surfaces_research_quality_in_digest_and_result(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "review").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "memory").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "opportunities").mkdir(parents=True, exist_ok=True)
+
+            (root / "configs" / "team_cycle.json").write_text(
+                json.dumps(
+                    {
+                        "team_name": "mustard-claw",
+                        "heartbeat": {"max_new_proposals_per_cycle": 1},
+                        "risk_policy": {"human_gate_required_change_types": ["runtime_control"]},
+                        "research_quality_policy": {
+                            "enabled": True,
+                            "max_rounds_without_new_failure_pattern": 1,
+                            "max_rounds_with_coverage_only_top_gap": 1,
+                            "require_nonempty_failure_patterns": True,
+                            "flag_zero_bridge_feedback_rounds": 1,
+                            "flag_zero_frontier_observation_rounds": 1,
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "memory" / "failure_patterns.md").write_text("# Failure Patterns\n", encoding="utf-8")
+            (root / "data" / "review" / "reviews.jsonl").write_text('{"x":1}\n', encoding="utf-8")
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run_3",
+                        "dataset": {"sample_count": 8},
+                        "evaluation": {
+                            "real_prompt_eval": {
+                                "summary": {
+                                    "prompt_count": 10,
+                                    "baseline_match_rate": 0.8,
+                                    "pretrained_match_rate": 1.0,
+                                },
+                                "rows": [{"id": "seed-1", "pretrained_match": True}],
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
+            self.assertIn("research_quality", result)
+            self.assertTrue(result["research_quality"]["degraded"])
+            self.assertIn("research_quality_degraded", result["alerts"])
+
+            digest_text = Path(result["digest_path"]).read_text(encoding="utf-8")
+            self.assertIn("- research_quality: degraded", digest_text)
+            self.assertIn("- research_reasons:", digest_text)
+
+    def test_run_cycle_writes_real_failure_patterns_into_memory_file(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "review").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "memory").mkdir(parents=True, exist_ok=True)
+
+            (root / "configs" / "team_cycle.json").write_text(
+                json.dumps(
+                    {
+                        "team_name": "mustard-claw",
+                        "heartbeat": {"max_new_proposals_per_cycle": 1},
+                        "risk_policy": {"human_gate_required_change_types": ["runtime_control"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "review" / "reviews.jsonl").write_text('{"x":1}\n', encoding="utf-8")
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run_4",
+                        "dataset": {"sample_count": 8},
+                        "evaluation": {
+                            "real_prompt_eval": {
+                                "summary": {
+                                    "prompt_count": 20,
+                                    "baseline_match_rate": 0.8,
+                                    "pretrained_match_rate": 1.0,
+                                },
+                                "rows": [{"id": "seed-1", "pretrained_match": True}],
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
+            failure_text = (root / "memory" / "failure_patterns.md").read_text(encoding="utf-8")
+            self.assertIn("pattern_id: sampling_blind_spot", failure_text)
+            self.assertIn("pattern_id: frontier_research_blindspot", failure_text)
+            self.assertIn("pattern_id: no_tool_feedback_loop", failure_text)
+
+    def test_build_proposals_prioritizes_new_failure_patterns(self) -> None:
+        proposals = build_proposals(
+            {
+                "signals": {
+                    "bridge_feedback": 0,
+                    "frontier_observation_count": 0,
+                    "dataset_sample_count": 186,
+                    "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                },
+                "research_quality": {
+                    "new_failure_pattern_ids": [
+                        "sampling_blind_spot",
+                        "frontier_research_blindspot",
+                        "no_tool_feedback_loop",
+                    ]
+                },
+            },
+            {
+                "heartbeat": {"max_new_proposals_per_cycle": 5},
+                "risk_policy": {"human_gate_required_change_types": ["runtime_control"]},
+            },
+            {"last_mode": "max_landing", "stagnation_rounds": 10},
+        )
+        titles = [item.get("title", "") for item in proposals]
+        self.assertIn("Exploit sampling blind spot with high-information real prompts", titles)
+        self.assertIn("Reopen frontier research intake with minimum observation quota", titles)
+        self.assertIn("Bootstrap bridge feedback capture without changing defaults", titles)
+        self.assertTrue(any(item.get("architect_handoff") for item in proposals))
+
+    def test_dedupe_and_prioritize_prefers_richer_failure_pattern_proposal(self) -> None:
+        proposals = _dedupe_and_prioritize_proposals(
+            [
+                {
+                    "title": "Kickstart desktop-bridge feedback loop",
+                    "problem": "桌面桥梁暂无反馈样本",
+                    "change_type": "desktop_behavior",
+                    "proposed_change": "采集 bridge useful/misread 反馈",
+                    "needs_human_approval": True,
+                },
+                {
+                    "title": "Bootstrap bridge feedback capture without changing defaults",
+                    "problem": "bridge feedback 持续为 0",
+                    "from_failure_pattern": "no_tool_feedback_loop",
+                    "from_top_gap": "research_quality_degraded",
+                    "change_type": "desktop_behavior",
+                    "proposed_change": "先补反馈采样与整理入口，只记录 useful/misread",
+                    "expected_metric_delta": "bridge_feedback > 0",
+                    "relative_to_last_round": "从抽象提桥梁闭环，改为先把反馈入口打通。",
+                    "scenario_fit": "用户在真实桌面协作里纠偏系统误读/误触发的场景。",
+                    "architect_handoff": "guardian reviews scope, then failure_miner defines feedback capture schema before any rollout",
+                    "needs_human_approval": True,
+                    "evaluation_plan": ["python -m scripts.desktop_agent_control snapshot"],
+                },
+            ]
+        )
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]["title"], "Bootstrap bridge feedback capture without changing defaults")
+
+    def test_load_active_failure_pattern_ids_reads_auto_incidents(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "backlog" / "incidents").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "incidents" / "auto_failure_patterns.json").write_text(
+                json.dumps(
+                    {
+                        "patterns": [
+                            {"id": "frontier_research_blindspot"},
+                            {"id": "no_tool_feedback_loop"},
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            active = _load_active_failure_pattern_ids(root)
+            self.assertEqual(active, {"frontier_research_blindspot", "no_tool_feedback_loop"})
+
+    def test_build_proposals_uses_persistent_research_quality_reasons(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "backlog" / "incidents").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "incidents" / "auto_failure_patterns.json").write_text(
+                json.dumps(
+                    {
+                        "patterns": [
+                            {"id": "frontier_research_blindspot"},
+                            {"id": "no_tool_feedback_loop"},
+                            {"id": "sampling_blind_spot"},
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            proposals = build_proposals(
+                {
+                    "workspace_root": str(root),
+                    "signals": {
+                        "bridge_feedback": 0,
+                        "frontier_observation_count": 0,
+                        "dataset_sample_count": 186,
+                        "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                    },
+                    "research_quality": {
+                        "new_failure_pattern_ids": [],
+                        "reasons": [
+                            "no_new_failure_pattern",
+                            "bridge_zero_feedback_persistence",
+                            "frontier_zero_signal_persistence",
+                        ],
+                    },
+                },
+                {
+                    "heartbeat": {"max_new_proposals_per_cycle": 5},
+                    "risk_policy": {"human_gate_required_change_types": ["desktop_behavior"]},
+                },
+                {"last_mode": "max_landing", "stagnation_rounds": 10},
+            )
+            titles = [item.get("title", "") for item in proposals]
+            self.assertIn("Exploit sampling blind spot with high-information real prompts", titles)
+            self.assertIn("Reopen frontier research intake with minimum observation quota", titles)
+            self.assertIn("Bootstrap bridge feedback capture without changing defaults", titles)
+
+    def test_run_cycle_writes_architect_handoff_into_outputs(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "review").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "memory").mkdir(parents=True, exist_ok=True)
+
+            (root / "configs" / "team_cycle.json").write_text(
+                json.dumps(
+                    {
+                        "team_name": "mustard-claw",
+                        "heartbeat": {"max_new_proposals_per_cycle": 1},
+                        "risk_policy": {"human_gate_required_change_types": ["desktop_behavior"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "review" / "reviews.jsonl").write_text('{"x":1}\n', encoding="utf-8")
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run_5",
+                        "dataset": {"sample_count": 186},
+                        "evaluation": {
+                            "real_prompt_eval": {
+                                "summary": {
+                                    "prompt_count": 20,
+                                    "baseline_match_rate": 0.8,
+                                    "pretrained_match_rate": 1.0,
+                                },
+                                "rows": [{"id": "seed-1", "pretrained_match": True}],
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
+            proposal_text = Path(result["proposal_paths"][0]).read_text(encoding="utf-8")
+            architect_text = (root / "backlog" / "role_outputs" / "architect_latest.md").read_text(encoding="utf-8")
+            self.assertIn("- architect_handoff:", proposal_text)
+            self.assertNotIn("- architect_handoff: direct_execute_if_format_passes", proposal_text)
+            self.assertIn("- first_architect_handoff:", architect_text)
+            self.assertTrue("- first_from_failure_pattern:" in architect_text or "- first_from_top_gap:" in architect_text)
 
 
 if __name__ == "__main__":

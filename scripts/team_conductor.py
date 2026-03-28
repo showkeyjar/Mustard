@@ -726,6 +726,94 @@ def _build_adaptive_proposals(signals: dict[str, object], gated_types: list[obje
     return proposals
 
 
+def _proposal_topic_key(proposal: dict[str, object]) -> str:
+    text = " ".join(
+        [
+            str(proposal.get("title", "")),
+            str(proposal.get("problem", "")),
+            str(proposal.get("proposed_change", "")),
+            str(proposal.get("from_failure_pattern", "")),
+            str(proposal.get("from_top_gap", "")),
+        ]
+    ).lower()
+    if any(token in text for token in ["bridge", "feedback", "desktop"]):
+        return "bridge_feedback"
+    if any(token in text for token in ["frontier", "research intake", "watchlist", "observation"]):
+        return "frontier_intake"
+    if any(token in text for token in ["sampling blind spot", "high-information", "real prompt", "coverage"]):
+        return "real_prompt_sampling"
+    if any(token in text for token in ["runtime rollout", "candidate version", "runtime_control"]):
+        return "runtime_control"
+    return str(proposal.get("title", "")).strip().lower()
+
+
+def _proposal_information_score(proposal: dict[str, object]) -> int:
+    score = 0
+    if proposal.get("from_failure_pattern"):
+        score += 3
+    if proposal.get("from_top_gap"):
+        score += 2
+    if proposal.get("expected_metric_delta"):
+        score += 2
+    if proposal.get("relative_to_last_round"):
+        score += 1
+    if proposal.get("scenario_fit"):
+        score += 1
+    if proposal.get("architect_handoff") and proposal.get("architect_handoff") != "direct_execute_if_format_passes":
+        score += 2
+    if proposal.get("needs_human_approval"):
+        score += 1
+    evaluation_plan = proposal.get("evaluation_plan", [])
+    if isinstance(evaluation_plan, list):
+        score += min(2, len(evaluation_plan))
+    evidence = proposal.get("evidence", [])
+    if isinstance(evidence, list) and evidence:
+        score += 1
+    return score
+
+
+def _dedupe_and_prioritize_proposals(proposals: list[dict[str, object]]) -> list[dict[str, object]]:
+    best_by_topic: dict[str, dict[str, object]] = {}
+    for proposal in proposals:
+        key = _proposal_topic_key(proposal)
+        current = best_by_topic.get(key)
+        if current is None:
+            best_by_topic[key] = proposal
+            continue
+        current_score = _proposal_information_score(current)
+        next_score = _proposal_information_score(proposal)
+        if next_score > current_score:
+            best_by_topic[key] = proposal
+        elif next_score == current_score:
+            if bool(proposal.get("needs_human_approval", False)) and not bool(current.get("needs_human_approval", False)):
+                best_by_topic[key] = proposal
+
+    ordered_topics = []
+    seen = set()
+    for proposal in proposals:
+        key = _proposal_topic_key(proposal)
+        if key not in seen:
+            ordered_topics.append(key)
+            seen.add(key)
+    return [best_by_topic[key] for key in ordered_topics if key in best_by_topic]
+
+
+def _load_active_failure_pattern_ids(root: Path) -> set[str]:
+    path = root / "backlog" / "incidents" / "auto_failure_patterns.json"
+    if not path.exists():
+        return set()
+    payload = _read_json(path)
+    patterns = payload.get("patterns", []) if isinstance(payload, dict) else []
+    active: set[str] = set()
+    if isinstance(patterns, list):
+        for item in patterns:
+            if isinstance(item, dict):
+                value = str(item.get("id", "")).strip()
+                if value:
+                    active.add(value)
+    return active
+
+
 def build_proposals(
     digest: dict[str, object],
     config: dict[str, object],
@@ -748,6 +836,97 @@ def build_proposals(
     if isinstance(recursive_state, dict):
         recursive_mode = str(recursive_state.get("last_mode", "normal"))
         stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+
+    research_quality = digest.get("research_quality", {})
+    if not isinstance(research_quality, dict):
+        research_quality = {}
+    new_failure_pattern_ids = research_quality.get("new_failure_pattern_ids", [])
+    if not isinstance(new_failure_pattern_ids, list):
+        new_failure_pattern_ids = []
+    active_failure_pattern_ids = set(new_failure_pattern_ids)
+    active_failure_pattern_ids.update(_load_active_failure_pattern_ids(Path(digest.get("workspace_root", "."))))
+
+    reasons = research_quality.get("reasons", [])
+    if not isinstance(reasons, list):
+        reasons = []
+    if "bridge_zero_feedback_persistence" in reasons:
+        active_failure_pattern_ids.add("no_tool_feedback_loop")
+    if "frontier_zero_signal_persistence" in reasons:
+        active_failure_pattern_ids.add("frontier_research_blindspot")
+    if "no_new_failure_pattern" in reasons:
+        active_failure_pattern_ids.add("sampling_blind_spot")
+
+    if "sampling_blind_spot" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Exploit sampling blind spot with high-information real prompts",
+                "problem": "当前样本表面全绿，但仍不足以证明隐藏弱点已被发现。",
+                "evidence": ["failure_pattern=sampling_blind_spot", f"stagnation_rounds={stagnation_rounds}"],
+                "from_failure_pattern": "sampling_blind_spot",
+                "from_top_gap": "research_quality_degraded",
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "补充 >=4 条高信息量 real prompts，优先覆盖 conflict / termination / multi-source integration 边界场景。",
+                "expected_metric_delta": "新增样本后要么暴露新 weakness cluster，要么证明 match_rate 仍稳定 >=0.90",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_real_prompt_candidates",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "回退新增高信息量样本，恢复上一版评测集。",
+                "relative_to_last_round": "从泛化扩容改为针对 sampling blind spot 的定向施压。",
+                "scenario_fit": "真实复杂任务里，看似通过但隐藏弱点未被触发的场景。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "benchmark_owner + researcher co-design high-information prompt pack",
+            }
+        )
+
+    if "frontier_research_blindspot" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Reopen frontier research intake with minimum observation quota",
+                "problem": "前沿研究观察长期为 0，系统容易在封闭样本内自转。",
+                "evidence": ["failure_pattern=frontier_research_blindspot", f"frontier_observation_count={signals.get('frontier_observation_count', 0)}"],
+                "from_failure_pattern": "frontier_research_blindspot",
+                "from_top_gap": "research_quality_degraded",
+                "change_type": "research_tracking",
+                "proposed_change": "每轮最少补 3 条前沿观察，并形成 可借鉴 / 不建议 / 待观察 标签。",
+                "expected_metric_delta": "frontier_observation_count > 0 且研究结论不再只依赖仓内既有样本",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "补充 data/research/frontier_observations.jsonl",
+                    "更新 backlog/opportunities/research_latest.md 的外部路线判断",
+                ],
+                "rollback_plan": "仅新增研究记录，不改默认运行时策略。",
+                "relative_to_last_round": "从被动汇总改为最低配额的前沿摄取。",
+                "scenario_fit": "避免团队长期困在既有评测集与本地记忆中。",
+                "needs_human_approval": "research_tracking" in gated_types,
+                "architect_handoff": "researcher creates minimum frontier intake pack and arbiter labels borrow/avoid/watch",
+            }
+        )
+
+    if "no_tool_feedback_loop" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Bootstrap bridge feedback capture without changing defaults",
+                "problem": "bridge feedback 持续为 0，系统无法得到真实用户纠偏信号。",
+                "evidence": ["failure_pattern=no_tool_feedback_loop", f"bridge_feedback={signals.get('bridge_feedback', 0)}"],
+                "from_failure_pattern": "no_tool_feedback_loop",
+                "from_top_gap": "research_quality_degraded",
+                "change_type": "desktop_behavior",
+                "proposed_change": "先补反馈采样与整理入口，只记录 useful/misread，不修改桌面默认行为。",
+                "expected_metric_delta": "bridge_feedback > 0，且 failure miner 能获得真实纠偏样本",
+                "risk_level": "medium",
+                "evaluation_plan": [
+                    "python -m scripts.desktop_agent_control snapshot",
+                    "python -m scripts.desktop_bridge_chat",
+                ],
+                "rollback_plan": "仅停止采样与整理，不改动默认桌面策略。",
+                "relative_to_last_round": "从抽象提桥梁闭环，改为先把反馈入口打通。",
+                "scenario_fit": "用户在真实桌面协作里纠偏系统误读/误触发的场景。",
+                "needs_human_approval": "desktop_behavior" in gated_types,
+                "architect_handoff": "guardian reviews scope, then failure_miner defines feedback capture schema before any rollout",
+            }
+        )
 
     real_prompt_eval = signals.get("real_prompt_eval", {})
     if isinstance(real_prompt_eval, dict):
@@ -821,6 +1000,8 @@ def build_proposals(
             },
         )
 
+    proposals = _dedupe_and_prioritize_proposals(proposals)
+
     if recursive_mode == "max_landing" and not proposals:
         proposals.insert(
             0,
@@ -845,7 +1026,25 @@ def build_proposals(
         )
 
     max_new = config.get("heartbeat", {}).get("max_new_proposals_per_cycle", 3) if isinstance(config.get("heartbeat", {}), dict) else 3
-    return proposals[: int(max_new)]
+    max_new = int(max_new)
+    if len(proposals) <= max_new:
+        return proposals
+
+    pinned: list[dict[str, object]] = []
+    for item in proposals:
+        if bool(item.get("needs_human_approval", False)) or str(item.get("change_type", "")) == "runtime_control":
+            pinned.append(item)
+
+    ordered: list[dict[str, object]] = []
+    seen_titles: set[str] = set()
+    for item in pinned + proposals:
+        title = str(item.get("title", ""))
+        if title in seen_titles:
+            continue
+        ordered.append(item)
+        seen_titles.add(title)
+
+    return ordered[:max_new]
 
 
 def write_daily_digest(root: Path, digest: dict[str, object]) -> Path:
@@ -939,6 +1138,7 @@ def write_proposals(root: Path, proposals: list[dict[str, object]]) -> list[Path
             f"- needs_human_approval: {proposal.get('needs_human_approval', False)}",
             f"- relative_to_last_round: {proposal.get('relative_to_last_round', '')}",
             f"- scenario_fit: {proposal.get('scenario_fit', '')}",
+            f"- architect_handoff: {proposal.get('architect_handoff', 'direct_execute_if_format_passes')}",
             f"- rollback_plan: {proposal.get('rollback_plan', '')}",
         ]
         evidence = proposal.get("evidence", [])
@@ -1002,9 +1202,12 @@ def _build_team_actions_summary(
 
 def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
     incidents_path = root / "backlog" / "incidents" / "auto_failure_patterns.json"
+    memory_path = root / "memory" / "failure_patterns.md"
 
     patterns: list[dict[str, object]] = []
     real_prompt_eval = signals.get("real_prompt_eval", {})
+    prompt_count = 0
+    mismatch_count = 0
     if isinstance(real_prompt_eval, dict):
         summary = real_prompt_eval.get("summary", {})
         if isinstance(summary, dict):
@@ -1016,8 +1219,14 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
                         "severity": "high",
                         "evidence": {"prompt_count": prompt_count, "target_min": 20},
                         "impact": "真实场景覆盖不足，回归结果不稳定。",
+                        "frequency": "current_round",
+                        "repro_hint": "运行 python -m scripts.evaluate_real_prompts 并检查 summary.prompt_count",
+                        "owner_role": "benchmark_owner",
                     }
                 )
+        rows = real_prompt_eval.get("rows", [])
+        if isinstance(rows, list):
+            mismatch_count = len([r for r in rows if isinstance(r, dict) and not bool(r.get("pretrained_match", True))])
 
     frontier_observation_count = int(signals.get("frontier_observation_count", 0) or 0)
     if frontier_observation_count < 2:
@@ -1027,6 +1236,9 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
                 "severity": "high",
                 "evidence": {"frontier_observation_count": frontier_observation_count, "target_min": 2},
                 "impact": "缺少前沿对标，容易重复走弯路。",
+                "frequency": "persistent",
+                "repro_hint": "检查 data/research/frontier_observations.jsonl 是否连续多轮为空或低于最小值",
+                "owner_role": "researcher",
             }
         )
 
@@ -1038,6 +1250,22 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
                 "severity": "medium",
                 "evidence": {"bridge_feedback": bridge_feedback},
                 "impact": "缺少用户纠偏信号，工具调用场景改进缓慢。",
+                "frequency": "persistent",
+                "repro_hint": "检查 bridge feedback 采样是否持续为 0",
+                "owner_role": "failure_miner",
+            }
+        )
+
+    if prompt_count >= 20 and mismatch_count == 0:
+        patterns.append(
+            {
+                "id": "sampling_blind_spot",
+                "severity": "medium",
+                "evidence": {"prompt_count": prompt_count, "mismatch_count": mismatch_count},
+                "impact": "样本表面全绿，但仍不足以证明隐藏弱点已被发现。",
+                "frequency": "current_round",
+                "repro_hint": "扩充高信息量 real prompts 后重跑 evaluate_real_prompts，看是否暴露新弱点簇",
+                "owner_role": "researcher",
             }
         )
 
@@ -1046,6 +1274,53 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
         "patterns": patterns,
     }
     _write_if_changed(incidents_path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+    top_lines = [
+        "# Failure Patterns",
+        "",
+        "记录稳定复现的失败模式、误判模式、采样盲区和回滚原因。",
+        "",
+        "## Top patterns this round",
+        "",
+    ]
+    for item in patterns[:5]:
+        top_lines.extend([
+            f"### {item.get('id', 'unknown')}",
+            f"- pattern_id: {item.get('id', 'unknown')}",
+            f"- title: {item.get('id', 'unknown')}",
+            f"- frequency: {item.get('frequency', 'current_round')}",
+            f"- impact: {item.get('impact', '')}",
+            f"- repro_hint: {item.get('repro_hint', '')}",
+            f"- owner_role: {item.get('owner_role', 'unknown')}",
+            f"- representative_cases: {json.dumps(item.get('evidence', {}), ensure_ascii=False)}",
+            "- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure",
+            "- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks",
+            "- status: open",
+            "",
+        ])
+
+    top_lines.extend([
+        "## Sampling insufficiency / blind spots",
+        "",
+        f"- blind_spot: high-information real prompts still underrepresented even when aggregate match stays high",
+        f"- why_current_sample_is_insufficient: prompt_count={prompt_count}, mismatch_count={mismatch_count}, bridge_feedback={bridge_feedback}, frontier_observation_count={frontier_observation_count}",
+        "- next_sampling_action: add >=4 high-information prompts and collect non-zero frontier / bridge evidence",
+        "- owner_role: researcher",
+        "",
+        "## Research degradation patterns",
+        "",
+        "- repeated_low_information_candidates",
+        "- no_new_failure_pattern_across_rounds",
+        "- coverage_only_top_gap_repetition",
+        "- frontier_zero_signal_persistence",
+        "- bridge_zero_feedback_persistence",
+        "- report_style_research_without_diagnostic_novelty",
+        "",
+        "## Repair leads for Architect",
+        "",
+        "- 将 sampling_blind_spot / frontier_research_blindspot / no_tool_feedback_loop 直接转成下一轮 Architect 提案输入。",
+    ])
+    _write_if_changed(memory_path, "\n".join(top_lines) + "\n")
     return incidents_path
 
 
@@ -1211,10 +1486,13 @@ def _extract_failure_pattern_ids(path: Path) -> list[str]:
     if not path.exists():
         return []
     text = path.read_text(encoding="utf-8", errors="ignore")
-    ids = re.findall(r"pattern_id:\s*([A-Za-z0-9_\-]+)", text)
+    ids = [item for item in re.findall(r"pattern_id:\s*([A-Za-z0-9_\-]+)", text) if item and item != "-"]
     if ids:
         return ids
-    payload = _read_json(path)
+    try:
+        payload = _read_json(path)
+    except json.JSONDecodeError:
+        return []
     patterns = payload.get("patterns", []) if isinstance(payload, dict) else []
     if not isinstance(patterns, list):
         return []
@@ -1222,7 +1500,7 @@ def _extract_failure_pattern_ids(path: Path) -> list[str]:
     for item in patterns:
         if isinstance(item, dict):
             value = str(item.get("id", "")).strip()
-            if value:
+            if value and value != "-":
                 extracted.append(value)
     return extracted
 
@@ -1564,12 +1842,28 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
     _write_if_changed(path, "\n".join(lines) + "\n")
     return path
 
+def _load_proposal_summary(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    summary: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if not line.startswith("- "):
+            continue
+        content = line[2:]
+        if ":" not in content:
+            continue
+        key, value = content.split(":", 1)
+        summary[key.strip()] = value.strip()
+    return summary
+
+
 def _write_role_artifacts(
     root: Path,
     signals: dict[str, object],
     proposals: list[dict[str, object]],
     direction_review: dict[str, object],
     recursive_state: dict[str, object],
+    proposal_paths: list[Path] | None = None,
 ) -> dict[str, Path]:
     role_dir = root / "backlog" / "role_outputs"
     role_dir.mkdir(parents=True, exist_ok=True)
@@ -1657,18 +1951,41 @@ def _write_role_artifacts(
     for p in proposals:
         if p.get("relative_to_last_round") and p.get("scenario_fit") and (p.get("from_failure_pattern") or p.get("from_top_gap")):
             proposal_quality_ok += 1
-    _write_if_changed(
-        architect_path,
-        "\n".join(
+    architect_lines = [
+        "# Architect Output",
+        "",
+        f"- proposal_count_this_round: {len(proposals)}",
+        f"- proposal_format_pass_count: {proposal_quality_ok}",
+        "- note: no new proposal" if not proposals else "- note: proposals generated",
+    ]
+    final_paths = proposal_paths or []
+    if final_paths:
+        first_summary = _load_proposal_summary(final_paths[0])
+        architect_lines.extend(
             [
-                "# Architect Output",
-                "",
-                f"- proposal_count_this_round: {len(proposals)}",
-                f"- proposal_format_pass_count: {proposal_quality_ok}",
-                "- note: no new proposal" if not proposals else "- note: proposals generated",
+                f"- first_proposal_title: {final_paths[0].stem}",
+                f"- first_from_failure_pattern: {first_summary.get('from_failure_pattern', '')}",
+                f"- first_from_top_gap: {first_summary.get('from_top_gap', '')}",
+                f"- first_expected_metric_delta: {first_summary.get('expected_metric_delta', '')}",
+                f"- first_scenario_fit: {first_summary.get('scenario_fit', '')}",
+                f"- first_architect_handoff: {first_summary.get('architect_handoff', 'direct_execute_if_format_passes')}",
             ]
         )
-        + "\n",
+    elif proposals:
+        first = proposals[0]
+        architect_lines.extend(
+            [
+                f"- first_proposal_title: {first.get('title', '')}",
+                f"- first_from_failure_pattern: {first.get('from_failure_pattern', '')}",
+                f"- first_from_top_gap: {first.get('from_top_gap', '')}",
+                f"- first_expected_metric_delta: {first.get('expected_metric_delta', '')}",
+                f"- first_scenario_fit: {first.get('scenario_fit', '')}",
+                f"- first_architect_handoff: {first.get('architect_handoff', 'direct_execute_if_format_passes')}",
+            ]
+        )
+    _write_if_changed(
+        architect_path,
+        "\n".join(architect_lines) + "\n",
     )
 
     guardian_path = role_dir / "guardian_latest.md"
@@ -2798,6 +3115,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
 
     recursive_state = _update_recursive_state(root, signals, config)
     digest = build_daily_digest(signals, config)
+    digest["workspace_root"] = str(root)
     digest["recursive_state"] = recursive_state
 
     failure_patterns_path = _write_failure_patterns(root, signals)
@@ -2934,6 +3252,8 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         alerts.append("deep_cycle_gate_failed")
         digest["alerts"] = alerts
 
+    role_artifacts = _write_role_artifacts(root, signals, proposals, direction_review, recursive_state, proposal_paths=proposal_paths)
+    role_artifacts["researcher"] = researcher_artifact_path
     digest_path = write_daily_digest(root, digest)
     evolution_artifacts = _write_evolution_artifacts(root, signals, operator_result=operator_result)
     changed_paths = _safe_git_changed_paths(root)
