@@ -10,8 +10,15 @@
 
 ## Required Environment
 
+### Git Sync Lane
+
 - 仓库已配置 `origin`
 - 当前目录在仓库根目录
+- 本地 git push 已配置可用凭据（Credential Manager / SSH / 系统登录态均可）
+
+### PR Delivery Lane
+
+- 满足 Git Sync Lane 的前提
 - 已设置 `GH_TOKEN`、`GITHUB_TOKEN` 或 `MUSTARD_GITHUB_TOKEN`
 
 ## Required Access
@@ -19,6 +26,56 @@
 - 能推送分支到远端仓库
 - 能创建 Pull Request
 - 能提交 Pull Request review
+
+## Lanes
+
+### Git Sync Lane
+
+- 目标：自动 commit / push 选中的核心改动，不创建 PR
+- 入口：`python -m scripts.claw_team_control run --auto-sync-git`
+- 特点：不依赖 GitHub token；默认不使用 `git add -A`
+
+### PR Delivery Lane
+
+- 目标：创建 Pull Request 并进入 review / merge 流程
+- 入口：`python -m scripts.claw_team_control deliver`
+- 强制入口：`python -m scripts.claw_team_control deliver --force-pr`
+- 特点：依赖 GitHub token 与 GitHub API
+
+## Recommended Rollout Config
+
+推荐先用这个保守配置上线 PR lane：
+
+```json
+{
+  "github_delivery": {
+    "enabled": true,
+    "require_direction_correct": true,
+    "require_clean_alerts": true
+  },
+  "auto_review": {
+    "enabled": true,
+    "same_repo_only": true,
+    "check_commands": [
+      "python -m unittest discover -s tests -v"
+    ]
+  },
+  "auto_merge": {
+    "enabled": false,
+    "same_repo_only": true,
+    "required_label": "claw-automerge",
+    "require_approved_review": true,
+    "require_clean_status": true,
+    "merge_method": "squash"
+  }
+}
+```
+
+推荐启用顺序：
+
+1. 先只开 `github_delivery.enabled=true`，验证自动 PR 创建是否符合预期
+2. 再开 `auto_review.enabled=true`，让 PR 自动走保守评审
+3. 最后再考虑 `auto_merge.enabled=true`，并且保留 `required_label`
 
 ## Commands
 

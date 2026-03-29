@@ -15,4 +15,6 @@
 
 - 一份周期汇总（含：已完成、未完成、阻塞、风险）
 - 一份角色贡献表（角色 -> 产物路径 -> 是否达标）
-- 对 `needs_redefinition` 角色给出修复动作（替换职责/降低频次/补证据）
+- 一份 research_quality 摘要（是否 degraded、原因、修复动作）
+- 标注 Researcher 是否通过 Value Gate、Failure Miner 是否产出可执行模式
+- 对 `needs_redefinition` 或 `research_degraded` 角色给出修复动作（替换职责/降低频次/补证据）
