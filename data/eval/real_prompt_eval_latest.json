@@ -1,10 +1,10 @@
 {
   "summary": {
-    "prompt_count": 12,
-    "baseline_match_rate": 0.9167,
+    "prompt_count": 20,
+    "baseline_match_rate": 0.8,
     "pretrained_match_rate": 1.0,
-    "baseline_avg_steps": 5.0833,
-    "pretrained_avg_steps": 3.0
+    "baseline_avg_steps": 4.9,
+    "pretrained_avg_steps": 3.35
   },
   "rows": [
     {
@@ -258,6 +258,178 @@
         "ANSWER"
       ],
       "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "baseline_match": false,
       "pretrained_match": true
     }
   ]

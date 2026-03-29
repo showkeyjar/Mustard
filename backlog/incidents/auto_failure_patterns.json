@@ -1,31 +1,66 @@
 {
-  "pattern_count": 3,
+  "pattern_count": 4,
   "patterns": [
     {
-      "id": "eval_coverage_too_low",
-      "severity": "high",
-      "evidence": {
-        "prompt_count": 12,
-        "target_min": 20
-      },
-      "impact": "真实场景覆盖不足，回归结果不稳定。"
-    },
-    {
-      "id": "frontier_research_blindspot",
-      "severity": "high",
-      "evidence": {
-        "frontier_observation_count": 0,
-        "target_min": 2
-      },
-      "impact": "缺少前沿对标，容易重复走弯路。"
-    },
-    {
-      "id": "no_tool_feedback_loop",
+      "id": "sampling_blind_spot",
       "severity": "medium",
       "evidence": {
-        "bridge_feedback": 0
+        "prompt_count": 20,
+        "mismatch_count": 0
       },
-      "impact": "缺少用户纠偏信号，工具调用场景改进缓慢。"
+      "impact": "样本表面全绿，但仍不足以证明隐藏弱点已被发现。",
+      "frequency": "current_round",
+      "repro_hint": "扩充高信息量 real prompts 后重跑 evaluate_real_prompts，看是否暴露新弱点簇",
+      "owner_role": "researcher"
+    },
+    {
+      "id": "repeated_conflict_detection_gap",
+      "severity": "medium",
+      "evidence": {
+        "logic_skill": "conflict_detection",
+        "count": 2,
+        "avg_source_score": 6.0,
+        "top_mutations": [
+          "contradictory_authority",
+          "missing_evidence"
+        ]
+      },
+      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
+      "frequency": "current_round",
+      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
+      "owner_role": "failure_miner"
+    },
+    {
+      "id": "comparison_under_conflicting_sources",
+      "severity": "medium",
+      "evidence": {
+        "logic_skill": "comparison",
+        "count": 1,
+        "avg_source_score": 6.0,
+        "top_mutations": [
+          "conflicting_sources"
+        ]
+      },
+      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
+      "frequency": "current_round",
+      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
+      "owner_role": "failure_miner"
+    },
+    {
+      "id": "tool_boundary_sampling_gap",
+      "severity": "medium",
+      "evidence": {
+        "logic_skill": "tool_selection",
+        "count": 1,
+        "avg_source_score": 3.0,
+        "top_mutations": [
+          "calculator_vs_search"
+        ]
+      },
+      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
+      "frequency": "current_round",
+      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
+      "owner_role": "failure_miner"
     }
   ]
 }
