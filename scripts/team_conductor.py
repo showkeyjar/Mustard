@@ -1923,8 +1923,20 @@ def _evaluate_research_quality(
     current_ids = _extract_failure_pattern_ids(failure_patterns_path)
     new_ids = [item for item in current_ids if item not in previous_ids]
 
+    quality_payload = _build_quality_stabilization_payload(signals)
+    high_signal_count = int(quality_payload.get("high_signal_count", 0) or 0)
+
+    recovery_variants_payload = _read_json(root / "data" / "evolution" / "research_recovery_variants.json")
+    recovery_clusters = recovery_variants_payload.get("clusters", []) if isinstance(recovery_variants_payload, dict) else []
+    if not isinstance(recovery_clusters, list):
+        recovery_clusters = []
+    active_recovery_clusters = [cluster for cluster in recovery_clusters if isinstance(cluster, dict) and int(cluster.get("count", 0) or 0) > 0]
+    quality_exploration_active = high_signal_count > 0 or bool(active_recovery_clusters)
+
     rounds_without_new = int(prev.get("rounds_without_new_failure_pattern", 0) or 0)
     if current_ids and new_ids:
+        rounds_without_new = 0
+    elif quality_exploration_active:
         rounds_without_new = 0
     else:
         rounds_without_new += 1
@@ -1959,7 +1971,7 @@ def _evaluate_research_quality(
     failure_text = failure_patterns_path.read_text(encoding="utf-8", errors="ignore") if failure_patterns_path.exists() else ""
     if require_nonempty and not current_ids:
         reasons.append("failure_patterns_empty")
-    if enabled and rounds_without_new >= max_without_new:
+    if enabled and rounds_without_new >= max_without_new and not quality_exploration_active:
         reasons.append("no_new_failure_pattern")
     if enabled and coverage_only_streak >= max_coverage_only:
         reasons.append("coverage_only_top_gap_repetition")
@@ -1985,6 +1997,9 @@ def _evaluate_research_quality(
         "zero_frontier_observation_streak": zero_frontier_streak,
         "rounds_without_new_failure_pattern": rounds_without_new,
         "top_gap": top_gap or "unknown",
+        "quality_exploration_active": quality_exploration_active,
+        "high_signal_count": high_signal_count,
+        "recovery_cluster_count": len(active_recovery_clusters),
         "updated_at_utc": utc_now().isoformat(),
         "last_failure_pattern_ids": current_ids,
     }
@@ -3190,6 +3205,23 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
 
     top_gap = "coverage_not_quality" if prompt_count < target_prompt_count else "quality_stabilization"
     operator = "expand_eval_set" if prompt_count < target_prompt_count else ("stabilize_quality_gap" if high_signal_count > 0 else "promote_baseline")
+
+    if operator == "expand_eval_set":
+        status = "proposed"
+        decision = "advance"
+        failure_reason = "real_prompt_count_below_target"
+        repair_hint = "curate_additional_real_prompts_by_logic_skill"
+    elif operator == "stabilize_quality_gap":
+        status = "in_progress"
+        decision = "stabilize_quality_gap"
+        failure_reason = "high_signal_quality_gap_active"
+        repair_hint = "inject_repair_and_quality_focus_prompts"
+    else:
+        status = "accepted"
+        decision = "promote_baseline"
+        failure_reason = ""
+        repair_hint = ""
+
     return {
         "track": "real_prompt_coverage",
         "target_gap": top_gap,
@@ -3210,10 +3242,10 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
             "prompt_count": max(0, target_prompt_count - prompt_count),
             "pretrained_match_rate": 0.0,
         },
-        "status": "proposed" if prompt_count < target_prompt_count else "accepted",
-        "decision": "advance" if prompt_count < target_prompt_count else "promote_baseline",
-        "failure_reason": "real_prompt_count_below_target" if prompt_count < target_prompt_count else "",
-        "repair_hint": "curate_additional_real_prompts_by_logic_skill" if prompt_count < target_prompt_count else "",
+        "status": status,
+        "decision": decision,
+        "failure_reason": failure_reason,
+        "repair_hint": repair_hint,
     }
 
 

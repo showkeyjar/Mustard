@@ -9,10 +9,27 @@ from carm.experience import ExperienceStore
 from carm.pretrain_data import infer_logic_skill, infer_task_type
 
 
+OBSERVER_NOISE_MARKERS = (
+    "观察学习任务",
+    "桌面活动摘要",
+    "更新经验偏好",
+    "input_activity",
+    "window_focus",
+    "clipboard",
+)
+
+
 def normalize_prompt(text: str) -> str:
     lowered = text.lower().strip()
     lowered = re.sub(r"\s+", " ", lowered)
     return lowered
+
+
+def is_observer_learning_noise(prompt: str) -> bool:
+    compact = prompt.strip().lower()
+    if not compact:
+        return False
+    return any(marker.lower() in compact for marker in OBSERVER_NOISE_MARKERS)
 
 
 def build_candidates(
@@ -27,6 +44,8 @@ def build_candidates(
     for episode in episodes:
         prompt = episode.user_input.strip()
         if not prompt or not episode.success or episode.value_score < min_value_score:
+            continue
+        if is_observer_learning_noise(prompt):
             continue
 
         used_tool = str(episode.episode_features.get("used_tool", "")).strip()
