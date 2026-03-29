@@ -3,7 +3,7 @@
 ## Top Gaps
 
 ### Gap 1: 真实场景覆盖不足
-- current: real_prompt_count=12
+- current: real_prompt_count=20
 - target: >=20
 - blocker: 候选样本构建与筛选未形成稳定流水线
 - owner: CARM Owner + Benchmark Owner
@@ -11,7 +11,7 @@
 - acceptance: prompt_count>=20 且报告可复现
 
 ### Gap 2: 用户纠偏闭环缺失
-- current: bridge_feedback=0
+- current: bridge_feedback=12
 - target: >=30 条高价值反馈
 - blocker: bridge 反馈采样与标注流程缺位
 - owner: CARM Owner + Failure Miner
@@ -19,7 +19,7 @@
 - acceptance: 形成反馈样本包并进入评测
 
 ### Gap 3: 前沿对标不足
-- current: frontier_observation_count=0
+- current: frontier_observation_count=3
 - target: >=10 条可比较观察
 - blocker: 外部路线跟踪未形成固定节奏
 - owner: Arbiter(CARM Track) + Researcher
