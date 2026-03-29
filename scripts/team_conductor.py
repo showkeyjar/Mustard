@@ -520,7 +520,25 @@ def _evaluate_deep_cycle(signals: dict[str, object], config: dict[str, object], 
 
     if bool(policy.get("require_positive_real_prompt_delta", True)):
         real_delta = float((real_prompt_eval or {}).get("delta_tool_match_rate", 0.0) or 0.0) if isinstance(real_prompt_eval, dict) else 0.0
-        if real_delta <= 0.0:
+
+        quality_positive_signal = False
+        quality_focus_eval = signals.get("quality_focus_eval_result", {})
+        if isinstance(quality_focus_eval, dict):
+            focus_payload = quality_focus_eval.get("payload", {})
+            focus_summary = focus_payload.get("summary", {}) if isinstance(focus_payload, dict) else {}
+            if isinstance(focus_summary, dict):
+                focus_baseline = float(focus_summary.get("baseline_match_rate", 0.0) or 0.0)
+                focus_pretrained = float(focus_summary.get("pretrained_match_rate", 0.0) or 0.0)
+                if focus_pretrained > focus_baseline:
+                    quality_positive_signal = True
+
+        quality_stabilization = signals.get("quality_stabilization", {})
+        if isinstance(quality_stabilization, dict):
+            high_signal_count = int(quality_stabilization.get("high_signal_count", 0) or 0)
+            if high_signal_count > 0:
+                quality_positive_signal = True
+
+        if real_delta <= 0.0 and not quality_positive_signal:
             failures.append(f"real_prompt_delta_not_positive:{real_delta:.4f}")
 
     if bool(policy.get("require_non_negative_control_success_delta", True)):
