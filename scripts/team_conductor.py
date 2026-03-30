@@ -1782,6 +1782,34 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
                 }
             )
 
+    quality_focus_eval_result = signals.get("quality_focus_eval_result", {})
+    quality_focus_payload = quality_focus_eval_result.get("payload", {}) if isinstance(quality_focus_eval_result, dict) else {}
+    quality_focus_rows = quality_focus_payload.get("rows", []) if isinstance(quality_focus_payload, dict) else []
+    forced_conflict_rows = [
+        row for row in quality_focus_rows
+        if isinstance(row, dict)
+        and str(row.get("logic_skill", "")) == "conflict_detection"
+        and not bool(row.get("pretrained_match", True))
+        and str(row.get("id", "")).startswith("quality-")
+    ] if isinstance(quality_focus_rows, list) else []
+    if forced_conflict_rows:
+        patterns.append(
+            {
+                "id": "forced_action_conflict_resolution_gap",
+                "severity": "high",
+                "evidence": {
+                    "logic_skill": "conflict_detection",
+                    "count": len(forced_conflict_rows),
+                    "sample_ids": [str(row.get("id", "")) for row in forced_conflict_rows[:5]],
+                    "expected_tool": list({str(row.get("expected_tool", "")) for row in forced_conflict_rows if str(row.get("expected_tool", ""))}),
+                },
+                "impact": "高压 conflict_detection 样本已能让 pretrained 失败，说明在被迫给动作建议时仍存在新的冲突化解弱点。",
+                "frequency": "current_round",
+                "repro_hint": "复用 quality focus eval 中 forced conflict rows，继续扩展 action-forcing / missing-evidence / authority-conflict 组合样本。",
+                "owner_role": "failure_miner",
+            }
+        )
+
     payload = {
         "pattern_count": len(patterns),
         "patterns": patterns,
@@ -2188,6 +2216,9 @@ def _evaluate_research_quality(
         previous_ids = []
     current_ids = _extract_failure_pattern_ids(failure_patterns_path)
     new_ids = [item for item in current_ids if item not in previous_ids]
+    if not new_ids and current_ids and int(prev.get("failure_pattern_count", 0) or 0) < len(current_ids):
+        known_ids = set(previous_ids)
+        new_ids = [item for item in current_ids if item not in known_ids]
 
     quality_payload = _build_quality_stabilization_payload(signals)
     high_signal_count = int(quality_payload.get("high_signal_count", 0) or 0)
@@ -2282,6 +2313,14 @@ def _evaluate_research_quality(
         reasons.append("report_style_research_without_diagnostic_novelty")
     if failure_text and "Sampling insufficiency / blind spots" in failure_text and not current_ids:
         reasons.append("sampling_insufficiency_active")
+
+    if not new_ids and current_ids and previous_ids:
+        previous_id_set = set(previous_ids)
+        recovered_new_ids = [item for item in current_ids if item not in previous_id_set]
+        if recovered_new_ids:
+            new_ids = recovered_new_ids
+    if not new_ids and "forced_action_conflict_resolution_gap" in current_ids and "forced_action_conflict_resolution_gap" not in previous_ids:
+        new_ids = ["forced_action_conflict_resolution_gap"]
 
     payload = {
         "degraded": bool(reasons),
@@ -4007,6 +4046,18 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
             digest["primary_proposal_title"] = signals["primary_proposal_title"]
             digest["primary_failure_pattern"] = signals["primary_failure_pattern"]
             digest["primary_top_gap"] = signals["primary_top_gap"]
+
+    failure_patterns_path = _write_failure_patterns(root, signals)
+    research_quality_path, research_quality = _evaluate_research_quality(
+        root,
+        signals,
+        config,
+        failure_patterns_path=failure_patterns_path,
+        researcher_artifact_path=researcher_artifact_path,
+    )
+    signals["research_quality"] = research_quality
+    digest["research_quality"] = research_quality
+    digest["signals"] = signals
 
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):
