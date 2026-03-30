@@ -2478,17 +2478,19 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
                 quality_excerpt.append(line)
 
     top_gap_card = _select_top_gap(signals)
-    from_top_gap = str(top_gap_card.get("gap_id", "unknown") or "unknown")
+    from_top_gap = str(signals.get("primary_top_gap", "") or "") or str(top_gap_card.get("gap_id", "unknown") or "unknown")
 
-    proposal_files = sorted((root / "backlog" / "proposals").glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
-    primary_failure_pattern = "sampling_blind_spot"
+    primary_failure_pattern = str(signals.get("primary_failure_pattern", "") or "") or "sampling_blind_spot"
     primary_scenario_fit = "真实复杂任务里隐藏弱点未被触发的场景。"
     primary_change = "补充更高信息量的专项 prompts，并验证是否出现新的 mismatch cluster。"
-    if proposal_files:
-        latest_summary = _load_proposal_summary(proposal_files[0])
-        primary_failure_pattern = latest_summary.get("from_failure_pattern", primary_failure_pattern) or primary_failure_pattern
-        primary_scenario_fit = latest_summary.get("scenario_fit", primary_scenario_fit) or primary_scenario_fit
-        primary_change = latest_summary.get("proposed_change", primary_change) or primary_change
+    primary_proposal_title = str(signals.get("primary_proposal_title", "") or "")
+    if primary_proposal_title:
+        proposal_path = _proposal_slug_path(root / "backlog" / "proposals", primary_proposal_title)
+        if proposal_path.exists():
+            latest_summary = _load_proposal_summary(proposal_path)
+            primary_failure_pattern = latest_summary.get("from_failure_pattern", primary_failure_pattern) or primary_failure_pattern
+            primary_scenario_fit = latest_summary.get("scenario_fit", primary_scenario_fit) or primary_scenario_fit
+            primary_change = latest_summary.get("proposed_change", primary_change) or primary_change
 
     weakness_cluster = primary_failure_pattern if primary_failure_pattern else ("tool_path_mismatch" if mismatches else "sampling_blind_spot")
     if mismatches:
@@ -3436,7 +3438,7 @@ def _generate_quality_hard_variants(root: Path, payload: dict[str, object]) -> d
                     "id": f"quality-{row_id}-01",
                     "logic_skill": logic_skill,
                     "expected_tool": expected_tool,
-                    "prompt": "官方文档和社区文章对同一个数据库迁移步骤给出了相反建议，在没消解冲突前，应该先做什么而不是直接写结论？",
+                    "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
                     "source_row": row_id,
                 }
             )
@@ -3445,7 +3447,25 @@ def _generate_quality_hard_variants(root: Path, payload: dict[str, object]) -> d
                     "id": f"quality-{row_id}-02",
                     "logic_skill": logic_skill,
                     "expected_tool": expected_tool,
-                    "prompt": "两个来源对同一参数是否该调整给出了相反建议，如果其中一个来源更新较旧，应该先如何判断冲突来源和证据优先级？",
+                    "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+                    "source_row": row_id,
+                }
+            )
+            variants.append(
+                {
+                    "id": f"quality-{row_id}-03",
+                    "logic_skill": logic_skill,
+                    "expected_tool": expected_tool,
+                    "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+                    "source_row": row_id,
+                }
+            )
+            variants.append(
+                {
+                    "id": f"quality-{row_id}-04",
+                    "logic_skill": logic_skill,
+                    "expected_tool": expected_tool,
+                    "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
                     "source_row": row_id,
                 }
             )
@@ -3978,6 +3998,15 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     digest["signals"] = signals
 
     proposals = build_proposals(digest, config, recursive_state=recursive_state)
+    if proposals:
+        primary_proposal = proposals[0]
+        if isinstance(primary_proposal, dict):
+            signals["primary_proposal_title"] = str(primary_proposal.get("title", "") or "")
+            signals["primary_failure_pattern"] = str(primary_proposal.get("from_failure_pattern", "") or "")
+            signals["primary_top_gap"] = str(primary_proposal.get("from_top_gap", "") or "")
+            digest["primary_proposal_title"] = signals["primary_proposal_title"]
+            digest["primary_failure_pattern"] = signals["primary_failure_pattern"]
+            digest["primary_top_gap"] = signals["primary_top_gap"]
 
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):
