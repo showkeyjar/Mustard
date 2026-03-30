@@ -468,6 +468,7 @@ def _arbiter_direction_review(signals: dict[str, object], config: dict[str, obje
     min_pretrain = float(decision_policy.get("min_pretrain_tool_match_rate", 0.95) or 0.95)
 
     reasons: list[str] = []
+    adjust_reasons: list[str] = []
 
     pretrain_eval = signals.get("pretrain_eval", {})
     if isinstance(pretrain_eval, dict):
@@ -489,11 +490,40 @@ def _arbiter_direction_review(signals: dict[str, object], config: dict[str, obje
     if isinstance(control_state, dict) and str(control_state.get("rollout_status", "stable")) == "candidate":
         reasons.append("runtime_candidate_active")
 
-    verdict = "direction_correct" if not reasons else "uncertain_needs_human"
+    research_quality = signals.get("research_quality", {})
+    if not isinstance(research_quality, dict):
+        research_quality = {}
+    recursive_state = signals.get("recursive_state", {})
+    if not isinstance(recursive_state, dict):
+        recursive_state = {}
+
+    stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+    new_failure_pattern_count = int(research_quality.get("new_failure_pattern_count", 0) or 0)
+    quality_exploration_active = bool(research_quality.get("quality_exploration_active", False))
+    high_signal_count = int(research_quality.get("high_signal_count", 0) or 0)
+
+    if stagnation_rounds >= 10 and new_failure_pattern_count == 0:
+        adjust_reasons.append(f"stagnation_without_new_failure_pattern:{stagnation_rounds}")
+
+    if stagnation_rounds >= 10 and quality_exploration_active and high_signal_count > 0:
+        adjust_reasons.append("exploration_without_direction_change")
+
+    researcher_artifact_text = str(signals.get("researcher_artifact_text", "") or "").lower()
+    if "blind spot remains" in researcher_artifact_text or "sampling blind spot" in researcher_artifact_text:
+        adjust_reasons.append("blind_spot_persists")
+
+    if reasons:
+        verdict = "uncertain_needs_human"
+    elif adjust_reasons:
+        verdict = "direction_adjust"
+    else:
+        verdict = "direction_correct"
+
+    all_reasons = reasons + [reason for reason in adjust_reasons if reason not in reasons]
     return {
         "owner": str(decision_policy.get("owner", "arbiter")),
         "verdict": verdict,
-        "reasons": reasons,
+        "reasons": all_reasons,
         "escalate_to_human": verdict == "uncertain_needs_human" and bool(decision_policy.get("escalate_on_uncertain_direction", True)),
     }
 
@@ -3565,6 +3595,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
             signals["quality_focus_eval_result_path"] = str(result_path)
 
     recursive_state = _update_recursive_state(root, signals, config)
+    signals["recursive_state"] = recursive_state
     digest = build_daily_digest(signals, config)
     digest["workspace_root"] = str(root)
     digest["recursive_state"] = recursive_state
@@ -3574,6 +3605,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     carm_gap_map_path = _write_carm_gap_map(root, signals)
     research_brief_path = _write_research_brief(root, signals, config)
     researcher_artifact_path = _run_researcher(root, signals, recursive_state)
+    signals["researcher_artifact_text"] = researcher_artifact_path.read_text(encoding="utf-8", errors="ignore") if researcher_artifact_path.exists() else ""
     research_quality_path, research_quality = _evaluate_research_quality(
         root,
         signals,
@@ -3582,6 +3614,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         researcher_artifact_path=researcher_artifact_path,
     )
     digest["research_quality"] = research_quality
+    signals["research_quality"] = research_quality
     quality_artifacts = _write_quality_stabilization_artifacts(root, signals)
     signals["quality_stabilization"] = quality_artifacts.get("payload", {})
     quality_operator_result = _maybe_execute_quality_operator(
@@ -3613,9 +3646,13 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
         researcher_artifact_path=researcher_artifact_path,
     )
     digest["research_quality"] = research_quality
+    signals["research_quality"] = research_quality
     _write_if_changed(Path(research_quality_path), json.dumps(research_quality, ensure_ascii=False, indent=2) + "\n")
     refreshed_signals = collect_signals(root)
     refreshed_signals["quality_stabilization"] = signals.get("quality_stabilization", {})
+    refreshed_signals["recursive_state"] = recursive_state
+    refreshed_signals["research_quality"] = research_quality
+    refreshed_signals["researcher_artifact_text"] = signals.get("researcher_artifact_text", "")
     if "quality_focus_eval_result" in signals:
         refreshed_signals["quality_focus_eval_result"] = signals["quality_focus_eval_result"]
     if "quality_focus_eval_result_path" in signals:
