@@ -1,8 +1,8 @@
 # Research Artifact (Actionable)
 
 ## 1) Meta
-- round_id: auto-20260329T090804Z
-- date: 2026-03-29
+- round_id: auto-20260330T024302Z
+- date: 2026-03-30
 - owner: researcher
 - from_top_gap: eval_coverage_too_low
 - from_failure_pattern: eval_coverage_too_low
@@ -24,7 +24,7 @@
 ## 4) Evidence chain
 - representative_case_1: pretrained_match_rate=1.0000, baseline_match_rate=0.8000, delta=+0.2000
 - representative_case_2: mismatch_case_count=0
-- representative_case_3: stagnation_rounds=91; frontier_observation_count=3
+- representative_case_3: stagnation_rounds=144; frontier_observation_count=3
 - evidence_quality_note: current evidence is useful for trend judgment but still weak for discovering unseen weakness clusters because prompt coverage is narrow
 - blind_spot_if_no_failure_case: current batch is still too narrow to prove no hidden weakness
 - candidate_pipeline_snapshot:
