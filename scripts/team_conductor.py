@@ -2477,12 +2477,36 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
             if line.startswith("- total_candidates") or line.startswith("- filtered_candidates") or line.startswith("- dropped_candidates"):
                 quality_excerpt.append(line)
 
-    blind_spot_line = "- blind_spot_if_no_failure_case: current batch is still too narrow to prove no hidden weakness" if not mismatches else "- blind_spot_if_no_failure_case: none"
-    weakness_summary = (
-        "tool-path mismatch remains the active weakness cluster"
-        if mismatches
-        else "no explicit mismatch surfaced, but sampling blind spot remains in high-information real prompts"
-    )
+    top_gap_card = _select_top_gap(signals)
+    from_top_gap = str(top_gap_card.get("gap_id", "unknown") or "unknown")
+
+    proposal_files = sorted((root / "backlog" / "proposals").glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+    primary_failure_pattern = "sampling_blind_spot"
+    primary_scenario_fit = "真实复杂任务里隐藏弱点未被触发的场景。"
+    primary_change = "补充更高信息量的专项 prompts，并验证是否出现新的 mismatch cluster。"
+    if proposal_files:
+        latest_summary = _load_proposal_summary(proposal_files[0])
+        primary_failure_pattern = latest_summary.get("from_failure_pattern", primary_failure_pattern) or primary_failure_pattern
+        primary_scenario_fit = latest_summary.get("scenario_fit", primary_scenario_fit) or primary_scenario_fit
+        primary_change = latest_summary.get("proposed_change", primary_change) or primary_change
+
+    weakness_cluster = primary_failure_pattern if primary_failure_pattern else ("tool_path_mismatch" if mismatches else "sampling_blind_spot")
+    if mismatches:
+        weakness_summary = f"pretrained mismatch cases surfaced under {weakness_cluster}"
+        why_now = f"专项压力已经落到 {weakness_cluster}，当前需要判断这是稳定可复现的新弱点还是偶发样本噪声。"
+        hypothesis = f"tightening prompts around {weakness_cluster} will either expose a reproducible mismatch cluster or confirm robustness under this boundary."
+        expected_gain = f"在 {weakness_cluster} 专项场景下形成可复现的新 mismatch 或确认专项鲁棒性。"
+        evidence_quality_note = f"当前已有 mismatch，但还需要更多同类专项样本验证 {weakness_cluster} 是否是稳定簇。"
+        fail_criteria = f"围绕 {weakness_cluster} 的专项 prompts 仍无法形成可复现的新 pattern。"
+        blind_spot_line = "- blind_spot_if_no_failure_case: none"
+    else:
+        weakness_summary = f"no explicit mismatch surfaced, but {weakness_cluster} remains the active target cluster"
+        why_now = f"当前主问题已切到 {weakness_cluster}，若继续没有新发现，就说明专项执行链仍未打穿该簇。"
+        hypothesis = f"focusing on {weakness_cluster} will expose either a new mismatch cluster or stronger evidence that the cluster is already robust."
+        expected_gain = f"围绕 {weakness_cluster} 形成新增 failure pattern，或证明该专项簇在更强压力下稳定通过。"
+        evidence_quality_note = f"当前 evidence 对 {weakness_cluster} 的方向判断有帮助，但仍不足以证明该专项簇已经被真正打穿。"
+        fail_criteria = f"围绕 {weakness_cluster} 的专项 prompts 继续增长，但 research 仍无新增 weakness / pattern。"
+        blind_spot_line = f"- blind_spot_if_no_failure_case: current {weakness_cluster} batch is still too narrow to prove no hidden weakness"
 
     lines = [
         "# Research Artifact (Actionable)",
@@ -2491,28 +2515,28 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
         f"- round_id: auto-{utc_now().strftime('%Y%m%dT%H%M%SZ')}",
         f"- date: {utc_now().date().isoformat()}",
         "- owner: researcher",
-        "- from_top_gap: eval_coverage_too_low",
-        "- from_failure_pattern: eval_coverage_too_low",
-        "- relative_to_last_round: switched from static template to concrete mismatch + quality snapshot + executable next-24h plan",
-        "- scenario_fit: real prompt regression coverage and weak-signal research diagnosis",
+        f"- from_top_gap: {from_top_gap}",
+        f"- from_failure_pattern: {primary_failure_pattern}",
+        "- relative_to_last_round: upgraded from generic coverage template to current top-gap / failure-pattern aligned research input",
+        f"- scenario_fit: {primary_scenario_fit}",
         "",
         "## 2) New weakness discovered this round",
         f"- weakness_summary: {weakness_summary}",
-        f"- weakness_cluster: {'tool_path_mismatch' if mismatches else 'sampling_blind_spot'}",
-        "- why_it_matters_now: if the system only reports aggregate wins, it cannot prove it still discovers new weaknesses under wider coverage",
-        "- why_previous_rounds_missed_it: prior output emphasized summary metrics over weakness clustering and blind-spot diagnosis",
+        f"- weakness_cluster: {weakness_cluster}",
+        f"- why_it_matters_now: {why_now}",
+        "- why_previous_rounds_missed_it: previous researcher input was pinned to generic coverage logic instead of the active specialized cluster",
         "",
         "## 3) Hypothesis（可证伪）",
-        "- hypothesis: raising high-information real-prompt coverage will expose either stable robustness or a new mismatch cluster worth patching",
-        "- falsifiable_condition: prompt_count increases but mismatch_case_count rises materially or match_rate drops below 0.90",
-        f"- expected_gain: keep pretrained_match_rate >= 0.90 while increasing prompt_count beyond {rp_count}",
+        f"- hypothesis: {hypothesis}",
+        "- falsifiable_condition: targeted prompts increase, but no new mismatch cluster or new failure pattern is formed",
+        f"- expected_gain: {expected_gain}",
         "- risk: low-information candidates may still crowd out the prompts most likely to reveal hidden weaknesses",
         "",
         "## 4) Evidence chain",
         f"- representative_case_1: pretrained_match_rate={rp_match:.4f}, baseline_match_rate={baseline_match:.4f}, delta={rp_match-baseline_match:+.4f}",
         f"- representative_case_2: mismatch_case_count={len(mismatches)}",
         f"- representative_case_3: stagnation_rounds={stagnation_rounds}; frontier_observation_count={frontier_obs}",
-        f"- evidence_quality_note: current evidence is useful for trend judgment but still weak for discovering unseen weakness clusters because prompt coverage is narrow",
+        f"- evidence_quality_note: {evidence_quality_note}",
         blind_spot_line,
     ]
 
@@ -2534,19 +2558,19 @@ def _run_researcher(root: Path, signals: dict[str, object], recursive_state: dic
         "## 5) Minimal next experiment（可执行）",
         "- command_1: python -m scripts.evaluate_real_prompts",
         "- command_2: python -m scripts.build_real_prompt_candidates",
-        "- metric_threshold: prompt_count increases and pretrained_match_rate stays >= 0.90",
-        "- pass_criteria: new prompts add pressure without introducing an unexplained mismatch spike",
-        "- fail_criteria: coverage expands but research still produces no new weakness or blind-spot diagnosis",
+        f"- metric_threshold: focused prompts around {weakness_cluster} increase while pretrained_match_rate stays >= 0.90",
+        f"- pass_criteria: specialized prompts either expose a reproducible weakness cluster or prove {weakness_cluster} remains stable under stronger pressure",
+        f"- fail_criteria: {fail_criteria}",
         "",
         "## 6) Landing Candidate（可直接进 Architect）",
-        "- proposed_change: add >=4 high-quality non-observer prompts and tighten candidate filtering around low-information repeats",
-        "- change_scope: configs/real_prompt_eval.json + candidate quality rules + research reporting",
-        "- rollback_plan: revert added prompts and filtering heuristics if mismatch quality worsens or coverage signal becomes noisier",
+        f"- proposed_change: {primary_change}",
+        "- change_scope: configs/real_prompt_eval.json + targeted prompt pack + research reporting",
+        "- rollback_plan: revert targeted prompts and restore previous prompt pack if evidence quality worsens",
         "- handoff_to_architect: yes",
         "",
         "## 7) Decision label",
         "- tag: 待观察",
-        "- reason: current match is strong, but the system still has insufficient evidence that its weakness discovery loop is healthy under broader coverage",
+        f"- reason: current match is strong, but the system still lacks sufficient evidence that {weakness_cluster} has been truly broken open",
     ])
 
     _write_if_changed(path, "\n".join(lines) + "\n")
@@ -3507,24 +3531,62 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
     high_signal_count = int(quality_payload.get("high_signal_count", 0) or 0)
     bigmodel_proxy_mismatch_count = int(quality_payload.get("bigmodel_proxy_mismatch_count", 0) or 0)
 
-    top_gap = "coverage_not_quality" if prompt_count < target_prompt_count else "quality_stabilization"
-    operator = "expand_eval_set" if prompt_count < target_prompt_count else ("stabilize_quality_gap" if high_signal_count > 0 else "promote_baseline")
+    primary_failure_pattern = str(signals.get("primary_failure_pattern", "") or "")
+    if not primary_failure_pattern:
+        researcher_text = str(signals.get("researcher_artifact_text", "") or "")
+        for line in researcher_text.splitlines():
+            if line.strip().startswith("- from_failure_pattern:"):
+                primary_failure_pattern = line.split(":", 1)[1].strip()
+                break
 
-    if operator == "expand_eval_set":
+    if prompt_count < target_prompt_count:
+        top_gap = "coverage_not_quality"
+        operator = "expand_eval_set"
         status = "proposed"
         decision = "advance"
         failure_reason = "real_prompt_count_below_target"
         repair_hint = "curate_additional_real_prompts_by_logic_skill"
-    elif operator == "stabilize_quality_gap":
+        hypothesis = "Increase real prompt coverage without reducing current match rate."
+        expected_metric_delta = {
+            "prompt_count": max(0, target_prompt_count - prompt_count),
+            "pretrained_match_rate": 0.0,
+        }
+    elif primary_failure_pattern == "repeated_conflict_detection_gap":
+        top_gap = "repeated_conflict_detection_gap"
+        operator = "stress_conflict_detection_gap"
+        status = "in_progress"
+        decision = "stress_conflict_detection_gap"
+        failure_reason = "specialized_conflict_detection_gap_active"
+        repair_hint = "inject_conflict_detection_variants"
+        hypothesis = "Increase contradictory_authority / missing_evidence pressure until repeated_conflict_detection_gap either yields a new mismatch cluster or is proven robust."
+        expected_metric_delta = {
+            "specialized_conflict_detection_prompts": 4,
+            "pretrained_match_rate": 0.0,
+        }
+    elif high_signal_count > 0:
+        top_gap = "quality_stabilization"
+        operator = "stabilize_quality_gap"
         status = "in_progress"
         decision = "stabilize_quality_gap"
         failure_reason = "high_signal_quality_gap_active"
         repair_hint = "inject_repair_and_quality_focus_prompts"
+        hypothesis = "Increase real prompt coverage without reducing current match rate."
+        expected_metric_delta = {
+            "prompt_count": 0,
+            "pretrained_match_rate": 0.0,
+        }
     else:
+        top_gap = "quality_stabilization"
+        operator = "promote_baseline"
         status = "accepted"
         decision = "promote_baseline"
         failure_reason = ""
         repair_hint = ""
+        hypothesis = "Current real-prompt coverage and quality signal are sufficient for baseline promotion."
+        expected_metric_delta = {
+            "prompt_count": 0,
+            "pretrained_match_rate": 0.0,
+        }
 
     return {
         "track": "real_prompt_coverage",
@@ -3536,16 +3598,15 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
         "mismatch_case_count": mismatch_case_count,
         "high_signal_count": high_signal_count,
         "bigmodel_proxy_mismatch_count": bigmodel_proxy_mismatch_count,
+        "primary_failure_pattern": primary_failure_pattern,
         "operator": operator,
         "operator_args": {
             "target_prompt_count": target_prompt_count,
             "current_prompt_count": prompt_count,
+            "primary_failure_pattern": primary_failure_pattern,
         },
-        "hypothesis": "Increase real prompt coverage without reducing current match rate.",
-        "expected_metric_delta": {
-            "prompt_count": max(0, target_prompt_count - prompt_count),
-            "pretrained_match_rate": 0.0,
-        },
+        "hypothesis": hypothesis,
+        "expected_metric_delta": expected_metric_delta,
         "status": status,
         "decision": decision,
         "failure_reason": failure_reason,
