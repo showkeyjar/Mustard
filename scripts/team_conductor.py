@@ -1859,33 +1859,179 @@ def _write_carm_gap_map(root: Path, signals: dict[str, object]) -> Path:
     return path
 
 
-def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
-    top_gap_path = root / "backlog" / "opportunities" / "auto_top_gap.md"
-
-    prompt_count = 0
+def _select_top_gap(signals: dict[str, object]) -> dict[str, object]:
     real_prompt_eval = signals.get("real_prompt_eval", {})
+    prompt_count = 0
     if isinstance(real_prompt_eval, dict):
         summary = real_prompt_eval.get("summary", {})
         if isinstance(summary, dict):
             prompt_count = int(summary.get("prompt_count", 0) or 0)
 
+    research_quality = signals.get("research_quality", {})
+    if not isinstance(research_quality, dict):
+        research_quality = {}
+    recursive_state = signals.get("recursive_state", {})
+    if not isinstance(recursive_state, dict):
+        recursive_state = {}
+
+    stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
+    new_failure_pattern_count = int(research_quality.get("new_failure_pattern_count", 0) or 0)
+    high_signal_count = int(research_quality.get("high_signal_count", 0) or 0)
+    quality_exploration_active = bool(research_quality.get("quality_exploration_active", False))
+    blind_spot_persistence_rounds = int(research_quality.get("blind_spot_persistence_rounds", 0) or 0)
+    zero_bridge_feedback_streak = int(research_quality.get("zero_bridge_feedback_streak", 0) or 0)
+    zero_frontier_observation_streak = int(research_quality.get("zero_frontier_observation_streak", 0) or 0)
+
+    researcher_text = str(signals.get("researcher_artifact_text", "") or "").lower()
+    blind_spot_active = (
+        "blind spot remains" in researcher_text
+        or "sampling blind spot" in researcher_text
+        or blind_spot_persistence_rounds > 0
+    )
+
+    if prompt_count < 20:
+        gap = max(0, 20 - prompt_count)
+        return {
+            "gap_id": "eval_coverage_too_low",
+            "problem": "真实工具调用场景回归样本覆盖不足，当前无法证明可替代性提升。",
+            "current": f"prompt_count={prompt_count}",
+            "target": "prompt_count>=20（优先本地工具调用场景）",
+            "gap": gap,
+            "owner": "benchmark_owner + failure_miner + trainer",
+            "why_this_is_top_gap_now": "当前真实 prompt 覆盖数未达最低目标，基础验证样本仍不足。",
+            "action_plan": [
+                "运行 python -m scripts.build_real_prompt_candidates 生成候选集",
+                "合并候选集到 configs/real_prompt_eval.json（去重后保留高价值工具调用样本）",
+                "运行 python -m scripts.evaluate_real_prompts 并记录前后对比",
+            ],
+            "acceptance": [
+                "real_prompt_eval.summary.prompt_count >= 20",
+                "产出一份前后指标对比摘要（match_rate / avg_steps）",
+            ],
+            "rollback": "若样本质量下降，回退 real_prompt_eval.json 到上一版并重新评测",
+        }
+
+    if new_failure_pattern_count == 0 and stagnation_rounds >= 10:
+        return {
+            "gap_id": "new_failure_pattern_stalled",
+            "problem": "长期停滞但没有新增 failure pattern，说明新增弱点发现环节失灵。",
+            "current": f"stagnation_rounds={stagnation_rounds}; new_failure_pattern_count={new_failure_pattern_count}",
+            "target": "在后续 1~2 个周期内形成至少 1 个新增 failure pattern 或新弱点簇",
+            "gap": max(1, stagnation_rounds),
+            "owner": "researcher + failure_miner + arbiter",
+            "why_this_is_top_gap_now": "覆盖数已达标，但系统仍未形成新增发现，当前瓶颈已从 coverage 转向 discovery。",
+            "action_plan": [
+                "围绕高信号样本簇生成更具区分度的压测 prompt",
+                "优先验证 comparison / conflict_detection / tool_boundary 的新弱点簇",
+                "要求 researcher 明确给出可证伪的新 failure hypothesis",
+            ],
+            "acceptance": [
+                "出现至少 1 个新增 failure pattern 或新 recovery cluster",
+                "research_quality 不再出现 no_new_failure_pattern",
+            ],
+            "rollback": "若新增样本只制造噪声，则回退本轮高压样本并保留有效簇",
+        }
+
+    if blind_spot_active and quality_exploration_active and high_signal_count > 0:
+        return {
+            "gap_id": "blind_spot_not_broken",
+            "problem": "研究已识别 blind spot，但仍未证明该盲区被真正打穿。",
+            "current": f"high_signal_count={high_signal_count}; blind_spot_persistence_rounds={blind_spot_persistence_rounds}",
+            "target": "通过更强压力样本证明 blind spot 已消除，或显式暴露出新的 mismatch cluster",
+            "gap": max(1, blind_spot_persistence_rounds or high_signal_count),
+            "owner": "researcher + benchmark_owner + architect",
+            "why_this_is_top_gap_now": "当前主要问题不是样本数量，而是高信息盲区迟迟没有被打穿。",
+            "action_plan": [
+                "围绕高信号行构建更尖锐的 follow-up prompts",
+                "减少低信息重复样本，提升单条样本的揭弱能力",
+                "要求 architect 输出直接针对 blind spot 的最小落地变更",
+            ],
+            "acceptance": [
+                "blind_spot_persistence_rounds 下降或归零",
+                "新一轮研究产物不再声明 blind spot remains",
+            ],
+            "rollback": "若新样本无法提供更高信息增量，则回退到上一轮高信号集合",
+        }
+
+    if zero_bridge_feedback_streak > 0:
+        return {
+            "gap_id": "bridge_feedback_missing",
+            "problem": "缺少 bridge feedback，系统无法从真实使用偏差中获得反馈。",
+            "current": f"zero_bridge_feedback_streak={zero_bridge_feedback_streak}",
+            "target": "恢复 bridge feedback 并形成可用于 failure miner 的信号流",
+            "gap": zero_bridge_feedback_streak,
+            "owner": "observer + failure_miner",
+            "why_this_is_top_gap_now": "缺少真实反馈会导致团队只围绕离线样本自循环。",
+            "action_plan": [
+                "检查 bridge feedback 采集入口是否仍有效",
+                "补齐最小可用反馈样本并验证落盘",
+            ],
+            "acceptance": [
+                "bridge_feedback > 0",
+            ],
+            "rollback": "若反馈入口异常，先暂停依赖该信号的推断",
+        }
+
+    if zero_frontier_observation_streak > 0:
+        return {
+            "gap_id": "frontier_signal_missing",
+            "problem": "缺少 frontier observation，团队容易在旧问题上内循环。",
+            "current": f"zero_frontier_observation_streak={zero_frontier_observation_streak}",
+            "target": "恢复最小 frontier observation 流并形成借鉴/规避判断",
+            "gap": zero_frontier_observation_streak,
+            "owner": "researcher",
+            "why_this_is_top_gap_now": "没有外部前沿信号，研究回路更容易退化成重复解释。",
+            "action_plan": [
+                "补充至少 3 条 frontier observation",
+                "为每条 observation 给出 borrow/avoid/watch 标签",
+            ],
+            "acceptance": [
+                "frontier_observation_count >= 3",
+            ],
+            "rollback": "若前沿输入噪声过大，则回退本轮 observation 集",
+        }
+
+    return {
+        "gap_id": "quality_stabilization",
+        "problem": "当前主要任务是维持已识别高信号质量差异，并防止退化。",
+        "current": f"high_signal_count={high_signal_count}",
+        "target": "保持高信号样本稳定可复现，并避免质量回退",
+        "gap": high_signal_count,
+        "owner": "benchmark_owner + evaluator",
+        "why_this_is_top_gap_now": "coverage 已达标，且未检测到更高优先级缺口，当前以质量维稳为主。",
+        "action_plan": [
+            "复核高信号样本集的稳定性",
+            "继续监控 baseline/pretrained 分离度",
+        ],
+        "acceptance": [
+            "高信号样本集持续可复现",
+        ],
+        "rollback": "若质量维稳样本失真，则回退到上一轮有效集合",
+    }
+
+
+def _write_top_gap_action_card(root: Path, signals: dict[str, object]) -> Path:
+    top_gap_path = root / "backlog" / "opportunities" / "auto_top_gap.md"
+    card = _select_top_gap(signals)
+
     lines = [
         "# Top Gap Action Card",
         "",
-        "- gap_id: eval_coverage_too_low",
-        "- problem: 真实工具调用场景回归样本覆盖不足，当前无法证明可替代性提升。",
-        f"- current: prompt_count={prompt_count}",
-        "- target: prompt_count>=20（优先本地工具调用场景）",
-        "- owner: benchmark_owner + failure_miner + trainer",
+        f"- gap_id: {card.get('gap_id', '')}",
+        f"- problem: {card.get('problem', '')}",
+        f"- current: {card.get('current', '')}",
+        f"- target: {card.get('target', '')}",
+        f"- gap: {card.get('gap', '')}",
+        f"- owner: {card.get('owner', '')}",
+        f"- why_this_is_top_gap_now: {card.get('why_this_is_top_gap_now', '')}",
         "- action_plan:",
-        "  - 1) 运行 python -m scripts.build_real_prompt_candidates 生成候选集",
-        "  - 2) 合并候选集到 configs/real_prompt_eval.json（去重后保留高价值工具调用样本）",
-        "  - 3) 运行 python -m scripts.evaluate_real_prompts 并记录前后对比",
-        "- acceptance:",
-        "  - real_prompt_eval.summary.prompt_count >= 20",
-        "  - 产出一份前后指标对比摘要（match_rate / avg_steps）",
-        "- rollback: 若样本质量下降，回退 real_prompt_eval.json 到上一版并重新评测",
     ]
+    for item in card.get("action_plan", []):
+        lines.append(f"  - {item}")
+    lines.append("- acceptance:")
+    for item in card.get("acceptance", []):
+        lines.append(f"  - {item}")
+    lines.append(f"- rollback: {card.get('rollback', '')}")
 
     _write_if_changed(top_gap_path, "\n".join(lines) + "\n")
     return top_gap_path
@@ -1981,13 +2127,41 @@ def _evaluate_research_quality(
     active_recovery_clusters = [cluster for cluster in recovery_clusters if isinstance(cluster, dict) and int(cluster.get("count", 0) or 0) > 0]
     quality_exploration_active = high_signal_count > 0 or bool(active_recovery_clusters)
 
+    previous_cluster_ids = prev.get("last_recovery_cluster_ids", [])
+    if not isinstance(previous_cluster_ids, list):
+        previous_cluster_ids = []
+    current_cluster_ids = [
+        str(cluster.get("pattern_id", "")).strip()
+        for cluster in active_recovery_clusters
+        if isinstance(cluster, dict) and str(cluster.get("pattern_id", "")).strip()
+    ]
+    new_cluster_ids = [cluster_id for cluster_id in current_cluster_ids if cluster_id not in previous_cluster_ids]
+
     rounds_without_new = int(prev.get("rounds_without_new_failure_pattern", 0) or 0)
-    if current_ids and new_ids:
+    exploration_without_discovery_rounds = int(prev.get("exploration_without_discovery_rounds", 0) or 0)
+    blind_spot_persistence_rounds = int(prev.get("blind_spot_persistence_rounds", 0) or 0)
+
+    researcher_text = researcher_artifact_path.read_text(encoding="utf-8", errors="ignore") if researcher_artifact_path.exists() else ""
+    researcher_text_lower = researcher_text.lower()
+    blind_spot_active = (
+        "blind spot remains" in researcher_text_lower
+        or "sampling blind spot" in researcher_text_lower
+        or "blind_spot_if_no_failure_case" in researcher_text_lower
+    )
+
+    has_new_discovery = bool(new_ids) or bool(new_cluster_ids)
+    if has_new_discovery:
         rounds_without_new = 0
-    elif quality_exploration_active:
-        rounds_without_new = 0
+        exploration_without_discovery_rounds = 0
     else:
         rounds_without_new += 1
+        if quality_exploration_active:
+            exploration_without_discovery_rounds += 1
+
+    if blind_spot_active and not has_new_discovery:
+        blind_spot_persistence_rounds += 1
+    else:
+        blind_spot_persistence_rounds = 0
 
     top_gap = ""
     real_prompt_eval = signals.get("real_prompt_eval", {})
@@ -2019,8 +2193,12 @@ def _evaluate_research_quality(
     failure_text = failure_patterns_path.read_text(encoding="utf-8", errors="ignore") if failure_patterns_path.exists() else ""
     if require_nonempty and not current_ids:
         reasons.append("failure_patterns_empty")
-    if enabled and rounds_without_new >= max_without_new and not quality_exploration_active:
+    if enabled and rounds_without_new >= max_without_new:
         reasons.append("no_new_failure_pattern")
+    if enabled and quality_exploration_active and not has_new_discovery:
+        reasons.append("exploration_without_discovery")
+    if enabled and blind_spot_active and blind_spot_persistence_rounds >= max_without_new:
+        reasons.append("blind_spot_persistence")
     if enabled and coverage_only_streak >= max_coverage_only:
         reasons.append("coverage_only_top_gap_repetition")
     if enabled and zero_bridge_streak >= zero_bridge_limit:
@@ -2028,8 +2206,7 @@ def _evaluate_research_quality(
     if enabled and zero_frontier_streak >= zero_frontier_limit:
         reasons.append("frontier_zero_signal_persistence")
 
-    researcher_text = researcher_artifact_path.read_text(encoding="utf-8", errors="ignore") if researcher_artifact_path.exists() else ""
-    if researcher_text and "weakness" not in researcher_text.lower() and "盲区" not in researcher_text and "采样不足" not in researcher_text:
+    if researcher_text and "weakness" not in researcher_text_lower and "盲区" not in researcher_text and "采样不足" not in researcher_text:
         reasons.append("report_style_research_without_diagnostic_novelty")
     if failure_text and "Sampling insufficiency / blind spots" in failure_text and not current_ids:
         reasons.append("sampling_insufficiency_active")
@@ -2040,16 +2217,21 @@ def _evaluate_research_quality(
         "new_failure_pattern_count": len(new_ids),
         "new_failure_pattern_ids": new_ids,
         "failure_pattern_count": len(current_ids),
+        "new_recovery_cluster_count": len(new_cluster_ids),
+        "new_recovery_cluster_ids": new_cluster_ids,
         "coverage_only_gap_streak": coverage_only_streak,
         "zero_bridge_feedback_streak": zero_bridge_streak,
         "zero_frontier_observation_streak": zero_frontier_streak,
         "rounds_without_new_failure_pattern": rounds_without_new,
+        "exploration_without_discovery_rounds": exploration_without_discovery_rounds,
+        "blind_spot_persistence_rounds": blind_spot_persistence_rounds,
         "top_gap": top_gap or "unknown",
         "quality_exploration_active": quality_exploration_active,
         "high_signal_count": high_signal_count,
         "recovery_cluster_count": len(active_recovery_clusters),
         "updated_at_utc": utc_now().isoformat(),
         "last_failure_pattern_ids": current_ids,
+        "last_recovery_cluster_ids": current_cluster_ids,
     }
 
     path = root / "data" / "team" / "research_quality_state.json"
@@ -2349,17 +2531,19 @@ def _write_role_artifacts(
         if isinstance(summary, dict):
             rp_count = int(summary.get("prompt_count", 0) or 0)
             rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+    top_gap_card = _select_top_gap(signals)
     _write_if_changed(
         benchmark_path,
         "\n".join(
             [
                 "# Benchmark Owner Output",
                 "",
-                "- top_gap: eval_coverage_too_low",
+                f"- top_gap: {top_gap_card.get('gap_id', '')}",
+                f"- why_this_is_top_gap_now: {top_gap_card.get('why_this_is_top_gap_now', '')}",
                 f"- real_prompt_count: {rp_count}",
                 f"- real_prompt_match_rate: {rp_match:.4f}",
-                "- target_real_prompt_count: 20",
-                f"- gap: {max(0, 20 - rp_count)}",
+                f"- target: {top_gap_card.get('target', '')}",
+                f"- gap: {top_gap_card.get('gap', '')}",
             ]
         )
         + "\n",
