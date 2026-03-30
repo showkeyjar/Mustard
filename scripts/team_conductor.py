@@ -1167,6 +1167,78 @@ def build_proposals(
         if specific_pattern in active_failure_pattern_ids:
             active_failure_pattern_ids.add(specific_pattern)
 
+    if "repeated_conflict_detection_gap" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Stress repeated conflict detection under contradictory authority",
+                "problem": "高信息恢复采样连续指向 conflict_detection 弱点，说明该簇已足够具体，不能继续只按总括 blind spot 处理。",
+                "evidence": ["failure_pattern=repeated_conflict_detection_gap", f"stagnation_rounds={stagnation_rounds}"],
+                "from_failure_pattern": "repeated_conflict_detection_gap",
+                "from_top_gap": "new_failure_pattern_stalled",
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "围绕 contradictory_authority / missing_evidence 两类 mutation 新增定向 prompts，并把 conflict_detection 作为专项压测包维护。",
+                "expected_metric_delta": "要么暴露新的 conflict_detection mismatch cluster，要么证明该专项簇在更强压力下仍稳定通过。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_real_prompt_candidates",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "若新增专项 prompts 只带来噪声，则回退 conflict_detection 专项样本包。",
+                "relative_to_last_round": "从总括 blind spot 施压升级为 conflict_detection 专项压测。",
+                "scenario_fit": "多来源冲突、权威冲突、证据缺失下的搜索与判断场景。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "researcher + benchmark_owner design conflict_detection stress pack",
+            }
+        )
+
+    if "comparison_under_conflicting_sources" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Probe comparison under conflicting sources with source-ranking prompts",
+                "problem": "comparison 簇已被高信息恢复采样具体化，当前需要从总括 blind spot 升级为 source-ranking 专项验证。",
+                "evidence": ["failure_pattern=comparison_under_conflicting_sources", f"stagnation_rounds={stagnation_rounds}"],
+                "from_failure_pattern": "comparison_under_conflicting_sources",
+                "from_top_gap": "new_failure_pattern_stalled",
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "新增 conflicting_sources 场景下的 comparison prompts，要求显式比较来源可信度与冲突证据。",
+                "expected_metric_delta": "要么暴露 comparison 逻辑下的新 mismatch，要么确认该专项簇可稳定处理来源冲突。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_real_prompt_candidates",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "若专项 comparison prompts 无法提供增量信息，则回退该专项样本。",
+                "relative_to_last_round": "从总括 blind spot 施压升级为 comparison/source-conflict 专项压测。",
+                "scenario_fit": "多来源对比、来源冲突、证据权重判断场景。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "benchmark_owner + researcher design conflicting_sources comparison pack",
+            }
+        )
+
+    if "tool_boundary_sampling_gap" in active_failure_pattern_ids:
+        proposals.append(
+            {
+                "title": "Tighten tool boundary prompts for calculator vs search decisions",
+                "problem": "tool_selection 的边界弱点已具体化，当前需要把 calculator_vs_search 场景升级为专项验证对象。",
+                "evidence": ["failure_pattern=tool_boundary_sampling_gap", f"stagnation_rounds={stagnation_rounds}"],
+                "from_failure_pattern": "tool_boundary_sampling_gap",
+                "from_top_gap": "new_failure_pattern_stalled",
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "新增 calculator_vs_search 的边界 prompts，要求显式区分数值计算与信息检索型任务。",
+                "expected_metric_delta": "要么暴露工具边界误判的新弱点，要么确认该边界专项场景已稳定。",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_real_prompt_candidates",
+                    "python -m scripts.evaluate_real_prompts",
+                ],
+                "rollback_plan": "若边界 prompts 无法提供有效区分，则回退该专项样本。",
+                "relative_to_last_round": "从总括 blind spot 施压升级为 tool boundary 专项压测。",
+                "scenario_fit": "需要在 calculator / search 之间做明确边界判断的真实任务。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "researcher + trainer design calculator_vs_search boundary pack",
+            }
+        )
+
     if "sampling_blind_spot" in active_failure_pattern_ids:
         proposals.append(
             {
