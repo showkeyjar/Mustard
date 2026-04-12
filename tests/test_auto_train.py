@@ -61,11 +61,16 @@ class AutoTrainTests(unittest.TestCase):
                 os.chdir(current)
 
             latest = root / "data" / "train_runs" / "auto_train_latest.json"
+            current_best = root / "artifacts" / "current_best.json"
             self.assertTrue(latest.exists())
+            self.assertTrue(current_best.exists())
             self.assertEqual(report["dataset"]["sample_count"], 8)
             self.assertGreaterEqual(report["dataset"]["teacher_sample_count"], 1)
             self.assertIn("pretrain_eval", report["evaluation"])
             self.assertIn("real_prompt_eval", report["evaluation"])
+            current_best_payload = json.loads(current_best.read_text(encoding="utf-8"))
+            self.assertEqual(current_best_payload["best_run_id"], report["run_id"])
+            self.assertEqual(current_best_payload["summary"]["real_prompt_count"], 1)
 
 
 if __name__ == "__main__":

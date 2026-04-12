@@ -41,6 +41,31 @@ REQUIRED_FILES = [
 ]
 
 
+def _read_json(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _compact_current_best(payload: dict[str, object], path: Path) -> dict[str, object]:
+    if not payload:
+        return {}
+    summary = payload.get("summary", {})
+    return {
+        "path": str(path),
+        "generated_at_utc": str(payload.get("generated_at_utc", "")),
+        "best_run_id": str(payload.get("best_run_id", "")),
+        "best_variant_name": str(payload.get("best_variant_name", "")),
+        "status": str(payload.get("status", "")),
+        "decision": str(payload.get("decision", "")),
+        "summary": summary if isinstance(summary, dict) else {},
+    }
+
+
 def _count_markdown_files(path: Path) -> int:
     if not path.exists():
         return 0
@@ -68,10 +93,13 @@ def doctor(root: Path) -> dict[str, object]:
 def status(root: Path) -> dict[str, object]:
     config = load_team_config(root / DEFAULT_CONFIG_PATH)
     signals = collect_signals(root)
+    current_best_path = root / "artifacts" / "current_best.json"
+    current_best = _compact_current_best(_read_json(current_best_path), current_best_path)
     return {
         "team_name": config.get("team_name", "mustard-claw"),
         "root": str(root.resolve()),
         "signals": signals,
+        "current_best": current_best,
         "proposal_count": _count_markdown_files(root / "backlog" / "proposals"),
         "daily_digest_count": _count_markdown_files(root / "memory" / "daily"),
     }

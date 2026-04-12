@@ -89,6 +89,7 @@ class OnlinePolicy:
             "has_draft": 1.0 if memory.latest("DRAFT") else 0.0,
             "has_conflict": 1.0 if memory.latest("CONFLICT") else 0.0,
             "needs_compare": 1.0 if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")) else 0.0,
+            "needs_conflict_detection": 1.0 if self._is_conflict_task(user_input) else 0.0,
             "needs_calc": 1.0
             if any(token in user_input for token in ("多少", "计算", "price", "cost", "数字", "预算", "总价", "每席位", "按年", "每月", "分几批"))
             or ("*" in user_input or "/" in user_input or "+" in user_input or "-" in user_input)
@@ -133,6 +134,11 @@ class OnlinePolicy:
         if state.uncertainty > 0.7 and memory.latest("RESULT") is None:
             priors[Action.CALL_TOOL.value] = 0.55 + float(self.controls.get("call_tool_bonus", 0.0))
             priors[Action.CALL_BIGMODEL.value] = 0.45
+
+        if self._is_conflict_task(context.user_input):
+            priors[Action.CALL_TOOL.value] = max(priors[Action.CALL_TOOL.value], 1.05 + float(self.controls.get("call_tool_bonus", 0.0)))
+            priors[Action.CALL_BIGMODEL.value] = min(priors[Action.CALL_BIGMODEL.value], 0.1)
+            priors[Action.WRITE_MEM.value] = max(priors[Action.WRITE_MEM.value], 0.95)
 
         preferred_tool = str((guidance or {}).get("preferred_tool", ""))
         if preferred_tool:
@@ -198,6 +204,7 @@ class OnlinePolicy:
                 or bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
             )
             hard_bigmodel = any(token in user_input for token in ("管理层", "正式", "结论摘要", "决策建议", "日志", "告警", "复盘"))
+            hard_conflict = self._is_conflict_task(user_input)
 
             if hard_calc and "代码" not in user_input and "python" not in normalized:
                 decision.tool_call = ToolCall(
@@ -206,6 +213,14 @@ class OnlinePolicy:
                     reason="Hard rule: arithmetic/forecast phrasing requires calculator.",
                 )
                 decision.reason = "Use calculator by hard rule for arithmetic-heavy request."
+            elif hard_conflict:
+                decision.tool_call = ToolCall(
+                    tool_name="search",
+                    query=user_input,
+                    arguments={"top_k": 3},
+                    reason="Conflict-style questions should gather explicit evidence before synthesis.",
+                )
+                decision.reason = "Use search first for conflict detection and evidence comparison."
             elif hard_bigmodel:
                 decision.tool_call = ToolCall(
                     tool_name="bigmodel_proxy",
@@ -368,7 +383,24 @@ class OnlinePolicy:
                 context,
             )
 
+        if self._is_conflict_task(context.user_input) and memory.latest("HYP") is not None and memory.latest("DRAFT") is None:
+            return ActionDecision(
+                action=Action.WRITE_MEM,
+                score=decision.score,
+                reason="Convert conflict-aware hypothesis into a cautious draft.",
+                target_slot="DRAFT",
+                feature_snapshot=dict(decision.feature_snapshot),
+            )
+
         if memory.latest("RESULT") is not None and memory.latest("DRAFT") is None:
+            if self._is_conflict_task(context.user_input):
+                return ActionDecision(
+                    action=Action.WRITE_MEM,
+                    score=decision.score,
+                    reason="Materialize a conflict-aware hypothesis before drafting.",
+                    target_slot="HYP",
+                    feature_snapshot=dict(decision.feature_snapshot),
+                )
             return ActionDecision(
                 action=Action.WRITE_MEM,
                 score=decision.score,
@@ -417,3 +449,16 @@ class OnlinePolicy:
             )
 
         return decision
+
+    def _is_conflict_task(self, user_input: str) -> bool:
+        markers = (
+            "冲突",
+            "相反建议",
+            "相反",
+            "矛盾",
+            "不一致",
+            "先怎么处理冲突",
+            "还没消解前",
+            "直接下结论吗",
+        )
+        return any(marker in user_input for marker in markers)

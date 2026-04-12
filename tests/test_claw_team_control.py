@@ -105,17 +105,23 @@ class ClawTeamControlTests(unittest.TestCase):
             root = Path(temp_dir)
             bootstrap_workspace(root)
             (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
             (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
             (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
             (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
             (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
             (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
             (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "artifacts" / "current_best.json").write_text(
+                json.dumps({"best_run_id": "run-1", "summary": {"real_prompt_match_rate": 0.95}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
 
             payload = status(root)
             self.assertEqual(payload["team_name"], "mustard-claw")
             self.assertEqual(payload["proposal_count"], 0)
             self.assertEqual(payload["daily_digest_count"], 0)
+            self.assertEqual(payload["current_best"]["best_run_id"], "run-1")
 
     @patch("scripts.claw_team_control.github_doctor", return_value={"ok": False, "token_present": False})
     @patch("scripts.claw_team_control.run_cycle", return_value={"team_name": "mustard-claw", "proposal_count": 0})

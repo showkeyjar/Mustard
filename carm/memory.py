@@ -133,6 +133,16 @@ class MemoryBoard:
         if payload.get("kind") == "draft":
             return content
 
+        if payload:
+            draft_payload = {
+                "kind": "draft",
+                "summary": str(payload.get("summary") or payload.get("question") or payload.get("raw") or "形成暂定结论"),
+                "support_items": [str(item) for item in payload.get("evidence_targets", [])] if isinstance(payload.get("evidence_targets"), list) else [],
+                "open_risks": [str(item) for item in payload.get("assumptions", [])] if isinstance(payload.get("assumptions"), list) else [],
+                "confidence_band": "medium" if payload.get("kind") == "hypothesis" else "low",
+            }
+            return json.dumps(draft_payload, ensure_ascii=False)
+
         result = self.latest("RESULT")
         result_text = self.slot_brief(result)
         if result_text:
@@ -142,16 +152,6 @@ class MemoryBoard:
                 "support_items": [result_text],
                 "open_risks": [],
                 "confidence_band": "high",
-            }
-            return json.dumps(draft_payload, ensure_ascii=False)
-
-        if payload:
-            draft_payload = {
-                "kind": "draft",
-                "summary": str(payload.get("summary") or payload.get("question") or payload.get("raw") or "形成暂定结论"),
-                "support_items": [str(item) for item in payload.get("evidence_targets", [])] if isinstance(payload.get("evidence_targets"), list) else [],
-                "open_risks": [str(item) for item in payload.get("assumptions", [])] if isinstance(payload.get("assumptions"), list) else [],
-                "confidence_band": "medium" if payload.get("kind") == "hypothesis" else "low",
             }
             return json.dumps(draft_payload, ensure_ascii=False)
 

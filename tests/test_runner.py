@@ -117,6 +117,15 @@ class RunnerTests(unittest.TestCase):
 
             self.assertTrue(any(step.selected_tool == "bigmodel_proxy" for step in trace.steps))
 
+    def test_conflict_prompt_prefers_search_and_carries_risk(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(temp_dir)
+            answer, trace = runner.run("两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？")
+
+            self.assertTrue(any(step.selected_tool == "search" for step in trace.steps))
+            self.assertTrue(any(step.target_slot == "HYP" for step in trace.steps))
+            self.assertIn("暂不直接下单边结论", answer)
+
 
 if __name__ == "__main__":
     unittest.main()

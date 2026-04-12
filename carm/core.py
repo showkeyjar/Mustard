@@ -119,6 +119,7 @@ class AdaptiveReasoningCore:
             "has_fact": 1.0 if memory.latest("FACT") else 0.0,
             "has_conflict": 1.0 if memory.latest("CONFLICT") else 0.0,
             "compare_signal": 1.0 if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")) else 0.0,
+            "conflict_signal": 1.0 if self._is_conflict_task(user_input) else 0.0,
             "calc_signal": 1.0 if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")) else 0.0,
             "code_signal": 1.0 if any(token in lower for token in ("python", "code", "script", "代码")) else 0.0,
             "need_structure": 1.0 if memory.latest("PLAN") is None else 0.0,
@@ -176,6 +177,7 @@ class AdaptiveReasoningCore:
         plan_payload = memory.parse_content(plan)
         fact_text = memory.slot_brief(fact)
         keywords = self.select_keywords(user_input)
+        conflict_task = self._is_conflict_task(user_input)
 
         if slot_type == "DRAFT":
             payload = {
@@ -202,6 +204,15 @@ class AdaptiveReasoningCore:
                 payload["summary"] = f"围绕任务形成临时草稿: {user_input}"
                 payload["open_risks"] = [latent_hint]
                 payload["confidence_band"] = "low"
+            if conflict_task:
+                payload["summary"] = "当前更稳妥的做法是先标记冲突并补证据，不直接采纳单边结论"
+                payload["open_risks"] = self.merge_steps(
+                    payload.get("open_risks", []),
+                    ["冲突尚未消解", "需要比较来源可信度与适用条件"],
+                )
+                if result_text:
+                    payload["support_items"] = self.merge_steps(payload.get("support_items", []), [result_text])
+                payload["confidence_band"] = "medium" if result is not None else "low"
             return json.dumps(payload, ensure_ascii=False)
 
         if slot_type == "PLAN":
@@ -234,6 +245,14 @@ class AdaptiveReasoningCore:
             "evidence_targets": [],
             "confidence_band": "low" if result is None else "medium",
         }
+        if conflict_task:
+            payload["summary"] = "先记录冲突并约束结论口径"
+            payload["assumptions"] = [
+                "来源结论存在冲突，暂不直接下单边结论",
+                "需要比较来源可信度、时间有效性和适用条件",
+            ]
+            payload["evidence_targets"] = ["冲突点", "来源可信度", "时间有效性", "适用条件"]
+            return json.dumps(payload, ensure_ascii=False)
         if plan is not None:
             payload["summary"] = "按计划补充关键事实并验证"
             payload["assumptions"] = list(plan_payload.get("unknowns", []))[:2] or ["当前方案缺少关键事实"]
@@ -332,6 +351,8 @@ class AdaptiveReasoningCore:
 
     def plan_needs(self, memory: MemoryBoard, user_input: str) -> list[str]:
         needs: list[str] = []
+        if self._is_conflict_task(user_input):
+            needs.extend(["冲突点", "来源可信度", "时间有效性"])
         if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")):
             needs.extend(["比较维度", "外部事实"])
         if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")):
@@ -346,6 +367,8 @@ class AdaptiveReasoningCore:
         unknowns: list[str] = []
         if memory.latest("RESULT") is None:
             unknowns.append("缺少外部结果")
+        if self._is_conflict_task(user_input):
+            unknowns.append("冲突来源的可信度与适用条件尚未确认")
         if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")):
             unknowns.append("比较维度尚未完全确认")
         if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")):
@@ -372,6 +395,7 @@ class AdaptiveReasoningCore:
             "has_result": [-0.4, -0.2, 0.95, -0.5, 0.1, 0.0],
             "has_fact": [0.4, 0.1, 0.0, -0.1, 0.85, 0.2],
             "compare_signal": [0.75, 0.1, -0.1, 0.2, 0.0, 0.45],
+            "conflict_signal": [0.35, 0.9, -0.35, 0.45, 0.0, 0.7],
             "calc_signal": [0.1, 0.7, -0.2, 0.55, 0.0, 0.1],
             "code_signal": [0.45, 0.35, -0.2, 0.3, 0.0, 0.35],
             "answer_ready": [-0.2, -0.3, 0.9, -0.2, 0.0, -0.1],
@@ -415,6 +439,7 @@ class AdaptiveReasoningCore:
                 "uncertainty": 0.4,
                 "has_plan": 0.55,
                 "calc_signal": 0.45,
+                "conflict_signal": 0.95,
                 "has_result": -0.55,
             }
         )
@@ -435,6 +460,8 @@ class AdaptiveReasoningCore:
             "对比": {"PLAN": 0.4},
             "代码": {"PLAN": 0.35},
             "计算": {"HYP": 0.45},
+            "冲突": {"HYP": 0.65},
+            "相反": {"HYP": 0.55},
         }
         self.slot_readout_weights["PLAN"] = [0.75, 0.2, -0.4, 0.15, 0.25, 0.55]
         self.slot_readout_weights["HYP"] = [0.1, 0.85, -0.35, 0.7, 0.1, 0.2]
@@ -474,3 +501,16 @@ class AdaptiveReasoningCore:
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+    def _is_conflict_task(self, user_input: str) -> bool:
+        markers = (
+            "冲突",
+            "相反建议",
+            "相反",
+            "矛盾",
+            "不一致",
+            "先怎么处理冲突",
+            "还没消解前",
+            "直接下结论吗",
+        )
+        return any(marker in user_input for marker in markers)

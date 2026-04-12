@@ -16,6 +16,7 @@ from carm.pretrain_data import (
 from carm.teacher_distill import distill_prompts_with_teacher, export_teacher_samples
 from carm.training import OfflinePretrainer, load_training_config
 from scripts.build_real_prompt_candidates import build_candidates, save_candidates
+from scripts.current_best import write_current_best
 from scripts.evaluate_pretraining import compare_results, evaluate_runner, build_runner_from_state_dir, load_eval_prompts
 from scripts.evaluate_real_prompts import evaluate_isolated_prompts
 
@@ -166,6 +167,11 @@ def run_auto_train(config_path: str | Path = "configs/training.yaml") -> dict[st
     }
     report_path = report_dir / f"auto_train_{run_id}.json"
     latest_path = report_dir / "auto_train_latest.json"
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    latest_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    current_best = write_current_best(Path("."))
+    report["current_best_path"] = "artifacts/current_best.json"
+    report["current_best_summary"] = current_best.get("summary", {})
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     latest_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return report
