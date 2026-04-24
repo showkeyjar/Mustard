@@ -107,10 +107,22 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
 
     failures = _summarize_failures(real_prompt_eval)
     pretrained_match_rate = float(real_prompt_summary.get("pretrained_match_rate", 0.0) or 0.0)
-    status = "healthy" if pretrained_match_rate >= 0.9 and not failures else "needs_attention"
     reasoning_summary = reasoning_pattern_report.get("summary", {})
     if not isinstance(reasoning_summary, dict):
         reasoning_summary = {}
+    hard_eval = reasoning_pattern_report.get("hard_eval", {})
+    if not isinstance(hard_eval, dict):
+        hard_eval = {}
+    hard_eval_failures = (
+        list(hard_eval.get("failed_case_ids", []))
+        if isinstance(hard_eval.get("failed_case_ids", []), list)
+        else []
+    )
+    status = (
+        "healthy"
+        if pretrained_match_rate >= 0.9 and not failures and not hard_eval_failures
+        else "needs_attention"
+    )
 
     return {
         "generated_at_utc": _utc_now(),
@@ -158,7 +170,9 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
             "verify_when_residual_risky_rate": float(
                 reasoning_summary.get("verify_when_residual_risky_rate", 0.0) or 0.0
             ),
+            "hard_eval_pass_rate": float(hard_eval.get("pass_rate", 0.0) or 0.0),
         },
+        "hard_eval_failures": hard_eval_failures,
         "key_failures": failures,
     }
 

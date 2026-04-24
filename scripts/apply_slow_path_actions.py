@@ -60,6 +60,28 @@ def apply_action(controls: dict[str, dict[str, float | int]], action: dict[str, 
         applied = after != before
         changes.append({"path": "glance.high_uncertainty_threshold", "before": before, "after": after})
 
+    elif action_type == "enable_combined_tool_policy_candidate":
+        policy = updated["policy"]
+        before_calc = int(policy.get("prefer_calculator_for_mixed_numeric_code", 0) or 0)
+        before_search = int(policy.get("prefer_search_for_comparison_evidence", 0) or 0)
+        policy["prefer_calculator_for_mixed_numeric_code"] = 1
+        policy["prefer_search_for_comparison_evidence"] = 1
+        applied = before_calc != 1 or before_search != 1
+        changes.extend(
+            [
+                {
+                    "path": "policy.prefer_calculator_for_mixed_numeric_code",
+                    "before": before_calc,
+                    "after": 1,
+                },
+                {
+                    "path": "policy.prefer_search_for_comparison_evidence",
+                    "before": before_search,
+                    "after": 1,
+                },
+            ]
+        )
+
     elif action_type in {"retain_glance_policy", "observe"}:
         applied = False
 

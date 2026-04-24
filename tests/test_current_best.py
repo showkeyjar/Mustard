@@ -79,7 +79,11 @@ class CurrentBestTests(unittest.TestCase):
                             "hard_logic_avg_fit_score": 0.81,
                             "residual_explanation_rate": 0.6,
                             "verify_when_residual_risky_rate": 0.5,
-                        }
+                        },
+                        "hard_eval": {
+                            "pass_rate": 0.75,
+                            "failed_case_ids": ["hard-conflict"],
+                        },
                     },
                     ensure_ascii=False,
                 ),
@@ -93,7 +97,9 @@ class CurrentBestTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["critical_failure_count"], 0)
             self.assertEqual(payload["summary"]["hard_logic_count"], 7)
             self.assertEqual(payload["summary"]["residual_explanation_rate"], 0.6)
-            self.assertEqual(payload["status"], "healthy")
+            self.assertEqual(payload["summary"]["hard_eval_pass_rate"], 0.75)
+            self.assertEqual(payload["hard_eval_failures"], ["hard-conflict"])
+            self.assertEqual(payload["status"], "needs_attention")
 
     def test_write_current_best_creates_file(self) -> None:
         with TemporaryDirectory() as temp_dir:

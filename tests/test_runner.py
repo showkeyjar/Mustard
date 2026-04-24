@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,8 +12,11 @@ from tools.code_tool import CodeExecutorTool
 from tools.search_tool import SearchTool
 
 
-def build_runner(temp_dir: str) -> AgentRunner:
+def build_runner(temp_dir: str, controls: dict[str, object] | None = None) -> AgentRunner:
     training_config_path = Path(temp_dir) / "training.json"
+    controls_path = Path(temp_dir) / "runtime_controls.json"
+    if controls is not None:
+        controls_path.write_text(json.dumps(controls, ensure_ascii=False), encoding="utf-8")
     training_config_path.write_text(
         (
             '{'
@@ -41,7 +45,7 @@ def build_runner(temp_dir: str) -> AgentRunner:
         concept_state_path=Path(temp_dir) / "concept_state.json",
         core_state_path=Path(temp_dir) / "core_state.json",
         review_path=Path(temp_dir) / "reviews.jsonl",
-        controls_path=Path(temp_dir) / "runtime_controls.json",
+        controls_path=controls_path,
         training_config_path=training_config_path,
     )
 
@@ -125,6 +129,35 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue(any(step.selected_tool == "search" for step in trace.steps))
             self.assertTrue(any(step.target_slot == "HYP" for step in trace.steps))
             self.assertIn("暂不直接下单边结论", answer)
+
+    def test_candidate_conflict_verify_gate_verifies_before_answer(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(
+                temp_dir,
+                controls={
+                    "policy": {
+                        "require_conflict_verify_before_answer": 1,
+                    }
+                },
+            )
+            _, trace = runner.run("两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？")
+
+            self.assertIn("VERIFY", trace.actions)
+            self.assertLess(trace.actions.index("VERIFY"), trace.actions.index("ANSWER"))
+
+    def test_candidate_mixed_numeric_code_gate_prefers_calculator(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            runner = build_runner(
+                temp_dir,
+                controls={
+                    "policy": {
+                        "prefer_calculator_for_mixed_numeric_code": 1,
+                    }
+                },
+            )
+            _, trace = runner.run("这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？")
+
+            self.assertTrue(any(step.selected_tool == "calculator" for step in trace.steps))
 
 
 if __name__ == "__main__":

@@ -331,6 +331,55 @@ class ReviewTests(unittest.TestCase):
             self.assertEqual(state["rollout_status"], "candidate")
             self.assertEqual(state["candidate_version"], state["current_version"])
 
+    def test_apply_slow_path_actions_can_stage_combined_tool_policy_candidate(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            consolidated_path = Path(temp_dir) / "consolidated_recommendations.json"
+            controls_path = Path(temp_dir) / "runtime_controls.json"
+            audit_path = Path(temp_dir) / "applied_actions.jsonl"
+            versions_path = Path(temp_dir) / "control_versions.jsonl"
+            state_path = Path(temp_dir) / "control_state.json"
+            history_dir = Path(temp_dir) / "history"
+            consolidated_path.write_text(
+                json.dumps(
+                    {
+                        "slow_path_actions": [
+                            {
+                                "type": "enable_combined_tool_policy_candidate",
+                                "target_module": "policy",
+                                "reason": "candidate passed isolated real prompt and hard eval",
+                                "proposal": "promote_combined_tool_policy_candidate",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            from scripts.apply_slow_path_actions import main as apply_main
+
+            os.environ["CARM_CONSOLIDATED_PATH"] = str(consolidated_path)
+            os.environ["CARM_CONTROLS_PATH"] = str(controls_path)
+            os.environ["CARM_APPLY_AUDIT_PATH"] = str(audit_path)
+            os.environ["CARM_CONTROL_VERSIONS_PATH"] = str(versions_path)
+            os.environ["CARM_CONTROL_STATE_PATH"] = str(state_path)
+            os.environ["CARM_CONTROL_HISTORY_DIR"] = str(history_dir)
+            try:
+                apply_main()
+            finally:
+                os.environ.pop("CARM_CONSOLIDATED_PATH", None)
+                os.environ.pop("CARM_CONTROLS_PATH", None)
+                os.environ.pop("CARM_APPLY_AUDIT_PATH", None)
+                os.environ.pop("CARM_CONTROL_VERSIONS_PATH", None)
+                os.environ.pop("CARM_CONTROL_STATE_PATH", None)
+                os.environ.pop("CARM_CONTROL_HISTORY_DIR", None)
+
+            controls = json.loads(controls_path.read_text(encoding="utf-8"))
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(controls["policy"]["prefer_calculator_for_mixed_numeric_code"], 1)
+            self.assertEqual(controls["policy"]["prefer_search_for_comparison_evidence"], 1)
+            self.assertEqual(state["rollout_status"], "candidate")
+
     def test_rollback_runtime_controls_restores_previous_version(self) -> None:
         with TemporaryDirectory() as temp_dir:
             consolidated_path = Path(temp_dir) / "consolidated_recommendations.json"
