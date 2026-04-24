@@ -154,6 +154,101 @@ python -m scripts.auto_train
 - 真实 prompt 隔离评估结果
 - 预训练产物目录位置
 
+### 人工指挥推进指南
+
+当前更推荐“人类定目标，Codex 做小步候选，评测通过后再进入慢速控制”，而不是长期依赖自动研发策略自行进化。每一轮可以按下面顺序推进：
+
+1. 先看当前能力状态：
+
+```powershell
+python -m scripts.evaluate_real_prompts
+python -m scripts.analyze_reasoning_patterns
+python -m scripts.current_best
+```
+
+重点看 [current_best.json](d:/codes/Mustard/artifacts/current_best.json) 里的：
+
+- `status`
+- `real_prompt_match_rate`
+- `hard_eval_pass_rate`
+- `hard_eval_failures`
+- `residual_explanation_rate`
+
+2. 根据失败类型选择候选实验：
+
+```powershell
+python -m scripts.evaluate_conflict_verify_candidate
+python -m scripts.evaluate_tool_boundary_candidate
+python -m scripts.evaluate_comparison_search_candidate
+python -m scripts.evaluate_combined_tool_policy_candidate
+```
+
+这些脚本只用临时 runner 打开候选控制项，不会改默认运行时。它们适合回答一个问题：这个小改动是否真的能修复当前失败，并且没有明显误伤 guard 场景。
+
+3. 只有候选评测通过后，才写提案进入 Human Gate：
+
+```powershell
+Get-ChildItem backlog/proposals
+```
+
+提案里应该至少写清楚：
+
+- 修复哪个失败样本或能力缺口
+- 证据来自哪个 artifact
+- 预期指标变化
+- 风险等级
+- 回滚方式
+- 是否需要人工批准
+
+涉及默认运行时策略、工具选择、桌面采样、训练数据准入、默认模型或数据迁移的变更，都必须先经 Human Gate。
+
+4. 经人工批准后，再走慢速控制候选，而不是直接改稳定默认：
+
+```powershell
+python -m scripts.apply_slow_path_actions
+python -m scripts.evaluate_control_versions
+python -m scripts.judge_control_rollout
+python -m scripts.system_status
+```
+
+例如组合工具策略候选的批准动作是：
+
+```json
+{"type":"enable_combined_tool_policy_candidate","target_module":"policy"}
+```
+
+它会同时打开：
+
+- `policy.prefer_calculator_for_mixed_numeric_code = 1`
+- `policy.prefer_search_for_comparison_evidence = 1`
+
+但路径仍是 candidate rollout，可由 `judge_control_rollout` 决定保留、继续观察或回滚。
+
+5. 候选稳定后，再考虑训练数据与结构改进：
+
+```powershell
+python -m scripts.build_real_prompt_candidates
+python -m scripts.build_pretrain_dataset
+python -m scripts.apply_pretrain_review_feedback
+python -m scripts.auto_train
+```
+
+如果目标是吸收 `D:\codes\vqr` 的压缩思路，优先把它转成“推理模式码本 + 残差信号 + 质量门控”的可评测小实验。当前对应入口是：
+
+```powershell
+python -m scripts.analyze_reasoning_patterns
+```
+
+每轮结束前建议至少跑：
+
+```powershell
+python -m unittest discover -s tests -p "test_current_best.py" -v
+python -m unittest discover -s tests -p "test_combined_tool_policy_candidate.py" -v
+python -m unittest discover -s tests -p "test_review.py" -v
+```
+
+这条路径的原则是：默认行为不靠直觉改，先让候选在隔离评测里证明自己，再让慢速控制系统接管风险。
+
 `review_pack.jsonl` 当前支持这些人工反馈字段：
 
 - `review_status`: `pending / accept / reject / edit`
