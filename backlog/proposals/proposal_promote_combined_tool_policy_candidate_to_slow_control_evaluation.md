@@ -1,0 +1,31 @@
+# Proposal: Promote combined tool-policy candidate to slow control evaluation
+
+- problem: 默认状态仍有两个工具边界失败：`real-mixed` 误选 `code_executor`，`repair-comparison-005` 误选 `bigmodel_proxy`。单独候选分别能修复对应失败，但默认运行时尚未改变。
+- evidence:
+  - `artifacts/current_best.json` 默认状态仍为 `status = needs_attention`，`real_prompt_match_rate = 0.9`，`hard_eval_pass_rate = 0.8333`。
+  - `artifacts/tool_boundary_candidate_latest.json` 显示 `policy.prefer_calculator_for_mixed_numeric_code=1` 可修复 `real-mixed`，完整候选 real prompt 为 `0.95`，hard eval 为 `1.0`。
+  - `artifacts/comparison_search_candidate_latest.json` 显示 `policy.prefer_search_for_comparison_evidence=1` 可修复 `repair-comparison-005`，并保持管理层摘要 guard 通过。
+  - `artifacts/combined_tool_policy_candidate_latest.json` 显示组合候选完整 real prompt `pretrained_match_rate = 1.0`，hard eval `pass_rate = 1.0`。
+  - `scripts/apply_slow_path_actions.py` 已支持 slow-path action `enable_combined_tool_policy_candidate`；`tests/test_review.py::test_apply_slow_path_actions_can_stage_combined_tool_policy_candidate` 覆盖其进入 candidate rollout 的行为。
+- from_failure_pattern: tool_boundary_sampling_gap
+- from_top_gap: CARM hard logic pass rate
+- change_type: runtime_control
+- proposed_change: 经 Human Gate 批准后，通过 slow-path action `enable_combined_tool_policy_candidate` 将以下两个候选控制项一起进入慢速控制评估，而不是直接写入默认稳定控制：
+  - `policy.prefer_calculator_for_mixed_numeric_code = 1`
+  - `policy.prefer_search_for_comparison_evidence = 1`
+- expected_metric_delta:
+  - `real_prompt_match_rate`: 0.9 -> observed 1.0 in isolated combined candidate eval
+  - `hard_eval_pass_rate`: 0.8333 -> observed 1.0 in isolated combined candidate eval
+  - `critical_failure_count`: 2 -> observed 0 for current real prompt set
+- risk_level: medium
+- evaluation_plan:
+  - 保持默认控制文件不变，先由 Human Gate 判断是否允许进入 slow control candidate。
+  - 运行 `python -m scripts.evaluate_combined_tool_policy_candidate`。
+  - 若批准，可在 consolidated recommendations 中加入 `{"type":"enable_combined_tool_policy_candidate","target_module":"policy"}`，再走 `python -m scripts.apply_slow_path_actions` 进入候选 rollout。
+  - 进入候选 rollout 前，先重跑 `python -m unittest discover -s tests -p "test_review.py" -v`，确认 slow-path action 仍只进入 candidate 状态。
+  - 若批准进入慢速控制评估，再用候选控制重跑 `python -m scripts.evaluate_real_prompts`、`python -m scripts.analyze_reasoning_patterns`、`python -m scripts.current_best`。
+  - 补充 guard：普通代码任务仍为 `code_executor`，普通计算仍为 `calculator`，管理层摘要仍为 `bigmodel_proxy`。
+- rollback_plan: 将两个控制项保持或恢复为 `0`；候选报告和提案可保留为诊断证据，不影响默认运行时。
+- needs_human_approval: true
+- relative_to_last_round: 相比单点候选，本提案验证了组合策略能同时修复两个默认失败，并在当前完整 real prompt 与 hard eval 上达成全绿。
+- scenario_fit: 用户希望由人工指挥 Codex 做小步、可验证的模型能力改进；该组合候选正好覆盖当前事实源中的全部工具边界失败。

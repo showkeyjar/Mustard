@@ -1,0 +1,415 @@
+{
+  "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
+  "control": {
+    "policy.prefer_calculator_for_mixed_numeric_code": 1
+  },
+  "artifact_dir": "data\\pretrain",
+  "expected_tool": "calculator",
+  "baseline_tool": "code_executor",
+  "candidate_tool": "calculator",
+  "baseline_actions": [
+    "WRITE_MEM",
+    "CALL_TOOL",
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "ANSWER"
+  ],
+  "candidate_actions": [
+    "WRITE_MEM",
+    "CALL_TOOL",
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "ANSWER"
+  ],
+  "candidate_changes_tool": true,
+  "guard_summary": {
+    "case_count": 3,
+    "candidate_match_rate": 1.0,
+    "failed_case_ids": []
+  },
+  "real_prompt_summary": {
+    "prompt_count": 20,
+    "pretrained_match_rate": 0.95,
+    "pretrained_avg_steps": 5.85
+  },
+  "hard_eval_summary": {
+    "pass_rate": 1.0,
+    "failed_case_ids": []
+  },
+  "rows": [
+    {
+      "id": "mixed-numeric-code",
+      "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
+      "expected_tool": "calculator",
+      "baseline_tool": "code_executor",
+      "candidate_tool": "calculator",
+      "baseline_match": false,
+      "candidate_match": true,
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_changes_tool": true
+    },
+    {
+      "id": "plain-code",
+      "prompt": "帮我理解这段 Python 脚本为什么会报空指针错误",
+      "expected_tool": "code_executor",
+      "baseline_tool": "code_executor",
+      "candidate_tool": "code_executor",
+      "baseline_match": true,
+      "candidate_match": true,
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_changes_tool": false
+    },
+    {
+      "id": "plain-calc",
+      "prompt": "请计算 12 + 30 / 3",
+      "expected_tool": "calculator",
+      "baseline_tool": "calculator",
+      "candidate_tool": "calculator",
+      "baseline_match": true,
+      "candidate_match": true,
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "candidate_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "candidate_changes_tool": false
+    }
+  ],
+  "real_prompt_rows": [
+    {
+      "id": "real-doc-check",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-budget",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-mixed",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "candidate-420926",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-git-triage",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-cost-forecast",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-release-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-multi-source-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": false
+    }
+  ],
+  "decision": "candidate_pass"
+}

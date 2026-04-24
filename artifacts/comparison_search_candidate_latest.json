@@ -1,0 +1,423 @@
+{
+  "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+  "control": {
+    "policy.prefer_search_for_comparison_evidence": 1
+  },
+  "artifact_dir": "data\\pretrain",
+  "expected_tool": "search",
+  "baseline_tool": "bigmodel_proxy",
+  "candidate_tool": "search",
+  "baseline_actions": [
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "CALL_BIGMODEL",
+    "WRITE_MEM",
+    "ANSWER"
+  ],
+  "candidate_actions": [
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "CALL_TOOL",
+    "WRITE_MEM",
+    "ANSWER"
+  ],
+  "candidate_changes_tool": true,
+  "guard_summary": {
+    "case_count": 3,
+    "candidate_match_rate": 1.0,
+    "failed_case_ids": []
+  },
+  "real_prompt_summary": {
+    "prompt_count": 20,
+    "pretrained_match_rate": 0.95,
+    "pretrained_avg_steps": 5.85
+  },
+  "hard_eval_summary": {
+    "pass_rate": 0.8333,
+    "failed_case_ids": [
+      "real-mixed"
+    ]
+  },
+  "rows": [
+    {
+      "id": "comparison-needs-search",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "baseline_tool": "bigmodel_proxy",
+      "candidate_tool": "search",
+      "baseline_match": false,
+      "candidate_match": true,
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "candidate_changes_tool": true
+    },
+    {
+      "id": "plain-comparison",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "baseline_tool": "search",
+      "candidate_tool": "search",
+      "baseline_match": true,
+      "candidate_match": true,
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "candidate_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "candidate_changes_tool": false
+    },
+    {
+      "id": "management-summary",
+      "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_tool": "bigmodel_proxy",
+      "candidate_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "candidate_match": true,
+      "baseline_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "candidate_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "candidate_changes_tool": false
+    }
+  ],
+  "real_prompt_rows": [
+    {
+      "id": "real-doc-check",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-budget",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-mixed",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "code_executor",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": false
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "candidate-420926",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-git-triage",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-cost-forecast",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-release-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "real-multi-source-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    }
+  ],
+  "decision": "candidate_pass"
+}

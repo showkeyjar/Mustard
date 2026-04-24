@@ -1,0 +1,28 @@
+# Proposal: Promote mixed numeric/code tool-boundary candidate
+
+- problem: 最新真实 prompt 评估中，`real-mixed` 包含 Python 代码线索与明确分批计算需求，当前默认策略优先选择 `code_executor`，但期望工具是 `calculator`，导致 hard eval 失败。
+- evidence:
+  - `data/eval/real_prompt_eval_latest.json` 中 `real-mixed.pretrained_used_tool = code_executor`，`expected_tool = calculator`。
+  - `artifacts/reasoning_pattern_codec_latest.json` 中 `hard_eval.failed_case_ids = ["real-mixed"]`。
+  - `artifacts/tool_boundary_candidate_latest.json` 显示默认工具为 `code_executor`，候选控制 `policy.prefer_calculator_for_mixed_numeric_code=1` 后工具变为 `calculator`。
+  - 完整候选 real prompt 评估显示 `pretrained_match_rate = 0.95`，hard eval `pass_rate = 1.0`，guard set `candidate_match_rate = 1.0`。
+- from_failure_pattern: tool_boundary_sampling_gap
+- from_top_gap: CARM hard logic pass rate
+- change_type: runtime_control
+- proposed_change: 将 `policy.prefer_calculator_for_mixed_numeric_code` 作为候选 runtime control 保留；若经 Human Gate 批准，再进入慢速控制评估流程，观察其是否只修复混合数值/代码边界，不伤害普通代码任务。
+- expected_metric_delta:
+  - `hard_eval_pass_rate`: 0.8333 -> observed 1.0 in isolated candidate eval
+  - `real_prompt_match_rate`: 0.9 -> observed 0.95 in isolated candidate eval
+  - `tool_boundary` low-fit cases: should decrease by 1
+- risk_level: medium
+- evaluation_plan:
+  - 保持默认值为 0，不直接上线。
+  - 运行 `python -m scripts.evaluate_tool_boundary_candidate`。
+  - 已在候选脚本中同时覆盖 `real-mixed`、普通代码任务、普通计算任务与完整 real prompt 集。
+  - 在候选控制打开的隔离 runner 中重跑包含 `real-mixed`、普通代码任务、普通计算任务的最小回归。
+  - 若进入默认控制评估，再运行 `python -m scripts.evaluate_real_prompts`、`python -m scripts.analyze_reasoning_patterns`、`python -m scripts.current_best`。
+- follow_up: 组合候选见 `backlog/proposals/promote_combined_tool_policy_candidate.md`，其 isolated eval 已达到 real prompt 1.0 与 hard eval 1.0。
+- rollback_plan: 保持或恢复 `policy.prefer_calculator_for_mixed_numeric_code=0`；删除候选报告不影响默认运行时。
+- needs_human_approval: true
+- relative_to_last_round: 上一步 hard eval 将失败从旧的 conflict verify 问题更新为真实工具边界问题，本提案只处理当前最新失败项。
+- scenario_fit: 用户希望把研发收敛到可验证能力增量；该候选只针对“表面有代码但核心请求是数值分批”的真实工具边界场景。

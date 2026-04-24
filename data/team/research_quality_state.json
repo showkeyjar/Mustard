@@ -1,0 +1,28 @@
+{
+  "degraded": true,
+  "reasons": [
+    "no_new_failure_pattern",
+    "exploration_without_discovery",
+    "blind_spot_persistence"
+  ],
+  "new_failure_pattern_count": 0,
+  "new_failure_pattern_ids": [],
+  "failure_pattern_count": 1,
+  "new_recovery_cluster_count": 0,
+  "new_recovery_cluster_ids": [],
+  "coverage_only_gap_streak": 0,
+  "zero_bridge_feedback_streak": 0,
+  "zero_frontier_observation_streak": 0,
+  "rounds_without_new_failure_pattern": 2,
+  "exploration_without_discovery_rounds": 2,
+  "blind_spot_persistence_rounds": 2,
+  "top_gap": "unknown",
+  "quality_exploration_active": true,
+  "high_signal_count": 1,
+  "recovery_cluster_count": 0,
+  "updated_at_utc": "2026-04-24T11:08:07.733036+00:00",
+  "last_failure_pattern_ids": [
+    "forced_action_conflict_resolution_gap"
+  ],
+  "last_recovery_cluster_ids": []
+}

@@ -1,53 +1,54 @@
 # Research Artifact (Actionable)
 
 ## 1) Meta
-- round_id: auto-20260330T024302Z
-- date: 2026-03-30
+- round_id: auto-20260424T110806Z
+- date: 2026-04-24
 - owner: researcher
-- from_top_gap: eval_coverage_too_low
-- from_failure_pattern: eval_coverage_too_low
-- relative_to_last_round: switched from static template to concrete mismatch + quality snapshot + executable next-24h plan
-- scenario_fit: real prompt regression coverage and weak-signal research diagnosis
+- from_top_gap: quality_stabilization
+- from_failure_pattern: sampling_blind_spot
+- relative_to_last_round: upgraded from generic coverage template to current top-gap / failure-pattern aligned research input
+- scenario_fit: 真实复杂任务里隐藏弱点未被触发的场景。
 
 ## 2) New weakness discovered this round
-- weakness_summary: no explicit mismatch surfaced, but sampling blind spot remains in high-information real prompts
+- weakness_summary: pretrained mismatch cases surfaced under sampling_blind_spot
 - weakness_cluster: sampling_blind_spot
-- why_it_matters_now: if the system only reports aggregate wins, it cannot prove it still discovers new weaknesses under wider coverage
-- why_previous_rounds_missed_it: prior output emphasized summary metrics over weakness clustering and blind-spot diagnosis
+- why_it_matters_now: 专项压力已经落到 sampling_blind_spot，当前需要判断这是稳定可复现的新弱点还是偶发样本噪声。
+- why_previous_rounds_missed_it: previous researcher input was pinned to generic coverage logic instead of the active specialized cluster
 
 ## 3) Hypothesis（可证伪）
-- hypothesis: raising high-information real-prompt coverage will expose either stable robustness or a new mismatch cluster worth patching
-- falsifiable_condition: prompt_count increases but mismatch_case_count rises materially or match_rate drops below 0.90
-- expected_gain: keep pretrained_match_rate >= 0.90 while increasing prompt_count beyond 20
+- hypothesis: tightening prompts around sampling_blind_spot will either expose a reproducible mismatch cluster or confirm robustness under this boundary.
+- falsifiable_condition: targeted prompts increase, but no new mismatch cluster or new failure pattern is formed
+- expected_gain: 在 sampling_blind_spot 专项场景下形成可复现的新 mismatch 或确认专项鲁棒性。
 - risk: low-information candidates may still crowd out the prompts most likely to reveal hidden weaknesses
 
 ## 4) Evidence chain
-- representative_case_1: pretrained_match_rate=1.0000, baseline_match_rate=0.8000, delta=+0.2000
-- representative_case_2: mismatch_case_count=0
-- representative_case_3: stagnation_rounds=144; frontier_observation_count=3
-- evidence_quality_note: current evidence is useful for trend judgment but still weak for discovering unseen weakness clusters because prompt coverage is narrow
-- blind_spot_if_no_failure_case: current batch is still too narrow to prove no hidden weakness
+- representative_case_1: pretrained_match_rate=0.9000, baseline_match_rate=0.9000, delta=+0.0000
+- representative_case_2: mismatch_case_count=2
+- representative_case_3: stagnation_rounds=0; frontier_observation_count=0
+- evidence_quality_note: 当前已有 mismatch，但还需要更多同类专项样本验证 sampling_blind_spot 是否是稳定簇。
+- blind_spot_if_no_failure_case: none
 - candidate_pipeline_snapshot:
   - total_candidates: 9
   - filtered_candidates: 2
   - dropped_candidates: 7
 
 ## Concrete mismatch cases
-- none (all current prompts matched for pretrained runner)
+- real-mixed: expected=calculator actual=code_executor logic_skill=tool_selection
+- repair-comparison-005: expected=search actual=bigmodel_proxy logic_skill=comparison
 
 ## 5) Minimal next experiment（可执行）
 - command_1: python -m scripts.evaluate_real_prompts
 - command_2: python -m scripts.build_real_prompt_candidates
-- metric_threshold: prompt_count increases and pretrained_match_rate stays >= 0.90
-- pass_criteria: new prompts add pressure without introducing an unexplained mismatch spike
-- fail_criteria: coverage expands but research still produces no new weakness or blind-spot diagnosis
+- metric_threshold: focused prompts around sampling_blind_spot increase while pretrained_match_rate stays >= 0.90
+- pass_criteria: specialized prompts either expose a reproducible weakness cluster or prove sampling_blind_spot remains stable under stronger pressure
+- fail_criteria: 围绕 sampling_blind_spot 的专项 prompts 仍无法形成可复现的新 pattern。
 
 ## 6) Landing Candidate（可直接进 Architect）
-- proposed_change: add >=4 high-quality non-observer prompts and tighten candidate filtering around low-information repeats
-- change_scope: configs/real_prompt_eval.json + candidate quality rules + research reporting
-- rollback_plan: revert added prompts and filtering heuristics if mismatch quality worsens or coverage signal becomes noisier
+- proposed_change: 补充更高信息量的专项 prompts，并验证是否出现新的 mismatch cluster。
+- change_scope: configs/real_prompt_eval.json + targeted prompt pack + research reporting
+- rollback_plan: revert targeted prompts and restore previous prompt pack if evidence quality worsens
 - handoff_to_architect: yes
 
 ## 7) Decision label
 - tag: 待观察
-- reason: current match is strong, but the system still has insufficient evidence that its weakness discovery loop is healthy under broader coverage
+- reason: current match is strong, but the system still lacks sufficient evidence that sampling_blind_spot has been truly broken open

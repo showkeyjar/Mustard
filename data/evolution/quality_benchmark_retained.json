@@ -1,0 +1,26 @@
+{
+  "prompts": [
+    {
+      "id": "candidate-379152",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "retain_reason": "context_support"
+    },
+    {
+      "id": "real-conflict",
+      "prompt": "两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "retain_reason": "context_support"
+    }
+  ]
+}

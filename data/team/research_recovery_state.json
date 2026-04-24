@@ -1,0 +1,10 @@
+{
+  "frontier_intake_runs": 1,
+  "soft_feedback_runs": 1,
+  "high_information_sampling_runs": 0,
+  "last_triggered": [
+    "frontier_intake_operator",
+    "soft_feedback_operator"
+  ],
+  "updated_at_utc": "2026-04-24T11:08:07.722168+00:00"
+}

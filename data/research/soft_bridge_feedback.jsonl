@@ -1,0 +1,2 @@
+{"id": "soft-feedback-real-mixed", "kind": "overreach", "source_case": "real-mixed", "reason": "baseline used code_executor while expected calculator", "created_at_utc": "2026-04-24T11:08:07.720379+00:00"}
+{"id": "soft-feedback-repair-comparison-005", "kind": "misread", "source_case": "repair-comparison-005", "reason": "baseline used bigmodel_proxy while expected search", "created_at_utc": "2026-04-24T11:08:07.721498+00:00"}

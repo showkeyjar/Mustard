@@ -85,6 +85,11 @@ python -m scripts.apply_pretrain_review_feedback
 python -m scripts.pretrain_carm
 python -m scripts.evaluate_pretraining
 python -m scripts.evaluate_real_prompts
+python -m scripts.analyze_reasoning_patterns
+python -m scripts.evaluate_conflict_verify_candidate
+python -m scripts.evaluate_tool_boundary_candidate
+python -m scripts.evaluate_comparison_search_candidate
+python -m scripts.evaluate_combined_tool_policy_candidate
 python -m scripts.build_real_prompt_candidates
 python -m scripts.auto_train
 ```
@@ -193,6 +198,47 @@ python -m scripts.build_real_prompt_candidates
 ```
 
 它会从 `data/experience/episodes.jsonl` 里抽取高价值、成功、且已显式使用工具的真实 episode，自动推断 `logic_skill`，并导出到 `data/eval/real_prompt_candidates.json`，方便你挑选后并入 [real_prompt_eval.json](d:/codes/Mustard/configs/real_prompt_eval.json)。
+
+如果你想检查“工具命中之外，中间推理表示是否覆盖了高信息残差”，运行：
+
+```powershell
+python -m scripts.analyze_reasoning_patterns
+python -m scripts.current_best
+```
+
+它会读取 [hard_logic_eval.json](d:/codes/Mustard/configs/hard_logic_eval.json)，输出 `pattern_id / residual_features / hard_eval_pass_rate`，并把结果并入 [current_best.json](d:/codes/Mustard/artifacts/current_best.json)。
+
+如果 `hard_eval_failures` 指向冲突任务，可以先跑候选验证门控实验：
+
+```powershell
+python -m scripts.evaluate_conflict_verify_candidate
+```
+
+该脚本只在临时 runner 中打开 `policy.require_conflict_verify_before_answer=1`，用于验证候选策略，不会修改默认运行时控制文件。
+
+如果失败项指向“代码与数值边界”类工具选择，可以跑：
+
+```powershell
+python -m scripts.evaluate_tool_boundary_candidate
+```
+
+该脚本只在临时 runner 中打开 `policy.prefer_calculator_for_mixed_numeric_code=1`，用于验证候选策略，不会修改默认运行时控制文件。
+
+如果失败项指向“比较/证据任务被过早交给大模型生成”，可以跑：
+
+```powershell
+python -m scripts.evaluate_comparison_search_candidate
+```
+
+该脚本只在临时 runner 中打开 `policy.prefer_search_for_comparison_evidence=1`，并用管理层摘要任务做 guard，避免误伤正式总结场景。
+
+如果两个工具边界候选都通过，可以跑组合候选：
+
+```powershell
+python -m scripts.evaluate_combined_tool_policy_candidate
+```
+
+该脚本在临时 runner 中同时打开两个候选控制项，用完整真实 prompt 与 hard eval 验证组合效果。
 
 ### 桌面常驻
 

@@ -1,0 +1,309 @@
+{
+  "row_count": 20,
+  "high_signal_count": 1,
+  "bigmodel_proxy_mismatch_count": 1,
+  "top_rows": [
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-multi-source-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    }
+  ],
+  "rows": [
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-multi-source-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "candidate-420926",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-budget",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-cost-forecast",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-doc-check",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-git-triage",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-mixed",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "code_executor",
+      "pretrained_used_tool": "code_executor",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "real-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-release-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    }
+  ]
+}

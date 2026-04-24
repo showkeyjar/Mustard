@@ -2,9 +2,9 @@
   "summary": {
     "prompt_count": 20,
     "baseline_match_rate": 0.9,
-    "pretrained_match_rate": 1.0,
+    "pretrained_match_rate": 0.9,
     "baseline_avg_steps": 5.3,
-    "pretrained_avg_steps": 3.6
+    "pretrained_avg_steps": 5.3
   },
   "rows": [
     {
@@ -21,7 +21,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -43,6 +45,7 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -61,6 +64,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -83,9 +87,11 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -108,9 +114,14 @@
         "CALL_BIGMODEL"
       ],
       "pretrained_actions": [
-        "CALL_TOOL",
+        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "ANSWER"
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
       ],
       "baseline_match": true,
       "pretrained_match": true
@@ -120,7 +131,7 @@
       "logic_skill": "tool_selection",
       "expected_tool": "calculator",
       "baseline_used_tool": "code_executor",
-      "pretrained_used_tool": "calculator",
+      "pretrained_used_tool": "code_executor",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
@@ -129,12 +140,14 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": true
+      "pretrained_match": false
     },
     {
       "id": "candidate-379152",
@@ -150,6 +163,8 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -171,8 +186,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -191,6 +208,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -212,8 +230,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -232,6 +252,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -256,9 +277,14 @@
         "CALL_BIGMODEL"
       ],
       "pretrained_actions": [
-        "CALL_TOOL",
+        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "ANSWER"
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
       ],
       "baseline_match": true,
       "pretrained_match": true
@@ -277,9 +303,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -300,6 +327,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -323,9 +351,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -346,6 +375,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -369,9 +399,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -392,6 +423,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -415,9 +447,10 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -428,7 +461,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "search",
+      "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
         "WRITE_MEM",
         "WRITE_MEM",
@@ -437,13 +470,14 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": true
+      "pretrained_match": false
     }
   ]
 }

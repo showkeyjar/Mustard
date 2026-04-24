@@ -203,10 +203,16 @@ class OnlinePolicy:
                 any(token in user_input for token in ("计算", "总成本", "总价", "预算", "每席位", "扩容", "乘", "*", "÷", "/"))
                 or bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
             )
+            mixed_numeric_code_override = bool(self.controls.get("prefer_calculator_for_mixed_numeric_code", 0)) and (
+                any(token in user_input for token in ("分几批", "每批", "预计分", "按年预算", "总价"))
+                or bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
+            )
             hard_bigmodel = any(token in user_input for token in ("管理层", "正式", "结论摘要", "决策建议", "日志", "告警", "复盘"))
             hard_conflict = self._is_conflict_task(user_input)
 
-            if hard_calc and "代码" not in user_input and "python" not in normalized:
+            if (hard_calc or mixed_numeric_code_override) and (
+                mixed_numeric_code_override or ("代码" not in user_input and "python" not in normalized)
+            ):
                 decision.tool_call = ToolCall(
                     tool_name="calculator",
                     query=user_input,
@@ -369,6 +375,8 @@ class OnlinePolicy:
     def _enforce_constraints(self, decision: ActionDecision, context: PolicyContext) -> ActionDecision:
         memory = context.memory
         state = context.state
+        require_conflict_verify = bool(self.controls.get("require_conflict_verify_before_answer", 0))
+        prefer_search_for_comparison = bool(self.controls.get("prefer_search_for_comparison_evidence", 0))
 
         if (
             state.last_action == Action.VERIFY.value
@@ -381,6 +389,46 @@ class OnlinePolicy:
                 decision.score,
                 decision.feature_snapshot,
                 context,
+            )
+
+        if (
+            require_conflict_verify
+            and decision.action == Action.ANSWER
+            and self._is_conflict_task(context.user_input)
+            and memory.latest("DRAFT") is not None
+            and state.hidden.get("verified") != "1"
+        ):
+            return self._build_decision(
+                Action.VERIFY,
+                decision.score,
+                decision.feature_snapshot,
+                context,
+            )
+
+        if (
+            prefer_search_for_comparison
+            and self._is_comparison_evidence_task(context.user_input)
+            and not self._is_formal_management_synthesis(context.user_input)
+            and (
+                decision.action == Action.CALL_BIGMODEL
+                or (
+                    decision.action == Action.CALL_TOOL
+                    and decision.tool_call is not None
+                    and decision.tool_call.tool_name == "bigmodel_proxy"
+                )
+            )
+        ):
+            return ActionDecision(
+                action=Action.CALL_TOOL,
+                score=decision.score,
+                reason="Candidate gate: use search for comparison/evidence task before synthesis.",
+                tool_call=ToolCall(
+                    tool_name="search",
+                    query=context.user_input,
+                    arguments={"top_k": 3},
+                    reason="Comparison/evidence tasks need source grounding before generation.",
+                ),
+                feature_snapshot=dict(decision.feature_snapshot),
             )
 
         if self._is_conflict_task(context.user_input) and memory.latest("HYP") is not None and memory.latest("DRAFT") is None:
@@ -462,3 +510,9 @@ class OnlinePolicy:
             "直接下结论吗",
         )
         return any(marker in user_input for marker in markers)
+
+    def _is_comparison_evidence_task(self, user_input: str) -> bool:
+        return any(token in user_input for token in ("比较", "对比", "区别", "优缺点", "性能表现", "适用性"))
+
+    def _is_formal_management_synthesis(self, user_input: str) -> bool:
+        return any(token in user_input for token in ("管理层", "负责人", "正式结论", "结论摘要", "决策建议", "日志", "告警", "复盘", "几份材料", "几份资料"))

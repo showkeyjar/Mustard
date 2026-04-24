@@ -1,65 +1,23 @@
 {
-  "pattern_count": 4,
+  "pattern_count": 1,
   "patterns": [
     {
-      "id": "sampling_blind_spot",
-      "severity": "medium",
-      "evidence": {
-        "prompt_count": 20,
-        "mismatch_count": 0
-      },
-      "impact": "样本表面全绿，但仍不足以证明隐藏弱点已被发现。",
-      "frequency": "current_round",
-      "repro_hint": "扩充高信息量 real prompts 后重跑 evaluate_real_prompts，看是否暴露新弱点簇",
-      "owner_role": "researcher"
-    },
-    {
-      "id": "repeated_conflict_detection_gap",
-      "severity": "medium",
+      "id": "forced_action_conflict_resolution_gap",
+      "severity": "high",
       "evidence": {
         "logic_skill": "conflict_detection",
         "count": 2,
-        "avg_source_score": 6.0,
-        "top_mutations": [
-          "contradictory_authority",
-          "missing_evidence"
+        "sample_ids": [
+          "quality-real-conflict-03",
+          "quality-repair-conflict_detection-017-03"
+        ],
+        "expected_tool": [
+          "search"
         ]
       },
-      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
+      "impact": "高压 conflict_detection 样本已能让 pretrained 失败，说明在被迫给动作建议时仍存在新的冲突化解弱点。",
       "frequency": "current_round",
-      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
-      "owner_role": "failure_miner"
-    },
-    {
-      "id": "comparison_under_conflicting_sources",
-      "severity": "medium",
-      "evidence": {
-        "logic_skill": "comparison",
-        "count": 1,
-        "avg_source_score": 6.0,
-        "top_mutations": [
-          "conflicting_sources"
-        ]
-      },
-      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
-      "frequency": "current_round",
-      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
-      "owner_role": "failure_miner"
-    },
-    {
-      "id": "tool_boundary_sampling_gap",
-      "severity": "medium",
-      "evidence": {
-        "logic_skill": "tool_selection",
-        "count": 1,
-        "avg_source_score": 3.0,
-        "top_mutations": [
-          "calculator_vs_search"
-        ]
-      },
-      "impact": "高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。",
-      "frequency": "current_round",
-      "repro_hint": "复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation",
+      "repro_hint": "复用 quality focus eval 中 forced conflict rows，继续扩展 action-forcing / missing-evidence / authority-conflict 组合样本。",
       "owner_role": "failure_miner"
     }
   ]

@@ -1,0 +1,27 @@
+{
+  "prompt": "两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？",
+  "control": {
+    "policy.require_conflict_verify_before_answer": 1
+  },
+  "artifact_dir": "data\\pretrain",
+  "baseline_actions": [
+    "WRITE_MEM",
+    "CALL_TOOL",
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "VERIFY",
+    "ANSWER"
+  ],
+  "candidate_actions": [
+    "WRITE_MEM",
+    "CALL_TOOL",
+    "WRITE_MEM",
+    "WRITE_MEM",
+    "VERIFY",
+    "ANSWER"
+  ],
+  "baseline_has_verify": true,
+  "candidate_has_verify": true,
+  "candidate_verify_before_answer": true,
+  "decision": "candidate_pass"
+}

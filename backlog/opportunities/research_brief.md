@@ -2,10 +2,10 @@
 
 ## Current Signals
 - dataset_sample_count: 186
-- bridge_feedback: 12
-- frontier_observation_count: 3
+- bridge_feedback: 0
+- frontier_observation_count: 0
 - real_prompt_count: 20
-- real_prompt_match_rate: 1.0000
+- real_prompt_match_rate: 0.9000
 
 ## Research Constraints
 - 必须绑定 Top Gap 或 failure pattern

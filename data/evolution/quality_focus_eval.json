@@ -1,0 +1,214 @@
+{
+  "prompts": [
+    {
+      "id": "repair-comparison-005",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "candidate-379152",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "real-conflict",
+      "prompt": "两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "real-exec-summary",
+      "prompt": "我已经收集了三份资料：官方文档、社区最佳实践、一次故障复盘。现在要写给负责人一份简洁但正式的结论，应该怎么组织？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "real-multi-source-summary",
+      "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "repair-comparison-001",
+      "prompt": "从中小团队落地角度看，比较 SQLite 和 PostgreSQL 在 本地原型 里的 维护复杂度，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "repair-comparison-002",
+      "prompt": "从中小团队落地角度看，比较 Redis 和 Memcached 在 缓存服务 里的 性能表现",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "repair-comparison-003",
+      "prompt": "如果要尽快推进，比较 PostgreSQL 和 MySQL 在 中小团队 里的 成本，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "repair-comparison-004",
+      "prompt": "从中小团队落地角度看，比较 FastAPI 和 Flask 在 内部工具 里的 性能表现，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "prompt": "请给出一个稳妥的处理思路：多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "source": "quality_top_row"
+    },
+    {
+      "id": "quality-repair-comparison-005-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "repair-comparison-005"
+    },
+    {
+      "id": "quality-repair-comparison-005-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "repair-comparison-005"
+    },
+    {
+      "id": "quality-candidate-379152-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "candidate-379152"
+    },
+    {
+      "id": "quality-candidate-379152-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "candidate-379152"
+    },
+    {
+      "id": "quality-real-conflict-01",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "source_row": "real-conflict"
+    },
+    {
+      "id": "quality-real-conflict-02",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "source_row": "real-conflict"
+    },
+    {
+      "id": "quality-real-conflict-03",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "source_row": "real-conflict"
+    },
+    {
+      "id": "quality-real-conflict-04",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "source_row": "real-conflict"
+    },
+    {
+      "id": "quality-repair-comparison-001-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "repair-comparison-001"
+    },
+    {
+      "id": "quality-repair-comparison-001-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "repair-comparison-001"
+    },
+    {
+      "id": "quality-repair-comparison-002-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "repair-comparison-002"
+    },
+    {
+      "id": "quality-repair-comparison-002-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "repair-comparison-002"
+    },
+    {
+      "id": "quality-repair-comparison-003-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "repair-comparison-003"
+    },
+    {
+      "id": "quality-repair-comparison-003-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "repair-comparison-003"
+    },
+    {
+      "id": "quality-repair-comparison-004-01",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
+      "source_row": "repair-comparison-004"
+    },
+    {
+      "id": "quality-repair-comparison-004-02",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "source_row": "repair-comparison-004"
+    },
+    {
+      "id": "quality-repair-conflict_detection-017-01",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "source_row": "repair-conflict_detection-017"
+    },
+    {
+      "id": "quality-repair-conflict_detection-017-02",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "source_row": "repair-conflict_detection-017"
+    },
+    {
+      "id": "quality-repair-conflict_detection-017-03",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "source_row": "repair-conflict_detection-017"
+    },
+    {
+      "id": "quality-repair-conflict_detection-017-04",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "source_row": "repair-conflict_detection-017"
+    }
+  ]
+}

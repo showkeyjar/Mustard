@@ -12,6 +12,9 @@ DEFAULT_CONTROLS: dict[str, dict[str, float | int]] = {
         "verify_bonus": 0.0,
         "think_penalty": 0.0,
         "answer_penalty": 0.0,
+        "require_conflict_verify_before_answer": 0,
+        "prefer_calculator_for_mixed_numeric_code": 0,
+        "prefer_search_for_comparison_evidence": 0,
     },
     "glance": {
         "budget": 1,
