@@ -77,9 +77,11 @@ def _summarize_failures(real_prompt_eval: dict[str, object]) -> list[dict[str, o
 def build_current_best_payload(root: Path) -> dict[str, object]:
     train_report_path = root / "data" / "train_runs" / "auto_train_latest.json"
     latest_real_prompt_eval_path = root / "data" / "eval" / "real_prompt_eval_latest.json"
+    reasoning_pattern_report_path = root / "artifacts" / "reasoning_pattern_codec_latest.json"
 
     train_report = _read_json(train_report_path)
     latest_real_prompt_eval = _read_json(latest_real_prompt_eval_path)
+    reasoning_pattern_report = _read_json(reasoning_pattern_report_path)
     real_prompt_eval, real_prompt_eval_source = _select_real_prompt_eval(train_report, latest_real_prompt_eval)
 
     dataset = train_report.get("dataset", {})
@@ -106,6 +108,9 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
     failures = _summarize_failures(real_prompt_eval)
     pretrained_match_rate = float(real_prompt_summary.get("pretrained_match_rate", 0.0) or 0.0)
     status = "healthy" if pretrained_match_rate >= 0.9 and not failures else "needs_attention"
+    reasoning_summary = reasoning_pattern_report.get("summary", {})
+    if not isinstance(reasoning_summary, dict):
+        reasoning_summary = {}
 
     return {
         "generated_at_utc": _utc_now(),
@@ -122,6 +127,11 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
         "sources": {
             "train_report": str(train_report_path),
             "real_prompt_eval": real_prompt_eval_source,
+            "reasoning_pattern_codec": (
+                str(reasoning_pattern_report_path)
+                if reasoning_pattern_report
+                else ""
+            ),
         },
         "artifacts": {
             "pretrain_artifact_dir": str(pretraining.get("artifact_dir", "")),
@@ -142,6 +152,12 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
             "real_prompt_match_rate": pretrained_match_rate,
             "critical_failure_count": len(failures),
             "avg_steps": float(real_prompt_summary.get("pretrained_avg_steps", 0.0) or 0.0),
+            "hard_logic_count": int(reasoning_summary.get("hard_logic_count", 0) or 0),
+            "hard_logic_avg_fit_score": float(reasoning_summary.get("hard_logic_avg_fit_score", 0.0) or 0.0),
+            "residual_explanation_rate": float(reasoning_summary.get("residual_explanation_rate", 0.0) or 0.0),
+            "verify_when_residual_risky_rate": float(
+                reasoning_summary.get("verify_when_residual_risky_rate", 0.0) or 0.0
+            ),
         },
         "key_failures": failures,
     }

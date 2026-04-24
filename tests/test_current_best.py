@@ -70,12 +70,29 @@ class CurrentBestTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts" / "reasoning_pattern_codec_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "hard_logic_count": 7,
+                            "hard_logic_avg_fit_score": 0.81,
+                            "residual_explanation_rate": 0.6,
+                            "verify_when_residual_risky_rate": 0.5,
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             payload = build_current_best_payload(root)
             self.assertEqual(payload["best_run_id"], "run-123")
             self.assertEqual(payload["summary"]["real_prompt_count"], 20)
             self.assertEqual(payload["summary"]["real_prompt_match_rate"], 1.0)
             self.assertEqual(payload["summary"]["critical_failure_count"], 0)
+            self.assertEqual(payload["summary"]["hard_logic_count"], 7)
+            self.assertEqual(payload["summary"]["residual_explanation_rate"], 0.6)
             self.assertEqual(payload["status"], "healthy")
 
     def test_write_current_best_creates_file(self) -> None:

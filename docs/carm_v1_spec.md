@@ -21,7 +21,8 @@ Provide a runnable architecture prototype for a compact reasoning-centric agent 
 
 ## Next steps
 
-1. Upgrade offline replay pretraining into a reproducible batch-training pipeline.
-2. Replace heuristic core with a recurrent or state-space module.
-3. Expand user evolution signals into richer reward shaping and safety constraints.
-4. Add persistent multi-session working memory and evaluation harness.
+1. Build an offline hard-logic eval pack for conflict detection, result integration, tool boundaries, and termination judgment.
+2. Prototype a VQR-inspired reasoning pattern codec: `pattern_id + residual_features + fit_score + reconstruction_notes`.
+3. Compare the current latent/slot representation against the pattern/residual representation before changing runtime behavior.
+4. Upgrade offline replay pretraining only after the new representation proves useful on hard-logic evals.
+5. Keep desktop bridge and proactive behavior as secondary tracks until core reasoning metrics improve.
