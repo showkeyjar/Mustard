@@ -1,78 +1,23 @@
 {
   "track": "real_prompt_coverage",
-  "current_candidate_id": "real_prompt_coverage_20260425T132955Z",
-  "parent_candidate_id": "real_prompt_coverage_20260425T132848Z",
-  "top_gap": "repeated_conflict_detection_gap",
-  "target_prompt_count": 20,
-  "current_prompt_count": 20,
-  "current_match_rate": 0.9,
-  "baseline_match_rate": 0.9,
-  "mismatch_case_count": 2,
-  "allowed_operators": [
-    "expand_eval_set",
-    "filter_candidate_pool",
-    "repair_label_mapping",
-    "rerun_eval",
-    "stress_conflict_detection_gap",
-    "promote_baseline"
-  ],
-  "history": [
-    {
-      "candidate_id": "real_prompt_coverage_20260424T110807Z",
-      "status": "in_progress",
-      "decision": "stabilize_quality_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260424T110807Z"
-    },
-    {
-      "candidate_id": "real_prompt_coverage_20260425T122114Z",
-      "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T122114Z"
-    },
-    {
-      "candidate_id": "real_prompt_coverage_20260425T122322Z",
-      "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T122322Z"
-    },
-    {
-      "candidate_id": "real_prompt_coverage_20260425T123318Z",
-      "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T123318Z"
-    },
-    {
-      "candidate_id": "real_prompt_coverage_20260425T132848Z",
-      "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T132848Z"
-    },
-    {
-      "candidate_id": "real_prompt_coverage_20260425T132955Z",
-      "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T132955Z"
-    }
-  ],
-  "last_operator_result": {
+  "candidate_id": "real_prompt_coverage_20260425T132848Z",
+  "parent_id": "real_prompt_coverage_20260425T123318Z",
+  "operator": "stress_conflict_detection_gap",
+  "decision": "stress_conflict_detection_gap",
+  "status": "in_progress",
+  "signals": {
+    "current_prompt_count": 20,
+    "target_prompt_count": 20,
+    "current_match_rate": 0.9,
+    "baseline_match_rate": 0.9,
+    "mismatch_case_count": 2
+  },
+  "operator_result": {
     "executed": true,
     "reason": "stress_conflict_detection_gap",
     "generated_count": 4,
     "stress_eval_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval.json",
     "stress_result_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval_result.json",
-    "result_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval_result.json",
     "repair_operator": "stress_conflict_detection_gap",
     "repair_hint": "review generated stress rows before merging any prompt into default eval",
     "stress_eval": {
@@ -203,5 +148,5 @@
       "repair_hint": "inject_conflict_detection_variants"
     }
   },
-  "updated_at_utc": "20260425T132955Z"
+  "created_at_utc": "20260425T132848Z"
 }

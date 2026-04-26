@@ -12,11 +12,13 @@ from scripts.team_conductor import (
     _load_active_failure_pattern_ids,
     _load_research_recovery_state,
     _mutation_strategies_for_logic_skill,
+    _maybe_execute_real_prompt_operator,
     _run_frontier_intake_operator,
     _run_high_information_sampling_operator,
     _run_soft_feedback_operator,
     _select_high_information_parent_rows,
     _select_research_recovery_operators,
+    _select_top_gap,
     bootstrap_workspace,
     build_proposals,
     run_cycle,
@@ -350,6 +352,48 @@ class TeamConductorTests(unittest.TestCase):
         self.assertIn("code_vs_search", _mutation_strategies_for_logic_skill("tool_selection"))
         self.assertIn("ambiguous_stop", _mutation_strategies_for_logic_skill("termination_judgment"))
 
+    def test_maybe_execute_real_prompt_operator_runs_conflict_stress_pack_without_merging_config(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            original_prompts = [
+                {
+                    "id": f"seed-{idx:02d}",
+                    "prompt": f"seed prompt {idx}",
+                    "expected_tool": "search",
+                    "logic_skill": "comparison",
+                }
+                for idx in range(20)
+            ]
+            (root / "configs" / "real_prompt_eval.json").write_text(
+                json.dumps({"prompts": original_prompts}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+            result = _maybe_execute_real_prompt_operator(
+                root,
+                {
+                    "primary_failure_pattern": "repeated_conflict_detection_gap",
+                    "real_prompt_eval": {
+                        "summary": {
+                            "prompt_count": 20,
+                            "baseline_match_rate": 0.9,
+                            "pretrained_match_rate": 0.9,
+                        },
+                        "rows": [],
+                    },
+                },
+            )
+
+            self.assertTrue(result["executed"])
+            self.assertEqual(result["reason"], "stress_conflict_detection_gap")
+            self.assertEqual(result["generated_count"], 4)
+            self.assertTrue(Path(result["stress_eval_path"]).exists())
+            self.assertTrue(Path(result["stress_result_path"]).exists())
+            self.assertEqual(result["result_path"], result["stress_result_path"])
+            config_after = json.loads((root / "configs" / "real_prompt_eval.json").read_text(encoding="utf-8"))
+            self.assertEqual(config_after["prompts"], original_prompts)
+
     def test_cluster_recovery_variants_creates_specific_pattern_ids(self) -> None:
         clusters = _cluster_recovery_variants(
             [
@@ -641,6 +685,39 @@ class TeamConductorTests(unittest.TestCase):
         self.assertEqual(len(proposals), 1)
         self.assertEqual(proposals[0]["title"], "Bootstrap bridge feedback capture without changing defaults")
 
+    def test_select_top_gap_uses_quality_stabilization_when_research_quality_missing(self) -> None:
+        card = _select_top_gap(
+            {
+                "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                "quality_stabilization": {"high_signal_count": 2},
+            }
+        )
+        self.assertEqual(card["gap_id"], "quality_stabilization")
+        self.assertEqual(card["current"], "high_signal_count=2")
+        self.assertEqual(card["gap"], 2)
+
+    def test_build_proposals_uses_current_top_gap_for_specific_failure_patterns(self) -> None:
+        proposals = build_proposals(
+            {
+                "signals": {
+                    "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                    "quality_stabilization": {"high_signal_count": 1},
+                    "researcher_artifact_text": "sampling blind spot remains",
+                },
+                "research_quality": {
+                    "new_failure_pattern_ids": ["repeated_conflict_detection_gap"],
+                    "blind_spot_persistence_rounds": 1,
+                    "quality_exploration_active": True,
+                },
+            },
+            {
+                "heartbeat": {"max_new_proposals_per_cycle": 1},
+                "risk_policy": {"human_gate_required_change_types": []},
+            },
+            {"last_mode": "normal", "stagnation_rounds": 0},
+        )
+        self.assertEqual(proposals[0]["from_top_gap"], "blind_spot_not_broken")
+
     def test_load_active_failure_pattern_ids_reads_auto_incidents(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -759,6 +836,91 @@ class TeamConductorTests(unittest.TestCase):
             self.assertTrue("- first_from_failure_pattern:" in architect_text or "- first_from_top_gap:" in architect_text)
             self.assertIn("- primary_proposal_title:", digest_text)
             self.assertIn("- primary_architect_handoff:", digest_text)
+
+    def test_run_cycle_retries_real_prompt_operator_after_primary_proposal_sets_failure_pattern(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "review").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "evolution").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "incidents").mkdir(parents=True, exist_ok=True)
+
+            (root / "configs" / "team_cycle.json").write_text(
+                json.dumps(
+                    {
+                        "team_name": "mustard-claw",
+                        "heartbeat": {"max_new_proposals_per_cycle": 1},
+                        "risk_policy": {"human_gate_required_change_types": []},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "configs" / "real_prompt_eval.json").write_text(
+                json.dumps(
+                    {
+                        "prompts": [
+                            {
+                                "id": f"seed-{idx:02d}",
+                                "prompt": f"seed prompt {idx}",
+                                "expected_tool": "search",
+                                "logic_skill": "comparison",
+                            }
+                            for idx in range(20)
+                        ]
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "evolution" / "research_recovery_variants.json").write_text(
+                json.dumps(
+                    {
+                        "clusters": [
+                            {
+                                "pattern_id": "repeated_conflict_detection_gap",
+                                "logic_skill": "conflict_detection",
+                                "count": 1,
+                                "avg_source_score": 6,
+                                "top_mutations": ["contradictory_authority"],
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "review" / "reviews.jsonl").write_text("", encoding="utf-8")
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run_stress",
+                        "dataset": {"sample_count": 186},
+                        "evaluation": {
+                            "real_prompt_eval": {
+                                "summary": {
+                                    "prompt_count": 20,
+                                    "baseline_match_rate": 0.9,
+                                    "pretrained_match_rate": 0.9,
+                                },
+                                "rows": [],
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
+
+            self.assertTrue(result["operator_result"]["executed"])
+            self.assertEqual(result["operator_result"]["reason"], "stress_conflict_detection_gap")
+            self.assertTrue((root / "data" / "evolution" / "conflict_detection_stress_eval.json").exists())
 
 
 if __name__ == "__main__":

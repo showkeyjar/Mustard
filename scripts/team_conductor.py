@@ -1143,6 +1143,8 @@ def build_proposals(
     research_quality = digest.get("research_quality", {})
     if not isinstance(research_quality, dict):
         research_quality = {}
+    signals = dict(signals)
+    signals["research_quality"] = research_quality
     new_failure_pattern_ids = research_quality.get("new_failure_pattern_ids", [])
     if not isinstance(new_failure_pattern_ids, list):
         new_failure_pattern_ids = []
@@ -1152,6 +1154,7 @@ def build_proposals(
     reasons = research_quality.get("reasons", [])
     if not isinstance(reasons, list):
         reasons = []
+    current_top_gap = str(_select_top_gap(signals).get("gap_id", "unknown") or "unknown")
     if "bridge_zero_feedback_persistence" in reasons:
         active_failure_pattern_ids.add("no_tool_feedback_loop")
     if "frontier_zero_signal_persistence" in reasons:
@@ -1174,7 +1177,7 @@ def build_proposals(
                 "problem": "高信息恢复采样连续指向 conflict_detection 弱点，说明该簇已足够具体，不能继续只按总括 blind spot 处理。",
                 "evidence": ["failure_pattern=repeated_conflict_detection_gap", f"stagnation_rounds={stagnation_rounds}"],
                 "from_failure_pattern": "repeated_conflict_detection_gap",
-                "from_top_gap": "new_failure_pattern_stalled",
+                "from_top_gap": current_top_gap,
                 "change_type": "evaluation_or_dataset",
                 "proposed_change": "围绕 contradictory_authority / missing_evidence 两类 mutation 新增定向 prompts，并把 conflict_detection 作为专项压测包维护。",
                 "expected_metric_delta": "要么暴露新的 conflict_detection mismatch cluster，要么证明该专项簇在更强压力下仍稳定通过。",
@@ -1198,7 +1201,7 @@ def build_proposals(
                 "problem": "comparison 簇已被高信息恢复采样具体化，当前需要从总括 blind spot 升级为 source-ranking 专项验证。",
                 "evidence": ["failure_pattern=comparison_under_conflicting_sources", f"stagnation_rounds={stagnation_rounds}"],
                 "from_failure_pattern": "comparison_under_conflicting_sources",
-                "from_top_gap": "new_failure_pattern_stalled",
+                "from_top_gap": current_top_gap,
                 "change_type": "evaluation_or_dataset",
                 "proposed_change": "新增 conflicting_sources 场景下的 comparison prompts，要求显式比较来源可信度与冲突证据。",
                 "expected_metric_delta": "要么暴露 comparison 逻辑下的新 mismatch，要么确认该专项簇可稳定处理来源冲突。",
@@ -1222,7 +1225,7 @@ def build_proposals(
                 "problem": "tool_selection 的边界弱点已具体化，当前需要把 calculator_vs_search 场景升级为专项验证对象。",
                 "evidence": ["failure_pattern=tool_boundary_sampling_gap", f"stagnation_rounds={stagnation_rounds}"],
                 "from_failure_pattern": "tool_boundary_sampling_gap",
-                "from_top_gap": "new_failure_pattern_stalled",
+                "from_top_gap": current_top_gap,
                 "change_type": "evaluation_or_dataset",
                 "proposed_change": "新增 calculator_vs_search 的边界 prompts，要求显式区分数值计算与信息检索型任务。",
                 "expected_metric_delta": "要么暴露工具边界误判的新弱点，要么确认该边界专项场景已稳定。",
@@ -1977,6 +1980,10 @@ def _select_top_gap(signals: dict[str, object]) -> dict[str, object]:
     stagnation_rounds = int(recursive_state.get("stagnation_rounds", 0) or 0)
     new_failure_pattern_count = int(research_quality.get("new_failure_pattern_count", 0) or 0)
     high_signal_count = int(research_quality.get("high_signal_count", 0) or 0)
+    if high_signal_count == 0:
+        quality_stabilization = signals.get("quality_stabilization", {})
+        if isinstance(quality_stabilization, dict):
+            high_signal_count = int(quality_stabilization.get("high_signal_count", 0) or 0)
     quality_exploration_active = bool(research_quality.get("quality_exploration_active", False))
     blind_spot_persistence_rounds = int(research_quality.get("blind_spot_persistence_rounds", 0) or 0)
     zero_bridge_feedback_streak = int(research_quality.get("zero_bridge_feedback_streak", 0) or 0)
@@ -3168,12 +3175,90 @@ def _apply_expand_eval_set_operator(root: Path, track_state: dict[str, object]) 
     return result
 
 
+def _apply_conflict_detection_stress_operator(root: Path, track_state: dict[str, object]) -> dict[str, object]:
+    existing_keys = {_normalize_text(str(item.get("prompt", ""))) for item in _load_real_prompt_config(root)}
+    templates = [
+        (
+            "contradictory_authority",
+            "新版官方文档要求数据库迁移前先开启只读窗口，但供应商支持邮件说当前版本可以不停机迁移；内部 runbook 又沿用三年前流程。用户要求你立即给最终行动建议。你应先如何核验证据冲突，哪些结论暂时不能直接给？",
+        ),
+        (
+            "missing_evidence",
+            "两份事故复盘对根因判断相反：一份认为是参数配置导致，另一份认为是版本兼容性导致。现在缺少日志、版本号和压测记录，但负责人催你给修复动作。你应如何处理冲突并限制建议范围？",
+        ),
+        (
+            "authority_rank_flip",
+            "官方 FAQ、社区高赞文章和内部旧手册对同一个数据库参数给出相反建议。社区文章更新、更具体，但官方 FAQ 权威更高。若用户要求直接改配置，你第一步应查什么，如何避免把冲突来源误合并成结论？",
+        ),
+        (
+            "forced_action_boundary",
+            "生产窗口只剩 15 分钟，A 来源建议先回滚，B 来源建议继续迁移，C 来源建议执行高风险热修复。当前没有监控截图和演练结果。你需要给出下一步，但不能越过证据边界；应如何回答？",
+        ),
+    ]
+
+    prompts: list[dict[str, object]] = []
+    for idx, (mutation, prompt) in enumerate(templates, start=1):
+        key = _normalize_text(prompt)
+        if not key or key in existing_keys:
+            continue
+        prompts.append(
+            {
+                "id": f"stress-conflict-detection-{idx:03d}",
+                "prompt": prompt,
+                "expected_tool": "search",
+                "logic_skill": "conflict_detection",
+                "mutation": mutation,
+                "source": "stress_conflict_detection_gap",
+                "primary_failure_pattern": str(track_state.get("primary_failure_pattern", "")),
+            }
+        )
+
+    eval_path = root / "data" / "evolution" / "conflict_detection_stress_eval.json"
+    result_path = root / "data" / "evolution" / "conflict_detection_stress_eval_result.json"
+    eval_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_path.write_text(json.dumps({"prompts": prompts}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    result: dict[str, object] = {
+        "executed": True,
+        "reason": "stress_conflict_detection_gap",
+        "generated_count": len(prompts),
+        "stress_eval_path": str(eval_path),
+        "stress_result_path": str(result_path),
+        "result_path": str(result_path),
+        "repair_operator": "stress_conflict_detection_gap",
+        "repair_hint": "review generated stress rows before merging any prompt into default eval",
+    }
+
+    try:
+        proc = subprocess.run(
+            ["python", "-m", "scripts.evaluate_real_prompts", str(eval_path)],
+            cwd=str(root),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(proc.stdout)
+        result_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["stress_eval"] = payload
+    except Exception as exc:
+        error_payload = {"executed": False, "reason": str(exc), "prompt_count": len(prompts)}
+        result_path.write_text(json.dumps(error_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["evaluation_error"] = str(exc)
+
+    return result
+
+
 def _maybe_execute_real_prompt_operator(root: Path, signals: dict[str, object]) -> dict[str, object]:
     track_state = _build_real_prompt_track_state(signals)
-    if str(track_state.get("operator", "")) != "expand_eval_set":
+    operator = str(track_state.get("operator", ""))
+    if operator == "expand_eval_set":
+        apply_operator = _apply_expand_eval_set_operator
+    elif operator == "stress_conflict_detection_gap":
+        apply_operator = _apply_conflict_detection_stress_operator
+    else:
         return {"executed": False, "reason": "operator_not_needed", "track_state": track_state}
     try:
-        result = _apply_expand_eval_set_operator(root, track_state)
+        result = apply_operator(root, track_state)
         result["track_state"] = track_state
         return result
     except Exception as exc:
@@ -3748,6 +3833,7 @@ def _write_evolution_artifacts(root: Path, signals: dict[str, object], operator_
             "filter_candidate_pool",
             "repair_label_mapping",
             "rerun_eval",
+            "stress_conflict_detection_gap",
             "promote_baseline",
         ],
         "history": history[-20:],
@@ -4047,6 +4133,11 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
             digest["primary_failure_pattern"] = signals["primary_failure_pattern"]
             digest["primary_top_gap"] = signals["primary_top_gap"]
 
+    if not bool(operator_result.get("executed", False)):
+        retry_operator_result = _maybe_execute_real_prompt_operator(root, signals)
+        if bool(retry_operator_result.get("executed", False)):
+            operator_result = retry_operator_result
+
     failure_patterns_path = _write_failure_patterns(root, signals)
     research_quality_path, research_quality = _evaluate_research_quality(
         root,
@@ -4058,6 +4149,7 @@ def run_cycle(root: Path = Path("."), config_path: Path = DEFAULT_CONFIG_PATH) -
     signals["research_quality"] = research_quality
     digest["research_quality"] = research_quality
     digest["signals"] = signals
+    top_gap_path = _write_top_gap_action_card(root, signals)
 
     direction_review = digest.get("direction_review", {})
     if not isinstance(direction_review, dict):

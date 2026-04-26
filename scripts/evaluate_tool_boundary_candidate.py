@@ -45,6 +45,7 @@ def evaluate_candidate(output_path: Path = Path("artifacts/tool_boundary_candida
                 {
                     "policy": {
                         "prefer_calculator_for_mixed_numeric_code": 1,
+                        "require_conflict_verify_before_answer": 1,
                     }
                 },
                 ensure_ascii=False,
@@ -85,6 +86,7 @@ def evaluate_candidate(output_path: Path = Path("artifacts/tool_boundary_candida
         "prompt": REAL_MIXED_PROMPT,
         "control": {
             "policy.prefer_calculator_for_mixed_numeric_code": 1,
+            "policy.require_conflict_verify_before_answer": 1,
         },
         "artifact_dir": str(artifact_dir),
         "expected_tool": target_row["expected_tool"],

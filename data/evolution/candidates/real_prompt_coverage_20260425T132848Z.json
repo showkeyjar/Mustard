@@ -1,0 +1,33 @@
+{
+  "id": "real_prompt_coverage_20260425T132848Z",
+  "parent_id": "real_prompt_coverage_20260425T123318Z",
+  "track": "real_prompt_coverage",
+  "target_gap": "repeated_conflict_detection_gap",
+  "operator": "stress_conflict_detection_gap",
+  "operator_args": {
+    "target_prompt_count": 20,
+    "current_prompt_count": 20,
+    "primary_failure_pattern": "repeated_conflict_detection_gap"
+  },
+  "hypothesis": "Increase contradictory_authority / missing_evidence pressure until repeated_conflict_detection_gap either yields a new mismatch cluster or is proven robust.",
+  "expected_metric_delta": {
+    "specialized_conflict_detection_prompts": 4,
+    "pretrained_match_rate": 0.0
+  },
+  "artifact_paths": {
+    "real_prompt_eval": "D:\\codes\\Mustard\\data\\eval\\real_prompt_eval_latest.json",
+    "real_prompt_config": "D:\\codes\\Mustard\\configs\\real_prompt_eval.json"
+  },
+  "status": "in_progress",
+  "score": {
+    "prompt_count": 20,
+    "pretrained_match_rate": 0.9,
+    "mismatch_case_count": 2
+  },
+  "decision": "stress_conflict_detection_gap",
+  "failure_reason": "stress_conflict_detection_gap",
+  "repair_hint": "review generated stress rows before merging any prompt into default eval",
+  "repair_operator": "stress_conflict_detection_gap",
+  "missing_logic_skills": [],
+  "created_at_utc": "20260425T132848Z"
+}

@@ -1,27 +1,24 @@
 {
   "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
   "control": {
-    "policy.prefer_calculator_for_mixed_numeric_code": 1
+    "policy.prefer_calculator_for_mixed_numeric_code": 1,
+    "policy.require_conflict_verify_before_answer": 1
   },
   "artifact_dir": "data\\pretrain",
   "expected_tool": "calculator",
-  "baseline_tool": "code_executor",
+  "baseline_tool": "calculator",
   "candidate_tool": "calculator",
   "baseline_actions": [
-    "WRITE_MEM",
     "CALL_TOOL",
-    "WRITE_MEM",
     "WRITE_MEM",
     "ANSWER"
   ],
   "candidate_actions": [
-    "WRITE_MEM",
     "CALL_TOOL",
-    "WRITE_MEM",
     "WRITE_MEM",
     "ANSWER"
   ],
-  "candidate_changes_tool": true,
+  "candidate_changes_tool": false,
   "guard_summary": {
     "case_count": 3,
     "candidate_match_rate": 1.0,
@@ -29,8 +26,8 @@
   },
   "real_prompt_summary": {
     "prompt_count": 20,
-    "pretrained_match_rate": 0.95,
-    "pretrained_avg_steps": 5.85
+    "pretrained_match_rate": 1.0,
+    "pretrained_avg_steps": 3.65
   },
   "hard_eval_summary": {
     "pass_rate": 1.0,
@@ -41,25 +38,21 @@
       "id": "mixed-numeric-code",
       "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
       "expected_tool": "calculator",
-      "baseline_tool": "code_executor",
+      "baseline_tool": "calculator",
       "candidate_tool": "calculator",
-      "baseline_match": false,
+      "baseline_match": true,
       "candidate_match": true,
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
       "candidate_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
-      "candidate_changes_tool": true
+      "candidate_changes_tool": false
     },
     {
       "id": "plain-code",
@@ -70,15 +63,11 @@
       "baseline_match": true,
       "candidate_match": true,
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "candidate_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -94,19 +83,13 @@
       "baseline_match": true,
       "candidate_match": true,
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "candidate_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "candidate_changes_tool": false
@@ -119,8 +102,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -135,7 +116,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -146,8 +126,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -160,7 +138,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -175,14 +152,9 @@
       "expected_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_match": true
     },
@@ -192,8 +164,6 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -206,11 +176,8 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -221,11 +188,8 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -236,8 +200,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -250,11 +212,8 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -265,8 +224,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -279,14 +236,9 @@
       "expected_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_match": true
     },
@@ -296,8 +248,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -311,7 +261,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -326,8 +275,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -341,7 +288,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -356,8 +302,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -371,7 +315,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -386,8 +329,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -399,16 +340,14 @@
       "id": "repair-comparison-005",
       "logic_skill": "comparison",
       "expected_tool": "search",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
         "ANSWER"
       ],
-      "pretrained_match": false
+      "pretrained_match": true
     }
   ],
   "decision": "candidate_pass"

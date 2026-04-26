@@ -1,0 +1,79 @@
+{
+  "summary": {
+    "episode_count": 20,
+    "node_count": 106,
+    "focus_continuity": 1.0,
+    "evidence_grounding": 0.625,
+    "residual_resolution": 0.8718,
+    "premature_release_rate": 0.0556,
+    "attention_compression_ratio": 1.0,
+    "risky_residual_count": 39,
+    "premature_release_count": 1
+  },
+  "focus_counts": {
+    "draft": 26,
+    "release": 18,
+    "evidence": 17,
+    "goal": 17,
+    "external_synthesis": 15,
+    "verification": 7,
+    "plan": 6
+  },
+  "residual_counts": {
+    "missing_evidence": 23,
+    "conflict_unresolved": 16,
+    "negative_reward_pressure": 10,
+    "tool_boundary_ambiguous": 5
+  },
+  "transition_counts": {
+    "evidence_to_draft": 17,
+    "start_to_goal": 17,
+    "draft_to_release": 11,
+    "goal_to_evidence": 11,
+    "hold_external_synthesis": 10,
+    "draft_to_verification": 7,
+    "verification_to_release": 7,
+    "goal_to_plan": 6,
+    "hold_draft": 6,
+    "plan_to_evidence": 6,
+    "external_synthesis_to_draft": 3,
+    "draft_to_evidence": 2,
+    "start_to_external_synthesis": 2,
+    "start_to_evidence": 1
+  },
+  "premature_release_nodes": [
+    {
+      "episode_id": "eval:real-mixed",
+      "step_idx": 5,
+      "action": "ANSWER",
+      "focus_target": "release",
+      "focus_reason": "Focus release because residual pressure remains: tool_boundary_ambiguous, negative_reward_pressure.",
+      "evidence_need": [
+        "precise_numeric_result",
+        "executable_validation"
+      ],
+      "residual_pressure": [
+        "tool_boundary_ambiguous",
+        "negative_reward_pressure"
+      ],
+      "transition": "draft_to_release",
+      "release_condition": "released_with_risky_residuals",
+      "model_view": "focus=release; transition=draft_to_release; evidence_need=precise_numeric_result,executable_validation; residual_pressure=tool_boundary_ambiguous,negative_reward_pressure; recommended_action=ANSWER; release_condition=released_with_risky_residuals",
+      "source_step": {
+        "target_slot": "",
+        "selected_tool": "",
+        "reward": -0.4,
+        "reward_reason": "eval_projection",
+        "state_signature": {},
+        "memory_signature": {
+          "has_result": true,
+          "has_draft": true,
+          "has_conflict": false
+        }
+      }
+    }
+  ],
+  "sources": {
+    "attention_flow": "data\\attention\\attention_flow.jsonl"
+  }
+}

@@ -13,6 +13,7 @@ CONTROLS = {
     "policy": {
         "prefer_calculator_for_mixed_numeric_code": 1,
         "prefer_search_for_comparison_evidence": 1,
+        "require_conflict_verify_before_answer": 1,
     }
 }
 
@@ -42,6 +43,7 @@ def evaluate_candidate(output_path: Path = Path("artifacts/combined_tool_policy_
         "control": {
             "policy.prefer_calculator_for_mixed_numeric_code": 1,
             "policy.prefer_search_for_comparison_evidence": 1,
+            "policy.require_conflict_verify_before_answer": 1,
         },
         "artifact_dir": str(artifact_dir),
         "real_prompt_summary": real_summary,

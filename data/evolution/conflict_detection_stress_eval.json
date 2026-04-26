@@ -1,0 +1,40 @@
+{
+  "prompts": [
+    {
+      "id": "stress-conflict-detection-001",
+      "prompt": "新版官方文档要求数据库迁移前先开启只读窗口，但供应商支持邮件说当前版本可以不停机迁移；内部 runbook 又沿用三年前流程。用户要求你立即给最终行动建议。你应先如何核验证据冲突，哪些结论暂时不能直接给？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "mutation": "contradictory_authority",
+      "source": "stress_conflict_detection_gap",
+      "primary_failure_pattern": "repeated_conflict_detection_gap"
+    },
+    {
+      "id": "stress-conflict-detection-002",
+      "prompt": "两份事故复盘对根因判断相反：一份认为是参数配置导致，另一份认为是版本兼容性导致。现在缺少日志、版本号和压测记录，但负责人催你给修复动作。你应如何处理冲突并限制建议范围？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "mutation": "missing_evidence",
+      "source": "stress_conflict_detection_gap",
+      "primary_failure_pattern": "repeated_conflict_detection_gap"
+    },
+    {
+      "id": "stress-conflict-detection-003",
+      "prompt": "官方 FAQ、社区高赞文章和内部旧手册对同一个数据库参数给出相反建议。社区文章更新、更具体，但官方 FAQ 权威更高。若用户要求直接改配置，你第一步应查什么，如何避免把冲突来源误合并成结论？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "mutation": "authority_rank_flip",
+      "source": "stress_conflict_detection_gap",
+      "primary_failure_pattern": "repeated_conflict_detection_gap"
+    },
+    {
+      "id": "stress-conflict-detection-004",
+      "prompt": "生产窗口只剩 15 分钟，A 来源建议先回滚，B 来源建议继续迁移，C 来源建议执行高风险热修复。当前没有监控截图和演练结果。你需要给出下一步，但不能越过证据边界；应如何回答？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "mutation": "forced_action_boundary",
+      "source": "stress_conflict_detection_gap",
+      "primary_failure_pattern": "repeated_conflict_detection_gap"
+    }
+  ]
+}

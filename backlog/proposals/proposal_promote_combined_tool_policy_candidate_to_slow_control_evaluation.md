@@ -1,18 +1,19 @@
 # Proposal: Promote combined tool-policy candidate to slow control evaluation
 
-- problem: 默认状态仍有两个工具边界失败：`real-mixed` 误选 `code_executor`，`repair-comparison-005` 误选 `bigmodel_proxy`。单独候选分别能修复对应失败，但默认运行时尚未改变。
+- problem: 默认状态仍有工具边界与 hard-eval 安全失败：`real-mixed` 误选 `code_executor`，`repair-comparison-005` 误选 `bigmodel_proxy`，冲突场景还需要保持 verify-before-answer 护栏。单独候选分别能修复对应失败，但默认运行时尚未改变。
 - evidence:
   - `artifacts/current_best.json` 默认状态仍为 `status = needs_attention`，`real_prompt_match_rate = 0.9`，`hard_eval_pass_rate = 0.8333`。
   - `artifacts/tool_boundary_candidate_latest.json` 显示 `policy.prefer_calculator_for_mixed_numeric_code=1` 可修复 `real-mixed`，完整候选 real prompt 为 `0.95`，hard eval 为 `1.0`。
   - `artifacts/comparison_search_candidate_latest.json` 显示 `policy.prefer_search_for_comparison_evidence=1` 可修复 `repair-comparison-005`，并保持管理层摘要 guard 通过。
-  - `artifacts/combined_tool_policy_candidate_latest.json` 显示组合候选完整 real prompt `pretrained_match_rate = 1.0`，hard eval `pass_rate = 1.0`。
+  - `artifacts/combined_tool_policy_candidate_latest.json` 显示组合候选完整 real prompt `pretrained_match_rate = 1.0`，hard eval `pass_rate = 1.0`，且候选评估包含 `policy.require_conflict_verify_before_answer=1` 护栏。
   - `scripts/apply_slow_path_actions.py` 已支持 slow-path action `enable_combined_tool_policy_candidate`；`tests/test_review.py::test_apply_slow_path_actions_can_stage_combined_tool_policy_candidate` 覆盖其进入 candidate rollout 的行为。
 - from_failure_pattern: tool_boundary_sampling_gap
 - from_top_gap: CARM hard logic pass rate
 - change_type: runtime_control
-- proposed_change: 经 Human Gate 批准后，通过 slow-path action `enable_combined_tool_policy_candidate` 将以下两个候选控制项一起进入慢速控制评估，而不是直接写入默认稳定控制：
+- proposed_change: 经 Human Gate 批准后，通过 slow-path action `enable_combined_tool_policy_candidate` 将以下候选控制项一起进入慢速控制评估，而不是直接写入默认稳定控制：
   - `policy.prefer_calculator_for_mixed_numeric_code = 1`
   - `policy.prefer_search_for_comparison_evidence = 1`
+  - `policy.require_conflict_verify_before_answer = 1`
 - expected_metric_delta:
   - `real_prompt_match_rate`: 0.9 -> observed 1.0 in isolated combined candidate eval
   - `hard_eval_pass_rate`: 0.8333 -> observed 1.0 in isolated combined candidate eval
@@ -27,5 +28,5 @@
   - 补充 guard：普通代码任务仍为 `code_executor`，普通计算仍为 `calculator`，管理层摘要仍为 `bigmodel_proxy`。
 - rollback_plan: 将两个控制项保持或恢复为 `0`；候选报告和提案可保留为诊断证据，不影响默认运行时。
 - needs_human_approval: true
-- relative_to_last_round: 相比单点候选，本提案验证了组合策略能同时修复两个默认失败，并在当前完整 real prompt 与 hard eval 上达成全绿。
+- relative_to_last_round: 相比单点候选，本提案验证了组合策略能同时修复工具边界失败，并保留 conflict verify 护栏，在当前完整 real prompt 与 hard eval 上达成全绿。
 - scenario_fit: 用户希望由人工指挥 Codex 做小步、可验证的模型能力改进；该组合候选正好覆盖当前事实源中的全部工具边界失败。

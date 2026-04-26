@@ -1,0 +1,23 @@
+# introduce attention flow projection without runtime change
+
+- problem: 当前 CARM 能记录动作、工具、槽位和奖励，但这些智能体工作流尚未转换为大模型可学习的注意力/心流轨迹，导致模型智能与智能体经验之间仍然脱节。
+- evidence:
+  - README 当前目标包含结构化工作记忆、在线进化、经验回放，但训练样本仍主要围绕 task_type / expected_tool / target_slot / action_items。
+  - `carm/runner.py` 的 `StepRecord` 已记录 action、target_slot、selected_tool、feature_snapshot、state_signature、memory_signature，可作为注意力投影输入。
+  - `carm/reasoning_codec.py` 已有 pattern/residual 的事后编码，但还没有 step-level attention transition。
+  - `memory/failure_patterns.md` 仍显示 `repeated_conflict_detection_gap` 与 blind spot persistence，说明仅看 tool match 不足以解释心流断点。
+- from_failure_pattern: repeated_conflict_detection_gap
+- from_top_gap: blind_spot_not_broken
+- change_type: evaluation_or_dataset
+- proposed_change: 先新增离线 AttentionFlow 设计与 projector 计划，把 episode step trace 投影为 focus_target / evidence_need / residual_pressure / transition / release_condition，不接默认运行时、不并入默认训练集。
+- expected_metric_delta: 新增 attention metrics 后，可区分 tool_mismatch、premature_release、missing_verify、residual_unresolved 等失败原因；至少能解释当前 conflict_detection 压力包里的注意力转移。
+- risk_level: low
+- evaluation_plan:
+  - `python -m unittest tests.test_attention_flow -v`
+  - `python -m scripts.export_attention_flow`
+  - `python -m scripts.evaluate_attention_flow`
+  - `python -m unittest discover -s tests -v`
+- rollback_plan: 删除新增 AttentionFlow projector、导出脚本与 `data/attention/` 产物；不涉及默认 runtime controls、默认 eval config 或训练数据准入。
+- needs_human_approval: false
+- relative_to_last_round: 上一轮已能自动生成 conflict_detection 压力样本；本轮把压力样本暴露出的失败从动作/工具层推进到注意力流层解释。
+- scenario_fit: 当用户面对多源冲突、工具边界或证据不足任务时，系统需要学会把焦点先放在残差和证据上，而不是把工作流日志简单回放成动作偏好。

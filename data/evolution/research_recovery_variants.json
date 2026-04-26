@@ -1,0 +1,74 @@
+{
+  "variants": [
+    {
+      "id": "recovery-variant-01",
+      "parent_case": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "mutation": "ranking_flip",
+      "mutation_reason": "parent had logic_skill=comparison and high recovery value under ranking_flip",
+      "source_score": 3,
+      "selection_reason": "high_signal_parent",
+      "source_dataset": "quality_stabilization",
+      "source_rank": 1,
+      "expected_tool": "search"
+    },
+    {
+      "id": "recovery-variant-02",
+      "parent_case": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "mutation": "missing_evidence",
+      "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under missing_evidence",
+      "source_score": 1,
+      "selection_reason": "high_signal_parent",
+      "source_dataset": "quality_stabilization",
+      "source_rank": 2,
+      "expected_tool": "search"
+    },
+    {
+      "id": "recovery-variant-03",
+      "parent_case": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "mutation": "conflicting_sources",
+      "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under conflicting_sources",
+      "source_score": 1,
+      "selection_reason": "high_signal_parent",
+      "source_dataset": "quality_stabilization",
+      "source_rank": 3,
+      "expected_tool": "search"
+    },
+    {
+      "id": "recovery-variant-04",
+      "parent_case": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "mutation": "contradictory_authority",
+      "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under contradictory_authority",
+      "source_score": 1,
+      "selection_reason": "high_signal_parent",
+      "source_dataset": "quality_stabilization",
+      "source_rank": 4,
+      "expected_tool": "search"
+    }
+  ],
+  "clusters": [
+    {
+      "pattern_id": "comparison_under_conflicting_sources",
+      "logic_skill": "comparison",
+      "count": 1,
+      "avg_source_score": 3.0,
+      "top_mutations": [
+        "ranking_flip"
+      ]
+    },
+    {
+      "pattern_id": "repeated_conflict_detection_gap",
+      "logic_skill": "conflict_detection",
+      "count": 3,
+      "avg_source_score": 1.0,
+      "top_mutations": [
+        "missing_evidence",
+        "conflicting_sources",
+        "contradictory_authority"
+      ]
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 {
   "control": {
     "policy.prefer_calculator_for_mixed_numeric_code": 1,
-    "policy.prefer_search_for_comparison_evidence": 1
+    "policy.prefer_search_for_comparison_evidence": 1,
+    "policy.require_conflict_verify_before_answer": 1
   },
   "artifact_dir": "data\\pretrain",
   "real_prompt_summary": {
     "prompt_count": 20,
     "pretrained_match_rate": 1.0,
-    "pretrained_avg_steps": 5.85
+    "pretrained_avg_steps": 3.65
   },
   "hard_eval_summary": {
     "pass_rate": 1.0,
@@ -20,8 +21,6 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -34,11 +33,9 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_TOOL",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -51,9 +48,7 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -67,7 +62,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -78,8 +72,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -92,7 +84,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -107,14 +98,9 @@
       "expected_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_match": true
     },
@@ -124,8 +110,6 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -138,11 +122,8 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -153,11 +134,8 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -168,8 +146,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -182,11 +158,8 @@
       "expected_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -197,8 +170,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -211,14 +182,9 @@
       "expected_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_match": true
     },
@@ -228,8 +194,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -243,7 +207,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -258,8 +221,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -273,7 +234,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -288,8 +248,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -303,7 +261,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -318,8 +275,6 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "VERIFY",
@@ -333,11 +288,9 @@
       "expected_tool": "search",
       "pretrained_used_tool": "search",
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_TOOL",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true

@@ -1,6 +1,13 @@
 {
   "prompts": [
     {
+      "id": "repair-comparison-005",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
       "id": "candidate-379152",
       "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
       "expected_tool": "search",
@@ -13,6 +20,62 @@
       "expected_tool": "search",
       "logic_skill": "conflict_detection",
       "promotion_reason": "context_support"
+    },
+    {
+      "id": "quality-repair-comparison-005-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-candidate-379152-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-real-conflict-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-repair-comparison-001-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-repair-comparison-002-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-repair-comparison-003-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-repair-comparison-004-02",
+      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
+      "expected_tool": "search",
+      "logic_skill": "comparison",
+      "promotion_reason": "separation_positive"
+    },
+    {
+      "id": "quality-repair-conflict_detection-017-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection",
+      "promotion_reason": "separation_positive"
     }
   ]
 }

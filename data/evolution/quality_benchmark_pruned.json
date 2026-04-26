@@ -1,17 +1,6 @@
 {
   "prompts": [
     {
-      "id": "repair-comparison-005",
-      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
       "id": "real-exec-summary",
       "prompt": "我已经收集了三份资料：官方文档、社区最佳实践、一次故障复盘。现在要写给负责人一份简洁但正式的结论，应该怎么组织？",
       "logic_skill": "result_integration",
@@ -100,17 +89,6 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-005-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
       "id": "quality-candidate-379152-01",
       "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
       "logic_skill": "comparison",
@@ -120,17 +98,6 @@
       "baseline_match": true,
       "pretrained_match": true,
       "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-candidate-379152-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
     },
     {
       "id": "quality-real-conflict-01",
@@ -155,17 +122,6 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-real-conflict-03",
-      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
       "id": "quality-real-conflict-04",
       "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
       "logic_skill": "conflict_detection",
@@ -188,17 +144,6 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-001-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
       "id": "quality-repair-comparison-002-01",
       "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
       "logic_skill": "comparison",
@@ -208,17 +153,6 @@
       "baseline_match": true,
       "pretrained_match": true,
       "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-comparison-002-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
     },
     {
       "id": "quality-repair-comparison-003-01",
@@ -232,17 +166,6 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-003-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
       "id": "quality-repair-comparison-004-01",
       "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
       "logic_skill": "comparison",
@@ -252,17 +175,6 @@
       "baseline_match": true,
       "pretrained_match": true,
       "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-comparison-004-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
     },
     {
       "id": "quality-repair-conflict_detection-017-01",
@@ -285,17 +197,6 @@
       "baseline_match": true,
       "pretrained_match": true,
       "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-conflict_detection-017-03",
-      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
     },
     {
       "id": "quality-repair-conflict_detection-017-04",

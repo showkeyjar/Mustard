@@ -378,6 +378,7 @@ class ReviewTests(unittest.TestCase):
             state = json.loads(state_path.read_text(encoding="utf-8"))
             self.assertEqual(controls["policy"]["prefer_calculator_for_mixed_numeric_code"], 1)
             self.assertEqual(controls["policy"]["prefer_search_for_comparison_evidence"], 1)
+            self.assertEqual(controls["policy"]["require_conflict_verify_before_answer"], 1)
             self.assertEqual(state["rollout_status"], "candidate")
 
     def test_rollback_runtime_controls_restores_previous_version(self) -> None:

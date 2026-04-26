@@ -89,6 +89,20 @@ class CurrentBestTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "artifacts" / "attention_flow_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "focus_continuity": 1.0,
+                            "evidence_grounding": 0.8,
+                            "residual_resolution": 0.5,
+                            "premature_release_rate": 0.25,
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             payload = build_current_best_payload(root)
             self.assertEqual(payload["best_run_id"], "run-123")
@@ -98,6 +112,9 @@ class CurrentBestTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["hard_logic_count"], 7)
             self.assertEqual(payload["summary"]["residual_explanation_rate"], 0.6)
             self.assertEqual(payload["summary"]["hard_eval_pass_rate"], 0.75)
+            self.assertEqual(payload["summary"]["attention_focus_continuity"], 1.0)
+            self.assertEqual(payload["summary"]["attention_premature_release_rate"], 0.25)
+            self.assertTrue(payload["sources"]["attention_flow"].endswith("attention_flow_latest.json"))
             self.assertEqual(payload["hard_eval_failures"], ["hard-conflict"])
             self.assertEqual(payload["status"], "needs_attention")
 

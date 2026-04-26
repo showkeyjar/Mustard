@@ -2,9 +2,9 @@
   "summary": {
     "prompt_count": 30,
     "baseline_match_rate": 0.7,
-    "pretrained_match_rate": 0.7,
+    "pretrained_match_rate": 1.0,
     "baseline_avg_steps": 5.5333,
-    "pretrained_avg_steps": 5.5333
+    "pretrained_avg_steps": 3.5333
   },
   "rows": [
     {
@@ -12,7 +12,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "WRITE_MEM",
@@ -21,14 +21,13 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "candidate-379152",
@@ -44,8 +43,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -68,11 +65,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -95,14 +90,9 @@
         "CALL_BIGMODEL"
       ],
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true
@@ -124,14 +114,9 @@
         "CALL_BIGMODEL"
       ],
       "pretrained_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true
@@ -150,10 +135,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -173,10 +157,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -196,10 +179,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -219,10 +201,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -243,7 +224,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
@@ -267,8 +247,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -281,7 +259,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -290,14 +268,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-candidate-379152-01",
@@ -313,8 +289,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -327,7 +301,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -336,14 +310,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-real-conflict-01",
@@ -360,11 +332,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -385,11 +355,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -400,7 +368,7 @@
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -410,15 +378,13 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-real-conflict-04",
@@ -435,11 +401,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -459,8 +423,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -473,7 +435,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -482,14 +444,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-repair-comparison-002-01",
@@ -505,8 +465,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -519,7 +477,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -528,14 +486,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-repair-comparison-003-01",
@@ -551,8 +507,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -565,7 +519,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -574,14 +528,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-repair-comparison-004-01",
@@ -597,8 +549,6 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -611,7 +561,7 @@
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -620,14 +570,12 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
+        "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-repair-conflict_detection-017-01",
@@ -644,11 +592,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -669,11 +615,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -684,7 +628,7 @@
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_BIGMODEL",
@@ -694,15 +638,13 @@
         "ANSWER"
       ],
       "pretrained_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": true
     },
     {
       "id": "quality-repair-conflict_detection-017-04",
@@ -719,11 +661,9 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,

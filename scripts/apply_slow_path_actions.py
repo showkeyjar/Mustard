@@ -64,9 +64,11 @@ def apply_action(controls: dict[str, dict[str, float | int]], action: dict[str, 
         policy = updated["policy"]
         before_calc = int(policy.get("prefer_calculator_for_mixed_numeric_code", 0) or 0)
         before_search = int(policy.get("prefer_search_for_comparison_evidence", 0) or 0)
+        before_conflict_verify = int(policy.get("require_conflict_verify_before_answer", 0) or 0)
         policy["prefer_calculator_for_mixed_numeric_code"] = 1
         policy["prefer_search_for_comparison_evidence"] = 1
-        applied = before_calc != 1 or before_search != 1
+        policy["require_conflict_verify_before_answer"] = 1
+        applied = before_calc != 1 or before_search != 1 or before_conflict_verify != 1
         changes.extend(
             [
                 {
@@ -77,6 +79,11 @@ def apply_action(controls: dict[str, dict[str, float | int]], action: dict[str, 
                 {
                     "path": "policy.prefer_search_for_comparison_evidence",
                     "before": before_search,
+                    "after": 1,
+                },
+                {
+                    "path": "policy.require_conflict_verify_before_answer",
+                    "before": before_conflict_verify,
                     "after": 1,
                 },
             ]

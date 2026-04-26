@@ -4,12 +4,12 @@
 - evidence:
   - `data/eval/real_prompt_eval_latest.json` 中 `real-mixed.pretrained_used_tool = code_executor`，`expected_tool = calculator`。
   - `artifacts/reasoning_pattern_codec_latest.json` 中 `hard_eval.failed_case_ids = ["real-mixed"]`。
-  - `artifacts/tool_boundary_candidate_latest.json` 显示默认工具为 `code_executor`，候选控制 `policy.prefer_calculator_for_mixed_numeric_code=1` 后工具变为 `calculator`。
+  - `artifacts/tool_boundary_candidate_latest.json` 显示默认工具为 `code_executor`，候选控制 `policy.prefer_calculator_for_mixed_numeric_code=1` 后工具变为 `calculator`，并在隔离评估中保留 `policy.require_conflict_verify_before_answer=1` 以避免 hard-eval 安全项回退。
   - 完整候选 real prompt 评估显示 `pretrained_match_rate = 0.95`，hard eval `pass_rate = 1.0`，guard set `candidate_match_rate = 1.0`。
 - from_failure_pattern: tool_boundary_sampling_gap
 - from_top_gap: CARM hard logic pass rate
 - change_type: runtime_control
-- proposed_change: 将 `policy.prefer_calculator_for_mixed_numeric_code` 作为候选 runtime control 保留；若经 Human Gate 批准，再进入慢速控制评估流程，观察其是否只修复混合数值/代码边界，不伤害普通代码任务。
+- proposed_change: 将 `policy.prefer_calculator_for_mixed_numeric_code` 作为候选 runtime control 保留，并在候选评估中叠加已验证的 `policy.require_conflict_verify_before_answer` 护栏；若经 Human Gate 批准，再进入慢速控制评估流程，观察其是否只修复混合数值/代码边界，不伤害普通代码任务。
 - expected_metric_delta:
   - `hard_eval_pass_rate`: 0.8333 -> observed 1.0 in isolated candidate eval
   - `real_prompt_match_rate`: 0.9 -> observed 0.95 in isolated candidate eval

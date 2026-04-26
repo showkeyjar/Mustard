@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "prompt_count": 4,
+    "baseline_match_rate": 0.75,
+    "pretrained_match_rate": 1.0,
+    "baseline_avg_steps": 5.5,
+    "pretrained_avg_steps": 3.75
+  },
+  "rows": [
+    {
+      "id": "stress-conflict-detection-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-detection-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_BIGMODEL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-detection-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-detection-004",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    }
+  ]
+}
