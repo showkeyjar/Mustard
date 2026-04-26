@@ -79,11 +79,13 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
     latest_real_prompt_eval_path = root / "data" / "eval" / "real_prompt_eval_latest.json"
     reasoning_pattern_report_path = root / "artifacts" / "reasoning_pattern_codec_latest.json"
     attention_flow_report_path = root / "artifacts" / "attention_flow_latest.json"
+    attention_training_view_report_path = root / "artifacts" / "attention_training_views_latest.json"
 
     train_report = _read_json(train_report_path)
     latest_real_prompt_eval = _read_json(latest_real_prompt_eval_path)
     reasoning_pattern_report = _read_json(reasoning_pattern_report_path)
     attention_flow_report = _read_json(attention_flow_report_path)
+    attention_training_view_report = _read_json(attention_training_view_report_path)
     real_prompt_eval, real_prompt_eval_source = _select_real_prompt_eval(train_report, latest_real_prompt_eval)
 
     dataset = train_report.get("dataset", {})
@@ -123,6 +125,9 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
     attention_summary = attention_flow_report.get("summary", {})
     if not isinstance(attention_summary, dict):
         attention_summary = {}
+    attention_training_summary = attention_training_view_report.get("summary", {})
+    if not isinstance(attention_training_summary, dict):
+        attention_training_summary = {}
     status = (
         "healthy"
         if pretrained_match_rate >= 0.9 and not failures and not hard_eval_failures
@@ -152,6 +157,11 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
             "attention_flow": (
                 str(attention_flow_report_path)
                 if attention_flow_report
+                else ""
+            ),
+            "attention_training_views": (
+                str(attention_training_view_report_path)
+                if attention_training_view_report
                 else ""
             ),
         },
@@ -185,6 +195,13 @@ def build_current_best_payload(root: Path) -> dict[str, object]:
             "attention_evidence_grounding": float(attention_summary.get("evidence_grounding", 0.0) or 0.0),
             "attention_residual_resolution": float(attention_summary.get("residual_resolution", 0.0) or 0.0),
             "attention_premature_release_rate": float(attention_summary.get("premature_release_rate", 0.0) or 0.0),
+            "attention_release_allowed_rate": float(attention_training_summary.get("release_allowed_rate", 0.0) or 0.0),
+            "attention_conflict_to_verification_rate": float(
+                attention_training_summary.get("conflict_to_verification_rate", 0.0) or 0.0
+            ),
+            "attention_tool_boundary_block_rate": float(
+                attention_training_summary.get("tool_boundary_block_rate", 0.0) or 0.0
+            ),
         },
         "hard_eval_failures": hard_eval_failures,
         "key_failures": failures,

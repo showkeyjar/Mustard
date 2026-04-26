@@ -1,0 +1,153 @@
+{
+  "track": "real_prompt_coverage",
+  "candidate_id": "real_prompt_coverage_20260426T065738Z",
+  "parent_id": "real_prompt_coverage_20260426T065647Z",
+  "operator": "stress_conflict_detection_gap",
+  "decision": "stress_conflict_detection_gap",
+  "status": "in_progress",
+  "signals": {
+    "current_prompt_count": 20,
+    "target_prompt_count": 20,
+    "current_match_rate": 0.9,
+    "baseline_match_rate": 0.9,
+    "mismatch_case_count": 2
+  },
+  "operator_result": {
+    "executed": true,
+    "reason": "stress_conflict_detection_gap",
+    "generated_count": 4,
+    "stress_eval_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval.json",
+    "stress_result_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval_result.json",
+    "result_path": "D:\\codes\\Mustard\\data\\evolution\\conflict_detection_stress_eval_result.json",
+    "repair_operator": "stress_conflict_detection_gap",
+    "repair_hint": "review generated stress rows before merging any prompt into default eval",
+    "stress_eval": {
+      "summary": {
+        "prompt_count": 4,
+        "baseline_match_rate": 0.75,
+        "pretrained_match_rate": 1.0,
+        "baseline_avg_steps": 5.5,
+        "pretrained_avg_steps": 3.75
+      },
+      "rows": [
+        {
+          "id": "stress-conflict-detection-001",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-conflict-detection-002",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "bigmodel_proxy",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_BIGMODEL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "baseline_match": false,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-conflict-detection-003",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-conflict-detection-004",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        }
+      ]
+    },
+    "track_state": {
+      "track": "real_prompt_coverage",
+      "target_gap": "repeated_conflict_detection_gap",
+      "current_prompt_count": 20,
+      "target_prompt_count": 20,
+      "current_match_rate": 0.9,
+      "baseline_match_rate": 0.9,
+      "mismatch_case_count": 2,
+      "high_signal_count": 1,
+      "bigmodel_proxy_mismatch_count": 1,
+      "primary_failure_pattern": "repeated_conflict_detection_gap",
+      "operator": "stress_conflict_detection_gap",
+      "operator_args": {
+        "target_prompt_count": 20,
+        "current_prompt_count": 20,
+        "primary_failure_pattern": "repeated_conflict_detection_gap"
+      },
+      "hypothesis": "Increase contradictory_authority / missing_evidence pressure until repeated_conflict_detection_gap either yields a new mismatch cluster or is proven robust.",
+      "expected_metric_delta": {
+        "specialized_conflict_detection_prompts": 4,
+        "pretrained_match_rate": 0.0
+      },
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "failure_reason": "specialized_conflict_detection_gap_active",
+      "repair_hint": "inject_conflict_detection_variants"
+    }
+  },
+  "created_at_utc": "20260426T065738Z"
+}

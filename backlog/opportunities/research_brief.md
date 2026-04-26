@@ -6,6 +6,8 @@
 - frontier_observation_count: 3
 - real_prompt_count: 20
 - real_prompt_match_rate: 0.9000
+- attention_premature_release_count: 1
+- attention_conflict_to_verification_rate: 0.2500
 
 ## Research Constraints
 - 必须绑定 Top Gap 或 failure pattern

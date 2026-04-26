@@ -75,27 +75,32 @@ class AdaptiveReasoningCore:
         return next_state
 
     def learn(self, user_input: str, steps: list[StepRecord], success: bool) -> None:
-        if not success:
+        if not steps:
             return
-
         tokens = self.tokenize(user_input)
+        negative = not success
+        effective_lr = self.learning_rate * 0.3 if negative else self.learning_rate
+
         for step in steps:
-            if step.action != "WRITE_MEM" or not step.high_value or not step.target_slot:
+            if step.action != "WRITE_MEM" or not step.target_slot:
                 continue
             slot_type = step.target_slot
             if slot_type not in self.SLOT_TYPES:
                 continue
 
+            if negative and step.reward >= 0.0:
+                continue
+
             counts = Counter(tokens)
             for token, count in counts.items():
                 bucket = self.token_slot_weights.setdefault(token, {})
-                bucket[slot_type] = bucket.get(slot_type, 0.0) + self.learning_rate * step.reward * min(count, 3)
+                bucket[slot_type] = bucket.get(slot_type, 0.0) + effective_lr * step.reward * min(count, 3)
 
             for feature_name, feature_value in step.feature_snapshot.items():
                 current = self.feature_weights[slot_type].get(feature_name, 0.0)
-                self.feature_weights[slot_type][feature_name] = current + self.learning_rate * step.reward * feature_value
+                self.feature_weights[slot_type][feature_name] = current + effective_lr * step.reward * feature_value
 
-            self.slot_bias[slot_type] += self.learning_rate * step.reward
+            self.slot_bias[slot_type] += effective_lr * step.reward
             self._update_readout(slot_type, step.feature_snapshot, step.reward)
 
         self._save()

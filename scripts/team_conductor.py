@@ -311,12 +311,24 @@ def _cleanup_low_value_artifacts(root: Path) -> dict[str, int]:
 def _build_signal_signature(signals: dict[str, object]) -> str:
     real_prompt_match = 0.0
     real_prompt_count = 0
+    attention_premature_release_count = 0
+    attention_conflict_to_verification_rate = 0.0
+    learning_focus_pretrained_match_rate = 0.0
     real_prompt_eval = signals.get("real_prompt_eval", {})
     if isinstance(real_prompt_eval, dict):
         summary = real_prompt_eval.get("summary", {})
         if isinstance(summary, dict):
             real_prompt_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
             real_prompt_count = int(summary.get("prompt_count", 0) or 0)
+    attention_flow = signals.get("attention_flow", {})
+    if isinstance(attention_flow, dict):
+        attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
+    attention_training_views = signals.get("attention_training_views", {})
+    if isinstance(attention_training_views, dict):
+        attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 0.0) or 0.0)
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if isinstance(learning_focus_eval, dict):
+        learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 0.0) or 0.0)
 
     return "|".join(
         [
@@ -325,6 +337,9 @@ def _build_signal_signature(signals: dict[str, object]) -> str:
             str(int(signals.get("frontier_observation_count", 0) or 0)),
             str(real_prompt_count),
             f"{real_prompt_match:.4f}",
+            str(attention_premature_release_count),
+            f"{attention_conflict_to_verification_rate:.4f}",
+            f"{learning_focus_pretrained_match_rate:.4f}",
         ]
     )
 
@@ -429,6 +444,18 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
     latest_real_prompt_eval = _read_json(root / "data/eval/real_prompt_eval_latest.json")
     if isinstance(latest_real_prompt_eval, dict) and latest_real_prompt_eval.get("summary"):
         real_prompt_eval = latest_real_prompt_eval
+    attention_flow_payload = _read_json(root / "artifacts/attention_flow_latest.json")
+    attention_flow = attention_flow_payload.get("summary", {}) if isinstance(attention_flow_payload, dict) else {}
+    if not isinstance(attention_flow, dict):
+        attention_flow = {}
+    attention_training_views_payload = _read_json(root / "artifacts/attention_training_views_latest.json")
+    attention_training_views = attention_training_views_payload.get("summary", {}) if isinstance(attention_training_views_payload, dict) else {}
+    if not isinstance(attention_training_views, dict):
+        attention_training_views = {}
+    learning_focus_eval_payload = _read_json(root / "artifacts/learning_focus_eval_latest.json")
+    learning_focus_eval = learning_focus_eval_payload.get("summary", {}) if isinstance(learning_focus_eval_payload, dict) else {}
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
 
     comparison = control_metrics.get("comparison", {})
     if not isinstance(comparison, dict):
@@ -454,6 +481,9 @@ def collect_signals(root: Path = Path(".")) -> dict[str, object]:
         "dataset_sample_count": train_report.get("dataset", {}).get("sample_count", 0) if isinstance(train_report.get("dataset", {}), dict) else 0,
         "pretrain_eval": pretrain_eval,
         "real_prompt_eval": real_prompt_eval,
+        "attention_flow": attention_flow,
+        "attention_training_views": attention_training_views,
+        "learning_focus_eval": learning_focus_eval,
         "control_state": control_state,
         "control_comparison": comparison,
     }
@@ -601,6 +631,22 @@ def build_daily_digest(signals: dict[str, object], config: dict[str, object]) ->
     control_state = signals.get("control_state", {})
     if isinstance(control_state, dict) and str(control_state.get("rollout_status", "stable")) == "candidate":
         alerts.append("candidate_rollout_active")
+
+    attention_flow = signals.get("attention_flow", {})
+    if isinstance(attention_flow, dict) and int(attention_flow.get("premature_release_count", 0) or 0) > 0:
+        alerts.append("attention_premature_release_detected")
+
+    attention_training_views = signals.get("attention_training_views", {})
+    if isinstance(attention_training_views, dict):
+        conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
+        if int(attention_training_views.get("view_count", 0) or 0) > 0 and conflict_to_verification_rate < 0.5:
+            alerts.append("attention_conflict_handoff_weak")
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if isinstance(learning_focus_eval, dict):
+        learning_focus_prompt_count = int(learning_focus_eval.get("prompt_count", 0) or 0)
+        learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 1.0) or 0.0)
+        if learning_focus_prompt_count > 0 and learning_focus_pretrained_match_rate < 0.75:
+            alerts.append("learning_focus_tool_routing_weak")
 
     direction_review = _arbiter_direction_review(signals, config)
     if bool(direction_review.get("escalate_to_human", False)):
@@ -1113,8 +1159,66 @@ def _run_high_information_sampling_operator(root: Path, signals: dict[str, objec
             "expected_tool": str(row.get("expected_tool", "search")),
         })
     clusters = _cluster_recovery_variants(variants)
-    path.write_text(json.dumps({"variants": variants, "clusters": clusters}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return {"operator": "high_information_sampling_operator", "generated_count": len(variants), "path": str(path), "clusters": clusters}
+    eval_result = _evaluate_recovery_variants(root, variants, clusters)
+    path.write_text(json.dumps({"variants": variants, "clusters": clusters, "evaluation": eval_result}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {
+        "operator": "high_information_sampling_operator",
+        "generated_count": len(variants),
+        "path": str(path),
+        "clusters": clusters,
+        "evaluation": eval_result,
+    }
+
+
+def _evaluate_recovery_variants(
+    root: Path,
+    variants: list[dict[str, object]],
+    clusters: list[dict[str, object]],
+) -> dict[str, object]:
+    if not variants:
+        return {"evaluated": False, "reason": "no_variants"}
+    prompts: list[dict[str, object]] = []
+    for v in variants:
+        logic_skill = str(v.get("logic_skill", ""))
+        mutation = str(v.get("mutation", ""))
+        prompts.append({
+            "id": str(v.get("id", "")),
+            "prompt": f"recovery probe: {logic_skill} under {mutation} mutation",
+            "expected_tool": str(v.get("expected_tool", "search")),
+            "logic_skill": logic_skill,
+        })
+    temp_config = root / "data" / "evolution" / "_recovery_eval_temp.json"
+    temp_config.parent.mkdir(parents=True, exist_ok=True)
+    temp_config.write_text(json.dumps({"prompts": prompts}, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        proc = subprocess.run(
+            ["python", "-m", "scripts.evaluate_real_prompts", str(temp_config)],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        result_payload = json.loads(proc.stdout) if proc.stdout.strip() else {}
+    except Exception:
+        result_payload = {}
+    summary = result_payload.get("summary", {}) if isinstance(result_payload, dict) else {}
+    cluster_eval: list[dict[str, object]] = []
+    for cluster in clusters:
+        pattern_id = str(cluster.get("pattern_id", ""))
+        cluster_eval.append({
+            "pattern_id": pattern_id,
+            "logic_skill": str(cluster.get("logic_skill", "")),
+            "variant_count": int(cluster.get("count", 0) or 0),
+            "avg_source_score": float(cluster.get("avg_source_score", 0.0) or 0.0),
+        })
+    return {
+        "evaluated": True,
+        "variant_count": len(variants),
+        "tool_match_rate": float(summary.get("pretrained_match_rate", 0.0) or 0.0),
+        "prompt_count": int(summary.get("prompt_count", 0) or 0),
+        "cluster_eval": cluster_eval,
+        "temp_config": str(temp_config),
+    }
 
 
 def build_proposals(
@@ -1169,6 +1273,84 @@ def build_proposals(
     ]:
         if specific_pattern in active_failure_pattern_ids:
             active_failure_pattern_ids.add(specific_pattern)
+
+    if "attention_verification_handoff_gap" in active_failure_pattern_ids and current_top_gap == "attention_verification_handoff_gap":
+        attention_flow = signals.get("attention_flow", {})
+        if not isinstance(attention_flow, dict):
+            attention_flow = {}
+        attention_training_views = signals.get("attention_training_views", {})
+        if not isinstance(attention_training_views, dict):
+            attention_training_views = {}
+        proposals.append(
+            {
+                "title": "Strengthen attention handoff from conflict residuals to verification",
+                "problem": "当前 attention 流还能在残差未消解时提前释放，说明智能体工作流还没有稳定转成模型可学的 verification handoff。",
+                "evidence": [
+                    f"premature_release_count={int(attention_flow.get('premature_release_count', 0) or 0)}",
+                    f"conflict_to_verification_rate={float(attention_training_views.get('conflict_to_verification_rate', 0.0) or 0.0):.4f}",
+                ],
+                "from_failure_pattern": "attention_verification_handoff_gap",
+                "from_top_gap": current_top_gap,
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "围绕 premature release 与 conflict/tool-boundary case 扩展 attention supervision 视图，强化 residual -> VERIFY -> release_allowed 的离线训练信号。",
+                "expected_metric_delta": "premature_release_count 降到 0，且 conflict_to_verification_rate 提升到 >=0.50",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.export_attention_flow",
+                    "python -m scripts.export_attention_training_views",
+                    "python -m scripts.evaluate_attention_flow",
+                    "python -m scripts.evaluate_attention_training_views",
+                ],
+                "rollback_plan": "只回退 attention projector / training view 样本，不改默认运行时与训练准入。",
+                "relative_to_last_round": "从仅做 attention 观察，升级为用 handoff 缺口反向驱动离线监督样本设计。",
+                "scenario_fit": "多来源冲突、工具边界与需要验证后再回答的真实复杂任务场景。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "architect + trainer tighten residual-to-VERIFY supervision before any training admission discussion",
+            }
+        )
+
+    if "learning_focus_evidence_tool_routing_gap" in active_failure_pattern_ids:
+        learning_focus_eval_payload = _read_json(Path(digest.get("workspace_root", ".")) / "artifacts" / "learning_focus_eval_latest.json")
+        learning_focus_rows = learning_focus_eval_payload.get("rows", []) if isinstance(learning_focus_eval_payload, dict) else []
+        if not isinstance(learning_focus_rows, list):
+            learning_focus_rows = []
+        mismatch_ids = [
+            str(row.get("id", ""))
+            for row in learning_focus_rows
+            if isinstance(row, dict)
+            and str(row.get("logic_skill", "")) == "evidence_judgment"
+            and not bool(row.get("pretrained_match", True))
+            and str(row.get("expected_tool", "")) == "search"
+        ][:5]
+        learning_focus_eval = signals.get("learning_focus_eval", {})
+        if not isinstance(learning_focus_eval, dict):
+            learning_focus_eval = {}
+        proposals.append(
+            {
+                "title": "Repair evidence-judgment routing on learning-focus tasks",
+                "problem": "learning intake 转成的焦点评测已经暴露出 evidence_judgment 误路由，这说明模型还没有把新增公开思想和研究任务稳定映射到 search-first 求证流程。",
+                "evidence": [
+                    f"learning_focus_pretrained_match_rate={float(learning_focus_eval.get('pretrained_match_rate', 0.0) or 0.0):.4f}",
+                    f"mismatch_ids={','.join(mismatch_ids) or 'none'}",
+                ],
+                "from_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+                "from_top_gap": current_top_gap,
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "围绕 learning_focus_eval 中 evidence_judgment 失败样本扩展 search-first 专项监督和评测任务，专门压测 search vs calculator 的误路由边界。",
+                "expected_metric_delta": "learning_focus_pretrained_match_rate 提升到 >=0.75，且 evidence_judgment 不再出现 search->calculator 误路由",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.build_learning_intake",
+                    "python -m scripts.build_learning_focus_eval",
+                    "python -m scripts.evaluate_learning_focus",
+                ],
+                "rollback_plan": "只回退 learning-focus 专项任务，不改默认运行时与默认训练准入。",
+                "relative_to_last_round": "从收集外部思想与用户纠偏，推进到直接修复它们暴露出的 evidence 路由错误。",
+                "scenario_fit": "需要先查资料、判断证据、再下结论的真实求证型任务。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "researcher + trainer convert learning-focus routing failures into search-first supervision tasks",
+            }
+        )
 
     if "repeated_conflict_detection_gap" in active_failure_pattern_ids:
         proposals.append(
@@ -1239,6 +1421,41 @@ def build_proposals(
                 "scenario_fit": "需要在 calculator / search 之间做明确边界判断的真实任务。",
                 "needs_human_approval": "evaluation_or_dataset" in gated_types,
                 "architect_handoff": "researcher + trainer design calculator_vs_search boundary pack",
+            }
+        )
+
+    if "attention_verification_handoff_gap" in active_failure_pattern_ids and current_top_gap != "attention_verification_handoff_gap":
+        attention_flow = signals.get("attention_flow", {})
+        if not isinstance(attention_flow, dict):
+            attention_flow = {}
+        attention_training_views = signals.get("attention_training_views", {})
+        if not isinstance(attention_training_views, dict):
+            attention_training_views = {}
+        proposals.append(
+            {
+                "title": "Strengthen attention handoff from conflict residuals to verification",
+                "problem": "当前 attention 流还能在残差未消解时提前释放，说明智能体工作流还没有稳定转成模型可学的 verification handoff。",
+                "evidence": [
+                    f"premature_release_count={int(attention_flow.get('premature_release_count', 0) or 0)}",
+                    f"conflict_to_verification_rate={float(attention_training_views.get('conflict_to_verification_rate', 0.0) or 0.0):.4f}",
+                ],
+                "from_failure_pattern": "attention_verification_handoff_gap",
+                "from_top_gap": current_top_gap,
+                "change_type": "evaluation_or_dataset",
+                "proposed_change": "围绕 premature release 与 conflict/tool-boundary case 扩展 attention supervision 视图，强化 residual -> VERIFY -> release_allowed 的离线训练信号。",
+                "expected_metric_delta": "premature_release_count 降到 0，且 conflict_to_verification_rate 提升到 >=0.50",
+                "risk_level": "low",
+                "evaluation_plan": [
+                    "python -m scripts.export_attention_flow",
+                    "python -m scripts.export_attention_training_views",
+                    "python -m scripts.evaluate_attention_flow",
+                    "python -m scripts.evaluate_attention_training_views",
+                ],
+                "rollback_plan": "只回退 attention projector / training view 样本，不改默认运行时与训练准入。",
+                "relative_to_last_round": "从仅做 attention 观察，升级为用 handoff 缺口反向驱动离线监督样本设计。",
+                "scenario_fit": "多来源冲突、工具边界与需要验证后再回答的真实复杂任务场景。",
+                "needs_human_approval": "evaluation_or_dataset" in gated_types,
+                "architect_handoff": "architect + trainer tighten residual-to-VERIFY supervision before any training admission discussion",
             }
         )
 
@@ -1757,6 +1974,70 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
             }
         )
 
+    attention_flow = signals.get("attention_flow", {})
+    if not isinstance(attention_flow, dict):
+        attention_flow = {}
+    attention_training_views = signals.get("attention_training_views", {})
+    if not isinstance(attention_training_views, dict):
+        attention_training_views = {}
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
+    attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
+    attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
+    attention_view_count = int(attention_training_views.get("view_count", 0) or 0)
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
+    learning_focus_prompt_count = int(learning_focus_eval.get("prompt_count", 0) or 0)
+    learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 1.0) or 0.0)
+    if attention_view_count > 0 and (
+        attention_premature_release_count > 0 or attention_conflict_to_verification_rate < 0.5
+    ):
+        patterns.append(
+            {
+                "id": "attention_verification_handoff_gap",
+                "severity": "high",
+                "evidence": {
+                    "premature_release_count": attention_premature_release_count,
+                    "conflict_to_verification_rate": attention_conflict_to_verification_rate,
+                    "view_count": attention_view_count,
+                },
+                "impact": "注意力流在 conflict/tool-boundary 残差尚未消解时过早释放，或没有自然转入 verification。",
+                "frequency": "current_round",
+                "repro_hint": "运行 attention_flow / attention_training_views 评估，并检查冲突残差是否在 release 前进入 VERIFY。",
+                "owner_role": "architect",
+            }
+        )
+
+    learning_focus_payload = _read_json(root / "artifacts" / "learning_focus_eval_latest.json")
+    learning_focus_rows = learning_focus_payload.get("rows", []) if isinstance(learning_focus_payload, dict) else []
+    if isinstance(learning_focus_rows, list):
+        evidence_tool_mismatches = [
+            row
+            for row in learning_focus_rows
+            if isinstance(row, dict)
+            and str(row.get("logic_skill", "")) == "evidence_judgment"
+            and not bool(row.get("pretrained_match", True))
+            and str(row.get("expected_tool", "")) == "search"
+        ]
+        if evidence_tool_mismatches:
+            patterns.append(
+                {
+                    "id": "learning_focus_evidence_tool_routing_gap",
+                    "severity": "high",
+                    "evidence": {
+                        "count": len(evidence_tool_mismatches),
+                        "sample_ids": [str(row.get("id", "")) for row in evidence_tool_mismatches[:5]],
+                        "actual_tools": list({str(row.get("pretrained_used_tool", "")) for row in evidence_tool_mismatches if str(row.get("pretrained_used_tool", ""))}),
+                    },
+                    "impact": "系统在吸收公开设计思想与研究任务时，evidence_judgment 仍可能误路由到 calculator，说明新知识还没稳定映射到检索型证据流程。",
+                    "frequency": "current_round",
+                    "repro_hint": "运行 learning_focus_eval，重点检查 evidence_judgment 类任务是否仍把 search 型求证误判成 calculator。",
+                    "owner_role": "trainer",
+                }
+            )
+
     recovery_variants_payload = _read_json(root / "data" / "evolution" / "research_recovery_variants.json")
     recovery_clusters = recovery_variants_payload.get("clusters", []) if isinstance(recovery_variants_payload, dict) else []
     if isinstance(recovery_clusters, list):
@@ -1879,6 +2160,15 @@ def _write_research_brief(root: Path, signals: dict[str, object], config: dict[s
         if isinstance(summary, dict):
             rp_count = int(summary.get("prompt_count", 0) or 0)
             rp_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
+    attention_flow = signals.get("attention_flow", {})
+    if not isinstance(attention_flow, dict):
+        attention_flow = {}
+    attention_training_views = signals.get("attention_training_views", {})
+    if not isinstance(attention_training_views, dict):
+        attention_training_views = {}
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
 
     researcher_policy = config.get("researcher_policy", {})
     if not isinstance(researcher_policy, dict):
@@ -1893,6 +2183,10 @@ def _write_research_brief(root: Path, signals: dict[str, object], config: dict[s
         f"- frontier_observation_count: {int(signals.get('frontier_observation_count', 0) or 0)}",
         f"- real_prompt_count: {rp_count}",
         f"- real_prompt_match_rate: {rp_match:.4f}",
+        f"- attention_premature_release_count: {int(attention_flow.get('premature_release_count', 0) or 0)}",
+        f"- attention_conflict_to_verification_rate: {float(attention_training_views.get('conflict_to_verification_rate', 0.0) or 0.0):.4f}",
+        f"- learning_focus_prompt_count: {int(learning_focus_eval.get('prompt_count', 0) or 0)}",
+        f"- learning_focus_pretrained_match_rate: {float(learning_focus_eval.get('pretrained_match_rate', 0.0) or 0.0):.4f}",
         "",
         "## Research Constraints",
         "- 必须绑定 Top Gap 或 failure pattern",
@@ -1988,6 +2282,20 @@ def _select_top_gap(signals: dict[str, object]) -> dict[str, object]:
     blind_spot_persistence_rounds = int(research_quality.get("blind_spot_persistence_rounds", 0) or 0)
     zero_bridge_feedback_streak = int(research_quality.get("zero_bridge_feedback_streak", 0) or 0)
     zero_frontier_observation_streak = int(research_quality.get("zero_frontier_observation_streak", 0) or 0)
+    attention_flow = signals.get("attention_flow", {})
+    if not isinstance(attention_flow, dict):
+        attention_flow = {}
+    attention_training_views = signals.get("attention_training_views", {})
+    if not isinstance(attention_training_views, dict):
+        attention_training_views = {}
+    attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
+    attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
+    attention_view_count = int(attention_training_views.get("view_count", 0) or 0)
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
+    learning_focus_prompt_count = int(learning_focus_eval.get("prompt_count", 0) or 0)
+    learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 1.0) or 0.0)
 
     researcher_text = str(signals.get("researcher_artifact_text", "") or "").lower()
     blind_spot_active = (
@@ -2037,6 +2345,54 @@ def _select_top_gap(signals: dict[str, object]) -> dict[str, object]:
                 "research_quality 不再出现 no_new_failure_pattern",
             ],
             "rollback": "若新增样本只制造噪声，则回退本轮高压样本并保留有效簇",
+        }
+
+    if attention_view_count > 0 and (
+        attention_premature_release_count > 0 or attention_conflict_to_verification_rate < 0.5
+    ):
+        return {
+            "gap_id": "attention_verification_handoff_gap",
+            "problem": "智能体工作流尚未稳定投影成 attention handoff，冲突残差没有可靠流向 verification 或 release gate。",
+            "current": (
+                "premature_release_count="
+                f"{attention_premature_release_count}; "
+                f"conflict_to_verification_rate={attention_conflict_to_verification_rate:.4f}"
+            ),
+            "target": "premature_release_count=0 且 conflict_to_verification_rate>=0.50",
+            "gap": max(attention_premature_release_count, int(round(max(0.0, 0.5 - attention_conflict_to_verification_rate) * 100))),
+            "owner": "architect + benchmark_owner + trainer",
+            "why_this_is_top_gap_now": "覆盖已不再是主矛盾，当前更关键的是让冲突/边界残差真正顺流到 verification，而不是过早释放答案。",
+            "action_plan": [
+                "围绕 premature release case 生成 follow-up attention supervision 样本",
+                "把 conflict/tool-boundary residual 显式映射到 recommended_transition=VERIFY",
+                "复跑 attention_flow 与 attention_training_views 评估并核对 handoff 改善",
+            ],
+            "acceptance": [
+                "attention_flow.premature_release_count == 0",
+                "attention_training_views.conflict_to_verification_rate >= 0.50",
+            ],
+            "rollback": "若 attention 监督视图只带来噪声，则回退新增 projector / evaluator 样本而不影响默认运行时",
+        }
+
+    if learning_focus_prompt_count > 0 and learning_focus_pretrained_match_rate < 0.75:
+        return {
+            "gap_id": "learning_focus_evidence_tool_routing_gap",
+            "problem": "新引入的学习焦点任务已经开始暴露错误路由，尤其是 evidence_judgment 仍会把求证型任务误判成 calculator。",
+            "current": f"learning_focus_pretrained_match_rate={learning_focus_pretrained_match_rate:.4f}; prompt_count={learning_focus_prompt_count}",
+            "target": "learning_focus_pretrained_match_rate>=0.75 且 evidence_judgment 不再出现 search->calculator 误路由",
+            "gap": max(1, int(round(max(0.0, 0.75 - learning_focus_pretrained_match_rate) * 100))),
+            "owner": "trainer + benchmark_owner + researcher",
+            "why_this_is_top_gap_now": "learning intake 已经开始进入可执行评测，这批新任务上暴露出的误路由说明模型还没有把新增概念稳定映射到正确工具流程。",
+            "action_plan": [
+                "围绕 learning_focus_eval 的 evidence_judgment 失败样本生成专项监督任务",
+                "扩充 search-first 的求证型 prompts，压测 calculator 误路由边界",
+                "复跑 learning_focus_eval 并确认新簇 match_rate 改善",
+            ],
+            "acceptance": [
+                "learning_focus_eval.summary.pretrained_match_rate >= 0.75",
+                "learning_focus_eval 中 evidence_judgment 不再出现 expected=search 且 pretrained_used_tool=calculator",
+            ],
+            "rollback": "若 learning-focus 专项任务只是引入噪声，则回退新增学习焦点评测包，不影响默认运行时和默认训练集",
         }
 
     if blind_spot_active and quality_exploration_active and high_signal_count > 0:
@@ -3674,6 +4030,14 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
     quality_payload = _build_quality_stabilization_payload(signals)
     high_signal_count = int(quality_payload.get("high_signal_count", 0) or 0)
     bigmodel_proxy_mismatch_count = int(quality_payload.get("bigmodel_proxy_mismatch_count", 0) or 0)
+    attention_flow = signals.get("attention_flow", {})
+    if not isinstance(attention_flow, dict):
+        attention_flow = {}
+    attention_training_views = signals.get("attention_training_views", {})
+    if not isinstance(attention_training_views, dict):
+        attention_training_views = {}
+    attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
+    attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
 
     primary_failure_pattern = str(signals.get("primary_failure_pattern", "") or "")
     if not primary_failure_pattern:
@@ -3706,6 +4070,18 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
         expected_metric_delta = {
             "specialized_conflict_detection_prompts": 4,
             "pretrained_match_rate": 0.0,
+        }
+    elif primary_failure_pattern == "attention_verification_handoff_gap":
+        top_gap = "attention_verification_handoff_gap"
+        operator = "stabilize_quality_gap"
+        status = "in_progress"
+        decision = "stabilize_quality_gap"
+        failure_reason = "attention_verification_handoff_gap_active"
+        repair_hint = "expand_attention_handoff_supervision"
+        hypothesis = "Strengthen residual-to-VERIFY supervision until conflict/tool-boundary cases stop releasing answers before verification."
+        expected_metric_delta = {
+            "premature_release_count": max(0, attention_premature_release_count),
+            "conflict_to_verification_rate": max(0.0, 0.5 - attention_conflict_to_verification_rate),
         }
     elif high_signal_count > 0:
         top_gap = "quality_stabilization"
@@ -3788,12 +4164,16 @@ def _write_evolution_artifacts(root: Path, signals: dict[str, object], operator_
         "artifact_paths": {
             "real_prompt_eval": str(root / "data" / "eval" / "real_prompt_eval_latest.json"),
             "real_prompt_config": str(root / "configs" / "real_prompt_eval.json"),
+            "attention_flow": str(root / "artifacts" / "attention_flow_latest.json"),
+            "attention_training_views": str(root / "artifacts" / "attention_training_views_latest.json"),
         },
         "status": track_state["status"],
         "score": {
             "prompt_count": track_state["current_prompt_count"],
             "pretrained_match_rate": track_state["current_match_rate"],
             "mismatch_case_count": track_state["mismatch_case_count"],
+            "attention_premature_release_count": int(signals.get("attention_flow", {}).get("premature_release_count", 0) or 0) if isinstance(signals.get("attention_flow", {}), dict) else 0,
+            "attention_conflict_to_verification_rate": float(signals.get("attention_training_views", {}).get("conflict_to_verification_rate", 0.0) or 0.0) if isinstance(signals.get("attention_training_views", {}), dict) else 0.0,
         },
         "decision": track_state["decision"],
         "failure_reason": str(operator_result.get("reason", "")) or track_state["failure_reason"],

@@ -1,0 +1,14 @@
+{
+  "candidate_count": 7,
+  "source_counts": {
+    "learning_intake:public_idea": 3,
+    "learning_intake:attention_gap": 1,
+    "learning_intake:frontier": 3
+  },
+  "paths": {
+    "samples": "data\\learning\\learning_intake_samples.jsonl",
+    "import_path": "data\\learning\\learning_intake_import.jsonl",
+    "review_pack": "data\\learning\\learning_intake_review_pack.jsonl",
+    "report": "backlog\\opportunities\\learning_intake_report.md"
+  }
+}

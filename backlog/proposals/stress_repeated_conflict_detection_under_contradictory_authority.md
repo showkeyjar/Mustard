@@ -14,7 +14,7 @@
 - rollback_plan: 若新增专项 prompts 只带来噪声，则回退 conflict_detection 专项样本包。
 - evidence:
   - failure_pattern=repeated_conflict_detection_gap
-  - stagnation_rounds=4
+  - stagnation_rounds=0
 - evaluation_plan:
   - python -m scripts.build_real_prompt_candidates
   - python -m scripts.evaluate_real_prompts

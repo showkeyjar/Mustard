@@ -5,12 +5,15 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from carm.attention_flow import AttentionTrainingView, nodes_from_payloads
+from carm.actions import Action
 from carm.core import AdaptiveReasoningCore
 from carm.evolution import EvolutionSignal, OnlineEvolutionManager
 from carm.experience import ExperienceStore
 from carm.policy import OnlinePolicy
 from carm.pretrain_data import load_pretrain_samples, sample_to_episode
 from carm.review import ReviewStore
+from carm.schemas import StepRecord
 
 
 DEFAULT_TRAINING_CONFIG: dict[str, object] = {
@@ -67,6 +70,7 @@ class PretrainResult:
     synthetic_sample_count: int
     replayed_step_count: int
     signal_count: int
+    attention_view_count: int = 0
 
 
 class OfflinePretrainer:
@@ -79,6 +83,8 @@ class OfflinePretrainer:
         review_path: str | Path,
         signal_log_path: str | Path | None = None,
         dataset_path: str | Path | None = None,
+        attention_flow_path: str | Path | None = None,
+        attention_views_path: str | Path | None = None,
         *,
         max_episodes: int = 500,
         max_synthetic_samples: int = 2000,
@@ -133,6 +139,10 @@ class OfflinePretrainer:
                     core.learn(signal.query or signal.goal or signal.note, synthetic_steps, success=signal.reward >= 0.0)
                 signal_count += 1
 
+        attention_view_count = self._replay_attention_views(
+            policy, core, attention_flow_path, attention_views_path
+        )
+
         reviews = ReviewStore(review_path).load_all()
         manifest = {
             "mode": "two_stage",
@@ -141,6 +151,7 @@ class OfflinePretrainer:
             "replayed_step_count": replayed_step_count,
             "review_count": len(reviews),
             "signal_count": signal_count,
+            "attention_view_count": attention_view_count,
             "artifacts": {
                 "policy_state": str(self.artifact_dir / "policy_state.json"),
                 "concept_state": str(self.artifact_dir / "concept_state.json"),
@@ -155,6 +166,80 @@ class OfflinePretrainer:
             synthetic_sample_count=synthetic_sample_count,
             replayed_step_count=replayed_step_count,
             signal_count=signal_count,
+            attention_view_count=attention_view_count,
+        )
+
+    def _replay_attention_views(
+        self,
+        policy: OnlinePolicy,
+        core: AdaptiveReasoningCore,
+        attention_flow_path: Path | str | None,
+        attention_views_path: Path | str | None,
+    ) -> int:
+        views: list[AttentionTrainingView] = []
+
+        views_candidate = Path(attention_views_path) if attention_views_path is not None else None
+        if views_candidate is not None and views_candidate.exists():
+            payload = json.loads(views_candidate.read_text(encoding="utf-8"))
+            items = payload.get("views", []) if isinstance(payload, dict) else []
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        views.append(AttentionTrainingView(**item))
+
+        flow_candidate = Path(attention_flow_path) if attention_flow_path is not None else None
+        if flow_candidate is not None and flow_candidate.exists() and not views:
+            payload = json.loads(flow_candidate.read_text(encoding="utf-8"))
+            nodes_data = payload.get("nodes", []) if isinstance(payload, dict) else []
+            if isinstance(nodes_data, list) and nodes_data:
+                from carm.attention_flow import build_training_views
+                nodes = nodes_from_payloads(nodes_data)
+                views = build_training_views(nodes)
+
+        for view in views:
+            synthetic_step = self._view_to_step(view)
+            if synthetic_step is not None:
+                policy.learn([synthetic_step])
+                core.learn(
+                    view.episode_id,
+                    [synthetic_step],
+                    success=view.release_allowed,
+                )
+
+        return len(views)
+
+    def _view_to_step(self, view: AttentionTrainingView) -> StepRecord | None:
+        reward = 1.0 if view.release_allowed else -0.8
+        if view.recommended_action == "ANSWER" and not view.release_allowed:
+            reward = -1.0
+        if view.recommended_action == "VERIFY" and view.release_allowed:
+            reward = 0.5
+
+        feature_snapshot: dict[str, float] = {
+            "bias": 1.0,
+            "uncertainty": 0.4 if "conflict_unresolved" in view.residual_pressure else 0.2,
+            "has_conflict": 1.0 if "conflict_unresolved" in view.residual_pressure else 0.0,
+            "has_result": 0.0,
+            "has_draft": 1.0,
+        }
+
+        target_slot = ""
+        if view.recommended_action == "WRITE_MEM":
+            target_slot = "DRAFT" if view.release_allowed else "HYP"
+        if view.recommended_action == "VERIFY":
+            target_slot = ""
+
+        return StepRecord(
+            step_idx=view.step_idx,
+            action=view.recommended_action,
+            reason=view.supervision_note,
+            score=abs(reward),
+            feature_snapshot=feature_snapshot,
+            user_input=view.episode_id,
+            target_slot=target_slot,
+            reward=reward,
+            reward_reason=f"attention_view:{view.residual_pressure}",
+            high_value=abs(reward) >= 0.5,
         )
 
     def _reset_artifacts(self) -> None:

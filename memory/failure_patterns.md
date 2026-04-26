@@ -4,6 +4,18 @@
 
 ## Top patterns this round
 
+### attention_verification_handoff_gap
+- pattern_id: attention_verification_handoff_gap
+- title: attention_verification_handoff_gap
+- frequency: current_round
+- impact: 注意力流在 conflict/tool-boundary 残差尚未消解时过早释放，或没有自然转入 verification。
+- repro_hint: 运行 attention_flow / attention_training_views 评估，并检查冲突残差是否在 release 前进入 VERIFY。
+- owner_role: architect
+- representative_cases: {"premature_release_count": 1, "conflict_to_verification_rate": 0.25, "view_count": 106}
+- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
+- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
+- status: open
+
 ### comparison_under_conflicting_sources
 - pattern_id: comparison_under_conflicting_sources
 - title: comparison_under_conflicting_sources

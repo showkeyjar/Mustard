@@ -1,6 +1,19 @@
 {
-  "pattern_count": 2,
+  "pattern_count": 3,
   "patterns": [
+    {
+      "id": "attention_verification_handoff_gap",
+      "severity": "high",
+      "evidence": {
+        "premature_release_count": 1,
+        "conflict_to_verification_rate": 0.25,
+        "view_count": 106
+      },
+      "impact": "注意力流在 conflict/tool-boundary 残差尚未消解时过早释放，或没有自然转入 verification。",
+      "frequency": "current_round",
+      "repro_hint": "运行 attention_flow / attention_training_views 评估，并检查冲突残差是否在 release 前进入 VERIFY。",
+      "owner_role": "architect"
+    },
     {
       "id": "comparison_under_conflicting_sources",
       "severity": "medium",

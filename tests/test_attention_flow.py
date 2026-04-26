@@ -3,11 +3,19 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from carm.attention_flow import build_attention_report, project_episode_attention, project_eval_row_attention
+from carm.attention_flow import (
+    build_attention_report,
+    build_training_view_report,
+    build_training_views,
+    project_episode_attention,
+    project_eval_row_attention,
+)
 from carm.experience import ExperienceStore
 from carm.schemas import EpisodeRecord, StepRecord
 from scripts.evaluate_attention_flow import write_attention_flow_report
+from scripts.evaluate_attention_training_views import write_attention_training_view_report
 from scripts.export_attention_flow import export_attention_flow
+from scripts.export_attention_training_views import export_attention_training_views
 
 
 def make_conflict_episode(*, verify: bool = False) -> EpisodeRecord:
@@ -176,6 +184,136 @@ class AttentionFlowTests(unittest.TestCase):
         self.assertNotIn("draft_not_verified", nodes[-1].residual_pressure)
         self.assertNotIn("conflict_unresolved", nodes[-1].residual_pressure)
         self.assertEqual(nodes[-1].release_condition, "draft_ready_and_residual_pressure_low")
+
+    def test_build_training_views_marks_release_gate_and_next_focus(self) -> None:
+        risky_nodes = project_episode_attention(make_conflict_episode(), episode_id="risk")
+        verified_nodes = project_episode_attention(make_conflict_episode(verify=True), episode_id="verified")
+
+        views = build_training_views(risky_nodes + verified_nodes)
+
+        self.assertTrue(views)
+        risk_release = next(
+            view for view in views if view.episode_id == "risk" and view.current_focus == "release"
+        )
+        verified_release = next(
+            view for view in views if view.episode_id == "verified" and view.current_focus == "release"
+        )
+        self.assertFalse(risk_release.release_allowed)
+        self.assertTrue(verified_release.release_allowed)
+        self.assertEqual(verified_release.next_focus, "end")
+        self.assertIn("risky residuals remain", risk_release.supervision_note)
+
+    def test_export_attention_training_views_script_writes_jsonl(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            flow_path = root / "attention.jsonl"
+            output_path = root / "training_views.jsonl"
+            eval_path = root / "eval.json"
+            prompt_path = root / "prompts.json"
+            experience_path = root / "episodes.jsonl"
+            ExperienceStore(experience_path).append(make_conflict_episode(verify=True))
+            eval_path.write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "eval-mixed",
+                                "logic_skill": "tool_selection",
+                                "expected_tool": "calculator",
+                                "pretrained_used_tool": "code_executor",
+                                "pretrained_actions": ["WRITE_MEM", "CALL_TOOL", "WRITE_MEM", "ANSWER"],
+                                "pretrained_match": False,
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            prompt_path.write_text(
+                json.dumps(
+                    {"prompts": [{"id": "eval-mixed", "prompt": "这个问题里既有 Python 代码，又问 12 * 9 的预算。"}]},
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            export_attention_flow(experience_path, flow_path, eval_path, prompt_path)
+            views = export_attention_training_views(flow_path, output_path)
+
+            self.assertTrue(output_path.exists())
+            self.assertTrue(views)
+            payloads = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertEqual(len(payloads), len(views))
+            self.assertIn("release_allowed", payloads[0])
+            self.assertIn("recommended_transition", payloads[0])
+
+    def test_build_training_view_report_summarizes_release_and_boundary_rates(self) -> None:
+        risky_nodes = project_episode_attention(make_conflict_episode(), episode_id="risk")
+        verified_nodes = project_episode_attention(make_conflict_episode(verify=True), episode_id="verified")
+        mixed_nodes = project_eval_row_attention(
+            {
+                "id": "mixed",
+                "logic_skill": "tool_selection",
+                "expected_tool": "calculator",
+                "pretrained_used_tool": "code_executor",
+                "pretrained_actions": ["WRITE_MEM", "CALL_TOOL", "WRITE_MEM", "ANSWER"],
+                "pretrained_match": False,
+            },
+            "这个问题里既有 Python 代码，又问 12 * 9 的预算。",
+        )
+
+        report = build_training_view_report(build_training_views(risky_nodes + verified_nodes + mixed_nodes))
+
+        self.assertGreater(report["summary"]["view_count"], 0)
+        self.assertGreater(report["summary"]["risky_release_block_rate"], 0.0)
+        self.assertGreater(report["summary"]["conflict_to_verification_rate"], 0.0)
+        self.assertGreater(report["summary"]["tool_boundary_block_rate"], 0.0)
+        self.assertIn("tool_boundary_ambiguous", report["residual_counts"])
+
+    def test_evaluate_attention_training_views_script_writes_report(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            flow_path = root / "attention.jsonl"
+            views_path = root / "training_views.jsonl"
+            report_path = root / "training_report.json"
+            eval_path = root / "eval.json"
+            prompt_path = root / "prompts.json"
+            experience_path = root / "episodes.jsonl"
+            ExperienceStore(experience_path).append(make_conflict_episode(verify=True))
+            eval_path.write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "eval-conflict",
+                                "logic_skill": "conflict_detection",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "search",
+                                "pretrained_actions": ["CALL_TOOL", "WRITE_MEM", "VERIFY", "ANSWER"],
+                                "pretrained_match": True,
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            prompt_path.write_text(
+                json.dumps(
+                    {"prompts": [{"id": "eval-conflict", "prompt": "两个来源给出相反建议"}]},
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            export_attention_flow(experience_path, flow_path, eval_path, prompt_path)
+            export_attention_training_views(flow_path, views_path)
+            report = write_attention_training_view_report(views_path, report_path)
+
+            self.assertTrue(report_path.exists())
+            self.assertGreater(report["summary"]["view_count"], 0)
+            self.assertIn("sources", report)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from carm.actions import Action
+from carm.attention_flow import (
+    RISKY_RESIDUALS,
+    AttentionNode,
+    AttentionTrainingView,
+    build_training_views,
+    project_episode_attention,
+)
 from carm.core import AdaptiveReasoningCore
 from carm.decoder import SimpleDecoder
 from carm.encoder import SimpleEncoder
@@ -32,6 +39,8 @@ class RunTrace:
     actions: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     steps: list[StepRecord] = field(default_factory=list)
+    attention_nodes: list[AttentionNode] = field(default_factory=list)
+    training_views: list[AttentionTrainingView] = field(default_factory=list)
 
 
 class AgentRunner:
@@ -150,6 +159,10 @@ class AgentRunner:
                 continue
 
             if decision.action == Action.ANSWER:
+                attention_blocked = self._attention_gate_answer(state, memory, trace, user_input)
+                if attention_blocked:
+                    trace.notes.append("Attention gate blocked premature ANSWER.")
+                    continue
                 state.last_action = decision.action.value
                 answer = self.decoder.render(user_input, state, memory)
                 self._finalize_episode(user_input, answer, state, memory, trace)
@@ -192,23 +205,25 @@ class AgentRunner:
         online_config = self.training_config.get("training", {}).get("online_evolution", {})
         allow_episode_learning = bool(online_config.get("allow_episode_learning", True))
         guidance = self.evolution.guidance_for(user_input)
-        if allow_episode_learning and not bool(guidance.get("block_learning")):
-            self.core.learn(user_input, trace.steps, success)
-            self.policy.learn(trace.steps)
 
-        summary = self._summarize_episode(memory, trace)
         episode_features = self._episode_features(user_input, memory, trace)
         outcome_signature = self._outcome_signature(state, memory, trace, success, value_score)
         episode = EpisodeRecord(
             user_input=user_input,
             answer=answer,
-            summary=summary,
+            summary=self._summarize_episode(memory, trace),
             success=success,
             value_score=value_score,
             episode_features=episode_features,
             outcome_signature=outcome_signature,
             steps=trace.steps,
         )
+        self._project_attention_into_trace(episode, trace)
+
+        if allow_episode_learning and not bool(guidance.get("block_learning")):
+            self.core.learn(user_input, trace.steps, success)
+            self.policy.learn(trace.steps)
+
         self.experience_store.append(episode)
         review = self._review_episode(user_input, trace, success, value_score, episode_features, outcome_signature)
         self.review_store.append(review)
@@ -477,3 +492,30 @@ class AgentRunner:
             return 0.0
         helped = sum(1 for step in glance_steps if step.glance_helped)
         return round(helped / len(glance_steps), 4)
+
+    def _project_attention_into_trace(self, episode: EpisodeRecord, trace: RunTrace) -> None:
+        nodes = project_episode_attention(episode)
+        trace.attention_nodes = nodes
+        trace.training_views = build_training_views(nodes)
+
+    def _attention_gate_answer(self, state: AgentState, memory: MemoryBoard, trace: RunTrace, user_input: str) -> bool:
+        draft = memory.latest("DRAFT")
+        if draft is None and state.uncertainty > 0.5:
+            return True
+        if memory.latest("CONFLICT") is not None:
+            return True
+        if draft is not None and state.hidden.get("verified") != "1":
+            draft_payload = memory.parse_content(draft)
+            confidence_band = str(draft_payload.get("confidence_band", ""))
+            open_risks = draft_payload.get("open_risks", [])
+            if not isinstance(open_risks, list):
+                open_risks = []
+            if confidence_band == "low":
+                return True
+            meaningful_risks = [
+                r for r in open_risks
+                if isinstance(r, str) and r.strip() and not r.startswith("先")
+            ]
+            if meaningful_risks and memory.latest("RESULT") is None:
+                return True
+        return False

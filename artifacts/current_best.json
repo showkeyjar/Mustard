@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-04-26T03:59:59.817321+00:00",
+  "generated_at_utc": "2026-04-26T06:41:12.184346+00:00",
   "workspace_root": "D:\\codes\\Mustard",
-  "git_commit": "b5909809baf2e6300286ae43c9f010c14fe0a81b",
+  "git_commit": "aa45defd272efefb49beed1dd10fece07d089144",
   "best_run_id": "20260324T094015Z",
   "best_variant_name": "pretrained",
   "status": "needs_attention",
@@ -10,7 +10,8 @@
     "train_report": "data\\train_runs\\auto_train_latest.json",
     "real_prompt_eval": "data/eval/real_prompt_eval_latest.json",
     "reasoning_pattern_codec": "artifacts\\reasoning_pattern_codec_latest.json",
-    "attention_flow": "artifacts\\attention_flow_latest.json"
+    "attention_flow": "artifacts\\attention_flow_latest.json",
+    "attention_training_views": "artifacts\\attention_training_views_latest.json"
   },
   "artifacts": {
     "pretrain_artifact_dir": "data\\pretrain",
@@ -919,7 +920,10 @@
     "attention_focus_continuity": 1.0,
     "attention_evidence_grounding": 0.625,
     "attention_residual_resolution": 0.8718,
-    "attention_premature_release_rate": 0.0556
+    "attention_premature_release_rate": 0.0556,
+    "attention_release_allowed_rate": 0.3208,
+    "attention_conflict_to_verification_rate": 0.25,
+    "attention_tool_boundary_block_rate": 1.0
   },
   "hard_eval_failures": [
     "real-mixed"

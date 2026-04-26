@@ -245,6 +245,62 @@ def build_training_views(nodes: list[AttentionNode]) -> list[AttentionTrainingVi
     return views
 
 
+def build_training_view_report(views: list[AttentionTrainingView]) -> dict[str, Any]:
+    total = len(views)
+    risky_views = [
+        view
+        for view in views
+        if any(residual in RISKY_RESIDUALS for residual in view.residual_pressure)
+    ]
+    conflict_views = [
+        view
+        for view in views
+        if "conflict_unresolved" in view.residual_pressure
+    ]
+    tool_boundary_views = [
+        view
+        for view in views
+        if "tool_boundary_ambiguous" in view.residual_pressure
+    ]
+    verification_handoffs = [
+        view
+        for view in views
+        if view.next_focus == "verification" or view.recommended_transition.endswith("_to_verification")
+    ]
+    conflict_to_verification = [
+        view
+        for view in views
+        if "conflict_unresolved" in view.residual_pressure
+        and (view.next_focus == "verification" or view.recommended_transition.endswith("_to_verification"))
+    ]
+    blocked_tool_boundary = [
+        view
+        for view in tool_boundary_views
+        if not view.release_allowed
+    ]
+    denied_risky_release = [
+        view
+        for view in risky_views
+        if not view.release_allowed
+    ]
+
+    return {
+        "summary": {
+            "view_count": total,
+            "release_allowed_rate": _rate(sum(1 for view in views if view.release_allowed), total),
+            "risky_view_count": len(risky_views),
+            "risky_release_block_rate": _rate(len(denied_risky_release), len(risky_views)),
+            "verification_handoff_rate": _rate(len(verification_handoffs), total),
+            "conflict_to_verification_rate": _rate(len(conflict_to_verification), len(conflict_views)),
+            "tool_boundary_block_rate": _rate(len(blocked_tool_boundary), len(tool_boundary_views)),
+        },
+        "focus_counts": _counts(view.current_focus for view in views),
+        "next_focus_counts": _counts(view.next_focus for view in views),
+        "transition_counts": _counts(view.recommended_transition for view in views),
+        "residual_counts": _counts(residual for view in views for residual in view.residual_pressure),
+    }
+
+
 def training_views_to_jsonl(views: list[AttentionTrainingView]) -> str:
     return "\n".join(json.dumps(view.to_dict(), ensure_ascii=False) for view in views)
 

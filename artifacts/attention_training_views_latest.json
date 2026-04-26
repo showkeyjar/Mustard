@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "view_count": 106,
+    "release_allowed_rate": 0.3208,
+    "risky_view_count": 39,
+    "risky_release_block_rate": 1.0,
+    "verification_handoff_rate": 0.1321,
+    "conflict_to_verification_rate": 0.25,
+    "tool_boundary_block_rate": 1.0
+  },
+  "focus_counts": {
+    "draft": 26,
+    "release": 18,
+    "evidence": 17,
+    "goal": 17,
+    "external_synthesis": 15,
+    "verification": 7,
+    "plan": 6
+  },
+  "next_focus_counts": {
+    "draft": 26,
+    "end": 20,
+    "release": 18,
+    "evidence": 16,
+    "external_synthesis": 13,
+    "verification": 7,
+    "plan": 6
+  },
+  "transition_counts": {
+    "evidence_to_draft": 17,
+    "start_to_goal": 17,
+    "draft_to_release": 11,
+    "goal_to_evidence": 11,
+    "hold_external_synthesis": 10,
+    "draft_to_verification": 7,
+    "verification_to_release": 7,
+    "goal_to_plan": 6,
+    "hold_draft": 6,
+    "plan_to_evidence": 6,
+    "external_synthesis_to_draft": 3,
+    "draft_to_evidence": 2,
+    "start_to_external_synthesis": 2,
+    "start_to_evidence": 1
+  },
+  "residual_counts": {
+    "missing_evidence": 23,
+    "conflict_unresolved": 16,
+    "negative_reward_pressure": 10,
+    "tool_boundary_ambiguous": 5
+  },
+  "sources": {
+    "training_views": "data\\attention\\training_views.jsonl"
+  }
+}

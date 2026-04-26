@@ -103,6 +103,19 @@ class CurrentBestTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "artifacts" / "attention_training_views_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "release_allowed_rate": 0.62,
+                            "conflict_to_verification_rate": 0.75,
+                            "tool_boundary_block_rate": 1.0,
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             payload = build_current_best_payload(root)
             self.assertEqual(payload["best_run_id"], "run-123")
@@ -114,7 +127,11 @@ class CurrentBestTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["hard_eval_pass_rate"], 0.75)
             self.assertEqual(payload["summary"]["attention_focus_continuity"], 1.0)
             self.assertEqual(payload["summary"]["attention_premature_release_rate"], 0.25)
+            self.assertEqual(payload["summary"]["attention_release_allowed_rate"], 0.62)
+            self.assertEqual(payload["summary"]["attention_conflict_to_verification_rate"], 0.75)
+            self.assertEqual(payload["summary"]["attention_tool_boundary_block_rate"], 1.0)
             self.assertTrue(payload["sources"]["attention_flow"].endswith("attention_flow_latest.json"))
+            self.assertTrue(payload["sources"]["attention_training_views"].endswith("attention_training_views_latest.json"))
             self.assertEqual(payload["hard_eval_failures"], ["hard-conflict"])
             self.assertEqual(payload["status"], "needs_attention")
 

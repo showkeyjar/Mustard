@@ -5,6 +5,12 @@ from carm.state import AgentState
 
 
 class SimpleDecoder:
+    """Renders agent state and memory into user-facing output.
+
+    Upgraded to surface structured confidence, verification, and risk signals
+    from the intermediate representation.
+    """
+
     def render(self, user_input: str, state: AgentState, memory: MemoryBoard) -> str:
         goal = memory.latest("GOAL")
         plan = memory.latest("PLAN")
@@ -27,7 +33,7 @@ class SimpleDecoder:
             parts.append("结论: 当前没有稳定草稿。")
         if conflict:
             parts.append(f"风险: {conflict.content}")
-        parts.append(f"不确定度: {state.uncertainty:.2f}")
+        parts.append(self._render_status_line(state, memory, draft_payload))
         return "\n".join(parts)
 
     def _render_plan(self, payload: dict[str, object]) -> str:
@@ -72,3 +78,25 @@ class SimpleDecoder:
         if not parts and "raw" in payload:
             parts.append(str(payload["raw"]))
         return "；".join(parts)
+
+    def _render_status_line(
+        self,
+        state: AgentState,
+        memory: MemoryBoard,
+        draft_payload: dict[str, object],
+    ) -> str:
+        verified = state.hidden.get("verified") == "1"
+        has_result = memory.latest("RESULT") is not None
+        has_conflict = memory.latest("CONFLICT") is not None
+        confidence_band = str(draft_payload.get("confidence_band", "未知"))
+
+        status_parts = [f"不确定度={state.uncertainty:.2f}"]
+        if has_result:
+            status_parts.append("有外部证据")
+        if verified:
+            status_parts.append("已通过验证")
+        if has_conflict:
+            status_parts.append("存在冲突")
+        if confidence_band and confidence_band != "未知":
+            status_parts.append(f"置信带={confidence_band}")
+        return "状态: " + "，".join(status_parts)

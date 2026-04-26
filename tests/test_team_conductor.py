@@ -19,8 +19,10 @@ from scripts.team_conductor import (
     _select_high_information_parent_rows,
     _select_research_recovery_operators,
     _select_top_gap,
+    _write_failure_patterns,
     bootstrap_workspace,
     build_proposals,
+    collect_signals,
     run_cycle,
 )
 
@@ -651,9 +653,9 @@ class TeamConductorTests(unittest.TestCase):
             {"last_mode": "max_landing", "stagnation_rounds": 10},
         )
         titles = [item.get("title", "") for item in proposals]
+        self.assertIn("Strengthen attention handoff from conflict residuals to verification", titles)
         self.assertIn("Exploit sampling blind spot with high-information real prompts", titles)
         self.assertIn("Reopen frontier research intake with minimum observation quota", titles)
-        self.assertIn("Bootstrap bridge feedback capture without changing defaults", titles)
         self.assertTrue(any(item.get("architect_handoff") for item in proposals))
 
     def test_dedupe_and_prioritize_prefers_richer_failure_pattern_proposal(self) -> None:
@@ -695,6 +697,184 @@ class TeamConductorTests(unittest.TestCase):
         self.assertEqual(card["gap_id"], "quality_stabilization")
         self.assertEqual(card["current"], "high_signal_count=2")
         self.assertEqual(card["gap"], 2)
+
+    def test_select_top_gap_prefers_attention_handoff_gap_when_attention_break_exists(self) -> None:
+        card = _select_top_gap(
+            {
+                "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                "attention_flow": {"premature_release_count": 1},
+                "attention_training_views": {
+                    "view_count": 20,
+                    "conflict_to_verification_rate": 0.25,
+                },
+            }
+        )
+        self.assertEqual(card["gap_id"], "attention_verification_handoff_gap")
+        self.assertIn("premature_release_count=1", card["current"])
+
+    def test_select_top_gap_prefers_learning_focus_routing_gap_when_learning_focus_weak(self) -> None:
+        card = _select_top_gap(
+            {
+                "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                "learning_focus_eval": {
+                    "prompt_count": 7,
+                    "pretrained_match_rate": 0.5714,
+                },
+            }
+        )
+        self.assertEqual(card["gap_id"], "learning_focus_evidence_tool_routing_gap")
+        self.assertIn("learning_focus_pretrained_match_rate=0.5714", card["current"])
+
+    def test_build_proposals_adds_attention_handoff_repair_when_pattern_active(self) -> None:
+        proposals = build_proposals(
+            {
+                "signals": {
+                    "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                    "attention_flow": {"premature_release_count": 1},
+                    "attention_training_views": {
+                        "view_count": 106,
+                        "conflict_to_verification_rate": 0.25,
+                    },
+                },
+                "research_quality": {
+                    "new_failure_pattern_ids": ["attention_verification_handoff_gap"],
+                },
+            },
+            {
+                "heartbeat": {"max_new_proposals_per_cycle": 5},
+                "risk_policy": {"human_gate_required_change_types": []},
+            },
+            {"last_mode": "normal", "stagnation_rounds": 0},
+        )
+        titles = [item.get("title", "") for item in proposals]
+        self.assertIn("Strengthen attention handoff from conflict residuals to verification", titles)
+
+    def test_build_proposals_adds_learning_focus_routing_repair_when_pattern_active(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts" / "learning_focus_eval_latest.json").write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "learning-focus-004",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "calculator",
+                                "pretrained_match": False,
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            proposals = build_proposals(
+                {
+                    "workspace_root": str(root),
+                    "signals": {
+                        "real_prompt_eval": {"summary": {"prompt_count": 20}},
+                        "learning_focus_eval": {
+                            "prompt_count": 7,
+                            "pretrained_match_rate": 0.5714,
+                        },
+                    },
+                    "research_quality": {
+                        "new_failure_pattern_ids": ["learning_focus_evidence_tool_routing_gap"],
+                    },
+                },
+                {
+                    "heartbeat": {"max_new_proposals_per_cycle": 5},
+                    "risk_policy": {"human_gate_required_change_types": []},
+                },
+                {"last_mode": "normal", "stagnation_rounds": 0},
+            )
+            titles = [item.get("title", "") for item in proposals]
+            self.assertIn("Repair evidence-judgment routing on learning-focus tasks", titles)
+
+    def test_collect_signals_loads_attention_artifacts(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps({"run_id": "run-attn", "dataset": {"sample_count": 3}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "artifacts" / "attention_flow_latest.json").write_text(
+                json.dumps({"summary": {"premature_release_count": 1}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "attention_training_views_latest.json").write_text(
+                json.dumps({"summary": {"view_count": 10, "conflict_to_verification_rate": 0.25}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            signals = collect_signals(root)
+
+            self.assertEqual(signals["attention_flow"]["premature_release_count"], 1)
+            self.assertEqual(signals["attention_training_views"]["conflict_to_verification_rate"], 0.25)
+
+    def test_collect_signals_loads_learning_focus_artifact(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps({"run_id": "run-focus", "dataset": {"sample_count": 3}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "artifacts" / "learning_focus_eval_latest.json").write_text(
+                json.dumps({"summary": {"prompt_count": 7, "pretrained_match_rate": 0.5714}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            signals = collect_signals(root)
+
+            self.assertEqual(signals["learning_focus_eval"]["prompt_count"], 7)
+            self.assertEqual(signals["learning_focus_eval"]["pretrained_match_rate"], 0.5714)
+
+    def test_write_failure_patterns_adds_learning_focus_routing_gap(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "backlog" / "incidents").mkdir(parents=True, exist_ok=True)
+            (root / "memory").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts" / "learning_focus_eval_latest.json").write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "learning-focus-004",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "calculator",
+                                "pretrained_match": False,
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            _write_failure_patterns(
+                root,
+                {
+                    "real_prompt_eval": {"summary": {"prompt_count": 20}, "rows": []},
+                    "bridge_feedback": 1,
+                    "frontier_observation_count": 3,
+                },
+            )
+
+            payload = json.loads((root / "backlog" / "incidents" / "auto_failure_patterns.json").read_text(encoding="utf-8"))
+            pattern_ids = [item["id"] for item in payload["patterns"]]
+            self.assertIn("learning_focus_evidence_tool_routing_gap", pattern_ids)
 
     def test_build_proposals_uses_current_top_gap_for_specific_failure_patterns(self) -> None:
         proposals = build_proposals(
