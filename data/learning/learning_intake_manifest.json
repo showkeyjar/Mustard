@@ -1,7 +1,8 @@
 {
-  "candidate_count": 7,
+  "candidate_count": 10,
   "source_counts": {
     "learning_intake:public_idea": 3,
+    "learning_intake:learning_focus_stress": 3,
     "learning_intake:attention_gap": 1,
     "learning_intake:frontier": 3
   },

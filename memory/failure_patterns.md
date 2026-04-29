@@ -16,6 +16,18 @@
 - recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
 - status: open
 
+### learning_focus_evidence_tool_routing_gap
+- pattern_id: learning_focus_evidence_tool_routing_gap
+- title: learning_focus_evidence_tool_routing_gap
+- frequency: current_round
+- impact: 系统在吸收公开设计思想与研究任务时，evidence_judgment 仍可能误路由到 calculator，说明新知识还没稳定映射到检索型证据流程。
+- repro_hint: 运行 learning_focus_eval，重点检查 evidence_judgment 类任务是否仍把 search 型求证误判成 calculator。
+- owner_role: trainer
+- representative_cases: {"count": 3, "sample_ids": ["learning-focus-004", "learning-focus-005", "learning-focus-006"], "actual_tools": ["calculator"]}
+- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
+- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
+- status: open
+
 ### comparison_under_conflicting_sources
 - pattern_id: comparison_under_conflicting_sources
 - title: comparison_under_conflicting_sources

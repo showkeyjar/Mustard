@@ -1,5 +1,5 @@
 {
-  "pattern_count": 3,
+  "pattern_count": 4,
   "patterns": [
     {
       "id": "attention_verification_handoff_gap",
@@ -13,6 +13,25 @@
       "frequency": "current_round",
       "repro_hint": "运行 attention_flow / attention_training_views 评估，并检查冲突残差是否在 release 前进入 VERIFY。",
       "owner_role": "architect"
+    },
+    {
+      "id": "learning_focus_evidence_tool_routing_gap",
+      "severity": "high",
+      "evidence": {
+        "count": 3,
+        "sample_ids": [
+          "learning-focus-004",
+          "learning-focus-005",
+          "learning-focus-006"
+        ],
+        "actual_tools": [
+          "calculator"
+        ]
+      },
+      "impact": "系统在吸收公开设计思想与研究任务时，evidence_judgment 仍可能误路由到 calculator，说明新知识还没稳定映射到检索型证据流程。",
+      "frequency": "current_round",
+      "repro_hint": "运行 learning_focus_eval，重点检查 evidence_judgment 类任务是否仍把 search 型求证误判成 calculator。",
+      "owner_role": "trainer"
     },
     {
       "id": "comparison_under_conflicting_sources",

@@ -1,0 +1,47 @@
+{
+  "track": "real_prompt_coverage",
+  "candidate_id": "real_prompt_coverage_20260428T131540Z",
+  "parent_id": "real_prompt_coverage_20260426T065850Z",
+  "operator": "stabilize_quality_gap",
+  "decision": "stabilize_quality_gap",
+  "status": "in_progress",
+  "signals": {
+    "current_prompt_count": 20,
+    "target_prompt_count": 20,
+    "current_match_rate": 0.9,
+    "baseline_match_rate": 0.9,
+    "mismatch_case_count": 2
+  },
+  "operator_result": {
+    "executed": false,
+    "reason": "operator_not_needed",
+    "track_state": {
+      "track": "real_prompt_coverage",
+      "target_gap": "quality_stabilization",
+      "current_prompt_count": 20,
+      "target_prompt_count": 20,
+      "current_match_rate": 0.9,
+      "baseline_match_rate": 0.9,
+      "mismatch_case_count": 2,
+      "high_signal_count": 1,
+      "bigmodel_proxy_mismatch_count": 1,
+      "primary_failure_pattern": "",
+      "operator": "stabilize_quality_gap",
+      "operator_args": {
+        "target_prompt_count": 20,
+        "current_prompt_count": 20,
+        "primary_failure_pattern": ""
+      },
+      "hypothesis": "Increase real prompt coverage without reducing current match rate.",
+      "expected_metric_delta": {
+        "prompt_count": 0,
+        "pretrained_match_rate": 0.0
+      },
+      "status": "in_progress",
+      "decision": "stabilize_quality_gap",
+      "failure_reason": "high_signal_quality_gap_active",
+      "repair_hint": "inject_repair_and_quality_focus_prompts"
+    }
+  },
+  "created_at_utc": "20260428T131540Z"
+}

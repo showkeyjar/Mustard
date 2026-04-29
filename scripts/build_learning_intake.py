@@ -230,6 +230,56 @@ def _collect_attention_gap_samples(root: Path) -> list[PretrainSample]:
     return samples
 
 
+def _collect_learning_focus_stress_samples(root: Path, limit: int) -> list[PretrainSample]:
+    payload = _read_json(root / "data" / "evolution" / "learning_focus_evidence_routing_eval_result.json")
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    if not isinstance(rows, list):
+        return []
+
+    samples: list[PretrainSample] = []
+    for item in rows[:limit]:
+        if not isinstance(item, dict):
+            continue
+        expected_tool = str(item.get("expected_tool", "")).strip()
+        pretrained_tool = str(item.get("pretrained_used_tool", "")).strip()
+        baseline_tool = str(item.get("baseline_used_tool", "")).strip()
+        logic_skill = str(item.get("logic_skill", "")).strip() or "evidence_judgment"
+        row_id = str(item.get("id", "")).strip()
+        if expected_tool != "search" or logic_skill != "evidence_judgment":
+            continue
+        if pretrained_tool == "search" and baseline_tool == "search":
+            continue
+
+        user_input = (
+            f"Learning-focus routing stress 学习：样本={row_id or 'unknown'}。"
+            f" 期望工具={expected_tool}，baseline={baseline_tool or 'unknown'}，pretrained={pretrained_tool or 'unknown'}。"
+            " 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。"
+        )
+        quality = 0.92 if pretrained_tool != "search" else 0.86
+        samples.append(
+            annotate_sample(
+                PretrainSample(
+                    user_input=user_input,
+                    task_type="fact_check",
+                    source_type="learning_intake:learning_focus_stress",
+                    expected_tool="",
+                    target_slot="",
+                    logic_skill="evidence_judgment",
+                    quality_score=quality,
+                    metadata={
+                        "learning_source": "learning_focus_stress",
+                        "row_id": row_id,
+                        "baseline_used_tool": baseline_tool,
+                        "pretrained_used_tool": pretrained_tool,
+                        "forced_expected_tool": "search",
+                        "forced_target_slot": "PLAN",
+                    },
+                )
+            )
+        )
+    return samples
+
+
 def _write_import_tasks(path: Path, samples: list[PretrainSample]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -287,6 +337,7 @@ def build_learning_intake(root: Path = Path("."), max_per_source: int = 12) -> d
         "frontier": _collect_frontier_samples(root, max_per_source),
         "public_ideas": _collect_public_idea_samples(root, max_per_source),
         "attention_gap": _collect_attention_gap_samples(root),
+        "learning_focus_stress": _collect_learning_focus_stress_samples(root, max_per_source),
     }
     all_samples = [sample for group in collected.values() for sample in group]
     merged = merge_and_filter_samples(all_samples, min_quality_score=0.72, max_samples=max_per_source * 8)

@@ -1,7 +1,7 @@
 {
   "track": "real_prompt_coverage",
-  "current_candidate_id": "real_prompt_coverage_20260426T065850Z",
-  "parent_candidate_id": "real_prompt_coverage_20260426T065738Z",
+  "current_candidate_id": "real_prompt_coverage_20260428T131540Z",
+  "parent_candidate_id": "real_prompt_coverage_20260426T065850Z",
   "top_gap": "attention_verification_handoff_gap",
   "target_prompt_count": 20,
   "current_prompt_count": 20,
@@ -88,6 +88,14 @@
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
       "created_at_utc": "20260426T065850Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260428T131540Z",
+      "status": "in_progress",
+      "decision": "stabilize_quality_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260428T131540Z"
     }
   ],
   "last_operator_result": {
@@ -121,5 +129,5 @@
       "repair_hint": "inject_repair_and_quality_focus_prompts"
     }
   },
-  "updated_at_utc": "20260426T065850Z"
+  "updated_at_utc": "20260428T131540Z"
 }

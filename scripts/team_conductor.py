@@ -1986,9 +1986,6 @@ def _write_failure_patterns(root: Path, signals: dict[str, object]) -> Path:
     attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
     attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
     attention_view_count = int(attention_training_views.get("view_count", 0) or 0)
-    learning_focus_eval = signals.get("learning_focus_eval", {})
-    if not isinstance(learning_focus_eval, dict):
-        learning_focus_eval = {}
     learning_focus_prompt_count = int(learning_focus_eval.get("prompt_count", 0) or 0)
     learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 1.0) or 0.0)
     if attention_view_count > 0 and (
@@ -3604,6 +3601,95 @@ def _apply_conflict_detection_stress_operator(root: Path, track_state: dict[str,
     return result
 
 
+def _apply_learning_focus_evidence_routing_operator(root: Path, track_state: dict[str, object]) -> dict[str, object]:
+    learning_focus_payload = _read_json(root / "artifacts" / "learning_focus_eval_latest.json")
+    learning_focus_rows = learning_focus_payload.get("rows", []) if isinstance(learning_focus_payload, dict) else []
+    if not isinstance(learning_focus_rows, list):
+        learning_focus_rows = []
+
+    existing_keys = {_normalize_text(str(item.get("prompt", ""))) for item in _load_real_prompt_config(root)}
+    mismatch_rows = [
+        row
+        for row in learning_focus_rows
+        if isinstance(row, dict)
+        and str(row.get("logic_skill", "")) == "evidence_judgment"
+        and str(row.get("expected_tool", "")) == "search"
+        and not bool(row.get("pretrained_match", True))
+    ]
+
+    templates = [
+        (
+            "source_freshness_vs_arithmetic",
+            "你需要判断一篇 2024 年的供应商公告是否已经被 2026 年官方文档推翻。有人说可以先算一下版本跨度再下结论，但当前真正缺的是公开证据。第一步该调用什么工具，为什么不能直接按数字比较给答案？",
+        ),
+        (
+            "citation_check_vs_formula",
+            "两段产品说明里都出现了百分比，但用户真正要确认的是这些百分比有没有出处、是否来自同一版文档。你该先做什么求证，为什么不能把它当作纯计算题？",
+        ),
+        (
+            "policy_evidence_boundary",
+            "一份旧 runbook 写着必须 30 分钟内回滚，新的官方迁移指南没有这个要求。用户问你到底该信哪份。此时应该先检索什么证据，为什么不能只根据时间数字做判断？",
+        ),
+        (
+            "timeline_conflict_verification",
+            "社区帖子说某参数在 12.1 版本后失效，官方 changelog 里却只写到 12.0。用户要求你立刻确认是否还能使用该参数。你第一步该怎么验证，为什么不能直接用版本号做算术推断？",
+        ),
+    ]
+
+    prompts: list[dict[str, object]] = []
+    for idx, (mutation, prompt) in enumerate(templates, start=1):
+        key = _normalize_text(prompt)
+        if not key or key in existing_keys:
+            continue
+        source_ids = [str(row.get("id", "")) for row in mismatch_rows[:3] if str(row.get("id", ""))]
+        prompts.append(
+            {
+                "id": f"stress-learning-focus-evidence-routing-{idx:03d}",
+                "prompt": prompt,
+                "expected_tool": "search",
+                "logic_skill": "evidence_judgment",
+                "mutation": mutation,
+                "source": "learning_focus_evidence_tool_routing_gap",
+                "primary_failure_pattern": str(track_state.get("primary_failure_pattern", "")),
+                "source_learning_focus_ids": source_ids,
+            }
+        )
+
+    eval_path = root / "data" / "evolution" / "learning_focus_evidence_routing_eval.json"
+    result_path = root / "data" / "evolution" / "learning_focus_evidence_routing_eval_result.json"
+    eval_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_path.write_text(json.dumps({"prompts": prompts}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    result: dict[str, object] = {
+        "executed": True,
+        "reason": "learning_focus_evidence_tool_routing_gap",
+        "generated_count": len(prompts),
+        "stress_eval_path": str(eval_path),
+        "stress_result_path": str(result_path),
+        "result_path": str(result_path),
+        "repair_operator": "stress_learning_focus_evidence_routing_gap",
+        "repair_hint": "review evidence_judgment routing rows before merging any new prompt into default eval",
+    }
+
+    try:
+        proc = subprocess.run(
+            ["python", "-m", "scripts.evaluate_real_prompts", str(eval_path)],
+            cwd=str(root),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(proc.stdout)
+        result_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["stress_eval"] = payload
+    except Exception as exc:
+        error_payload = {"executed": False, "reason": str(exc), "prompt_count": len(prompts)}
+        result_path.write_text(json.dumps(error_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["evaluation_error"] = str(exc)
+
+    return result
+
+
 def _maybe_execute_real_prompt_operator(root: Path, signals: dict[str, object]) -> dict[str, object]:
     track_state = _build_real_prompt_track_state(signals)
     operator = str(track_state.get("operator", ""))
@@ -3611,6 +3697,8 @@ def _maybe_execute_real_prompt_operator(root: Path, signals: dict[str, object]) 
         apply_operator = _apply_expand_eval_set_operator
     elif operator == "stress_conflict_detection_gap":
         apply_operator = _apply_conflict_detection_stress_operator
+    elif operator == "stress_learning_focus_evidence_routing_gap":
+        apply_operator = _apply_learning_focus_evidence_routing_operator
     else:
         return {"executed": False, "reason": "operator_not_needed", "track_state": track_state}
     try:
@@ -4038,6 +4126,10 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
         attention_training_views = {}
     attention_premature_release_count = int(attention_flow.get("premature_release_count", 0) or 0)
     attention_conflict_to_verification_rate = float(attention_training_views.get("conflict_to_verification_rate", 1.0) or 0.0)
+    learning_focus_eval = signals.get("learning_focus_eval", {})
+    if not isinstance(learning_focus_eval, dict):
+        learning_focus_eval = {}
+    learning_focus_pretrained_match_rate = float(learning_focus_eval.get("pretrained_match_rate", 1.0) or 0.0)
 
     primary_failure_pattern = str(signals.get("primary_failure_pattern", "") or "")
     if not primary_failure_pattern:
@@ -4070,6 +4162,18 @@ def _build_real_prompt_track_state(signals: dict[str, object]) -> dict[str, obje
         expected_metric_delta = {
             "specialized_conflict_detection_prompts": 4,
             "pretrained_match_rate": 0.0,
+        }
+    elif primary_failure_pattern == "learning_focus_evidence_tool_routing_gap":
+        top_gap = "learning_focus_evidence_tool_routing_gap"
+        operator = "stress_learning_focus_evidence_routing_gap"
+        status = "in_progress"
+        decision = "stress_learning_focus_evidence_routing_gap"
+        failure_reason = "learning_focus_evidence_tool_routing_gap_active"
+        repair_hint = "inject_evidence_judgment_search_first_variants"
+        hypothesis = "Convert evidence_judgment mismatches into search-first stress prompts until public-idea and attention-derived learning tasks stop misrouting to calculator."
+        expected_metric_delta = {
+            "specialized_evidence_routing_prompts": 4,
+            "learning_focus_pretrained_match_rate": max(0.0, 0.75 - learning_focus_pretrained_match_rate),
         }
     elif primary_failure_pattern == "attention_verification_handoff_gap":
         top_gap = "attention_verification_handoff_gap"
@@ -4214,6 +4318,7 @@ def _write_evolution_artifacts(root: Path, signals: dict[str, object], operator_
             "repair_label_mapping",
             "rerun_eval",
             "stress_conflict_detection_gap",
+            "stress_learning_focus_evidence_routing_gap",
             "promote_baseline",
         ],
         "history": history[-20:],

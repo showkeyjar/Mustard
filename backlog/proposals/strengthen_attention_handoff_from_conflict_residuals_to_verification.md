@@ -1,0 +1,22 @@
+# Strengthen attention handoff from conflict residuals to verification
+
+- problem: 当前 attention 流还能在残差未消解时提前释放，说明智能体工作流还没有稳定转成模型可学的 verification handoff。
+- from_failure_pattern: attention_verification_handoff_gap
+- from_top_gap: attention_verification_handoff_gap
+- change_type: evaluation_or_dataset
+- proposed_change: 围绕 premature release 与 conflict/tool-boundary case 扩展 attention supervision 视图，强化 residual -> VERIFY -> release_allowed 的离线训练信号。
+- expected_metric_delta: premature_release_count 降到 0，且 conflict_to_verification_rate 提升到 >=0.50
+- risk_level: low
+- needs_human_approval: False
+- relative_to_last_round: 从仅做 attention 观察，升级为用 handoff 缺口反向驱动离线监督样本设计。
+- scenario_fit: 多来源冲突、工具边界与需要验证后再回答的真实复杂任务场景。
+- architect_handoff: architect + trainer tighten residual-to-VERIFY supervision before any training admission discussion
+- rollback_plan: 只回退 attention projector / training view 样本，不改默认运行时与训练准入。
+- evidence:
+  - premature_release_count=1
+  - conflict_to_verification_rate=0.2500
+- evaluation_plan:
+  - python -m scripts.export_attention_flow
+  - python -m scripts.export_attention_training_views
+  - python -m scripts.evaluate_attention_flow
+  - python -m scripts.evaluate_attention_training_views

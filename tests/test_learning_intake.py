@@ -117,6 +117,31 @@ class LearningIntakeTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "data" / "evolution").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "evolution" / "learning_focus_evidence_routing_eval_result.json").write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "stress-learning-focus-evidence-routing-002",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "baseline_used_tool": "calculator",
+                                "pretrained_used_tool": "calculator",
+                            },
+                            {
+                                "id": "stress-learning-focus-evidence-routing-003",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "baseline_used_tool": "calculator",
+                                "pretrained_used_tool": "search",
+                            },
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             manifest = build_learning_intake(root, max_per_source=5)
 
@@ -130,6 +155,7 @@ class LearningIntakeTests(unittest.TestCase):
             self.assertIn("learning_intake:bridge_feedback", source_counts)
             self.assertIn("learning_intake:frontier", source_counts)
             self.assertIn("learning_intake:public_idea", source_counts)
+            self.assertIn("learning_intake:learning_focus_stress", source_counts)
 
 
 if __name__ == "__main__":

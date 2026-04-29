@@ -8,6 +8,8 @@
 - real_prompt_match_rate: 0.9000
 - attention_premature_release_count: 1
 - attention_conflict_to_verification_rate: 0.2500
+- learning_focus_prompt_count: 7
+- learning_focus_pretrained_match_rate: 0.5714
 
 ## Research Constraints
 - 必须绑定 Top Gap 或 failure pattern

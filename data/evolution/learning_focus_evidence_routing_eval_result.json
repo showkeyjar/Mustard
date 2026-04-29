@@ -1,0 +1,120 @@
+{
+  "summary": {
+    "prompt_count": 4,
+    "baseline_match_rate": 0.25,
+    "pretrained_match_rate": 0.75,
+    "baseline_avg_steps": 6.25,
+    "pretrained_avg_steps": 8.0
+  },
+  "rows": [
+    {
+      "id": "stress-learning-focus-evidence-routing-001",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "VERIFY",
+        "VERIFY",
+        "VERIFY"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-002",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": false
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-003",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-004",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    }
+  ]
+}

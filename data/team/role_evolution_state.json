@@ -2,7 +2,7 @@
   "roles": {
     "observer": {
       "last_score": 0.4,
-      "underperform_rounds": 9
+      "underperform_rounds": 10
     },
     "benchmark_owner": {
       "last_score": 0.7,
@@ -40,5 +40,5 @@
   "suggestions": [
     "demote_or_redefine:observer"
   ],
-  "updated_at_utc": "2026-04-26T06:58:50.313514+00:00"
+  "updated_at_utc": "2026-04-28T13:15:40.361272+00:00"
 }

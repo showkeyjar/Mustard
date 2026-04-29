@@ -1,7 +1,7 @@
 # Learning Intake Report
 
-- candidate_count: 7
-- source_breakdown: {"learning_intake:public_idea": 3, "learning_intake:attention_gap": 1, "learning_intake:frontier": 3}
+- candidate_count: 10
+- source_breakdown: {"learning_intake:public_idea": 3, "learning_intake:learning_focus_stress": 3, "learning_intake:attention_gap": 1, "learning_intake:frontier": 3}
 - default_runtime_changed: false
 - default_training_admission_changed: false
 
@@ -18,6 +18,24 @@
 - expected_tool: search
 - quality_score: 0.9900
 - prompt: 公开 agent 设计思想内化：主题=keep agent systems simple and composable。 外部观点=优先用清晰可检查的工具接口、路由和人工监督来构造 agent，而不是一开始就堆很复杂的自主链路。。 来源=Anthropic - Building Effective Agents。 请把它转写成一条适合 Mustard 离线评测或监督学习的任务，并说明验证通过阈值。
+
+### learning_intake:learning_focus_stress
+- logic_skill: evidence_judgment
+- expected_tool: search
+- quality_score: 0.9900
+- prompt: Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-001。 期望工具=search，baseline=bigmodel_proxy，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。
+
+### learning_intake:learning_focus_stress
+- logic_skill: evidence_judgment
+- expected_tool: search
+- quality_score: 0.9900
+- prompt: Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-002。 期望工具=search，baseline=calculator，pretrained=calculator。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。
+
+### learning_intake:learning_focus_stress
+- logic_skill: evidence_judgment
+- expected_tool: search
+- quality_score: 0.9900
+- prompt: Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-003。 期望工具=search，baseline=calculator，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。
 
 ### learning_intake:attention_gap
 - logic_skill: conflict_detection

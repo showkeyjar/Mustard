@@ -1,8 +1,8 @@
 # Research Artifact (Actionable)
 
 ## 1) Meta
-- round_id: auto-20260426T065847Z
-- date: 2026-04-26
+- round_id: auto-20260428T131537Z
+- date: 2026-04-28
 - owner: researcher
 - from_top_gap: attention_verification_handoff_gap
 - from_failure_pattern: sampling_blind_spot
@@ -24,7 +24,7 @@
 ## 4) Evidence chain
 - representative_case_1: pretrained_match_rate=0.9000, baseline_match_rate=0.9000, delta=+0.0000
 - representative_case_2: mismatch_case_count=2
-- representative_case_3: stagnation_rounds=1; frontier_observation_count=3
+- representative_case_3: stagnation_rounds=0; frontier_observation_count=3
 - evidence_quality_note: 当前已有 mismatch，但还需要更多同类专项样本验证 sampling_blind_spot 是否是稳定簇。
 - blind_spot_if_no_failure_case: none
 - candidate_pipeline_snapshot:

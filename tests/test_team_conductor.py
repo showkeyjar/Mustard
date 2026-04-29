@@ -21,6 +21,7 @@ from scripts.team_conductor import (
     _select_top_gap,
     _write_failure_patterns,
     bootstrap_workspace,
+    build_daily_digest,
     build_proposals,
     collect_signals,
     run_cycle,
@@ -396,6 +397,71 @@ class TeamConductorTests(unittest.TestCase):
             config_after = json.loads((root / "configs" / "real_prompt_eval.json").read_text(encoding="utf-8"))
             self.assertEqual(config_after["prompts"], original_prompts)
 
+    def test_maybe_execute_real_prompt_operator_runs_learning_focus_routing_pack_without_merging_config(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            original_prompts = [
+                {
+                    "id": f"seed-{idx:02d}",
+                    "prompt": f"seed prompt {idx}",
+                    "expected_tool": "search",
+                    "logic_skill": "comparison",
+                }
+                for idx in range(20)
+            ]
+            (root / "configs" / "real_prompt_eval.json").write_text(
+                json.dumps({"prompts": original_prompts}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "learning_focus_eval_latest.json").write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "learning-focus-004",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "calculator",
+                                "pretrained_match": False,
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            result = _maybe_execute_real_prompt_operator(
+                root,
+                {
+                    "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+                    "learning_focus_eval": {
+                        "prompt_count": 7,
+                        "pretrained_match_rate": 0.5714,
+                    },
+                    "real_prompt_eval": {
+                        "summary": {
+                            "prompt_count": 20,
+                            "baseline_match_rate": 0.9,
+                            "pretrained_match_rate": 0.9,
+                        },
+                        "rows": [],
+                    },
+                },
+            )
+
+            self.assertTrue(result["executed"])
+            self.assertEqual(result["reason"], "learning_focus_evidence_tool_routing_gap")
+            self.assertEqual(result["generated_count"], 4)
+            self.assertTrue(Path(result["stress_eval_path"]).exists())
+            self.assertTrue(Path(result["stress_result_path"]).exists())
+            self.assertEqual(result["result_path"], result["stress_result_path"])
+            config_after = json.loads((root / "configs" / "real_prompt_eval.json").read_text(encoding="utf-8"))
+            self.assertEqual(config_after["prompts"], original_prompts)
+
     def test_cluster_recovery_variants_creates_specific_pattern_ids(self) -> None:
         clusters = _cluster_recovery_variants(
             [
@@ -654,8 +720,8 @@ class TeamConductorTests(unittest.TestCase):
         )
         titles = [item.get("title", "") for item in proposals]
         self.assertIn("Strengthen attention handoff from conflict residuals to verification", titles)
+        self.assertIn("Repair evidence-judgment routing on learning-focus tasks", titles)
         self.assertIn("Exploit sampling blind spot with high-information real prompts", titles)
-        self.assertIn("Reopen frontier research intake with minimum observation quota", titles)
         self.assertTrue(any(item.get("architect_handoff") for item in proposals))
 
     def test_dedupe_and_prioritize_prefers_richer_failure_pattern_proposal(self) -> None:
@@ -838,6 +904,23 @@ class TeamConductorTests(unittest.TestCase):
 
             self.assertEqual(signals["learning_focus_eval"]["prompt_count"], 7)
             self.assertEqual(signals["learning_focus_eval"]["pretrained_match_rate"], 0.5714)
+
+    def test_build_daily_digest_flags_learning_focus_routing_alert(self) -> None:
+        digest = build_daily_digest(
+            {
+                "episodes": [],
+                "reviews": [],
+                "bridge_feedback": 1,
+                "frontier_observation_count": 3,
+                "learning_focus_eval": {
+                    "prompt_count": 7,
+                    "pretrained_match_rate": 0.5714,
+                },
+            },
+            {"team_name": "mustard-claw"},
+        )
+
+        self.assertIn("learning_focus_tool_routing_weak", digest["alerts"])
 
     def test_write_failure_patterns_adds_learning_focus_routing_gap(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -1101,6 +1184,84 @@ class TeamConductorTests(unittest.TestCase):
             self.assertTrue(result["operator_result"]["executed"])
             self.assertEqual(result["operator_result"]["reason"], "stress_conflict_detection_gap")
             self.assertTrue((root / "data" / "evolution" / "conflict_detection_stress_eval.json").exists())
+
+    def test_run_cycle_retries_learning_focus_operator_after_primary_proposal_sets_failure_pattern(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "review").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "control").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "train_runs").mkdir(parents=True, exist_ok=True)
+
+            (root / "configs" / "team_cycle.json").write_text(
+                json.dumps(
+                    {
+                        "team_name": "mustard-claw",
+                        "heartbeat": {"max_new_proposals_per_cycle": 1},
+                        "risk_policy": {"human_gate_required_change_types": ["runtime_control"]},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "learning_focus_eval_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "prompt_count": 7,
+                            "baseline_match_rate": 0.4286,
+                            "pretrained_match_rate": 0.5714,
+                        },
+                        "rows": [
+                            {
+                                "id": "learning-focus-004",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "calculator",
+                                "pretrained_match": False,
+                            },
+                            {
+                                "id": "learning-focus-005",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_used_tool": "calculator",
+                                "pretrained_match": False,
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "review" / "reviews.jsonl").write_text("", encoding="utf-8")
+            (root / "data" / "control" / "control_state.json").write_text("{}", encoding="utf-8")
+            (root / "data" / "train_runs" / "auto_train_latest.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run_learning_focus",
+                        "dataset": {"sample_count": 186},
+                        "evaluation": {
+                            "real_prompt_eval": {
+                                "summary": {
+                                    "prompt_count": 20,
+                                    "baseline_match_rate": 0.9,
+                                    "pretrained_match_rate": 0.9,
+                                },
+                                "rows": [],
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_cycle(root=root, config_path=Path("configs/team_cycle.json"))
+
+            self.assertTrue(result["operator_result"]["executed"])
+            self.assertEqual(result["operator_result"]["reason"], "learning_focus_evidence_tool_routing_gap")
+            self.assertTrue((root / "data" / "evolution" / "learning_focus_evidence_routing_eval.json").exists())
 
 
 if __name__ == "__main__":

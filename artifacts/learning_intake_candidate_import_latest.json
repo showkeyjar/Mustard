@@ -1,0 +1,13 @@
+{
+  "mode": "reviewed_export_only",
+  "review_total": 4,
+  "approved_count": 0,
+  "pending_count": 4,
+  "rejected_count": 0,
+  "status_counts": {
+    "pending": 4
+  },
+  "import_path": "data\\learning\\candidate_pretrain_import.jsonl",
+  "report_path": "backlog\\opportunities\\learning_intake_candidate_import_report.md",
+  "default_training_admission_changed": false
+}

@@ -1,0 +1,60 @@
+{
+  "prompts": [
+    {
+      "id": "stress-learning-focus-evidence-routing-001",
+      "prompt": "你需要判断一篇 2024 年的供应商公告是否已经被 2026 年官方文档推翻。有人说可以先算一下版本跨度再下结论，但当前真正缺的是公开证据。第一步该调用什么工具，为什么不能直接按数字比较给答案？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "mutation": "source_freshness_vs_arithmetic",
+      "source": "learning_focus_evidence_tool_routing_gap",
+      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+      "source_learning_focus_ids": [
+        "learning-focus-004",
+        "learning-focus-005",
+        "learning-focus-006"
+      ]
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-002",
+      "prompt": "两段产品说明里都出现了百分比，但用户真正要确认的是这些百分比有没有出处、是否来自同一版文档。你该先做什么求证，为什么不能把它当作纯计算题？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "mutation": "citation_check_vs_formula",
+      "source": "learning_focus_evidence_tool_routing_gap",
+      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+      "source_learning_focus_ids": [
+        "learning-focus-004",
+        "learning-focus-005",
+        "learning-focus-006"
+      ]
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-003",
+      "prompt": "一份旧 runbook 写着必须 30 分钟内回滚，新的官方迁移指南没有这个要求。用户问你到底该信哪份。此时应该先检索什么证据，为什么不能只根据时间数字做判断？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "mutation": "policy_evidence_boundary",
+      "source": "learning_focus_evidence_tool_routing_gap",
+      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+      "source_learning_focus_ids": [
+        "learning-focus-004",
+        "learning-focus-005",
+        "learning-focus-006"
+      ]
+    },
+    {
+      "id": "stress-learning-focus-evidence-routing-004",
+      "prompt": "社区帖子说某参数在 12.1 版本后失效，官方 changelog 里却只写到 12.0。用户要求你立刻确认是否还能使用该参数。你第一步该怎么验证，为什么不能直接用版本号做算术推断？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "mutation": "timeline_conflict_verification",
+      "source": "learning_focus_evidence_tool_routing_gap",
+      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+      "source_learning_focus_ids": [
+        "learning-focus-004",
+        "learning-focus-005",
+        "learning-focus-006"
+      ]
+    }
+  ]
+}
