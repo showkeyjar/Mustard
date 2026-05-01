@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from scripts.claw_team_control import doctor, status
+from scripts.claw_team_control import apply_human_review_session, build_human_review_session, doctor, status
 from scripts.team_conductor import bootstrap_workspace
 
 
@@ -122,6 +122,272 @@ class ClawTeamControlTests(unittest.TestCase):
             self.assertEqual(payload["proposal_count"], 0)
             self.assertEqual(payload["daily_digest_count"], 0)
             self.assertEqual(payload["current_best"]["best_run_id"], "run-1")
+            self.assertEqual(payload["human_review"]["pending_count"], 0)
+
+    def test_build_human_review_session_refreshes_panel_pipeline(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "opportunities").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "evolution").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "pretrain").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "configs" / "training.yaml").write_text(
+                json.dumps(
+                    {
+                        "training": {
+                            "pretraining": {
+                                "dataset_path": "data/pretrain/pretrain_corpus.jsonl",
+                                "min_quality_score": 0.72,
+                                "max_dataset_samples": 5000,
+                            }
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "data" / "pretrain" / "pretrain_corpus.jsonl").write_text("", encoding="utf-8")
+            (root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "user_input": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-001。 期望工具=search。",
+                                "task_type": "fact_check",
+                                "logic_skill": "evidence_judgment",
+                                "source_type": "learning_intake:learning_focus_stress",
+                                "expected_tool": "search",
+                                "target_slot": "PLAN",
+                                "quality_score": 0.99,
+                                "plan_action_items": ["a", "b", "c"],
+                                "plan_unknowns": ["u"],
+                                "evidence_targets": ["e"],
+                                "plan_summary": "p",
+                                "draft_summary": "d",
+                                "review_status": "pending",
+                                "review_note": "",
+                                "override_task_type": "",
+                                "override_expected_tool": "",
+                                "override_target_slot": "",
+                                "override_plan_summary": "",
+                                "override_action_items": [],
+                                "override_unknowns": [],
+                                "override_evidence_targets": [],
+                                "override_draft_summary": "",
+                            },
+                            ensure_ascii=False,
+                        )
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (root / "data" / "evolution" / "learning_focus_evidence_routing_eval_result.json").write_text(
+                json.dumps(
+                    {
+                        "rows": [
+                            {
+                                "id": "stress-learning-focus-evidence-routing-001",
+                                "pretrained_match": False,
+                                "baseline_match": False,
+                                "pretrained_used_tool": "calculator",
+                                "baseline_used_tool": "calculator",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "attention_flow_latest.json").write_text(json.dumps({"summary": {}}, ensure_ascii=False), encoding="utf-8")
+            (root / "artifacts" / "attention_training_views_latest.json").write_text(json.dumps({"summary": {}}, ensure_ascii=False), encoding="utf-8")
+
+            payload = build_human_review_session(root)
+
+            self.assertEqual(payload["mode"], "human_review_session")
+            self.assertEqual(payload["panel_summary"]["total_candidates"], 1)
+            self.assertTrue((root / "data" / "learning" / "candidate_pretrain_human_review_sheet.jsonl").exists())
+
+    def test_apply_human_review_session_can_export_import(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "backlog" / "opportunities").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl").write_text(
+                json.dumps(
+                    {
+                        "user_input": "样本 A",
+                        "task_type": "fact_check",
+                        "logic_skill": "evidence_judgment",
+                        "source_type": "learning_intake:learning_focus_stress",
+                        "expected_tool": "search",
+                        "target_slot": "PLAN",
+                        "quality_score": 0.99,
+                        "plan_action_items": ["a", "b", "c"],
+                        "plan_unknowns": ["u"],
+                        "evidence_targets": ["e"],
+                        "plan_summary": "p",
+                        "draft_summary": "d",
+                        "review_status": "pending",
+                        "review_note": "",
+                        "override_task_type": "",
+                        "override_expected_tool": "",
+                        "override_target_slot": "",
+                        "override_plan_summary": "",
+                        "override_action_items": [],
+                        "override_unknowns": [],
+                        "override_evidence_targets": [],
+                        "override_draft_summary": "",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (root / "data" / "learning" / "candidate_pretrain_human_review_sheet.jsonl").write_text(
+                json.dumps(
+                    {
+                        "user_input": "样本 A",
+                        "task_type": "fact_check",
+                        "logic_skill": "evidence_judgment",
+                        "source_type": "learning_intake:learning_focus_stress",
+                        "expected_tool": "search",
+                        "target_slot": "PLAN",
+                        "quality_score": 0.99,
+                        "plan_action_items": ["a", "b", "c"],
+                        "plan_unknowns": ["u"],
+                        "evidence_targets": ["e"],
+                        "plan_summary": "p",
+                        "draft_summary": "d",
+                        "review_status": "pending",
+                        "review_note": "",
+                        "override_task_type": "",
+                        "override_expected_tool": "",
+                        "override_target_slot": "",
+                        "override_plan_summary": "",
+                        "override_action_items": [],
+                        "override_unknowns": [],
+                        "override_evidence_targets": [],
+                        "override_draft_summary": "",
+                        "human_review_status": "accept",
+                        "human_review_note": "looks good",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = apply_human_review_session(root, export_import=True)
+
+            self.assertEqual(payload["apply_summary"]["applied_count"], 1)
+            self.assertEqual(payload["import_summary"]["approved_count"], 1)
+            self.assertTrue((root / "data" / "learning" / "candidate_pretrain_import.jsonl").exists())
+
+    def test_status_reports_preview_human_review_counts(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
+            (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
+            (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
+            (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
+            (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts" / "learning_intake_human_review_panel_latest.json").write_text(
+                json.dumps({"summary": {"total_candidates": 4, "recommend_accept": 1, "recommend_edit": 2, "recommend_defer": 1}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "learning_intake_human_review_preview_latest.json").write_text(
+                json.dumps({"summary": {"ready_to_apply_count": 2, "blank_decision_count": 2, "invalid_decision_count": 0}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            payload = status(root)
+
+            self.assertEqual(payload["human_review"]["ready_to_apply_count"], 2)
+            self.assertEqual(payload["human_review"]["blank_decision_count"], 2)
+
+    def test_status_reports_preview_next_action(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
+            (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
+            (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
+            (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
+            (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "artifacts" / "learning_intake_human_review_preview_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {"ready_to_apply_count": 3, "blank_decision_count": 0, "invalid_decision_count": 0},
+                        "next_action": {
+                            "state": "ready_to_apply",
+                            "command": "python -m scripts.claw_team_control apply-human-review --export-import",
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            payload = status(root)
+
+            self.assertEqual(payload["human_review"]["next_action_state"], "ready_to_apply")
+            self.assertIn("apply-human-review", payload["human_review"]["next_action_command"])
+
+    def test_status_reports_human_review_draft_path(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
+            (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
+            (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
+            (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
+            (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "artifacts" / "learning_intake_human_review_draft_latest.json").write_text(
+                json.dumps({"summary": {"draft_sheet_path": "data/learning/candidate_pretrain_human_review_sheet.draft.jsonl"}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            payload = status(root)
+
+            self.assertIn("candidate_pretrain_human_review_sheet.draft.jsonl", payload["human_review"]["draft_sheet_path"])
+
+    def test_status_reports_human_review_draft_sync_count(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
+            (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
+            (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
+            (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
+            (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "artifacts" / "learning_intake_human_review_draft_sync_latest.json").write_text(
+                json.dumps({"synced_count": 3}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            payload = status(root)
+
+            self.assertEqual(payload["human_review"]["draft_sync_count"], 3)
 
     @patch("scripts.claw_team_control.github_doctor", return_value={"ok": False, "token_present": False})
     @patch("scripts.claw_team_control.run_cycle", return_value={"team_name": "mustard-claw", "proposal_count": 0})

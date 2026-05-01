@@ -4,8 +4,8 @@
     "recommend_accept": 2,
     "recommend_edit": 2,
     "recommend_hold": 0,
-    "artifact_path": "artifacts\\learning_intake_review_queue_latest.json",
-    "report_path": "backlog\\opportunities\\learning_intake_review_queue.md",
+    "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_review_queue_latest.json",
+    "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_review_queue.md",
     "default_training_admission_changed": false
   },
   "queue": [

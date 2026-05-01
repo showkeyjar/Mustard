@@ -6,14 +6,14 @@
   "suggested_import_count": 4,
   "base_sample_count": 184,
   "shadow_sample_count": 187,
-  "suggested_review_pack_path": "data\\learning\\candidate_pretrain_suggested_review_pack.jsonl",
-  "suggested_import_path": "data\\learning\\candidate_pretrain_suggested_import.jsonl",
-  "suggested_shadow_corpus_path": "data\\learning\\candidate_pretrain_suggested_corpus.jsonl",
-  "suggested_shadow_review_pack_path": "data\\learning\\candidate_pretrain_suggested_shadow_review_pack.jsonl",
+  "suggested_review_pack_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_suggested_review_pack.jsonl",
+  "suggested_import_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_suggested_import.jsonl",
+  "suggested_shadow_corpus_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_suggested_corpus.jsonl",
+  "suggested_shadow_review_pack_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_suggested_shadow_review_pack.jsonl",
   "status_counts": {
     "edit": 2,
     "accept": 2
   },
   "default_training_admission_changed": false,
-  "report_path": "backlog\\opportunities\\learning_intake_suggested_rebuild_report.md"
+  "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_suggested_rebuild_report.md"
 }

@@ -5,6 +5,12 @@ import json
 import sys
 from pathlib import Path
 
+from carm.pretrain_data import load_review_feedback
+from scripts.apply_learning_intake_human_review_sheet import apply_learning_intake_human_review_sheet
+from scripts.build_learning_intake_human_gate_packet import build_learning_intake_human_gate_packet
+from scripts.build_learning_intake_human_review_draft import build_learning_intake_human_review_draft
+from scripts.build_learning_intake_human_review_panel import build_learning_intake_human_review_panel
+from scripts.build_learning_intake_review_queue import build_learning_intake_review_queue
 from scripts.claw_team_github import automerge_pr, doctor as github_doctor
 from scripts.claw_team_github import (
     commit_all_changes,
@@ -17,6 +23,11 @@ from scripts.claw_team_github import (
     review_pr,
     submit_pr,
 )
+from scripts.compare_learning_intake_suggested_shadow import compare_learning_intake_suggested_shadow
+from scripts.export_learning_intake_candidate_import import export_learning_intake_candidate_import
+from scripts.preview_learning_intake_human_review_sheet import preview_learning_intake_human_review_sheet
+from scripts.simulate_learning_intake_candidate_rebuild import simulate_learning_intake_candidate_rebuild
+from scripts.sync_learning_intake_human_review_draft import sync_learning_intake_human_review_draft
 from scripts.team_conductor import (
     DEFAULT_CONFIG_PATH,
     bootstrap_workspace,
@@ -95,14 +106,88 @@ def status(root: Path) -> dict[str, object]:
     signals = collect_signals(root)
     current_best_path = root / "artifacts" / "current_best.json"
     current_best = _compact_current_best(_read_json(current_best_path), current_best_path)
+    human_review = _summarize_human_review(root)
     return {
         "team_name": config.get("team_name", "mustard-claw"),
         "root": str(root.resolve()),
         "signals": signals,
         "current_best": current_best,
+        "human_review": human_review,
         "proposal_count": _count_markdown_files(root / "backlog" / "proposals"),
         "daily_digest_count": _count_markdown_files(root / "memory" / "daily"),
     }
+
+
+def _summarize_human_review(root: Path) -> dict[str, object]:
+    panel_payload = _read_json(root / "artifacts" / "learning_intake_human_review_panel_latest.json")
+    draft_payload = _read_json(root / "artifacts" / "learning_intake_human_review_draft_latest.json")
+    draft_sync_payload = _read_json(root / "artifacts" / "learning_intake_human_review_draft_sync_latest.json")
+    apply_payload = _read_json(root / "artifacts" / "learning_intake_human_review_apply_latest.json")
+    import_payload = _read_json(root / "artifacts" / "learning_intake_candidate_import_latest.json")
+    preview_payload = _read_json(root / "artifacts" / "learning_intake_human_review_preview_latest.json")
+    review_pack = load_review_feedback(root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl")
+
+    panel_summary = panel_payload.get("summary", {}) if isinstance(panel_payload, dict) else {}
+    draft_summary = draft_payload.get("summary", {}) if isinstance(draft_payload, dict) else {}
+    draft_sync_summary = draft_sync_payload if isinstance(draft_sync_payload, dict) else {}
+    apply_summary = apply_payload if isinstance(apply_payload, dict) else {}
+    import_summary = import_payload if isinstance(import_payload, dict) else {}
+    preview_summary = preview_payload.get("summary", {}) if isinstance(preview_payload, dict) else {}
+
+    return {
+        "panel_ready": bool(panel_summary),
+        "total_candidates": int(panel_summary.get("total_candidates", len(review_pack)) or 0),
+        "recommend_accept": int(panel_summary.get("recommend_accept", 0) or 0),
+        "recommend_edit": int(panel_summary.get("recommend_edit", 0) or 0),
+        "recommend_defer": int(panel_summary.get("recommend_defer", 0) or 0),
+        "ready_to_apply_count": int(preview_summary.get("ready_to_apply_count", 0) or 0),
+        "blank_decision_count": int(preview_summary.get("blank_decision_count", len(review_pack)) or 0),
+        "invalid_decision_count": int(preview_summary.get("invalid_decision_count", 0) or 0),
+        "accepted_count": int(apply_summary.get("accepted_count", 0) or 0),
+        "edited_count": int(apply_summary.get("edited_count", 0) or 0),
+        "pending_count": int(apply_summary.get("pending_count", len(review_pack)) or 0),
+        "import_approved_count": int(import_summary.get("approved_count", 0) or 0),
+        "next_action_state": str(preview_payload.get("next_action", {}).get("state", "")) if isinstance(preview_payload, dict) else "",
+        "next_action_command": str(preview_payload.get("next_action", {}).get("command", "")) if isinstance(preview_payload, dict) else "",
+        "draft_sheet_path": str(draft_summary.get("draft_sheet_path", "")),
+        "draft_sync_count": int(draft_sync_summary.get("synced_count", 0) or 0),
+        "review_sheet_path": str(panel_summary.get("review_sheet_path", "")),
+        "panel_report_path": str(panel_summary.get("report_path", "")),
+        "preview_report_path": str(preview_summary.get("report_path", "")),
+    }
+
+
+def build_human_review_session(root: Path) -> dict[str, object]:
+    queue_summary = build_learning_intake_review_queue(root)
+    suggested_rebuild = simulate_learning_intake_candidate_rebuild(root)
+    shadow_delta = compare_learning_intake_suggested_shadow(root)
+    packet = build_learning_intake_human_gate_packet(root)
+    panel = build_learning_intake_human_review_panel(root)
+    draft = build_learning_intake_human_review_draft(root)
+    preview = preview_learning_intake_human_review_sheet(root)
+    return {
+        "mode": "human_review_session",
+        "queue_summary": queue_summary,
+        "suggested_rebuild_summary": suggested_rebuild,
+        "shadow_delta_summary": shadow_delta.get("summary", {}) if isinstance(shadow_delta, dict) else {},
+        "packet_summary": packet.get("summary", {}) if isinstance(packet, dict) else {},
+        "panel_summary": panel.get("summary", {}) if isinstance(panel, dict) else {},
+        "draft_summary": draft.get("summary", {}) if isinstance(draft, dict) else {},
+        "preview_summary": preview.get("summary", {}) if isinstance(preview, dict) else {},
+        "default_training_admission_changed": False,
+    }
+
+
+def apply_human_review_session(root: Path, *, export_import: bool = False) -> dict[str, object]:
+    apply_summary = apply_learning_intake_human_review_sheet(root)
+    payload: dict[str, object] = {
+        "mode": "apply_human_review_session",
+        "apply_summary": apply_summary,
+        "default_training_admission_changed": False,
+    }
+    if export_import:
+        payload["import_summary"] = export_learning_intake_candidate_import(root)
+    return payload
 
 
 def _derive_auto_commit_message(root: Path, cycle_payload: dict[str, object]) -> str:
@@ -288,6 +373,22 @@ def main() -> int:
     doctor_parser = subparsers.add_parser("doctor")
     doctor_parser.add_argument("--root", default=".")
 
+    human_review_parser = subparsers.add_parser("human-review")
+    human_review_parser.add_argument("--root", default=".")
+
+    draft_human_review_parser = subparsers.add_parser("draft-human-review")
+    draft_human_review_parser.add_argument("--root", default=".")
+
+    sync_draft_human_review_parser = subparsers.add_parser("sync-human-review-draft")
+    sync_draft_human_review_parser.add_argument("--root", default=".")
+
+    preview_human_review_parser = subparsers.add_parser("preview-human-review")
+    preview_human_review_parser.add_argument("--root", default=".")
+
+    apply_human_review_parser = subparsers.add_parser("apply-human-review")
+    apply_human_review_parser.add_argument("--root", default=".")
+    apply_human_review_parser.add_argument("--export-import", action="store_true")
+
     github_doctor_parser = subparsers.add_parser("github-doctor")
     github_doctor_parser.add_argument("--root", default=".")
 
@@ -342,6 +443,16 @@ def main() -> int:
         payload["delivery_summary"] = _build_delivery_summary(payload, payload.get("git_delivery"))
     elif args.command == "status":
         payload = status(root)
+    elif args.command == "human-review":
+        payload = build_human_review_session(root)
+    elif args.command == "draft-human-review":
+        payload = build_learning_intake_human_review_draft(root)
+    elif args.command == "sync-human-review-draft":
+        payload = sync_learning_intake_human_review_draft(root)
+    elif args.command == "preview-human-review":
+        payload = preview_learning_intake_human_review_sheet(root)
+    elif args.command == "apply-human-review":
+        payload = apply_human_review_session(root, export_import=bool(getattr(args, "export_import", False)))
     elif args.command == "github-doctor":
         payload = github_doctor(root)
     elif args.command == "deliver":

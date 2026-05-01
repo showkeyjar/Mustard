@@ -12,9 +12,9 @@
 
 ## Paths
 
-- suggested_review_pack: data\learning\candidate_pretrain_suggested_review_pack.jsonl
-- suggested_import: data\learning\candidate_pretrain_suggested_import.jsonl
-- suggested_shadow_corpus: data\learning\candidate_pretrain_suggested_corpus.jsonl
+- suggested_review_pack: D:\codes\Mustard\data\learning\candidate_pretrain_suggested_review_pack.jsonl
+- suggested_import: D:\codes\Mustard\data\learning\candidate_pretrain_suggested_import.jsonl
+- suggested_shadow_corpus: D:\codes\Mustard\data\learning\candidate_pretrain_suggested_corpus.jsonl
 
 ## Notes
 

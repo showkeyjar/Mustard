@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "recommend_approve_count": 1,
+    "recommend_edit_count": 2,
+    "recommend_defer_count": 1,
+    "expected_shadow_added_count": 3,
+    "deduped_candidate_count": 1,
+    "packet_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_human_gate_packet_latest.json",
+    "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_gate_packet.md",
+    "default_training_admission_changed": false
+  },
+  "decisions": [
+    {
+      "decision": "approve",
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "sample_id": "stress-learning-focus-evidence-routing-002",
+      "proposed_review_status": "accept",
+      "prompt": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-002。 期望工具=search，baseline=calculator，pretrained=calculator。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "why": [
+        "pretrained 仍失败，说明这是当前真实缺口的直接监督候选。",
+        "pretrained_used_tool=calculator",
+        "baseline_used_tool=calculator",
+        "影子重建确认该样本会形成真实新增。"
+      ]
+    },
+    {
+      "decision": "defer",
+      "candidate_source_type": "learning_intake:attention_gap",
+      "sample_id": "",
+      "proposed_review_status": "pending",
+      "prompt": "AttentionFlow 学习任务：premature_release_count=1，conflict_to_verification_rate=0.2500。 当前发现 premature release 或 conflict->verification handoff 偏弱。请设计 2 条离线监督任务，要求残差必须先流向 VERIFY，之后才能 release。",
+      "why": [
+        "attention handoff 仍是当前 top gap，适合进入候选训练审阅。",
+        "premature_release_count=1, conflict_to_verification_rate=0.2500",
+        "影子重建显示该候选当前会被去重吞掉，暂不优先放行。"
+      ]
+    },
+    {
+      "decision": "approve_with_edit",
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "sample_id": "stress-learning-focus-evidence-routing-001",
+      "proposed_review_status": "edit",
+      "prompt": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-001。 期望工具=search，baseline=bigmodel_proxy，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "why": [
+        "baseline 失败但 pretrained 已修复，适合保留并压缩成更尖锐样本。",
+        "pretrained_used_tool=search",
+        "baseline_used_tool=bigmodel_proxy",
+        "影子重建确认该样本会形成真实新增，但更适合保留为 edit。"
+      ]
+    },
+    {
+      "decision": "approve_with_edit",
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "sample_id": "stress-learning-focus-evidence-routing-003",
+      "proposed_review_status": "edit",
+      "prompt": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-003。 期望工具=search，baseline=calculator，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "why": [
+        "baseline 失败但 pretrained 已修复，适合保留并压缩成更尖锐样本。",
+        "pretrained_used_tool=search",
+        "baseline_used_tool=calculator",
+        "影子重建确认该样本会形成真实新增，但更适合保留为 edit。"
+      ]
+    }
+  ]
+}

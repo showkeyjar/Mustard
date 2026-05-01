@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "base_sample_count": 184,
+    "shadow_sample_count": 187,
+    "added_count": 3,
+    "removed_count": 0,
+    "suggested_import_count": 4,
+    "surviving_import_count": 3,
+    "deduped_import_count": 1,
+    "added_source_counts": {
+      "learning_intake:learning_focus_stress": 3
+    }
+  },
+  "added_rows": [
+    {
+      "user_input": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-001。 期望工具=search，baseline=bigmodel_proxy，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "source_type": "human_review_patch",
+      "logic_skill": "evidence_judgment",
+      "quality_score": 0.99,
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "review_status": "edit"
+    },
+    {
+      "user_input": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-002。 期望工具=search，baseline=calculator，pretrained=calculator。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "source_type": "human_review_patch",
+      "logic_skill": "evidence_judgment",
+      "quality_score": 0.99,
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "review_status": "accept"
+    },
+    {
+      "user_input": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-003。 期望工具=search，baseline=calculator，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
+      "source_type": "human_review_patch",
+      "logic_skill": "evidence_judgment",
+      "quality_score": 0.99,
+      "candidate_source_type": "learning_intake:learning_focus_stress",
+      "review_status": "edit"
+    }
+  ],
+  "deduped_import_rows": [
+    {
+      "prompt": "AttentionFlow 学习任务：premature_release_count=1，conflict_to_verification_rate=0.2500。 当前发现 premature release 或 conflict->verification handoff 偏弱。请设计 2 条离线监督任务，要求残差必须先流向 VERIFY，之后才能 release。",
+      "logic_skill": "conflict_detection",
+      "candidate_source_type": "learning_intake:attention_gap",
+      "review_status": "accept"
+    }
+  ],
+  "sources": {
+    "base_dataset": "D:\\codes\\Mustard\\data\\pretrain\\pretrain_corpus.jsonl",
+    "shadow_dataset": "data/learning/candidate_pretrain_suggested_corpus.jsonl",
+    "suggested_import": "data/learning/candidate_pretrain_suggested_import.jsonl"
+  }
+}
