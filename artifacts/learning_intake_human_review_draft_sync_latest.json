@@ -11,6 +11,9 @@
   "draft_sheet_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.draft.jsonl",
   "review_sheet_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.jsonl",
   "backup_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.backup.jsonl",
+  "preview_ready_to_apply_count": 3,
+  "preview_blank_decision_count": 1,
+  "preview_report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_review_preview.md",
   "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_human_review_draft_sync_latest.json",
   "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_review_draft_sync.md",
   "default_training_admission_changed": false

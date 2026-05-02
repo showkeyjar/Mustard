@@ -1,0 +1,22 @@
+{
+  "mode": "decide_top_human_review",
+  "selected_sample_id": "search-first-adversarial-002",
+  "selected_status": "accept",
+  "selected_source_type": "learning_intake:search_first_adversarial_failure",
+  "priority_score": 134.0,
+  "decision_summary": {
+    "mode": "set_single_human_review_decision",
+    "sample_id": "search-first-adversarial-002",
+    "requested_status": "accept",
+    "applied_status": "accept",
+    "updated": true,
+    "review_sheet_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.jsonl",
+    "backup_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.backup.jsonl",
+    "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_human_review_decision_latest.json",
+    "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_review_decision.md",
+    "default_training_admission_changed": false
+  },
+  "artifact_path": "D:\\codes\\Mustard\\artifacts\\decide_top_human_review_latest.json",
+  "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\decide_top_human_review.md",
+  "default_training_admission_changed": false
+}

@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 
 from carm.pretrain_data import load_review_feedback
+from scripts.preview_learning_intake_human_review_sheet import preview_learning_intake_human_review_sheet
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -26,17 +27,20 @@ def _write_report(path: Path, summary: dict[str, object]) -> None:
         f"- synced_count: {int(summary.get('synced_count', 0) or 0)}",
         f"- nonempty_human_status_count: {int(summary.get('nonempty_human_status_count', 0) or 0)}",
         f"- status_counts: {json.dumps(summary.get('status_counts', {}), ensure_ascii=False)}",
+        f"- preview_ready_to_apply_count: {int(summary.get('preview_ready_to_apply_count', 0) or 0)}",
+        f"- preview_blank_decision_count: {int(summary.get('preview_blank_decision_count', 0) or 0)}",
         "",
         "## Paths",
         "",
         f"- draft_sheet_path: {summary.get('draft_sheet_path', '')}",
         f"- review_sheet_path: {summary.get('review_sheet_path', '')}",
         f"- backup_path: {summary.get('backup_path', '')}",
+        f"- preview_report_path: {summary.get('preview_report_path', '')}",
         "",
         "## Notes",
         "",
         "- 这一步只同步草稿表到正式 human review sheet，不会改 review pack。",
-        "- 若同步后要检查效果，请运行 `python -m scripts.claw_team_control preview-human-review`。",
+        "- 同步完成后会自动刷新 preview，方便马上看到还剩几条待人工决定。",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -63,6 +67,8 @@ def sync_learning_intake_human_review_draft(root: Path = Path(".")) -> dict[str,
         shutil.copyfile(review_sheet_path, backup_path)
 
     _write_jsonl(review_sheet_path, draft_rows)
+    preview_payload = preview_learning_intake_human_review_sheet(root)
+    preview_summary = preview_payload.get("summary", {}) if isinstance(preview_payload, dict) else {}
 
     summary = {
         "mode": "sync_human_review_draft_to_sheet",
@@ -73,6 +79,9 @@ def sync_learning_intake_human_review_draft(root: Path = Path(".")) -> dict[str,
         "draft_sheet_path": str(draft_sheet_path),
         "review_sheet_path": str(review_sheet_path),
         "backup_path": str(backup_path),
+        "preview_ready_to_apply_count": int(preview_summary.get("ready_to_apply_count", 0) or 0),
+        "preview_blank_decision_count": int(preview_summary.get("blank_decision_count", 0) or 0),
+        "preview_report_path": str(preview_summary.get("report_path", "")),
         "artifact_path": str(artifact_path),
         "report_path": str(report_path),
         "default_training_admission_changed": False,

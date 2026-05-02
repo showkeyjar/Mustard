@@ -4,14 +4,14 @@
 - default_runtime_changed: false
 - default_training_admission_changed: false
 - review_total: 4
-- approved_count: 0
-- pending_count: 4
+- approved_count: 3
+- pending_count: 1
 - rejected_count: 0
-- status_counts: {"pending": 4}
+- status_counts: {"edit": 2, "accept": 1, "pending": 1}
 
 ## Paths
 
-- import_path: data\learning\candidate_pretrain_import.jsonl
+- import_path: D:\codes\Mustard\data\learning\candidate_pretrain_import.jsonl
 
 ## Gate
 

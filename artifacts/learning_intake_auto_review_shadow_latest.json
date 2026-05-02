@@ -1,0 +1,20 @@
+{
+  "mode": "auto_review_shadow",
+  "review_total": 5,
+  "auto_accept_count": 2,
+  "auto_edit_count": 2,
+  "auto_pending_count": 1,
+  "auto_reject_count": 0,
+  "auto_import_count": 4,
+  "base_sample_count": 184,
+  "shadow_sample_count": 188,
+  "top_priority_sample_id": "search-first-adversarial-002",
+  "top_priority_decision": "approve",
+  "auto_review_pack_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_auto_review_shadow.jsonl",
+  "auto_import_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_auto_import_shadow.jsonl",
+  "auto_shadow_corpus_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_auto_shadow_corpus.jsonl",
+  "auto_shadow_review_pack_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_auto_shadow_review_pack.jsonl",
+  "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_auto_review_shadow_latest.json",
+  "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_auto_review_shadow.md",
+  "default_training_admission_changed": false
+}

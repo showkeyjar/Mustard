@@ -1,15 +1,21 @@
 # Learning Intake Suggested Shadow Delta
 
 - base_sample_count: 184
-- shadow_sample_count: 187
-- added_count: 3
+- shadow_sample_count: 188
+- added_count: 4
 - removed_count: 0
-- suggested_import_count: 4
-- surviving_import_count: 3
+- suggested_import_count: 5
+- surviving_import_count: 4
 - deduped_import_count: 1
-- added_source_counts: {"learning_intake:learning_focus_stress": 3}
+- added_source_counts: {"learning_intake:search_first_adversarial_failure": 1, "learning_intake:learning_focus_stress": 3}
 
 ## Surviving Additions
+
+### evidence_judgment
+- source_type: human_review_patch
+- candidate_source_type: learning_intake:search_first_adversarial_failure
+- review_status: accept
+- prompt: Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。 原题变体=evidence_gate_before_takeaway。 原始主题题目=公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。。 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。 参考失败 prompt=围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？
 
 ### evidence_judgment
 - source_type: human_review_patch

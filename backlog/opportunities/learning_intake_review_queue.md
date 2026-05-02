@@ -1,10 +1,17 @@
 # Learning Intake Review Queue
 
-- queue_count: 4
-- recommend_accept: 2
+- queue_count: 5
+- recommend_accept: 3
 - recommend_edit: 2
 - recommend_hold: 0
 - default_training_admission_changed: false
+
+## learning_intake:search_first_adversarial_failure
+- recommended_status: accept
+- priority_score: 134.0
+- sample_id: search-first-adversarial-002
+- reasons: 当前 artifact 与 reviewed-import shadow 都未修复，说明这是最稳定的 stubborn failure。; pretrained_used_tool=calculator; shadow_pretrained_used_tool=calculator
+- prompt: Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。 原题变体=evidence_gate_before_takeaway。 原始主题题目=公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。。 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。 参考失败 prompt=围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？
 
 ## learning_intake:learning_focus_stress
 - recommended_status: accept

@@ -101,7 +101,7 @@ class ClawTeamControlTests(unittest.TestCase):
             self.assertTrue(payload["missing_files"])
 
     def test_status_reports_counts_after_bootstrap(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             bootstrap_workspace(root)
             (root / "configs").mkdir(parents=True, exist_ok=True)
@@ -360,13 +360,36 @@ class ClawTeamControlTests(unittest.TestCase):
             (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
             (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
             (root / "artifacts" / "learning_intake_human_review_draft_latest.json").write_text(
-                json.dumps({"summary": {"draft_sheet_path": "data/learning/candidate_pretrain_human_review_sheet.draft.jsonl"}}, ensure_ascii=False),
+                json.dumps(
+                    {
+                        "summary": {
+                            "draft_sheet_path": "data/learning/candidate_pretrain_human_review_sheet.draft.jsonl",
+                            "top_prefilled_sample_ids": ["sample-a", "sample-b"],
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "learning_intake_human_review_panel_latest.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "top_priority_sample_id": "sample-a",
+                            "top_priority_source_type": "learning_intake:search_first_adversarial_failure",
+                            "top_priority_review_status": "accept",
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
                 encoding="utf-8",
             )
 
             payload = status(root)
 
             self.assertIn("candidate_pretrain_human_review_sheet.draft.jsonl", payload["human_review"]["draft_sheet_path"])
+            self.assertEqual(payload["human_review"]["draft_top_prefilled_sample_ids"], ["sample-a", "sample-b"])
+            self.assertEqual(payload["human_review"]["top_priority_sample_id"], "sample-a")
 
     def test_status_reports_human_review_draft_sync_count(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -388,6 +411,28 @@ class ClawTeamControlTests(unittest.TestCase):
             payload = status(root)
 
             self.assertEqual(payload["human_review"]["draft_sync_count"], 3)
+
+    def test_status_reports_reviewed_import_shadow_counts(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bootstrap_workspace(root)
+            (root / "configs").mkdir(parents=True, exist_ok=True)
+            (root / "artifacts").mkdir(parents=True, exist_ok=True)
+            (root / "configs" / "team_cycle.json").write_text('{"team_name":"mustard-claw"}', encoding="utf-8")
+            (root / "team" / "AGENTS.md").write_text("# team\n", encoding="utf-8")
+            (root / "team" / "CONDUCTOR.md").write_text("# conductor\n", encoding="utf-8")
+            (root / "team" / "OBSERVER.md").write_text("# observer\n", encoding="utf-8")
+            (root / "team" / "GUARDIAN.md").write_text("# guardian\n", encoding="utf-8")
+            (root / "memory" / "MEMORY.md").write_text("# memory\n", encoding="utf-8")
+            (root / "artifacts" / "reviewed_import_shadow_rebuild_latest.json").write_text(
+                json.dumps({"added_count": 3, "surviving_import_count": 3, "report_path": "shadow.md"}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            payload = status(root)
+
+            self.assertEqual(payload["human_review"]["shadow_added_count"], 3)
+            self.assertEqual(payload["human_review"]["shadow_surviving_import_count"], 3)
 
     @patch("scripts.claw_team_control.github_doctor", return_value={"ok": False, "token_present": False})
     @patch("scripts.claw_team_control.run_cycle", return_value={"team_name": "mustard-claw", "proposal_count": 0})

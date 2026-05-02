@@ -1,0 +1,323 @@
+{
+  "mode": "controlled_search_first_adversarial_eval",
+  "target_failure_count": 3,
+  "target_ids": [
+    "learning-focus-004",
+    "learning-focus-005",
+    "learning-focus-006"
+  ],
+  "eval_path": "D:\\codes\\Mustard\\data\\eval\\learning_focus_search_first_adversarial_eval.json",
+  "shadow_dataset_path": "D:\\codes\\Mustard\\data\\learning\\reviewed_import_shadow_corpus.jsonl",
+  "current_summary": {
+    "prompt_count": 6,
+    "baseline_match_rate": 0.6667,
+    "pretrained_match_rate": 0.8333,
+    "baseline_avg_steps": 5.5,
+    "pretrained_avg_steps": 8.0
+  },
+  "shadow_summary": {
+    "prompt_count": 6,
+    "baseline_match_rate": 0.6667,
+    "pretrained_match_rate": 0.8333,
+    "baseline_avg_steps": 5.5,
+    "pretrained_avg_steps": 3.0
+  },
+  "delta": {
+    "pretrained_match_rate": 0.0,
+    "pretrained_avg_steps": -5.0
+  },
+  "current_rows": [
+    {
+      "id": "search-first-adversarial-001",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-002",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": false
+    },
+    {
+      "id": "search-first-adversarial-003",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-004",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-005",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-006",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    }
+  ],
+  "shadow_rows": [
+    {
+      "id": "search-first-adversarial-001",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-002",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": false
+    },
+    {
+      "id": "search-first-adversarial-003",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-004",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-005",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    },
+    {
+      "id": "search-first-adversarial-006",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "WRITE_MEM",
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": true,
+      "pretrained_match": true
+    }
+  ],
+  "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_focus_search_first_adversarial.md",
+  "default_training_admission_changed": false
+}

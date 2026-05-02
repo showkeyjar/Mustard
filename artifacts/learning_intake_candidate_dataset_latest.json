@@ -1,15 +1,17 @@
 {
   "mode": "preview_only",
   "base_sample_count": 184,
-  "selected_candidate_count": 4,
-  "merged_sample_count": 187,
+  "selected_candidate_count": 5,
+  "merged_sample_count": 188,
   "selected_source_counts": {
+    "learning_intake:search_first_adversarial_failure": 1,
     "learning_intake:learning_focus_stress": 3,
     "learning_intake:attention_gap": 1
   },
   "include_sources": [
     "learning_intake:attention_gap",
-    "learning_intake:learning_focus_stress"
+    "learning_intake:learning_focus_stress",
+    "learning_intake:search_first_adversarial_failure"
   ],
   "candidate_dataset_path": "data\\learning\\candidate_pretrain_corpus.jsonl",
   "candidate_review_pack_path": "data\\learning\\candidate_pretrain_review_pack.jsonl",

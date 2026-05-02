@@ -1,0 +1,73 @@
+{
+  "summary": {
+    "target_failure_count": 3,
+    "prompt_count": 6,
+    "target_ids": [
+      "learning-focus-004",
+      "learning-focus-005",
+      "learning-focus-006"
+    ]
+  },
+  "prompts": [
+    {
+      "id": "search-first-adversarial-001",
+      "prompt": "你要整理公开 agent 设计里关于 tool-use stability under ambiguity 的做法。请先去检索公开资料，对比至少两份来源后再给 Mustard 的低风险实验，不能只凭记忆或抽象推断直接作答。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "source_comparison_first",
+      "source_learning_focus_id": "learning-focus-004",
+      "source_prompt": "公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    },
+    {
+      "id": "search-first-adversarial-002",
+      "prompt": "围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "evidence_gate_before_takeaway",
+      "source_learning_focus_id": "learning-focus-004",
+      "source_prompt": "公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    },
+    {
+      "id": "search-first-adversarial-003",
+      "prompt": "你需要比较公开 agent 设计资料里对 conflict-aware answer suppression 的不同表述，再提炼 Mustard 可以离线验证的 suppression 规则。没有检索到外部依据前，不允许直接下结论。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "public_pattern_reconciliation",
+      "source_learning_focus_id": "learning-focus-005",
+      "source_prompt": "公开 agent 设计学习：主题=conflict-aware answer suppression。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    },
+    {
+      "id": "search-first-adversarial-004",
+      "prompt": "用户问 conflict-aware answer suppression 值不值得进 Mustard。请先检索公开设计思想或论文证据，再给出实验建议；不要把这个问题误当成一个可以直接算出答案的题。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "citation_needed_before_policy",
+      "source_learning_focus_id": "learning-focus-005",
+      "source_prompt": "公开 agent 设计学习：主题=conflict-aware answer suppression。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    },
+    {
+      "id": "search-first-adversarial-005",
+      "prompt": "你要总结公开资料里 small reasoning model routing 的适用条件、失败边界和低风险接入方式。先找证据，再决定 Mustard 是否该学这套路由，不要直接凭常识给规则。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "routing_evidence_before_rule",
+      "source_learning_focus_id": "learning-focus-006",
+      "source_prompt": "公开 agent 设计学习：主题=small reasoning model routing。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    },
+    {
+      "id": "search-first-adversarial-006",
+      "prompt": "请基于公开 agent 设计资料，对比 small reasoning model routing 在不同系统里的约束，再提出一个 Mustard 可验证实验。这个任务第一步为什么必须先检索而不是直接推理？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment",
+      "source_type": "learning_focus_search_first_adversarial",
+      "mutation": "compare_public_guidance",
+      "source_learning_focus_id": "learning-focus-006",
+      "source_prompt": "公开 agent 设计学习：主题=small reasoning model routing。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。"
+    }
+  ]
+}

@@ -37,9 +37,40 @@ def _build_learning_focus_index(root: Path) -> dict[str, dict[str, object]]:
     return result
 
 
+def _build_search_first_adversarial_index(root: Path) -> dict[str, dict[str, object]]:
+    payload = _read_json(root / "artifacts" / "learning_focus_search_first_adversarial_latest.json")
+    current_rows = payload.get("current_rows", []) if isinstance(payload, dict) else []
+    shadow_rows = payload.get("shadow_rows", []) if isinstance(payload, dict) else []
+    if not isinstance(current_rows, list):
+        current_rows = []
+    if not isinstance(shadow_rows, list):
+        shadow_rows = []
+
+    shadow_by_id = {
+        str(row.get("id", "")).strip(): row
+        for row in shadow_rows
+        if isinstance(row, dict) and str(row.get("id", "")).strip()
+    }
+    result: dict[str, dict[str, object]] = {}
+    for row in current_rows:
+        if not isinstance(row, dict):
+            continue
+        row_id = str(row.get("id", "")).strip()
+        if not row_id:
+            continue
+        merged = dict(row)
+        shadow = shadow_by_id.get(row_id, {})
+        if shadow:
+            merged["shadow_pretrained_match"] = bool(shadow.get("pretrained_match", False))
+            merged["shadow_pretrained_used_tool"] = str(shadow.get("pretrained_used_tool", "")).strip()
+        result[row_id] = merged
+    return result
+
+
 def _recommend_row(
     item: dict[str, object],
     learning_focus_index: dict[str, dict[str, object]],
+    search_first_index: dict[str, dict[str, object]],
     attention_summary: dict[str, object],
 ) -> dict[str, object]:
     source_type = str(item.get("source_type", "")).strip()
@@ -86,8 +117,30 @@ def _recommend_row(
         else:
             recommended_status = "hold"
             reasons.append("attention 指标已接近目标，暂不优先。")
+    elif source_type == "learning_intake:search_first_adversarial_failure":
+        sample_id = _extract_sample_id(user_input)
+        row = search_first_index.get(sample_id, {})
+        pretrained_match = bool(row.get("pretrained_match", False))
+        shadow_pretrained_match = bool(row.get("shadow_pretrained_match", False))
+        pretrained_tool = str(row.get("pretrained_used_tool", "")).strip()
+        shadow_pretrained_tool = str(row.get("shadow_pretrained_used_tool", "")).strip()
+        if not pretrained_match and not shadow_pretrained_match:
+            recommended_status = "accept"
+            priority += 35
+            reasons.append("当前 artifact 与 reviewed-import shadow 都未修复，说明这是最稳定的 stubborn failure。")
+        elif not pretrained_match:
+            recommended_status = "edit"
+            priority += 16
+            reasons.append("当前 artifact 仍失败，但 shadow 已缓解，适合压缩成更贴边界的样本。")
+        else:
+            recommended_status = "hold"
+            reasons.append("当前专项对抗包里已不再失败，优先级降低。")
+        if pretrained_tool:
+            reasons.append(f"pretrained_used_tool={pretrained_tool}")
+        if shadow_pretrained_tool:
+            reasons.append(f"shadow_pretrained_used_tool={shadow_pretrained_tool}")
     else:
-        reasons.append("当前脚本只对 learning_focus_stress / attention_gap 给出显式优先级建议。")
+        reasons.append("当前脚本只对 learning_focus_stress / attention_gap / search_first_adversarial_failure 给出显式优先级建议。")
 
     return {
         "user_input": user_input,
@@ -131,6 +184,7 @@ def _write_report(path: Path, queue: list[dict[str, object]], summary: dict[str,
 def build_learning_intake_review_queue(root: Path = Path(".")) -> dict[str, object]:
     review_pack = load_review_feedback(root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl")
     learning_focus_index = _build_learning_focus_index(root)
+    search_first_index = _build_search_first_adversarial_index(root)
     attention_flow = _read_json(root / "artifacts" / "attention_flow_latest.json")
     attention_views = _read_json(root / "artifacts" / "attention_training_views_latest.json")
     attention_flow_summary = attention_flow.get("summary", {}) if isinstance(attention_flow, dict) else {}
@@ -142,7 +196,7 @@ def build_learning_intake_review_queue(root: Path = Path(".")) -> dict[str, obje
         attention_summary.update(attention_view_summary)
 
     queue = [
-        _recommend_row(item, learning_focus_index, attention_summary)
+        _recommend_row(item, learning_focus_index, search_first_index, attention_summary)
         for item in review_pack
         if isinstance(item, dict)
     ]

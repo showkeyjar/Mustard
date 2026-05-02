@@ -3,12 +3,12 @@
 - mode: simulated_review_rebuild
 - default_runtime_changed: false
 - default_training_admission_changed: false
-- source_review_count: 4
-- suggested_accept_count: 2
+- source_review_count: 5
+- suggested_accept_count: 3
 - suggested_edit_count: 2
-- suggested_import_count: 4
+- suggested_import_count: 5
 - base_sample_count: 184
-- shadow_sample_count: 187
+- shadow_sample_count: 188
 
 ## Paths
 

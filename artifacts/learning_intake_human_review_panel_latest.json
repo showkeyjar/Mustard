@@ -1,10 +1,13 @@
 {
   "summary": {
     "mode": "human_friendly_review_panel",
-    "total_candidates": 4,
-    "recommend_accept": 1,
+    "total_candidates": 5,
+    "recommend_accept": 2,
     "recommend_edit": 2,
     "recommend_defer": 1,
+    "top_priority_sample_id": "search-first-adversarial-002",
+    "top_priority_source_type": "learning_intake:search_first_adversarial_failure",
+    "top_priority_review_status": "accept",
     "review_sheet_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_human_review_sheet.jsonl",
     "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_human_review_panel_latest.json",
     "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_review_panel.md",
@@ -12,12 +15,28 @@
   },
   "rows": [
     {
+      "sample_id": "search-first-adversarial-002",
+      "user_input": "Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。 原题变体=evidence_gate_before_takeaway。 原始主题题目=公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。。 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。 参考失败 prompt=围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？",
+      "source_type": "learning_intake:search_first_adversarial_failure",
+      "current_review_status": "pending",
+      "suggested_decision": "approve",
+      "suggested_review_status": "accept",
+      "priority_score": 134.0,
+      "suggested_why": [
+        "当前 artifact 与 reviewed-import shadow 都未修复，说明这是最稳定的 stubborn failure。",
+        "pretrained_used_tool=calculator",
+        "shadow_pretrained_used_tool=calculator",
+        "影子重建确认该样本会形成真实新增。"
+      ]
+    },
+    {
       "sample_id": "stress-learning-focus-evidence-routing-001",
       "user_input": "Learning-focus routing stress 学习：样本=stress-learning-focus-evidence-routing-001。 期望工具=search，baseline=bigmodel_proxy，pretrained=search。 请把这个 evidence_judgment 误路由场景转成一条更稳健的离线监督任务，要求先检索公开证据，再判断是否能回答。",
       "source_type": "learning_intake:learning_focus_stress",
       "current_review_status": "pending",
       "suggested_decision": "approve_with_edit",
       "suggested_review_status": "edit",
+      "priority_score": 111.0,
       "suggested_why": [
         "baseline 失败但 pretrained 已修复，适合保留并压缩成更尖锐样本。",
         "pretrained_used_tool=search",
@@ -32,6 +51,7 @@
       "current_review_status": "pending",
       "suggested_decision": "approve",
       "suggested_review_status": "accept",
+      "priority_score": 124.0,
       "suggested_why": [
         "pretrained 仍失败，说明这是当前真实缺口的直接监督候选。",
         "pretrained_used_tool=calculator",
@@ -46,6 +66,7 @@
       "current_review_status": "pending",
       "suggested_decision": "approve_with_edit",
       "suggested_review_status": "edit",
+      "priority_score": 111.0,
       "suggested_why": [
         "baseline 失败但 pretrained 已修复，适合保留并压缩成更尖锐样本。",
         "pretrained_used_tool=search",
@@ -60,6 +81,7 @@
       "current_review_status": "pending",
       "suggested_decision": "defer",
       "suggested_review_status": "pending",
+      "priority_score": 117.0,
       "suggested_why": [
         "attention handoff 仍是当前 top gap，适合进入候选训练审阅。",
         "premature_release_count=1, conflict_to_verification_rate=0.2500",

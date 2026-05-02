@@ -3,8 +3,8 @@
 - mode: suggested_human_review_draft
 - default_runtime_changed: false
 - default_training_admission_changed: false
-- total_candidates: 4
-- prefilled_accept_count: 1
+- total_candidates: 5
+- prefilled_accept_count: 2
 - prefilled_edit_count: 2
 - prefilled_pending_count: 1
 
@@ -15,6 +15,11 @@
 3. 确认后，把需要保留的内容同步回正式 `candidate_pretrain_human_review_sheet.jsonl`，再运行 preview/apply。
 
 ## Prefilled Rows
+
+### search-first-adversarial-002
+- suggested_review_status: accept
+- draft_human_review_status: accept
+- prompt: Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。 原题变体=evidence_gate_before_takeaway。 原始主题题目=公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。。 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。 参考失败 prompt=围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？
 
 ### stress-learning-focus-evidence-routing-001
 - suggested_review_status: edit

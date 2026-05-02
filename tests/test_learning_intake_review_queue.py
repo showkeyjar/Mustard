@@ -8,7 +8,7 @@ from scripts.build_learning_intake_review_queue import build_learning_intake_rev
 
 class LearningIntakeReviewQueueTests(unittest.TestCase):
     def test_build_learning_intake_review_queue_prioritizes_active_failures(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
             (root / "data" / "evolution").mkdir(parents=True, exist_ok=True)
@@ -37,6 +37,19 @@ class LearningIntakeReviewQueueTests(unittest.TestCase):
                                 "task_type": "fact_check",
                                 "logic_skill": "evidence_judgment",
                                 "source_type": "learning_intake:learning_focus_stress",
+                                "expected_tool": "search",
+                                "target_slot": "PLAN",
+                                "quality_score": 0.99,
+                                "review_status": "pending",
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            {
+                                "user_input": "Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。",
+                                "task_type": "fact_check",
+                                "logic_skill": "evidence_judgment",
+                                "source_type": "learning_intake:search_first_adversarial_failure",
                                 "expected_tool": "search",
                                 "target_slot": "PLAN",
                                 "quality_score": 0.99,
@@ -94,15 +107,37 @@ class LearningIntakeReviewQueueTests(unittest.TestCase):
                 json.dumps({"summary": {"conflict_to_verification_rate": 0.25}}, ensure_ascii=False),
                 encoding="utf-8",
             )
+            (root / "artifacts" / "learning_focus_search_first_adversarial_latest.json").write_text(
+                json.dumps(
+                    {
+                        "current_rows": [
+                            {
+                                "id": "search-first-adversarial-002",
+                                "pretrained_match": False,
+                                "pretrained_used_tool": "calculator",
+                            }
+                        ],
+                        "shadow_rows": [
+                            {
+                                "id": "search-first-adversarial-002",
+                                "pretrained_match": False,
+                                "pretrained_used_tool": "calculator",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             summary = build_learning_intake_review_queue(root)
 
-            self.assertEqual(summary["queue_count"], 3)
-            self.assertEqual(summary["recommend_accept"], 2)
+            self.assertEqual(summary["queue_count"], 4)
+            self.assertEqual(summary["recommend_accept"], 3)
             self.assertEqual(summary["recommend_edit"], 1)
             artifact = json.loads((root / "artifacts" / "learning_intake_review_queue_latest.json").read_text(encoding="utf-8"))
             queue = artifact["queue"]
-            self.assertEqual(queue[0]["sample_id"], "stress-learning-focus-evidence-routing-002")
+            self.assertEqual(queue[0]["sample_id"], "search-first-adversarial-002")
             self.assertEqual(queue[0]["recommended_status"], "accept")
             self.assertTrue((root / "backlog" / "opportunities" / "learning_intake_review_queue.md").exists())
 

@@ -11,6 +11,8 @@ from scripts.build_learning_intake_human_gate_packet import build_learning_intak
 from scripts.build_learning_intake_human_review_draft import build_learning_intake_human_review_draft
 from scripts.build_learning_intake_human_review_panel import build_learning_intake_human_review_panel
 from scripts.build_learning_intake_review_queue import build_learning_intake_review_queue
+from scripts.build_learning_focus_search_first_adversarial_eval import build_learning_focus_search_first_adversarial_eval
+from scripts.build_reviewed_import_shadow_rebuild import build_reviewed_import_shadow_rebuild
 from scripts.claw_team_github import automerge_pr, doctor as github_doctor
 from scripts.claw_team_github import (
     commit_all_changes,
@@ -24,8 +26,13 @@ from scripts.claw_team_github import (
     submit_pr,
 )
 from scripts.compare_learning_intake_suggested_shadow import compare_learning_intake_suggested_shadow
+from scripts.decide_top_learning_intake_human_review import decide_top_learning_intake_human_review
 from scripts.export_learning_intake_candidate_import import export_learning_intake_candidate_import
+from scripts.evaluate_reviewed_import_shadow_learning_focus import evaluate_reviewed_import_shadow_learning_focus
+from scripts.evaluate_learning_focus_search_first_adversarial import evaluate_learning_focus_search_first_adversarial
 from scripts.preview_learning_intake_human_review_sheet import preview_learning_intake_human_review_sheet
+from scripts.run_learning_intake_auto_review_shadow import run_learning_intake_auto_review_shadow
+from scripts.set_learning_intake_human_review_decision import set_learning_intake_human_review_decision
 from scripts.simulate_learning_intake_candidate_rebuild import simulate_learning_intake_candidate_rebuild
 from scripts.sync_learning_intake_human_review_draft import sync_learning_intake_human_review_draft
 from scripts.team_conductor import (
@@ -125,6 +132,7 @@ def _summarize_human_review(root: Path) -> dict[str, object]:
     apply_payload = _read_json(root / "artifacts" / "learning_intake_human_review_apply_latest.json")
     import_payload = _read_json(root / "artifacts" / "learning_intake_candidate_import_latest.json")
     preview_payload = _read_json(root / "artifacts" / "learning_intake_human_review_preview_latest.json")
+    shadow_rebuild_payload = _read_json(root / "artifacts" / "reviewed_import_shadow_rebuild_latest.json")
     review_pack = load_review_feedback(root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl")
 
     panel_summary = panel_payload.get("summary", {}) if isinstance(panel_payload, dict) else {}
@@ -133,6 +141,12 @@ def _summarize_human_review(root: Path) -> dict[str, object]:
     apply_summary = apply_payload if isinstance(apply_payload, dict) else {}
     import_summary = import_payload if isinstance(import_payload, dict) else {}
     preview_summary = preview_payload.get("summary", {}) if isinstance(preview_payload, dict) else {}
+    shadow_rebuild_summary = shadow_rebuild_payload if isinstance(shadow_rebuild_payload, dict) else {}
+    queue_payload = _read_json(root / "artifacts" / "learning_intake_review_queue_latest.json")
+    queue_rows = queue_payload.get("queue", []) if isinstance(queue_payload, dict) else []
+    if not isinstance(queue_rows, list):
+        queue_rows = []
+    top_queue_row = queue_rows[0] if queue_rows else {}
 
     return {
         "panel_ready": bool(panel_summary),
@@ -147,13 +161,20 @@ def _summarize_human_review(root: Path) -> dict[str, object]:
         "edited_count": int(apply_summary.get("edited_count", 0) or 0),
         "pending_count": int(apply_summary.get("pending_count", len(review_pack)) or 0),
         "import_approved_count": int(import_summary.get("approved_count", 0) or 0),
+        "shadow_added_count": int(shadow_rebuild_summary.get("added_count", 0) or 0),
+        "shadow_surviving_import_count": int(shadow_rebuild_summary.get("surviving_import_count", 0) or 0),
         "next_action_state": str(preview_payload.get("next_action", {}).get("state", "")) if isinstance(preview_payload, dict) else "",
         "next_action_command": str(preview_payload.get("next_action", {}).get("command", "")) if isinstance(preview_payload, dict) else "",
         "draft_sheet_path": str(draft_summary.get("draft_sheet_path", "")),
+        "draft_top_prefilled_sample_ids": draft_summary.get("top_prefilled_sample_ids", []) if isinstance(draft_summary.get("top_prefilled_sample_ids", []), list) else [],
         "draft_sync_count": int(draft_sync_summary.get("synced_count", 0) or 0),
+        "top_priority_sample_id": str(panel_summary.get("top_priority_sample_id", "") or top_queue_row.get("sample_id", "")),
+        "top_priority_source_type": str(panel_summary.get("top_priority_source_type", "") or top_queue_row.get("source_type", "")),
+        "top_priority_review_status": str(panel_summary.get("top_priority_review_status", "") or top_queue_row.get("recommended_status", "")),
         "review_sheet_path": str(panel_summary.get("review_sheet_path", "")),
         "panel_report_path": str(panel_summary.get("report_path", "")),
         "preview_report_path": str(preview_summary.get("report_path", "")),
+        "shadow_rebuild_report_path": str(shadow_rebuild_summary.get("report_path", "")),
     }
 
 
@@ -385,6 +406,30 @@ def main() -> int:
     preview_human_review_parser = subparsers.add_parser("preview-human-review")
     preview_human_review_parser.add_argument("--root", default=".")
 
+    reviewed_shadow_parser = subparsers.add_parser("rebuild-reviewed-import-shadow")
+    reviewed_shadow_parser.add_argument("--root", default=".")
+
+    reviewed_shadow_eval_parser = subparsers.add_parser("eval-reviewed-import-shadow-learning-focus")
+    reviewed_shadow_eval_parser.add_argument("--root", default=".")
+
+    search_first_build_parser = subparsers.add_parser("build-learning-focus-search-first-adversarial")
+    search_first_build_parser.add_argument("--root", default=".")
+
+    search_first_eval_parser = subparsers.add_parser("eval-learning-focus-search-first-adversarial")
+    search_first_eval_parser.add_argument("--root", default=".")
+
+    decide_human_review_parser = subparsers.add_parser("decide-human-review")
+    decide_human_review_parser.add_argument("--root", default=".")
+    decide_human_review_parser.add_argument("--sample-id", required=True)
+    decide_human_review_parser.add_argument("--status", required=True)
+    decide_human_review_parser.add_argument("--note", default="")
+
+    decide_top_human_review_parser = subparsers.add_parser("decide-top-human-review")
+    decide_top_human_review_parser.add_argument("--root", default=".")
+
+    auto_review_shadow_parser = subparsers.add_parser("auto-review-shadow")
+    auto_review_shadow_parser.add_argument("--root", default=".")
+
     apply_human_review_parser = subparsers.add_parser("apply-human-review")
     apply_human_review_parser.add_argument("--root", default=".")
     apply_human_review_parser.add_argument("--export-import", action="store_true")
@@ -451,6 +496,25 @@ def main() -> int:
         payload = sync_learning_intake_human_review_draft(root)
     elif args.command == "preview-human-review":
         payload = preview_learning_intake_human_review_sheet(root)
+    elif args.command == "rebuild-reviewed-import-shadow":
+        payload = build_reviewed_import_shadow_rebuild(root)
+    elif args.command == "eval-reviewed-import-shadow-learning-focus":
+        payload = evaluate_reviewed_import_shadow_learning_focus(root)
+    elif args.command == "build-learning-focus-search-first-adversarial":
+        payload = build_learning_focus_search_first_adversarial_eval(root)
+    elif args.command == "eval-learning-focus-search-first-adversarial":
+        payload = evaluate_learning_focus_search_first_adversarial(root)
+    elif args.command == "decide-human-review":
+        payload = set_learning_intake_human_review_decision(
+            str(args.sample_id),
+            str(args.status),
+            note=str(args.note),
+            root=root,
+        )
+    elif args.command == "decide-top-human-review":
+        payload = decide_top_learning_intake_human_review(root)
+    elif args.command == "auto-review-shadow":
+        payload = run_learning_intake_auto_review_shadow(root)
     elif args.command == "apply-human-review":
         payload = apply_human_review_session(root, export_import=bool(getattr(args, "export_import", False)))
     elif args.command == "github-doctor":

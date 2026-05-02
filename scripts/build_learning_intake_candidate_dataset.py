@@ -11,6 +11,7 @@ from carm.training import load_training_config
 DEFAULT_INCLUDE_SOURCES = {
     "learning_intake:learning_focus_stress",
     "learning_intake:attention_gap",
+    "learning_intake:search_first_adversarial_failure",
 }
 
 
@@ -33,7 +34,7 @@ def _write_report(path: Path, payload: dict[str, object]) -> None:
         "",
         "## Recommended Next Step",
         "",
-        "- Step 1: 审阅 candidate review pack，确认 learning_focus_stress / attention_gap 样本是否值得进入正式离线构建。",
+        "- Step 1: 审阅 candidate review pack，确认 learning_focus_stress / attention_gap / search_first_adversarial_failure 样本是否值得进入正式离线构建。",
         "- Step 2: 若通过人工审阅，再将对应 import path 用于 build_pretrain_dataset 或 auto_train。",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)

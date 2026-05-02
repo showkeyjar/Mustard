@@ -9,7 +9,7 @@ from scripts.build_learning_intake_human_review_panel import build_learning_inta
 
 class LearningIntakeHumanReviewPanelTests(unittest.TestCase):
     def test_build_learning_intake_human_review_panel_creates_sheet_and_report(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
             (root / "artifacts").mkdir(parents=True, exist_ok=True)
@@ -48,6 +48,8 @@ class LearningIntakeHumanReviewPanelTests(unittest.TestCase):
                             {
                                 "prompt": "样本 A",
                                 "sample_id": "a",
+                                "candidate_source_type": "learning_intake:learning_focus_stress",
+                                "priority_score": 134.0,
                                 "decision": "approve",
                                 "proposed_review_status": "accept",
                                 "why": ["still failing"],
@@ -71,8 +73,10 @@ class LearningIntakeHumanReviewPanelTests(unittest.TestCase):
             self.assertEqual(panel["summary"]["total_candidates"], 2)
             self.assertEqual(panel["summary"]["recommend_accept"], 1)
             self.assertEqual(panel["summary"]["recommend_defer"], 1)
+            self.assertEqual(panel["summary"]["top_priority_sample_id"], "a")
             sheet_rows = load_review_feedback(root / "data" / "learning" / "candidate_pretrain_human_review_sheet.jsonl")
             self.assertEqual(sheet_rows[0]["suggested_review_status"], "accept")
+            self.assertEqual(sheet_rows[0]["priority_score"], 134.0)
             self.assertEqual(sheet_rows[0]["human_review_status"], "")
             self.assertEqual(sheet_rows[1]["sample_id"], "attention-gap-001")
             self.assertTrue((root / "artifacts" / "learning_intake_human_review_panel_latest.json").exists())

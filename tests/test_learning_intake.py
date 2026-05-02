@@ -8,7 +8,7 @@ from scripts.build_learning_intake import build_learning_intake
 
 class LearningIntakeTests(unittest.TestCase):
     def test_build_learning_intake_collects_multi_source_candidates(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "data" / "experience").mkdir(parents=True, exist_ok=True)
             (root / "data" / "desktop").mkdir(parents=True, exist_ok=True)
@@ -142,6 +142,52 @@ class LearningIntakeTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "data" / "eval").mkdir(parents=True, exist_ok=True)
+            (root / "data" / "eval" / "learning_focus_search_first_adversarial_eval.json").write_text(
+                json.dumps(
+                    {
+                        "prompts": [
+                            {
+                                "id": "search-first-adversarial-002",
+                                "prompt": "围绕 tool-use stability under ambiguity，先检索公开资料再区分可借鉴/待验证要点。",
+                                "expected_tool": "search",
+                                "logic_skill": "evidence_judgment",
+                                "mutation": "evidence_gate_before_takeaway",
+                                "source_learning_focus_id": "learning-focus-004",
+                                "source_prompt": "公开 agent 设计学习：主题=tool-use stability under ambiguity。",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (root / "artifacts" / "learning_focus_search_first_adversarial_latest.json").write_text(
+                json.dumps(
+                    {
+                        "current_rows": [
+                            {
+                                "id": "search-first-adversarial-002",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_match": False,
+                                "pretrained_used_tool": "calculator",
+                            }
+                        ],
+                        "shadow_rows": [
+                            {
+                                "id": "search-first-adversarial-002",
+                                "logic_skill": "evidence_judgment",
+                                "expected_tool": "search",
+                                "pretrained_match": False,
+                                "pretrained_used_tool": "calculator",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
 
             manifest = build_learning_intake(root, max_per_source=5)
 
@@ -156,6 +202,7 @@ class LearningIntakeTests(unittest.TestCase):
             self.assertIn("learning_intake:frontier", source_counts)
             self.assertIn("learning_intake:public_idea", source_counts)
             self.assertIn("learning_intake:learning_focus_stress", source_counts)
+            self.assertIn("learning_intake:search_first_adversarial_failure", source_counts)
 
 
 if __name__ == "__main__":

@@ -62,14 +62,18 @@ def build_learning_intake_human_review_draft(root: Path = Path(".")) -> dict[str
     prefilled_edit_count = 0
     prefilled_pending_count = 0
     report_rows: list[dict[str, object]] = []
+    top_prefilled_sample_ids: list[str] = []
 
     for row in source_rows:
         updated = dict(row)
         suggested_status = str(row.get("suggested_review_status", "pending")).strip().lower() or "pending"
         suggested_decision = str(row.get("suggested_decision", "")).strip().lower()
+        sample_id = str(updated.get("sample_id", "")).strip()
         if suggested_status in {"accept", "edit"}:
             updated["human_review_status"] = suggested_status
             updated["human_review_note"] = f"suggested:{suggested_decision or suggested_status}"
+            if sample_id and len(top_prefilled_sample_ids) < 3:
+                top_prefilled_sample_ids.append(sample_id)
             if suggested_status == "accept":
                 prefilled_accept_count += 1
             else:
@@ -81,7 +85,7 @@ def build_learning_intake_human_review_draft(root: Path = Path(".")) -> dict[str
         draft_rows.append(updated)
         report_rows.append(
             {
-                "sample_id": str(updated.get("sample_id", "")).strip(),
+                "sample_id": sample_id,
                 "user_input": str(updated.get("user_input", "")).strip(),
                 "suggested_review_status": suggested_status,
                 "human_review_status": str(updated.get("human_review_status", "")).strip(),
@@ -94,6 +98,7 @@ def build_learning_intake_human_review_draft(root: Path = Path(".")) -> dict[str
         "prefilled_accept_count": prefilled_accept_count,
         "prefilled_edit_count": prefilled_edit_count,
         "prefilled_pending_count": prefilled_pending_count,
+        "top_prefilled_sample_ids": top_prefilled_sample_ids,
         "draft_sheet_path": str(draft_path),
         "artifact_path": str(artifact_path),
         "report_path": str(report_path),

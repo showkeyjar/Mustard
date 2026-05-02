@@ -1,6 +1,7 @@
 {
-  "candidate_count": 10,
+  "candidate_count": 11,
   "source_counts": {
+    "learning_intake:search_first_adversarial_failure": 1,
     "learning_intake:public_idea": 3,
     "learning_intake:learning_focus_stress": 3,
     "learning_intake:attention_gap": 1,

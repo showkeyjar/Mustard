@@ -9,7 +9,7 @@ from scripts.build_learning_intake_human_review_draft import build_learning_inta
 
 class LearningIntakeHumanReviewDraftTests(unittest.TestCase):
     def test_build_learning_intake_human_review_draft_prefills_suggested_statuses(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "data" / "learning").mkdir(parents=True, exist_ok=True)
             (root / "artifacts").mkdir(parents=True, exist_ok=True)
@@ -62,6 +62,7 @@ class LearningIntakeHumanReviewDraftTests(unittest.TestCase):
             self.assertEqual(payload["summary"]["prefilled_accept_count"], 1)
             self.assertEqual(payload["summary"]["prefilled_edit_count"], 1)
             self.assertEqual(payload["summary"]["prefilled_pending_count"], 1)
+            self.assertEqual(payload["summary"]["top_prefilled_sample_ids"], ["a", "b"])
             rows = load_review_feedback(root / "data" / "learning" / "candidate_pretrain_human_review_sheet.draft.jsonl")
             self.assertEqual(rows[0]["human_review_status"], "accept")
             self.assertEqual(rows[1]["human_review_status"], "edit")

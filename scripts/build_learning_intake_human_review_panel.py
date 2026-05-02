@@ -70,6 +70,7 @@ def _write_report(path: Path, panel: dict[str, object]) -> None:
                 f"### {index}. {row.get('sample_id') or 'manual-review'}",
                 f"- suggested_decision: {row.get('suggested_decision', '')}",
                 f"- suggested_review_status: {row.get('suggested_review_status', '')}",
+                f"- priority_score: {row.get('priority_score', 0)}",
                 f"- current_review_status: {row.get('current_review_status', '')}",
                 f"- why: {'; '.join(row.get('suggested_why', []))}",
                 f"- prompt: {row.get('user_input', '')}",
@@ -119,6 +120,7 @@ def build_learning_intake_human_review_panel(root: Path = Path(".")) -> dict[str
         sheet_row["suggested_review_status"] = suggested_review_status
         sheet_row["suggested_review_note"] = " | ".join(str(item).strip() for item in suggested_why if str(item).strip())
         sheet_row["suggested_why"] = suggested_why
+        sheet_row["priority_score"] = float(decision.get("priority_score", 0.0) or 0.0)
         sheet_row["human_review_status"] = ""
         sheet_row["human_review_note"] = ""
         sheet_rows.append(sheet_row)
@@ -131,16 +133,21 @@ def build_learning_intake_human_review_panel(root: Path = Path(".")) -> dict[str
                 "current_review_status": current_review_status,
                 "suggested_decision": suggested_decision,
                 "suggested_review_status": suggested_review_status,
+                "priority_score": float(decision.get("priority_score", 0.0) or 0.0),
                 "suggested_why": suggested_why,
             }
         )
 
+    top_row = panel_rows[0] if panel_rows else {}
     summary = {
         "mode": "human_friendly_review_panel",
         "total_candidates": len(panel_rows),
         "recommend_accept": sum(1 for row in panel_rows if row["suggested_review_status"] == "accept"),
         "recommend_edit": sum(1 for row in panel_rows if row["suggested_review_status"] == "edit"),
         "recommend_defer": sum(1 for row in panel_rows if row["suggested_decision"] == "defer"),
+        "top_priority_sample_id": str(top_row.get("sample_id", "")),
+        "top_priority_source_type": str(top_row.get("source_type", "")),
+        "top_priority_review_status": str(top_row.get("suggested_review_status", "")),
         "review_sheet_path": str(sheet_path),
         "artifact_path": str(artifact_path),
         "report_path": str(report_path),

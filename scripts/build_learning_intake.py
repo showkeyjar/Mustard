@@ -280,6 +280,85 @@ def _collect_learning_focus_stress_samples(root: Path, limit: int) -> list[Pretr
     return samples
 
 
+def _collect_search_first_adversarial_failure_samples(root: Path, limit: int) -> list[PretrainSample]:
+    payload = _read_json(root / "artifacts" / "learning_focus_search_first_adversarial_latest.json")
+    current_rows = payload.get("current_rows", []) if isinstance(payload, dict) else []
+    shadow_rows = payload.get("shadow_rows", []) if isinstance(payload, dict) else []
+    if not isinstance(current_rows, list) or not isinstance(shadow_rows, list):
+        return []
+
+    shadow_by_id = {
+        str(item.get("id", "")).strip(): item
+        for item in shadow_rows
+        if isinstance(item, dict) and str(item.get("id", "")).strip()
+    }
+    eval_payload = _read_json(root / "data" / "eval" / "learning_focus_search_first_adversarial_eval.json")
+    prompt_rows = eval_payload.get("prompts", []) if isinstance(eval_payload, dict) else []
+    prompt_by_id = {
+        str(item.get("id", "")).strip(): item
+        for item in prompt_rows
+        if isinstance(item, dict) and str(item.get("id", "")).strip()
+    }
+
+    samples: list[PretrainSample] = []
+    for item in current_rows[:limit]:
+        if not isinstance(item, dict):
+            continue
+        row_id = str(item.get("id", "")).strip()
+        if not row_id:
+            continue
+        shadow_item = shadow_by_id.get(row_id, {})
+        expected_tool = str(item.get("expected_tool", "")).strip()
+        logic_skill = str(item.get("logic_skill", "")).strip()
+        pretrained_tool = str(item.get("pretrained_used_tool", "")).strip()
+        shadow_pretrained_tool = str(shadow_item.get("pretrained_used_tool", "")).strip()
+        if expected_tool != "search" or logic_skill != "evidence_judgment":
+            continue
+        if bool(item.get("pretrained_match", True)) or bool(shadow_item.get("pretrained_match", True)):
+            continue
+
+        prompt_row = prompt_by_id.get(row_id, {})
+        prompt = str(prompt_row.get("prompt", "")).strip()
+        mutation = str(prompt_row.get("mutation", "")).strip()
+        source_learning_focus_id = str(prompt_row.get("source_learning_focus_id", "")).strip()
+        source_prompt = str(prompt_row.get("source_prompt", "")).strip()
+
+        user_input = (
+            f"Search-first adversarial failure 学习：样本={row_id}。"
+            f" 当前与 shadow 都把 expected_tool=search 误路由成 {pretrained_tool or 'unknown'} / {shadow_pretrained_tool or 'unknown'}。"
+            f" 原题变体={mutation or 'unknown'}。"
+            f" 原始主题题目={source_prompt or source_learning_focus_id or 'unknown'}。"
+            f" 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。"
+        )
+        if prompt:
+            user_input += f" 参考失败 prompt={prompt}"
+
+        samples.append(
+            annotate_sample(
+                PretrainSample(
+                    user_input=user_input,
+                    task_type="fact_check",
+                    source_type="learning_intake:search_first_adversarial_failure",
+                    expected_tool="",
+                    target_slot="",
+                    logic_skill="evidence_judgment",
+                    quality_score=0.96,
+                    metadata={
+                        "learning_source": "search_first_adversarial_failure",
+                        "row_id": row_id,
+                        "mutation": mutation,
+                        "source_learning_focus_id": source_learning_focus_id,
+                        "pretrained_used_tool": pretrained_tool,
+                        "shadow_pretrained_used_tool": shadow_pretrained_tool,
+                        "forced_expected_tool": "search",
+                        "forced_target_slot": "PLAN",
+                    },
+                )
+            )
+        )
+    return samples
+
+
 def _write_import_tasks(path: Path, samples: list[PretrainSample]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -338,6 +417,7 @@ def build_learning_intake(root: Path = Path("."), max_per_source: int = 12) -> d
         "public_ideas": _collect_public_idea_samples(root, max_per_source),
         "attention_gap": _collect_attention_gap_samples(root),
         "learning_focus_stress": _collect_learning_focus_stress_samples(root, max_per_source),
+        "search_first_adversarial_failure": _collect_search_first_adversarial_failure_samples(root, max_per_source),
     }
     all_samples = [sample for group in collected.values() for sample in group]
     merged = merge_and_filter_samples(all_samples, min_quality_score=0.72, max_samples=max_per_source * 8)

@@ -9,7 +9,7 @@ from scripts.build_learning_intake_candidate_dataset import build_learning_intak
 
 class LearningIntakeCandidateDatasetTests(unittest.TestCase):
     def test_build_learning_intake_candidate_dataset_writes_preview_outputs(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "configs").mkdir(parents=True, exist_ok=True)
             (root / "data" / "pretrain").mkdir(parents=True, exist_ok=True)
@@ -69,6 +69,15 @@ class LearningIntakeCandidateDatasetTests(unittest.TestCase):
                         quality_score=0.93,
                     ),
                     PretrainSample(
+                        user_input="Search-first adversarial failure 学习：样本=search-first-adversarial-002。",
+                        task_type="fact_check",
+                        source_type="learning_intake:search_first_adversarial_failure",
+                        expected_tool="search",
+                        target_slot="PLAN",
+                        logic_skill="evidence_judgment",
+                        quality_score=0.97,
+                    ),
+                    PretrainSample(
                         user_input="公开 agent 设计思想内化：把推理与行动交替展开。",
                         task_type="planning",
                         source_type="learning_intake:public_idea",
@@ -83,12 +92,13 @@ class LearningIntakeCandidateDatasetTests(unittest.TestCase):
             payload = build_learning_intake_candidate_dataset(root)
 
             self.assertEqual(payload["base_sample_count"], 1)
-            self.assertEqual(payload["selected_candidate_count"], 2)
+            self.assertEqual(payload["selected_candidate_count"], 3)
             self.assertTrue((root / "data" / "learning" / "candidate_pretrain_corpus.jsonl").exists())
             self.assertTrue((root / "data" / "learning" / "candidate_pretrain_review_pack.jsonl").exists())
             self.assertTrue((root / "artifacts" / "learning_intake_candidate_dataset_latest.json").exists())
             self.assertTrue((root / "backlog" / "opportunities" / "learning_intake_candidate_dataset_report.md").exists())
             self.assertIn("learning_intake:learning_focus_stress", payload["selected_source_counts"])
+            self.assertIn("learning_intake:search_first_adversarial_failure", payload["selected_source_counts"])
             self.assertNotIn("learning_intake:public_idea", payload["selected_source_counts"])
 
 

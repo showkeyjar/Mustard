@@ -1,7 +1,7 @@
 # Learning Intake Report
 
-- candidate_count: 10
-- source_breakdown: {"learning_intake:public_idea": 3, "learning_intake:learning_focus_stress": 3, "learning_intake:attention_gap": 1, "learning_intake:frontier": 3}
+- candidate_count: 11
+- source_breakdown: {"learning_intake:search_first_adversarial_failure": 1, "learning_intake:public_idea": 3, "learning_intake:learning_focus_stress": 3, "learning_intake:attention_gap": 1, "learning_intake:frontier": 3}
 - default_runtime_changed: false
 - default_training_admission_changed: false
 
@@ -12,6 +12,12 @@
 - Step 3: 运行 python -m scripts.build_pretrain_dataset 或 python -m scripts.auto_train
 
 ## Top Candidates
+
+### learning_intake:search_first_adversarial_failure
+- logic_skill: evidence_judgment
+- expected_tool: search
+- quality_score: 0.9900
+- prompt: Search-first adversarial failure 学习：样本=search-first-adversarial-002。 当前与 shadow 都把 expected_tool=search 误路由成 calculator / calculator。 原题变体=evidence_gate_before_takeaway。 原始主题题目=公开 agent 设计学习：主题=tool-use stability under ambiguity。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。。 请把这个失败改写成一条更稳健的 evidence_judgment 离线监督任务，要求先检索公开证据，再区分事实、引用和待验证假设。 参考失败 prompt=围绕 tool-use stability under ambiguity，用户要你总结可借鉴/不建议/待观察三类要点，并指出哪条来自公开资料、哪条只是待验证假设。当前第一步该调用什么工具，为什么不能直接归纳？
 
 ### learning_intake:public_idea
 - logic_skill: result_integration
@@ -66,9 +72,3 @@
 - expected_tool: search
 - quality_score: 0.9900
 - prompt: 公开 agent 设计学习：主题=small reasoning model routing。 当前标签=pending_label。 触发原因=frontier_zero_signal_persistence。 请基于公开资料总结可借鉴/不建议/待观察要点，并给出一个能在 Mustard 里低风险验证的实验。
-
-### learning_intake:public_idea
-- logic_skill: result_integration
-- expected_tool: search
-- quality_score: 0.9900
-- prompt: 公开 agent 设计思想内化：主题=reasoning and acting loop。 外部观点=把推理轨迹与工具行动交替展开，比只拟合最终答案更容易暴露和修复中间失误。。 来源=ReAct。 请把它转写成一条适合 Mustard 离线评测或监督学习的任务，并说明验证通过阈值。

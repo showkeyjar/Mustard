@@ -33,6 +33,7 @@ def _write_report(path: Path, packet: dict[str, object]) -> None:
                 f"## {item.get('decision', '').upper()}",
                 f"- candidate_source_type: {item.get('candidate_source_type', '')}",
                 f"- sample_id: {item.get('sample_id', '')}",
+                f"- priority_score: {item.get('priority_score', 0)}",
                 f"- proposed_review_status: {item.get('proposed_review_status', '')}",
                 f"- why: {'; '.join(item.get('why', []))}",
                 f"- prompt: {item.get('prompt', '')}",
@@ -104,18 +105,23 @@ def build_learning_intake_human_gate_packet(root: Path = Path(".")) -> dict[str,
                 "decision": decision,
                 "candidate_source_type": candidate_source_type,
                 "sample_id": str(item.get("sample_id", "")),
+                "priority_score": float(item.get("priority_score", 0.0) or 0.0),
                 "proposed_review_status": proposed_review_status,
                 "prompt": prompt,
                 "why": why,
             }
         )
 
+    top_decision = decisions[0] if decisions else {}
     summary = {
         "recommend_approve_count": sum(1 for item in decisions if item["decision"] == "approve"),
         "recommend_edit_count": sum(1 for item in decisions if item["decision"] == "approve_with_edit"),
         "recommend_defer_count": sum(1 for item in decisions if item["decision"] == "defer"),
         "expected_shadow_added_count": int(delta_summary.get("added_count", 0) or 0),
         "deduped_candidate_count": int(delta_summary.get("deduped_import_count", 0) or 0),
+        "top_priority_sample_id": str(top_decision.get("sample_id", "")),
+        "top_priority_source_type": str(top_decision.get("candidate_source_type", "")),
+        "top_priority_decision": str(top_decision.get("decision", "")),
         "packet_path": str(root / "artifacts" / "learning_intake_human_gate_packet_latest.json"),
         "report_path": str(root / "backlog" / "opportunities" / "learning_intake_human_gate_packet.md"),
         "default_training_admission_changed": False,

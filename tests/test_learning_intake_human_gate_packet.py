@@ -8,7 +8,7 @@ from scripts.build_learning_intake_human_gate_packet import build_learning_intak
 
 class LearningIntakeHumanGatePacketTests(unittest.TestCase):
     def test_build_learning_intake_human_gate_packet_splits_approve_and_defer(self) -> None:
-        with TemporaryDirectory() as temp_dir:
+        with TemporaryDirectory(dir="D:/tmp") as temp_dir:
             root = Path(temp_dir)
             (root / "artifacts").mkdir(parents=True, exist_ok=True)
             (root / "backlog" / "opportunities").mkdir(parents=True, exist_ok=True)
@@ -21,6 +21,7 @@ class LearningIntakeHumanGatePacketTests(unittest.TestCase):
                                 "user_input": "样本 A",
                                 "source_type": "learning_intake:learning_focus_stress",
                                 "sample_id": "a",
+                                "priority_score": 134.0,
                                 "recommended_status": "accept",
                                 "reasons": ["still failing"],
                             },
@@ -69,6 +70,8 @@ class LearningIntakeHumanGatePacketTests(unittest.TestCase):
             self.assertEqual(packet["summary"]["recommend_approve_count"], 1)
             self.assertEqual(packet["summary"]["recommend_edit_count"], 1)
             self.assertEqual(packet["summary"]["recommend_defer_count"], 1)
+            self.assertEqual(packet["summary"]["top_priority_sample_id"], "a")
+            self.assertEqual(packet["summary"]["top_priority_decision"], "approve")
             self.assertTrue((root / "artifacts" / "learning_intake_human_gate_packet_latest.json").exists())
             self.assertTrue((root / "backlog" / "opportunities" / "learning_intake_human_gate_packet.md").exists())
 

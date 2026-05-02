@@ -1,0 +1,19 @@
+{
+  "mode": "apply_human_review_sheet",
+  "review_total": 4,
+  "applied_count": 4,
+  "accepted_count": 1,
+  "edited_count": 2,
+  "rejected_count": 0,
+  "pending_count": 1,
+  "status_counts": {
+    "edit": 2,
+    "accept": 1,
+    "pending": 1
+  },
+  "review_pack_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_review_pack.jsonl",
+  "backup_path": "D:\\codes\\Mustard\\data\\learning\\candidate_pretrain_review_pack.backup.jsonl",
+  "artifact_path": "D:\\codes\\Mustard\\artifacts\\learning_intake_human_review_apply_latest.json",
+  "report_path": "D:\\codes\\Mustard\\backlog\\opportunities\\learning_intake_human_review_apply.md",
+  "default_training_admission_changed": false
+}
