@@ -299,6 +299,84 @@
       "prompt": "需要将现有 CI/CD 从 Jenkins 迁移到 GitHub Actions，先查一下迁移步骤和常见坑，再帮我梳理一下整体流程。",
       "expected_tool": "search",
       "logic_skill": "step_planning"
+    },
+    {
+      "id": "guard-ab-test-001",
+      "prompt": "我们打算做一个 A/B 测试来验证新版注册流程的转化率，先查一下 A/B 测试的最佳实践和常见陷阱。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "guard-bs-arch-001",
+      "prompt": "项目要从单体 B/S 架构重构为微服务，先查一下 B/S 到微服务的迁移经验。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "guard-or-mapping-001",
+      "prompt": "团队在讨论 O/R 映射用 MyBatis 还是 JPA，先查一下两者的优缺点对比。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "guard-rw-split-001",
+      "prompt": "数据库要做 R/W 分离，但不确定中间件选型，先查一下读写分离方案对比。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "guard-crud-api-001",
+      "prompt": "需要做一个 C/RUD 风格的 RESTful API 后台，先查一下当前主流框架选型。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "tool-selection-search-001",
+      "prompt": "我想了解当前主流的前端框架有哪些新变化，查一下最新趋势。",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-bigmodel-001",
+      "prompt": "基于我已收集的三份技术评估报告，请给管理层写一份正式的选型决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-calc-boundary-001",
+      "prompt": "请严格计算：890 * 5 * 12，只需要给出数值结果。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-code-001",
+      "prompt": "帮我写一段 Python 脚本实现快速排序并验证正确性。",
+      "expected_tool": "code_executor",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "term-judgment-004",
+      "prompt": "我已经收集了三份技术方案的详细分析，数据充分了，现在应该写成给负责人的正式结论还是继续找更多资料？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "term-judgment-005",
+      "prompt": "关于服务网格的搜索结果都很笼统，没有具体落地方案，应该换个关键词继续搜还是先用现有信息？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "constraint-plan-003",
+      "prompt": "项目费用上限 2 万元且必须两周内上线，帮我查一下符合这些条件的低代码平台方案。",
+      "expected_tool": "search",
+      "logic_skill": "constraint_planning"
+    },
+    {
+      "id": "evidence-judgment-005",
+      "prompt": "一篇 2018 年的博客推荐用 Docker Compose 做生产环境编排，这个建议现在还站得住脚吗？帮我查一下最新观点。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
     }
   ]
 }

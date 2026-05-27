@@ -25,25 +25,29 @@ def apply_action(controls: dict[str, dict[str, float | int]], action: dict[str, 
 
     if action_type == "tighten_constraint":
         before = float(updated["policy"]["think_penalty"])
-        after = min(before + 0.05, 0.3)
+        after = max(before, 0.05)  # idempotent: ensure at least 0.05
+        after = min(after, 0.3)
         updated["policy"]["think_penalty"] = after
         applied = after != before
         changes.append({"path": "policy.think_penalty", "before": before, "after": after})
 
     elif action_type == "raise_tool_bias":
         before = float(updated["policy"]["call_tool_bonus"])
-        after = min(before + 0.08, 0.5)
+        after = max(before, 0.08)  # idempotent: ensure at least 0.08
+        after = min(after, 0.5)
         updated["policy"]["call_tool_bonus"] = after
         applied = after != before
         changes.append({"path": "policy.call_tool_bonus", "before": before, "after": after})
 
     elif action_type == "promote_draft_path":
         before_ready = float(updated["core"]["result_draft_answer_ready_bonus"])
-        after_ready = min(before_ready + 0.05, 0.3)
+        after_ready = max(before_ready, 0.05)  # idempotent: ensure at least 0.05
+        after_ready = min(after_ready, 0.3)
         updated["core"]["result_draft_answer_ready_bonus"] = after_ready
 
         before_unc = float(updated["core"]["result_draft_uncertainty_delta"])
-        after_unc = min(before_unc + 0.03, 0.2)
+        after_unc = max(before_unc, 0.03)  # idempotent: ensure at least 0.03
+        after_unc = min(after_unc, 0.2)
         updated["core"]["result_draft_uncertainty_delta"] = after_unc
         applied = after_ready != before_ready or after_unc != before_unc
         changes.extend(
@@ -55,7 +59,8 @@ def apply_action(controls: dict[str, dict[str, float | int]], action: dict[str, 
 
     elif action_type == "reduce_glance_trigger":
         before = float(updated["glance"]["high_uncertainty_threshold"])
-        after = min(before + 0.03, 0.95)
+        after = max(before, 0.03)  # idempotent: ensure at least 0.03 increase from default 0.75
+        after = min(after, 0.95)
         updated["glance"]["high_uncertainty_threshold"] = after
         applied = after != before
         changes.append({"path": "glance.high_uncertainty_threshold", "before": before, "after": after})
