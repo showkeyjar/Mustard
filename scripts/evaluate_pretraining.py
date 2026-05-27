@@ -68,6 +68,12 @@ def build_runner_from_state_dir(source_dir: Path | None, workspace: Path) -> Age
                 target = workspace / ("eval_evolution_state.json" if name == "evolution_state.json" else name)
                 shutil.copyfile(source, target)
 
+    # Also copy runtime_controls.json from data/control/ so evaluations
+    # reflect the current control parameter state (e.g. call_tool_bonus).
+    controls_source = Path("data/control/runtime_controls.json")
+    if controls_source.exists():
+        shutil.copyfile(controls_source, workspace / "runtime_controls.json")
+
     return AgentRunner(
         build_tool_manager(),
         experience_path=workspace / "episodes.jsonl",

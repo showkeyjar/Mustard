@@ -185,6 +185,120 @@
       "prompt": "比较 PostgreSQL 全文搜索和 Elasticsearch 在中等规模数据集上的索引速度，要给出具体的参考值，但我目前没有测试环境。你会优先用什么工具获取这个信息？",
       "expected_tool": "search",
       "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-001",
+      "prompt": "比较 Nginx 和 Caddy 在反向代理场景的性能差异，请先列出关键步骤再给出结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-002",
+      "prompt": "比较 MongoDB 和 PostgreSQL 在时序数据写入场景的吞吐量，请按步骤分析后给出建议。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-003",
+      "prompt": "比较 gRPC 和 REST 在内部微服务通信中的延迟表现，先梳理一下分析思路再回答。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "prompt": "我已经收集了两篇说不同观点的资料，其中一篇说用 gRPC 更好，另一篇说 REST 更稳定。现在要写给负责人的正式结论摘要。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "guard-calc-fan-er-001",
+      "prompt": "旧方案每月成本 3200 元，新方案反而更贵要 4500 元/月，请计算差值（4500 - 3200）。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "guard-synthesis-no-evidence-001",
+      "prompt": "我已经收集了关于数据库选型的几份资料，虽然没有测试数据，但需要给管理层写一份正式结论摘要，应该怎么组织？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "guard-conflict-fenqi-001",
+      "prompt": "三个同事对缓存策略有分歧，但谁都没有拿出监控数据。我需要了解业界最佳实践再做判断，应该先查什么？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "term-judgment-001",
+      "prompt": "我已经做了两轮搜索，找到了 PostgreSQL 和 MySQL 在 OLTP 场景下的基准测试数据，信息足够了，现在应该直接给出结论。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "term-judgment-002",
+      "prompt": "关于 Redis 集群方案的资料我已经查了三次，每次结果都差不多，再查下去也不会有新发现了，怎么判断信息已经够用？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "term-judgment-003",
+      "prompt": "搜索了容器编排方案的对比后，我拿到了 Kubernetes 和 Docker Swarm 的功能差异，再搜下去反而信息冗余了，什么时候该停？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "constraint-plan-001",
+      "prompt": "我们需要在费用上限不超过 5 万、工期不超过 3 周的约束下选择监控方案，帮我查一下哪些方案满足这些条件。",
+      "expected_tool": "search",
+      "logic_skill": "constraint_planning"
+    },
+    {
+      "id": "constraint-plan-002",
+      "prompt": "团队只有 2 名后端工程师且不能引入新语言栈，在这个约束下，查一下合适的 API 网关方案。",
+      "expected_tool": "search",
+      "logic_skill": "constraint_planning"
+    },
+    {
+      "id": "result-integration-003",
+      "prompt": "我已经拿到了三份性能测试报告：Go 版本 QPS 12k、Rust 版本 QPS 18k、Java 版本 QPS 9k。请整合成给技术委员会的决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "result-integration-004",
+      "prompt": "已收集了安全团队的漏洞扫描结果和运维团队的可用性报告，需要整合成一份面向管理层的风险评估摘要。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "result-integration-005",
+      "prompt": "我手上有架构评审记录、容量规划数据和成本分析三份材料，请综合这些已提供的信息给出迁移决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "evidence-judgment-003",
+      "prompt": "一篇 2021 年的博客说 Microservices 已经过时了，这个判断现在还站得住脚吗？帮我查一下最新观点。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "evidence-judgment-004",
+      "prompt": "Stack Overflow 上一个高赞回答推荐用 asyncio 而非 threading，但那回答是 2019 年的，现在还需要查证吗？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "step-planning-003",
+      "prompt": "我要在一个月内把单体应用拆成三个微服务，先帮我查一下业界拆分流程，再告诉我每步需要注意什么。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "step-planning-004",
+      "prompt": "需要将现有 CI/CD 从 Jenkins 迁移到 GitHub Actions，先查一下迁移步骤和常见坑，再帮我梳理一下整体流程。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
     }
   ]
 }
