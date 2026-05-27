@@ -119,6 +119,72 @@
       "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
       "expected_tool": "search",
       "logic_skill": "comparison"
+    },
+    {
+      "id": "stress-conflict-authority-001",
+      "prompt": "官方文档说数据库连接池最大值建议设为 CPU 核数的 2 倍，但一篇广受引用的技术博客说应该设为核数的 4 倍。两者都有具体场景描述，你在给出建议前应该怎么处理这个矛盾？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-authority-002",
+      "prompt": "一篇 Google SRE 手册的摘录建议 P99 延迟要控制在 200ms 以内，但我们行业里另一家知名公司发布的案例说 500ms 才是合理基线。两个权威来源给出了不同阈值，在没有更多上下文的情况下你该如何推进？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-001",
+      "prompt": "我要决定是否启用某个数据库参数，只找到一篇说有显著提升、一篇说在高并发下反而降速的文章，但两篇都没提具体压测条件。现在我手里没有更多资料，应该直接给结论还是先暂停？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-002",
+      "prompt": "我让两个同事分别给出数据库索引优化方案，一个说先加覆盖索引，另一个说先跑 EXPLAIN 再决定，但他们都没给测试数据。在这种缺失证据的情况下我该怎么继续？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-003",
+      "prompt": "有人说用 Redis 做分布式锁比 Zookeeper 更轻量，另一篇文章说 Redis 锁在网络抖动时会出问题，但两篇都没给任何基准测试数据。现在我需要决定技术选型，手里没有进一步的参考资料，下一步应该怎么做？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-004",
+      "prompt": "两个团队对是否启用 CDN 预热有分歧：一组说有效，另一组说会浪费带宽，但两边都没拿出过任何流量日志或压测报告。在没有证据的情况下，我应该怎么推进这个决策？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-missing-evidence-decision-001",
+      "prompt": "技术评审中两个方案都没有性能数据支撑，一方说 gRPC 更快，另一方说 REST 更稳定，但两边都没有压测报告。我需要给出最终选型建议，应该直接根据经验判断还是先查一下？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-missing-evidence-decision-002",
+      "prompt": "两篇关于数据库分区策略的文章分别支持按时间分区和按用户 ID 分区，但没有一篇给出实测查询性能数据。我现在要决定这个架构方向，该怎么推进？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-missing-evidence-decision-003",
+      "prompt": "一篇博客说容器化部署可以把资源利用率提高 40%，另一篇说在 IO 密集型应用里反而增加延迟，两篇都没有测试数据。我们团队要决定是否迁移，应该怎么推进这个结论？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-005-variant",
+      "prompt": "比较 Kafka 和 RabbitMQ 在大规模消息队列场景的适用性，需要找到有实测依据的分析，而不是凭经验猜测。你会用什么工具来获取这类信息？",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "stress-comparison-deflects-bigmodel-001",
+      "prompt": "比较 PostgreSQL 全文搜索和 Elasticsearch 在中等规模数据集上的索引速度，要给出具体的参考值，但我目前没有测试环境。你会优先用什么工具获取这个信息？",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
     }
   ]
 }
