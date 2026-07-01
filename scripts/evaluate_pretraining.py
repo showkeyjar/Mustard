@@ -14,10 +14,16 @@ from tools.code_tool import CodeExecutorTool
 from tools.search_tool import SearchTool
 
 
-def load_eval_prompts(path: str | Path = "configs/pretrain_eval.json") -> list[dict[str, str]]:
+def load_eval_prompts(
+    path: str | Path = "configs/pretrain_eval.json",
+) -> list[dict[str, str]]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     prompts = payload.get("prompts", []) if isinstance(payload, dict) else []
-    return [item for item in prompts if isinstance(item, dict) and str(item.get("prompt", "")).strip()]
+    return [
+        item
+        for item in prompts
+        if isinstance(item, dict) and str(item.get("prompt", "")).strip()
+    ]
 
 
 def build_tool_manager() -> ToolManager:
@@ -41,9 +47,13 @@ def write_eval_training_config(path: str | Path) -> None:
                         "enabled": True,
                         "allow_episode_learning": False,
                         "allow_user_signals": False,
-                        "signal_state_path": str(Path(path).with_name("eval_evolution_state.json")),
-                        "signal_log_path": str(Path(path).with_name("eval_signals.jsonl")),
-                    }
+                        "signal_state_path": str(
+                            Path(path).with_name("eval_evolution_state.json")
+                        ),
+                        "signal_log_path": str(
+                            Path(path).with_name("eval_signals.jsonl")
+                        ),
+                    },
                 }
             },
             ensure_ascii=False,
@@ -52,7 +62,9 @@ def write_eval_training_config(path: str | Path) -> None:
     )
 
 
-def build_runner_from_state_dir(source_dir: Path | None, workspace: Path) -> AgentRunner:
+def build_runner_from_state_dir(
+    source_dir: Path | None, workspace: Path
+) -> AgentRunner:
     workspace.mkdir(parents=True, exist_ok=True)
     training_config_path = workspace / "eval_training.json"
     write_eval_training_config(training_config_path)
@@ -62,10 +74,19 @@ def build_runner_from_state_dir(source_dir: Path | None, workspace: Path) -> Age
     core_state = workspace / "core_state.json"
     evolution_state = workspace / "eval_evolution_state.json"
     if source_dir is not None:
-        for name in ("policy_state.json", "concept_state.json", "core_state.json", "evolution_state.json"):
+        for name in (
+            "policy_state.json",
+            "concept_state.json",
+            "core_state.json",
+            "evolution_state.json",
+        ):
             source = source_dir / name
             if source.exists():
-                target = workspace / ("eval_evolution_state.json" if name == "evolution_state.json" else name)
+                target = workspace / (
+                    "eval_evolution_state.json"
+                    if name == "evolution_state.json"
+                    else name
+                )
                 shutil.copyfile(source, target)
 
     # Also copy runtime_controls.json from data/control/ so evaluations
@@ -86,10 +107,17 @@ def build_runner_from_state_dir(source_dir: Path | None, workspace: Path) -> Age
     )
 
 
-def evaluate_runner(runner: AgentRunner, prompts: list[dict[str, str]]) -> dict[str, object]:
+def evaluate_runner(
+    runner: AgentRunner, prompts: list[dict[str, str]]
+) -> dict[str, object]:
     rows: list[dict[str, object]] = []
     tool_matches = 0
     structured_writes = 0
+    complete_answers = 0
+    reasonable_confidence = 0
+    has_support_items = 0
+    conflict_risk_marked = 0
+    conflict_total = 0
     by_logic_skill: dict[str, dict[str, float]] = {}
 
     for item in prompts:
@@ -97,15 +125,56 @@ def evaluate_runner(runner: AgentRunner, prompts: list[dict[str, str]]) -> dict[
         expected_tool = str(item.get("expected_tool", ""))
         logic_skill = str(item.get("logic_skill", ""))
         answer, trace = runner.run(prompt)
-        used_tool = next((step.selected_tool for step in trace.steps if step.selected_tool), "")
+        used_tool = next(
+            (step.selected_tool for step in trace.steps if step.selected_tool), ""
+        )
         if expected_tool and used_tool == expected_tool:
             tool_matches += 1
         if any(step.target_slot in {"PLAN", "HYP", "DRAFT"} for step in trace.steps):
             structured_writes += 1
-        bucket = by_logic_skill.setdefault(logic_skill or "unknown", {"count": 0.0, "tool_match": 0.0, "step_sum": 0.0})
+
+        # --- Answer quality dimensions ---
+        has_conclusion = "结论:" in answer or "总结" in answer
+        has_risk = "风险:" in answer or "冲突" in answer
+        has_evidence = "依据=" in answer or "外部结果:" in answer
+        confidence_band = ""
+        for tag in ("置信带=", "置信="):
+            idx = answer.find(tag)
+            if idx >= 0:
+                rest = answer[idx + len(tag) :]
+                confidence_band = rest.split("，")[0].split("\n")[0].strip()
+                break
+
+        # Completeness: answer has conclusion AND (evidence or support)
+        is_complete = has_conclusion and (has_evidence or "依据=" in answer)
+        if is_complete:
+            complete_answers += 1
+
+        # Reasonable confidence: not empty, not "未知", has a meaningful band
+        if confidence_band and confidence_band not in ("未知", ""):
+            reasonable_confidence += 1
+
+        # Support items present
+        if "依据=" in answer:
+            has_support_items += 1
+
+        # Conflict risk marking
+        is_conflict_prompt = "冲突" in prompt or "矛盾" in prompt or "不一致" in prompt
+        if is_conflict_prompt:
+            conflict_total += 1
+            if has_risk:
+                conflict_risk_marked += 1
+
+        bucket = by_logic_skill.setdefault(
+            logic_skill or "unknown",
+            {"count": 0.0, "tool_match": 0.0, "step_sum": 0.0, "complete": 0.0},
+        )
         bucket["count"] += 1
-        bucket["tool_match"] += 1 if (used_tool == expected_tool and expected_tool) else 0
+        bucket["tool_match"] += (
+            1 if (used_tool == expected_tool and expected_tool) else 0
+        )
         bucket["step_sum"] += len(trace.actions)
+        bucket["complete"] += 1 if is_complete else 0
         rows.append(
             {
                 "id": str(item.get("id", "")),
@@ -116,7 +185,12 @@ def evaluate_runner(runner: AgentRunner, prompts: list[dict[str, str]]) -> dict[
                 "tool_match": used_tool == expected_tool if expected_tool else False,
                 "actions": list(trace.actions),
                 "step_count": len(trace.actions),
-                "structured_write": any(step.target_slot in {"PLAN", "HYP", "DRAFT"} for step in trace.steps),
+                "structured_write": any(
+                    step.target_slot in {"PLAN", "HYP", "DRAFT"} for step in trace.steps
+                ),
+                "answer_complete": is_complete,
+                "confidence_band": confidence_band,
+                "has_support": "依据=" in answer,
                 "answer_preview": answer.splitlines()[0] if answer else "",
             }
         )
@@ -128,12 +202,26 @@ def evaluate_runner(runner: AgentRunner, prompts: list[dict[str, str]]) -> dict[
             "prompt_count": len(prompts),
             "tool_match_rate": round(tool_matches / total, 4),
             "structured_write_rate": round(structured_writes / total, 4),
+            "answer_completeness_rate": round(complete_answers / total, 4),
+            "reasonable_confidence_rate": round(reasonable_confidence / total, 4),
+            "support_items_rate": round(has_support_items / total, 4),
+            "conflict_risk_marked_rate": round(
+                conflict_risk_marked / max(conflict_total, 1), 4
+            ),
+            "conflict_total": conflict_total,
             "avg_step_count": round(sum(row["step_count"] for row in rows) / total, 4),
             "by_logic_skill": {
                 key: {
                     "count": int(value["count"]),
-                    "tool_match_rate": round(value["tool_match"] / max(value["count"], 1.0), 4),
-                    "avg_step_count": round(value["step_sum"] / max(value["count"], 1.0), 4),
+                    "tool_match_rate": round(
+                        value["tool_match"] / max(value["count"], 1.0), 4
+                    ),
+                    "avg_step_count": round(
+                        value["step_sum"] / max(value["count"], 1.0), 4
+                    ),
+                    "completeness_rate": round(
+                        value["complete"] / max(value["count"], 1.0), 4
+                    ),
                 }
                 for key, value in by_logic_skill.items()
             },
@@ -141,7 +229,9 @@ def evaluate_runner(runner: AgentRunner, prompts: list[dict[str, str]]) -> dict[
     }
 
 
-def compare_results(baseline: dict[str, object], pretrained: dict[str, object]) -> dict[str, object]:
+def compare_results(
+    baseline: dict[str, object], pretrained: dict[str, object]
+) -> dict[str, object]:
     baseline_summary = baseline["summary"]
     pretrained_summary = pretrained["summary"]
     by_id = {str(row["id"]): row for row in baseline["rows"]}
@@ -165,9 +255,31 @@ def compare_results(baseline: dict[str, object], pretrained: dict[str, object]) 
         "baseline": baseline_summary,
         "pretrained": pretrained_summary,
         "delta": {
-            "tool_match_rate": round(float(pretrained_summary["tool_match_rate"]) - float(baseline_summary["tool_match_rate"]), 4),
-            "structured_write_rate": round(float(pretrained_summary["structured_write_rate"]) - float(baseline_summary["structured_write_rate"]), 4),
-            "avg_step_count": round(float(pretrained_summary["avg_step_count"]) - float(baseline_summary["avg_step_count"]), 4),
+            "tool_match_rate": round(
+                float(pretrained_summary["tool_match_rate"])
+                - float(baseline_summary["tool_match_rate"]),
+                4,
+            ),
+            "structured_write_rate": round(
+                float(pretrained_summary["structured_write_rate"])
+                - float(baseline_summary["structured_write_rate"]),
+                4,
+            ),
+            "answer_completeness_rate": round(
+                float(pretrained_summary["answer_completeness_rate"])
+                - float(baseline_summary["answer_completeness_rate"]),
+                4,
+            ),
+            "reasonable_confidence_rate": round(
+                float(pretrained_summary.get("reasonable_confidence_rate", 0))
+                - float(baseline_summary.get("reasonable_confidence_rate", 0)),
+                4,
+            ),
+            "avg_step_count": round(
+                float(pretrained_summary["avg_step_count"])
+                - float(baseline_summary["avg_step_count"]),
+                4,
+            ),
         },
         "rows": deltas,
     }
@@ -176,12 +288,20 @@ def compare_results(baseline: dict[str, object], pretrained: dict[str, object]) 
 def main() -> int:
     prompts = load_eval_prompts()
     training = load_training_config("configs/training.yaml")
-    artifact_dir = Path(str(training.get("training", {}).get("pretraining", {}).get("artifact_dir", "data/pretrain")))
+    artifact_dir = Path(
+        str(
+            training.get("training", {})
+            .get("pretraining", {})
+            .get("artifact_dir", "data/pretrain")
+        )
+    )
 
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
         baseline_runner = build_runner_from_state_dir(None, root / "baseline")
-        pretrained_runner = build_runner_from_state_dir(artifact_dir, root / "pretrained")
+        pretrained_runner = build_runner_from_state_dir(
+            artifact_dir, root / "pretrained"
+        )
         baseline = evaluate_runner(baseline_runner, prompts)
         pretrained = evaluate_runner(pretrained_runner, prompts)
         comparison = compare_results(baseline, pretrained)

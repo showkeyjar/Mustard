@@ -3,11 +3,14 @@ __pycache__/
 
 .pytest_cache/
 .openclaw/
+.workbuddy/
 
 data/control/
 data/desktop/
 data/review/
 data/pretrain/
+data/evolution/candidates/
+data/evolution/runs/
 data/experience/*.jsonl
 data/experience/*_state.json
 logs/
