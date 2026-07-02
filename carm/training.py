@@ -94,7 +94,15 @@ class OfflinePretrainer:
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
         if reset_artifacts:
             self._reset_artifacts()
+        else:
+            # Incremental mode: keep existing artifacts, new episodes will
+            # be replayed on top of the already-trained weights.
+            import logging
 
+            logging.getLogger(__name__).info(
+                "Incremental training mode: preserving existing artifacts in %s",
+                self.artifact_dir,
+            )
         policy = OnlinePolicy(
             self.artifact_dir / "policy_state.json",
             self.artifact_dir / "concept_state.json",
@@ -119,7 +127,9 @@ class OfflinePretrainer:
         synthetic_sample_count = 0
         dataset_candidate = Path(dataset_path) if dataset_path is not None else None
         if dataset_candidate is not None and dataset_candidate.exists():
-            for sample in load_pretrain_samples(dataset_candidate)[:max_synthetic_samples]:
+            for sample in load_pretrain_samples(dataset_candidate)[
+                :max_synthetic_samples
+            ]:
                 episode = sample_to_episode(sample)
                 policy.learn(episode.steps)
                 core.learn(episode.user_input, episode.steps, episode.success)
@@ -136,7 +146,11 @@ class OfflinePretrainer:
                 synthetic_steps = evolution.apply_signal(signal)
                 if synthetic_steps:
                     policy.learn(synthetic_steps)
-                    core.learn(signal.query or signal.goal or signal.note, synthetic_steps, success=signal.reward >= 0.0)
+                    core.learn(
+                        signal.query or signal.goal or signal.note,
+                        synthetic_steps,
+                        success=signal.reward >= 0.0,
+                    )
                 signal_count += 1
 
         attention_view_count = self._replay_attention_views(
@@ -159,7 +173,9 @@ class OfflinePretrainer:
                 "evolution_state": str(self.artifact_dir / "evolution_state.json"),
             },
         }
-        (self.artifact_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        (self.artifact_dir / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         return PretrainResult(
             artifact_dir=self.artifact_dir,
             episode_count=len(episodes),
@@ -178,7 +194,9 @@ class OfflinePretrainer:
     ) -> int:
         views: list[AttentionTrainingView] = []
 
-        views_candidate = Path(attention_views_path) if attention_views_path is not None else None
+        views_candidate = (
+            Path(attention_views_path) if attention_views_path is not None else None
+        )
         if views_candidate is not None and views_candidate.exists():
             payload = json.loads(views_candidate.read_text(encoding="utf-8"))
             items = payload.get("views", []) if isinstance(payload, dict) else []
@@ -187,12 +205,15 @@ class OfflinePretrainer:
                     if isinstance(item, dict):
                         views.append(AttentionTrainingView(**item))
 
-        flow_candidate = Path(attention_flow_path) if attention_flow_path is not None else None
+        flow_candidate = (
+            Path(attention_flow_path) if attention_flow_path is not None else None
+        )
         if flow_candidate is not None and flow_candidate.exists() and not views:
             payload = json.loads(flow_candidate.read_text(encoding="utf-8"))
             nodes_data = payload.get("nodes", []) if isinstance(payload, dict) else []
             if isinstance(nodes_data, list) and nodes_data:
                 from carm.attention_flow import build_training_views
+
                 nodes = nodes_from_payloads(nodes_data)
                 views = build_training_views(nodes)
 
@@ -217,8 +238,12 @@ class OfflinePretrainer:
 
         feature_snapshot: dict[str, float] = {
             "bias": 1.0,
-            "uncertainty": 0.4 if "conflict_unresolved" in view.residual_pressure else 0.2,
-            "has_conflict": 1.0 if "conflict_unresolved" in view.residual_pressure else 0.0,
+            "uncertainty": 0.4
+            if "conflict_unresolved" in view.residual_pressure
+            else 0.2,
+            "has_conflict": 1.0
+            if "conflict_unresolved" in view.residual_pressure
+            else 0.0,
             "has_result": 0.0,
             "has_draft": 1.0,
         }

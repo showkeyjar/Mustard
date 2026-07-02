@@ -1,0 +1,21 @@
+# Repair evidence-judgment routing on learning-focus tasks
+
+- problem: learning intake 转成的焦点评测已经暴露出 evidence_judgment 误路由，这说明模型还没有把新增公开思想和研究任务稳定映射到 search-first 求证流程。
+- from_failure_pattern: learning_focus_evidence_tool_routing_gap
+- from_top_gap: new_failure_pattern_stalled
+- change_type: evaluation_or_dataset
+- proposed_change: 围绕 learning_focus_eval 中 evidence_judgment 失败样本扩展 search-first 专项监督和评测任务，专门压测 search vs calculator 的误路由边界。
+- expected_metric_delta: learning_focus_pretrained_match_rate 提升到 >=0.75，且 evidence_judgment 不再出现 search->calculator 误路由
+- risk_level: low
+- needs_human_approval: False
+- relative_to_last_round: 从收集外部思想与用户纠偏，推进到直接修复它们暴露出的 evidence 路由错误。
+- scenario_fit: 需要先查资料、判断证据、再下结论的真实求证型任务。
+- architect_handoff: researcher + trainer convert learning-focus routing failures into search-first supervision tasks
+- rollback_plan: 只回退 learning-focus 专项任务，不改默认运行时与默认训练准入。
+- evidence:
+  - learning_focus_pretrained_match_rate=0.5714
+  - mismatch_ids=learning-focus-004,learning-focus-005,learning-focus-006
+- evaluation_plan:
+  - python -m scripts.build_learning_intake
+  - python -m scripts.build_learning_focus_eval
+  - python -m scripts.evaluate_learning_focus

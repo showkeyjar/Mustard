@@ -8,6 +8,14 @@ from pathlib import Path
 from carm.memory import MemoryBoard
 from carm.runtime_controls import DEFAULT_CONTROLS
 from carm.schemas import StepRecord
+from carm.signals import (
+    is_conflict_task,
+    has_compare_signal,
+    has_calc_signal,
+    has_code_signal,
+    tokenize,
+    token_counts,
+)
 from carm.state import AgentState
 
 
@@ -17,7 +25,9 @@ class AdaptiveReasoningCore:
     SLOT_TYPES = ("PLAN", "HYP", "DRAFT")
     LATENT_DIM = 6
 
-    def __init__(self, state_path: str | Path, controls: dict[str, float | int] | None = None) -> None:
+    def __init__(
+        self, state_path: str | Path, controls: dict[str, float | int] | None = None
+    ) -> None:
         self.state_path = Path(state_path)
         base_controls = dict(DEFAULT_CONTROLS["core"])
         if controls:
@@ -59,16 +69,23 @@ class AdaptiveReasoningCore:
 
         features = self.extract_features(user_input, memory, state, guidance)
         next_state.latent = self.update_latent(state.latent, features)
-        slot_type = self.choose_slot(user_input, features, guidance)
+        slot_type = self.choose_slot(user_input, features, guidance, next_state.latent)
         candidate = self.render_candidate(slot_type, memory, user_input)
 
         next_state.hidden["candidate"] = candidate
         next_state.hidden["slot_type"] = slot_type
-        next_state.hidden["core_slot_scores"] = json.dumps(self.score_slots(user_input, features), ensure_ascii=False)
+        next_state.hidden["core_slot_scores"] = json.dumps(
+            self.score_slots(user_input, features, guidance, next_state.latent),
+            ensure_ascii=False,
+        )
         next_state.hidden["latent_summary"] = self.describe_latent(next_state.latent)
         next_state.uncertainty = self.estimate_uncertainty(slot_type, memory)
         next_state.answer_ready = self.estimate_answer_ready(slot_type, memory)
-        if state.hidden.get("verified") == "1" and memory.latest("DRAFT") is not None and memory.latest("CONFLICT") is None:
+        if (
+            state.hidden.get("verified") == "1"
+            and memory.latest("DRAFT") is not None
+            and memory.latest("CONFLICT") is None
+        ):
             next_state.hidden["verified"] = "1"
             next_state.uncertainty = min(next_state.uncertainty, 0.2)
             next_state.answer_ready = max(next_state.answer_ready, 0.95)
@@ -77,7 +94,7 @@ class AdaptiveReasoningCore:
     def learn(self, user_input: str, steps: list[StepRecord], success: bool) -> None:
         if not steps:
             return
-        tokens = self.tokenize(user_input)
+        tokens = tokenize(user_input)
         negative = not success
         effective_lr = self.learning_rate * 0.3 if negative else self.learning_rate
 
@@ -94,11 +111,15 @@ class AdaptiveReasoningCore:
             counts = Counter(tokens)
             for token, count in counts.items():
                 bucket = self.token_slot_weights.setdefault(token, {})
-                bucket[slot_type] = bucket.get(slot_type, 0.0) + effective_lr * step.reward * min(count, 3)
+                bucket[slot_type] = bucket.get(
+                    slot_type, 0.0
+                ) + effective_lr * step.reward * min(count, 3)
 
             for feature_name, feature_value in step.feature_snapshot.items():
                 current = self.feature_weights[slot_type].get(feature_name, 0.0)
-                self.feature_weights[slot_type][feature_name] = current + effective_lr * step.reward * feature_value
+                self.feature_weights[slot_type][feature_name] = (
+                    current + effective_lr * step.reward * feature_value
+                )
 
             self.slot_bias[slot_type] += effective_lr * step.reward
             self._update_readout(slot_type, step.feature_snapshot, step.reward)
@@ -123,10 +144,10 @@ class AdaptiveReasoningCore:
             "has_result": 1.0 if memory.latest("RESULT") else 0.0,
             "has_fact": 1.0 if memory.latest("FACT") else 0.0,
             "has_conflict": 1.0 if memory.latest("CONFLICT") else 0.0,
-            "compare_signal": 1.0 if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")) else 0.0,
-            "conflict_signal": 1.0 if self._is_conflict_task(user_input) else 0.0,
-            "calc_signal": 1.0 if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")) else 0.0,
-            "code_signal": 1.0 if any(token in lower for token in ("python", "code", "script", "代码")) else 0.0,
+            "compare_signal": 1.0 if has_compare_signal(user_input) else 0.0,
+            "conflict_signal": 1.0 if is_conflict_task(user_input) else 0.0,
+            "calc_signal": 1.0 if has_calc_signal(user_input) else 0.0,
+            "code_signal": 1.0 if has_code_signal(user_input) else 0.0,
             "need_structure": 1.0 if memory.latest("PLAN") is None else 0.0,
             "need_external": 1.0 if memory.latest("RESULT") is None else 0.0,
             "user_prefers_plan": 1.0 if preferred_slot == "PLAN" else 0.0,
@@ -134,8 +155,14 @@ class AdaptiveReasoningCore:
             "user_prefers_draft": 1.0 if preferred_slot == "DRAFT" else 0.0,
         }
 
-    def choose_slot(self, user_input: str, features: dict[str, float], guidance: dict[str, object] | None = None) -> str:
-        scores = self.score_slots(user_input, features, guidance)
+    def choose_slot(
+        self,
+        user_input: str,
+        features: dict[str, float],
+        guidance: dict[str, object] | None = None,
+        current_latent: list[float] | None = None,
+    ) -> str:
+        scores = self.score_slots(user_input, features, guidance, current_latent)
         return max(scores, key=scores.get)
 
     def score_slots(
@@ -143,24 +170,35 @@ class AdaptiveReasoningCore:
         user_input: str,
         features: dict[str, float],
         guidance: dict[str, object] | None = None,
+        current_latent: list[float] | None = None,
     ) -> dict[str, float]:
         scores: dict[str, float] = {}
-        token_counts = Counter(self.tokenize(user_input))
-        latent = self.update_latent([0.0] * self.LATENT_DIM, features)
+        token_counts_local = token_counts(user_input)
+        # Use the current latent state for scoring, not a fresh zero state
+        latent = (
+            current_latent if current_latent is not None else [0.0] * self.LATENT_DIM
+        )
         preferred_slot = str((guidance or {}).get("preferred_slot", ""))
         for slot_type in self.SLOT_TYPES:
             score = self.slot_bias[slot_type]
             for feature_name, feature_value in features.items():
-                score += self.feature_weights[slot_type].get(feature_name, 0.0) * feature_value
-            for token, count in token_counts.items():
-                score += self.token_slot_weights.get(token, {}).get(slot_type, 0.0) * min(count, 3)
+                score += (
+                    self.feature_weights[slot_type].get(feature_name, 0.0)
+                    * feature_value
+                )
+            for token, count in token_counts_local.items():
+                score += self.token_slot_weights.get(token, {}).get(
+                    slot_type, 0.0
+                ) * min(count, 3)
             score += self.dot(self.slot_readout_weights[slot_type], latent)
             if preferred_slot and preferred_slot == slot_type:
                 score += 0.9
             scores[slot_type] = score
         return scores
 
-    def update_latent(self, previous: list[float], features: dict[str, float]) -> list[float]:
+    def update_latent(
+        self, previous: list[float], features: dict[str, float]
+    ) -> list[float]:
         latent: list[float] = []
         for index in range(self.LATENT_DIM):
             total = 0.55 * previous[index]
@@ -173,7 +211,9 @@ class AdaptiveReasoningCore:
             latent.append(math.tanh(total))
         return latent
 
-    def render_candidate(self, slot_type: str, memory: MemoryBoard, user_input: str) -> str:
+    def render_candidate(
+        self, slot_type: str, memory: MemoryBoard, user_input: str
+    ) -> str:
         result = memory.latest("RESULT")
         plan = memory.latest("PLAN")
         fact = memory.latest("FACT")
@@ -182,7 +222,7 @@ class AdaptiveReasoningCore:
         plan_payload = memory.parse_content(plan)
         fact_text = memory.slot_brief(fact)
         keywords = self.select_keywords(user_input)
-        conflict_task = self._is_conflict_task(user_input)
+        conflict_task = is_conflict_task(user_input)
 
         if slot_type == "DRAFT":
             payload = {
@@ -193,12 +233,23 @@ class AdaptiveReasoningCore:
                 "confidence_band": "low",
             }
             if result is not None:
-                payload["summary"] = "基于外部结果形成初步结论"
+                # Derive summary from actual result content, not a generic template
+                result_payload = memory.parse_content(result)
+                raw_result = str(result_payload.get("raw", result_text))
+                # For calculator results, surface the computation directly
+                if has_calc_signal(user_input) and "=" in raw_result:
+                    payload["summary"] = raw_result
+                elif len(raw_result) > 20:
+                    payload["summary"] = f"基于检索结果：{raw_result[:80]}..."
+                else:
+                    payload["summary"] = "基于外部结果形成初步结论"
                 payload["support_items"] = [result_text]
                 payload["confidence_band"] = "high"
             elif plan is not None:
                 payload["summary"] = "基于当前计划形成待验证结论"
-                payload["support_items"] = list(plan_payload.get("action_items", []))[:2]
+                payload["support_items"] = list(plan_payload.get("action_items", []))[
+                    :2
+                ]
                 payload["open_risks"] = list(plan_payload.get("unknowns", []))[:2]
                 payload["confidence_band"] = "medium"
             elif fact is not None:
@@ -210,13 +261,17 @@ class AdaptiveReasoningCore:
                 payload["open_risks"] = [latent_hint]
                 payload["confidence_band"] = "low"
             if conflict_task:
-                payload["summary"] = "当前更稳妥的做法是先标记冲突并补证据，不直接采纳单边结论"
+                payload["summary"] = (
+                    "当前更稳妥的做法是先标记冲突并补证据，不直接采纳单边结论"
+                )
                 payload["open_risks"] = self.merge_steps(
                     payload.get("open_risks", []),
                     ["冲突尚未消解", "需要比较来源可信度与适用条件"],
                 )
                 if result_text:
-                    payload["support_items"] = self.merge_steps(payload.get("support_items", []), [result_text])
+                    payload["support_items"] = self.merge_steps(
+                        payload.get("support_items", []), [result_text]
+                    )
                 payload["confidence_band"] = "medium" if result is not None else "low"
             return json.dumps(payload, ensure_ascii=False)
 
@@ -234,13 +289,22 @@ class AdaptiveReasoningCore:
                 "confidence_band": "medium",
             }
             if fact is not None:
-                payload["summary"] = "迁移既有经验并调整计划"
-                payload["action_items"].insert(0, f"吸收经验线索: {fact_text}")
+                payload["summary"] = "结合既有经验调整计划"
+                # Truncate fact text to avoid polluting action items with
+                # long experience payloads
+                fact_brief = (
+                    fact_text[:60] + "..." if len(fact_text) > 60 else fact_text
+                )
+                payload["action_items"].insert(0, f"参考经验: {fact_brief}")
             if plan is not None:
                 prior_items = plan_payload.get("action_items", [])
-                payload["action_items"] = self.merge_steps(prior_items, payload["action_items"])
+                payload["action_items"] = self.merge_steps(
+                    prior_items, payload["action_items"]
+                )
                 prior_unknowns = plan_payload.get("unknowns", [])
-                payload["unknowns"] = self.merge_steps(prior_unknowns, payload["unknowns"])
+                payload["unknowns"] = self.merge_steps(
+                    prior_unknowns, payload["unknowns"]
+                )
             return json.dumps(payload, ensure_ascii=False)
 
         payload = {
@@ -256,12 +320,21 @@ class AdaptiveReasoningCore:
                 "来源结论存在冲突，暂不直接下单边结论",
                 "需要比较来源可信度、时间有效性和适用条件",
             ]
-            payload["evidence_targets"] = ["冲突点", "来源可信度", "时间有效性", "适用条件"]
+            payload["evidence_targets"] = [
+                "冲突点",
+                "来源可信度",
+                "时间有效性",
+                "适用条件",
+            ]
             return json.dumps(payload, ensure_ascii=False)
         if plan is not None:
             payload["summary"] = "按计划补充关键事实并验证"
-            payload["assumptions"] = list(plan_payload.get("unknowns", []))[:2] or ["当前方案缺少关键事实"]
-            payload["evidence_targets"] = list(plan_payload.get("evidence_targets", [])) or ["外部支持"]
+            payload["assumptions"] = list(plan_payload.get("unknowns", []))[:2] or [
+                "当前方案缺少关键事实"
+            ]
+            payload["evidence_targets"] = list(
+                plan_payload.get("evidence_targets", [])
+            ) or ["外部支持"]
             return json.dumps(payload, ensure_ascii=False)
         if result is None:
             payload["summary"] = "当前信息不足，需要外部支持验证"
@@ -270,7 +343,11 @@ class AdaptiveReasoningCore:
             return json.dumps(payload, ensure_ascii=False)
         payload["summary"] = "根据已有结果形成待验证结论"
         payload["assumptions"] = ["已有结果可以支撑初步结论"]
-        payload["evidence_targets"] = [result_text]
+        # Surface the actual result as evidence target for traceability
+        result_brief = (
+            result_text[:60] + "..." if len(result_text) > 60 else result_text
+        )
+        payload["evidence_targets"] = [result_brief]
         return json.dumps(payload, ensure_ascii=False)
 
     def estimate_uncertainty(self, slot_type: str, memory: MemoryBoard) -> float:
@@ -291,40 +368,6 @@ class AdaptiveReasoningCore:
             return 0.18
         return 0.12 if memory.latest("RESULT") is None else 0.28
 
-    def tokenize(self, text: str) -> list[str]:
-        ascii_tokens: list[str] = []
-        current = []
-        for char in text.lower():
-            if char.isascii() and (char.isalnum() or char == "_"):
-                current.append(char)
-            else:
-                if len(current) >= 2:
-                    ascii_tokens.append("".join(current))
-                current = []
-        if len(current) >= 2:
-            ascii_tokens.append("".join(current))
-
-        chinese_runs: list[str] = []
-        current = []
-        for char in text:
-            if "\u4e00" <= char <= "\u9fff":
-                current.append(char)
-            else:
-                if len(current) >= 2:
-                    chinese_runs.append("".join(current))
-                current = []
-        if len(current) >= 2:
-            chinese_runs.append("".join(current))
-
-        chinese_tokens: list[str] = []
-        for run in chinese_runs:
-            chinese_tokens.append(run)
-            for size in (2, 3):
-                for index in range(0, max(0, len(run) - size + 1)):
-                    chinese_tokens.append(run[index : index + size])
-
-        return list(dict.fromkeys(ascii_tokens + chinese_tokens))
-
     def describe_latent(self, latent: list[float]) -> str:
         labels = [
             "结构化",
@@ -334,14 +377,16 @@ class AdaptiveReasoningCore:
             "经验迁移",
             "约束聚焦",
         ]
-        ranked = sorted(enumerate(latent), key=lambda item: abs(item[1]), reverse=True)[:2]
+        ranked = sorted(enumerate(latent), key=lambda item: abs(item[1]), reverse=True)[
+            :2
+        ]
         return ", ".join(f"{labels[index]}={value:.2f}" for index, value in ranked)
 
     def dot(self, left: list[float], right: list[float]) -> float:
         return sum(a * b for a, b in zip(left, right))
 
     def select_keywords(self, user_input: str) -> list[str]:
-        tokens = self.tokenize(user_input)
+        tokens = tokenize(user_input)
         return tokens[:4]
 
     def plan_steps(self, user_input: str, keywords: list[str]) -> list[str]:
@@ -356,27 +401,29 @@ class AdaptiveReasoningCore:
 
     def plan_needs(self, memory: MemoryBoard, user_input: str) -> list[str]:
         needs: list[str] = []
-        if self._is_conflict_task(user_input):
+        if is_conflict_task(user_input):
             needs.extend(["冲突点", "来源可信度", "时间有效性"])
-        if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")):
+        if has_compare_signal(user_input):
             needs.extend(["比较维度", "外部事实"])
-        if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")):
+        if has_calc_signal(user_input):
             needs.append("精确数值")
-        if any(token in user_input.lower() for token in ("python", "code", "script")) or "代码" in user_input:
+        if has_code_signal(user_input):
             needs.append("可执行验证")
         if memory.latest("RESULT") is None and not needs:
             needs.append("外部支持")
         return needs
 
-    def plan_unknowns(self, user_input: str, memory: MemoryBoard, latent_hint: str) -> list[str]:
+    def plan_unknowns(
+        self, user_input: str, memory: MemoryBoard, latent_hint: str
+    ) -> list[str]:
         unknowns: list[str] = []
         if memory.latest("RESULT") is None:
             unknowns.append("缺少外部结果")
-        if self._is_conflict_task(user_input):
+        if is_conflict_task(user_input):
             unknowns.append("冲突来源的可信度与适用条件尚未确认")
-        if any(token in user_input for token in ("比较", "区别", "优缺点", "vs", "对比")):
+        if has_compare_signal(user_input):
             unknowns.append("比较维度尚未完全确认")
-        if any(token in user_input for token in ("多少", "计算", "cost", "price", "sum", "数字")):
+        if has_calc_signal(user_input):
             unknowns.append("需要精确数值支撑")
         if not unknowns:
             unknowns.append(latent_hint)
@@ -412,10 +459,14 @@ class AdaptiveReasoningCore:
         }
         return presets.get(feature_name, [0.0] * self.LATENT_DIM)
 
-    def _update_readout(self, slot_type: str, features: dict[str, float], reward: float) -> None:
+    def _update_readout(
+        self, slot_type: str, features: dict[str, float], reward: float
+    ) -> None:
         latent = self.update_latent([0.0] * self.LATENT_DIM, features)
         for index, value in enumerate(latent):
-            self.slot_readout_weights[slot_type][index] += self.learning_rate * reward * value
+            self.slot_readout_weights[slot_type][index] += (
+                self.learning_rate * reward * value
+            )
 
     def _latent_hint(self, memory: MemoryBoard) -> str:
         if memory.latest("RESULT") is not None:
@@ -506,16 +557,3 @@ class AdaptiveReasoningCore:
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-
-    def _is_conflict_task(self, user_input: str) -> bool:
-        markers = (
-            "冲突",
-            "相反建议",
-            "相反",
-            "矛盾",
-            "不一致",
-            "先怎么处理冲突",
-            "还没消解前",
-            "直接下结论吗",
-        )
-        return any(marker in user_input for marker in markers)

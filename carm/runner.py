@@ -22,6 +22,7 @@ from carm.review import ReviewStore
 from carm.runtime_controls import load_control_state, load_controls
 from carm.training import load_training_config
 from carm.evolution import EvolutionSignal, OnlineEvolutionManager
+from carm.signals import tokenize as _tokenize
 from carm.schemas import EpisodeRecord, ReviewRecord, StepRecord
 from carm.state import AgentState
 from carm.verifier import SimpleVerifier
@@ -58,13 +59,21 @@ class AgentRunner:
     ) -> None:
         self.controls_path = Path(controls_path)
         self.controls = load_controls(self.controls_path)
-        self.control_state = load_control_state(self.controls_path.parent / "control_state.json")
+        self.control_state = load_control_state(
+            self.controls_path.parent / "control_state.json"
+        )
         self.control_version = str(self.control_state.get("current_version", ""))
         self.training_config = load_training_config(training_config_path)
-        online_config = self.training_config.get("training", {}).get("online_evolution", {})
+        online_config = self.training_config.get("training", {}).get(
+            "online_evolution", {}
+        )
         self.encoder = SimpleEncoder()
-        self.core = AdaptiveReasoningCore(core_state_path, self.controls.get("core", {}))
-        self.policy = OnlinePolicy(policy_state_path, concept_state_path, self.controls.get("policy", {}))
+        self.core = AdaptiveReasoningCore(
+            core_state_path, self.controls.get("core", {})
+        )
+        self.policy = OnlinePolicy(
+            policy_state_path, concept_state_path, self.controls.get("policy", {})
+        )
         self.verifier = SimpleVerifier()
         self.decoder = SimpleDecoder()
         self.glance = InternalGlance(self.controls.get("glance", {}))
@@ -73,12 +82,20 @@ class AgentRunner:
         self.experience_store = ExperienceStore(experience_path)
         self.review_store = ReviewStore(review_path)
         self.evolution = OnlineEvolutionManager(
-            Path(str(online_config.get("signal_state_path", "data/evolution/state.json"))),
-            Path(str(online_config.get("signal_log_path", "data/evolution/signals.jsonl"))),
+            Path(
+                str(online_config.get("signal_state_path", "data/evolution/state.json"))
+            ),
+            Path(
+                str(
+                    online_config.get("signal_log_path", "data/evolution/signals.jsonl")
+                )
+            ),
         )
 
     def run(self, user_input: str) -> tuple[str, RunTrace]:
-        state = AgentState(glance_budget=int(self.controls.get("glance", {}).get("budget", 1)))
+        state = AgentState(
+            glance_budget=int(self.controls.get("glance", {}).get("budget", 1))
+        )
         memory = MemoryBoard()
         trace = RunTrace()
         rollback_stack: list[RollbackCheckpoint] = []
@@ -103,7 +120,9 @@ class AgentRunner:
                     state_signature=self._state_signature(state),
                     memory_signature=self._memory_signature(memory),
                     user_input=user_input,
-                    selected_tool=decision.tool_call.tool_name if decision.tool_call else "",
+                    selected_tool=decision.tool_call.tool_name
+                    if decision.tool_call
+                    else "",
                     target_slot=decision.target_slot or "",
                     glance_used=bool(state.hidden.get("glance_trigger")),
                 )
@@ -119,12 +138,30 @@ class AgentRunner:
 
             if decision.action == Action.WRITE_MEM and decision.target_slot:
                 rollback_stack.append(self._checkpoint(state, memory))
+                # Re-render candidate with current memory state to ensure
+                # content reflects the latest observations (e.g. RESULT
+                # may have been written by a preceding CALL_TOOL step).
+                if memory.latest("RESULT") is not None and decision.target_slot in (
+                    "DRAFT",
+                    "HYP",
+                ):
+                    refreshed = self.core.render_candidate(
+                        decision.target_slot, memory, user_input
+                    )
+                    state.hidden["candidate"] = refreshed
+                # GOAL must always be the user's original input — never
+                # overwrite it with a plan or hypothesis payload.
+                if decision.target_slot == "GOAL" and memory.latest("GOAL") is None:
+                    state.hidden["candidate"] = user_input
                 memory.write_from_state(state, decision.target_slot, "policy")
                 state.last_action = decision.action.value
                 state.hidden.pop("verified", None)
                 continue
 
-            if decision.action in {Action.CALL_TOOL, Action.CALL_BIGMODEL} and decision.tool_call:
+            if (
+                decision.action in {Action.CALL_TOOL, Action.CALL_BIGMODEL}
+                and decision.tool_call
+            ):
                 rollback_stack.append(self._checkpoint(state, memory))
                 result = self.tool_manager.execute(
                     decision.tool_call.tool_name,
@@ -159,7 +196,9 @@ class AgentRunner:
                 continue
 
             if decision.action == Action.ANSWER:
-                attention_blocked = self._attention_gate_answer(state, memory, trace, user_input)
+                attention_blocked = self._attention_gate_answer(
+                    state, memory, trace, user_input
+                )
                 if attention_blocked:
                     trace.notes.append("Attention gate blocked premature ANSWER.")
                     continue
@@ -199,15 +238,21 @@ class AgentRunner:
         memory: MemoryBoard,
         trace: RunTrace,
     ) -> None:
-        success = memory.latest("DRAFT") is not None and memory.latest("CONFLICT") is None
+        success = (
+            memory.latest("DRAFT") is not None and memory.latest("CONFLICT") is None
+        )
         value_score = self._value_score(state, memory, trace)
         self._assign_rewards(trace, state, memory, value_score)
-        online_config = self.training_config.get("training", {}).get("online_evolution", {})
+        online_config = self.training_config.get("training", {}).get(
+            "online_evolution", {}
+        )
         allow_episode_learning = bool(online_config.get("allow_episode_learning", True))
         guidance = self.evolution.guidance_for(user_input)
 
         episode_features = self._episode_features(user_input, memory, trace)
-        outcome_signature = self._outcome_signature(state, memory, trace, success, value_score)
+        outcome_signature = self._outcome_signature(
+            state, memory, trace, success, value_score
+        )
         episode = EpisodeRecord(
             user_input=user_input,
             answer=answer,
@@ -225,11 +270,15 @@ class AgentRunner:
             self.policy.learn(trace.steps)
 
         self.experience_store.append(episode)
-        review = self._review_episode(user_input, trace, success, value_score, episode_features, outcome_signature)
+        review = self._review_episode(
+            user_input, trace, success, value_score, episode_features, outcome_signature
+        )
         self.review_store.append(review)
 
     def apply_user_signal(self, signal: EvolutionSignal) -> None:
-        online_config = self.training_config.get("training", {}).get("online_evolution", {})
+        online_config = self.training_config.get("training", {}).get(
+            "online_evolution", {}
+        )
         if not bool(online_config.get("allow_user_signals", True)):
             return
 
@@ -237,7 +286,11 @@ class AgentRunner:
         if not synthetic_steps:
             return
 
-        scale = float(self.evolution.guidance_for(signal.query or signal.goal or signal.note).get("learning_rate_scale", 1.0))
+        scale = float(
+            self.evolution.guidance_for(signal.query or signal.goal or signal.note).get(
+                "learning_rate_scale", 1.0
+            )
+        )
         for step in synthetic_steps:
             step.reward *= scale
             step.score *= max(scale, 0.1)
@@ -256,7 +309,9 @@ class AgentRunner:
         memory: MemoryBoard,
         value_score: float,
     ) -> None:
-        final_success = memory.latest("CONFLICT") is None and memory.latest("DRAFT") is not None
+        final_success = (
+            memory.latest("CONFLICT") is None and memory.latest("DRAFT") is not None
+        )
 
         for index, step in enumerate(trace.steps):
             reward = 0.0
@@ -264,24 +319,40 @@ class AgentRunner:
             if step.action == Action.WRITE_MEM.value:
                 reward += 0.35
                 reasons.append("state_written")
-            if step.action == Action.CALL_TOOL.value and memory.latest("RESULT") is not None:
+            if (
+                step.action == Action.CALL_TOOL.value
+                and memory.latest("RESULT") is not None
+            ):
                 reward += 0.75
                 reasons.append("tool_result_obtained")
-            if step.action == Action.CALL_BIGMODEL.value and memory.latest("RESULT") is not None:
+            if (
+                step.action == Action.CALL_BIGMODEL.value
+                and memory.latest("RESULT") is not None
+            ):
                 reward += 0.5
                 reasons.append("external_reasoning_obtained")
             if step.action == Action.VERIFY.value:
                 reward += 0.2 if final_success else -0.2
-                reasons.append("verification_helped" if final_success else "verification_failed")
+                reasons.append(
+                    "verification_helped" if final_success else "verification_failed"
+                )
             if step.action == Action.THINK.value:
                 reward -= 0.1
                 reasons.append("idle_reasoning_cost")
             if step.action == Action.ROLLBACK.value:
                 reward += 0.15 if memory.latest("CONFLICT") is not None else -0.15
-                reasons.append("rollback_needed" if memory.latest("CONFLICT") is not None else "rollback_unnecessary")
+                reasons.append(
+                    "rollback_needed"
+                    if memory.latest("CONFLICT") is not None
+                    else "rollback_unnecessary"
+                )
             if step.action == Action.ANSWER.value:
                 reward += 1.0 if final_success and state.uncertainty <= 0.35 else -0.6
-                reasons.append("stable_answer" if final_success and state.uncertainty <= 0.35 else "premature_answer")
+                reasons.append(
+                    "stable_answer"
+                    if final_success and state.uncertainty <= 0.35
+                    else "premature_answer"
+                )
 
             if index > 4:
                 reward -= 0.05
@@ -292,7 +363,9 @@ class AgentRunner:
             step.high_value = abs(reward) >= 0.25 and value_score >= 0.45
             step.glance_helped = step.glance_used and reward > 0.0
 
-    def _value_score(self, state: AgentState, memory: MemoryBoard, trace: RunTrace) -> float:
+    def _value_score(
+        self, state: AgentState, memory: MemoryBoard, trace: RunTrace
+    ) -> float:
         score = 0.0
         if memory.latest("RESULT") is not None:
             score += 0.35
@@ -321,25 +394,38 @@ class AgentRunner:
         parts.append(f"actions={'/'.join(trace.actions)}")
         return " | ".join(parts[:4])
 
-    def _episode_features(self, user_input: str, memory: MemoryBoard, trace: RunTrace) -> dict[str, object]:
+    def _episode_features(
+        self, user_input: str, memory: MemoryBoard, trace: RunTrace
+    ) -> dict[str, object]:
         plan = memory.parse_content(memory.latest("PLAN"))
         hyp = memory.parse_content(memory.latest("HYP"))
         draft = memory.parse_content(memory.latest("DRAFT"))
         result = memory.slot_brief(memory.latest("RESULT"))
-        tokens = self.core.tokenize(user_input)
+        tokens = _tokenize(user_input)
         return {
             "control_version": self.control_version,
             "keywords": tokens[:6],
             "action_sequence": list(trace.actions),
             "plan_summary": plan.get("summary", ""),
-            "plan_action_items": list(plan.get("action_items", []))[:4] if isinstance(plan.get("action_items"), list) else [],
-            "plan_unknowns": list(plan.get("unknowns", []))[:4] if isinstance(plan.get("unknowns"), list) else [],
+            "plan_action_items": list(plan.get("action_items", []))[:4]
+            if isinstance(plan.get("action_items"), list)
+            else [],
+            "plan_unknowns": list(plan.get("unknowns", []))[:4]
+            if isinstance(plan.get("unknowns"), list)
+            else [],
             "hyp_summary": hyp.get("summary", ""),
-            "evidence_targets": list(hyp.get("evidence_targets", []) or plan.get("evidence_targets", []))[:4]
-            if isinstance(hyp.get("evidence_targets", []) or plan.get("evidence_targets", []), list)
+            "evidence_targets": list(
+                hyp.get("evidence_targets", []) or plan.get("evidence_targets", [])
+            )[:4]
+            if isinstance(
+                hyp.get("evidence_targets", []) or plan.get("evidence_targets", []),
+                list,
+            )
             else [],
             "draft_summary": draft.get("summary", ""),
-            "used_tool": next((step.selected_tool for step in trace.steps if step.selected_tool), ""),
+            "used_tool": next(
+                (step.selected_tool for step in trace.steps if step.selected_tool), ""
+            ),
             "has_result": memory.latest("RESULT") is not None,
             "result_brief": result,
         }
@@ -435,7 +521,9 @@ class AgentRunner:
         if step_count <= 5 and success:
             strengths.append("执行路径较短且收敛稳定")
 
-        if not tool_used and any(tag in user_input for tag in ("比较", "计算", "多少", "代码")):
+        if not tool_used and any(
+            tag in user_input for tag in ("比较", "计算", "多少", "代码")
+        ):
             issue_tags.append("tool_underuse")
             weaknesses.append("需要工具支持的问题未显式调用工具")
             recommendations.append("提高相关表达下 CALL_TOOL 的优先级")
@@ -469,7 +557,11 @@ class AgentRunner:
             "reward_reasons": [step.reward_reason for step in trace.steps],
             "used_tool": episode_features.get("used_tool", ""),
             "value_score": value_score,
-            "glance_triggers": [step.state_signature.get("glance_trigger", "") for step in trace.steps if step.state_signature.get("glance_trigger", "")],
+            "glance_triggers": [
+                step.state_signature.get("glance_trigger", "")
+                for step in trace.steps
+                if step.state_signature.get("glance_trigger", "")
+            ],
             "glance_help_rate": self._glance_help_rate(trace),
             "controls_snapshot": self.controls,
         }
@@ -493,12 +585,16 @@ class AgentRunner:
         helped = sum(1 for step in glance_steps if step.glance_helped)
         return round(helped / len(glance_steps), 4)
 
-    def _project_attention_into_trace(self, episode: EpisodeRecord, trace: RunTrace) -> None:
+    def _project_attention_into_trace(
+        self, episode: EpisodeRecord, trace: RunTrace
+    ) -> None:
         nodes = project_episode_attention(episode)
         trace.attention_nodes = nodes
         trace.training_views = build_training_views(nodes)
 
-    def _attention_gate_answer(self, state: AgentState, memory: MemoryBoard, trace: RunTrace, user_input: str) -> bool:
+    def _attention_gate_answer(
+        self, state: AgentState, memory: MemoryBoard, trace: RunTrace, user_input: str
+    ) -> bool:
         draft = memory.latest("DRAFT")
         if draft is None and state.uncertainty > 0.5:
             return True
@@ -513,7 +609,8 @@ class AgentRunner:
             if confidence_band == "low":
                 return True
             meaningful_risks = [
-                r for r in open_risks
+                r
+                for r in open_risks
                 if isinstance(r, str) and r.strip() and not r.startswith("先")
             ]
             if meaningful_risks and memory.latest("RESULT") is None:

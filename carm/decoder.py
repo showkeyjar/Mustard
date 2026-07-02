@@ -7,8 +7,8 @@ from carm.state import AgentState
 class SimpleDecoder:
     """Renders agent state and memory into user-facing output.
 
-    Upgraded to surface structured confidence, verification, and risk signals
-    from the intermediate representation.
+    Produces natural, readable responses with structured confidence,
+    verification, and risk signals surfaced in a conversational format.
     """
 
     def render(self, user_input: str, state: AgentState, memory: MemoryBoard) -> str:
@@ -21,65 +21,72 @@ class SimpleDecoder:
         draft_payload = memory.parse_content(draft)
         result_payload = memory.parse_content(result)
 
+        # --- Main answer body ---
         parts: list[str] = []
-        parts.append(f"任务: {goal.content if goal else user_input}")
-        if plan:
-            parts.append(f"计划: {self._render_plan(plan_payload)}")
+
+        # Opening: acknowledge the task
+        task_summary = goal.content if goal else user_input
+        parts.append(f"关于「{task_summary}」：")
+
+        # Evidence: external results
         if result:
-            parts.append(f"外部结果: {result_payload.get('raw', result.content)}")
+            raw = result_payload.get("raw", result.content)
+            parts.append(str(raw))
+
+        # Core conclusion
         if draft:
-            parts.append(f"结论: {self._render_draft(draft_payload)}")
+            parts.append(self._render_draft_natural(draft_payload))
         else:
-            parts.append("结论: 当前没有稳定草稿。")
+            parts.append("目前还没有形成稳定结论。")
+
+        # Risk / conflict warning
         if conflict:
-            parts.append(f"风险: {conflict.content}")
-        parts.append(self._render_status_line(state, memory, draft_payload))
-        return "\n".join(parts)
+            parts.append(f"⚠ 注意：{conflict.content}")
 
-    def _render_plan(self, payload: dict[str, object]) -> str:
-        if not payload:
-            return ""
-        summary = payload.get("summary", "")
-        action_items = payload.get("action_items", [])
-        unknowns = payload.get("unknowns", [])
-        evidence_targets = payload.get("evidence_targets", [])
-        confidence = payload.get("confidence_band", "")
-        parts: list[str] = []
-        if summary:
-            parts.append(f"摘要={summary}")
-        if action_items:
-            parts.append(f"动作={', '.join(str(step) for step in action_items)}")
-        if unknowns:
-            parts.append(f"未知={', '.join(str(item) for item in unknowns)}")
-        if evidence_targets:
-            parts.append(f"证据={', '.join(str(item) for item in evidence_targets)}")
-        if confidence:
-            parts.append(f"置信={confidence}")
-        if not parts and "raw" in payload:
-            parts.append(str(payload["raw"]))
-        return "；".join(parts)
+        # Status footer (compact)
+        parts.append(self._render_status_footer(state, memory, draft_payload))
 
-    def _render_draft(self, payload: dict[str, object]) -> str:
+        return "\n\n".join(parts)
+
+    def _render_draft_natural(self, payload: dict[str, object]) -> str:
+        """Render the draft conclusion in a natural, readable format."""
         if not payload:
             return ""
         summary = payload.get("summary", payload.get("claim", ""))
         support = payload.get("support_items", payload.get("support", []))
         risks = payload.get("open_risks", [])
         confidence = payload.get("confidence_band", payload.get("status", ""))
+
         parts: list[str] = []
+
+        # Main claim
         if summary:
             parts.append(str(summary))
-        if support:
-            parts.append(f"依据={', '.join(str(item) for item in support)}")
-        if risks:
-            parts.append(f"风险={', '.join(str(item) for item in risks)}")
-        if confidence:
-            parts.append(f"置信={confidence}")
+
+        # Supporting evidence
+        if support and isinstance(support, list) and len(support) > 0:
+            items = [str(item) for item in support if item]
+            if items:
+                parts.append("依据：" + "；".join(items))
+
+        # Open risks
+        if risks and isinstance(risks, list) and len(risks) > 0:
+            items = [str(item) for item in risks if item]
+            if items:
+                parts.append("待确认风险：" + "；".join(items))
+
+        # Confidence
+        if confidence and str(confidence) not in ("未知", ""):
+            label_map = {"high": "较高", "medium": "中等", "low": "较低"}
+            label = label_map.get(str(confidence), str(confidence))
+            parts.append(f"可信度：{label}")
+
         if not parts and "raw" in payload:
             parts.append(str(payload["raw"]))
-        return "；".join(parts)
 
-    def _render_status_line(
+        return "\n".join(parts)
+
+    def _render_status_footer(
         self,
         state: AgentState,
         memory: MemoryBoard,
@@ -88,15 +95,15 @@ class SimpleDecoder:
         verified = state.hidden.get("verified") == "1"
         has_result = memory.latest("RESULT") is not None
         has_conflict = memory.latest("CONFLICT") is not None
-        confidence_band = str(draft_payload.get("confidence_band", "未知"))
 
-        status_parts = [f"不确定度={state.uncertainty:.2f}"]
+        tags: list[str] = []
         if has_result:
-            status_parts.append("有外部证据")
+            tags.append("有外部证据")
         if verified:
-            status_parts.append("已通过验证")
+            tags.append("已验证")
         if has_conflict:
-            status_parts.append("存在冲突")
-        if confidence_band and confidence_band != "未知":
-            status_parts.append(f"置信带={confidence_band}")
-        return "状态: " + "，".join(status_parts)
+            tags.append("有冲突")
+
+        if tags:
+            return f"（{', '.join(tags)}）"
+        return ""

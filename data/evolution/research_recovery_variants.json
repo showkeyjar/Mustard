@@ -70,5 +70,26 @@
         "contradictory_authority"
       ]
     }
-  ]
+  ],
+  "evaluation": {
+    "evaluated": true,
+    "variant_count": 4,
+    "tool_match_rate": 1.0,
+    "prompt_count": 4,
+    "cluster_eval": [
+      {
+        "pattern_id": "comparison_under_conflicting_sources",
+        "logic_skill": "comparison",
+        "variant_count": 1,
+        "avg_source_score": 3.0
+      },
+      {
+        "pattern_id": "repeated_conflict_detection_gap",
+        "logic_skill": "conflict_detection",
+        "variant_count": 3,
+        "avg_source_score": 1.0
+      }
+    ],
+    "temp_config": "D:\\codes\\Mustard\\data\\evolution\\_recovery_eval_temp.json"
+  }
 }

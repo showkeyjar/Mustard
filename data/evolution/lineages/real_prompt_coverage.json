@@ -1,8 +1,8 @@
 {
   "track": "real_prompt_coverage",
-  "current_candidate_id": "real_prompt_coverage_20260428T131540Z",
-  "parent_candidate_id": "real_prompt_coverage_20260426T065850Z",
-  "top_gap": "attention_verification_handoff_gap",
+  "current_candidate_id": "real_prompt_coverage_20260702T030931Z",
+  "parent_candidate_id": "real_prompt_coverage_20260702T024821Z",
+  "top_gap": "learning_focus_evidence_tool_routing_gap",
   "target_prompt_count": 20,
   "current_prompt_count": 20,
   "current_match_rate": 0.9,
@@ -14,96 +14,288 @@
     "repair_label_mapping",
     "rerun_eval",
     "stress_conflict_detection_gap",
+    "stress_learning_focus_evidence_routing_gap",
     "promote_baseline"
   ],
   "history": [
     {
-      "candidate_id": "real_prompt_coverage_20260424T110807Z",
+      "candidate_id": "real_prompt_coverage_20260701T174216Z",
       "status": "in_progress",
-      "decision": "stabilize_quality_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260424T110807Z"
+      "created_at_utc": "20260701T174216Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260425T122114Z",
+      "candidate_id": "real_prompt_coverage_20260701T181202Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T122114Z"
+      "created_at_utc": "20260701T181202Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260425T122322Z",
+      "candidate_id": "real_prompt_coverage_20260701T184228Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T122322Z"
+      "created_at_utc": "20260701T184228Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260425T123318Z",
+      "candidate_id": "real_prompt_coverage_20260701T191056Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T123318Z"
+      "created_at_utc": "20260701T191056Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260425T132848Z",
+      "candidate_id": "real_prompt_coverage_20260701T194006Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T132848Z"
+      "created_at_utc": "20260701T194006Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260425T132955Z",
+      "candidate_id": "real_prompt_coverage_20260701T201242Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260425T132955Z"
+      "created_at_utc": "20260701T201242Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260426T065647Z",
+      "candidate_id": "real_prompt_coverage_20260701T203937Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260426T065647Z"
+      "created_at_utc": "20260701T203937Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260426T065738Z",
+      "candidate_id": "real_prompt_coverage_20260701T211526Z",
       "status": "in_progress",
-      "decision": "stress_conflict_detection_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260426T065738Z"
+      "created_at_utc": "20260701T211526Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260426T065850Z",
+      "candidate_id": "real_prompt_coverage_20260701T214432Z",
       "status": "in_progress",
-      "decision": "stabilize_quality_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260426T065850Z"
+      "created_at_utc": "20260701T214432Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260428T131540Z",
+      "candidate_id": "real_prompt_coverage_20260701T222132Z",
       "status": "in_progress",
-      "decision": "stabilize_quality_gap",
+      "decision": "stress_learning_focus_evidence_routing_gap",
       "prompt_count": 20,
       "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260428T131540Z"
+      "created_at_utc": "20260701T222132Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260701T224506Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260701T224506Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260701T232132Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260701T232132Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260701T234040Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260701T234040Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T001042Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T001042Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T004051Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T004051Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T010858Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T010858Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T013937Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T013937Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T021505Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T021505Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T024821Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T024821Z"
+    },
+    {
+      "candidate_id": "real_prompt_coverage_20260702T030931Z",
+      "status": "in_progress",
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "prompt_count": 20,
+      "pretrained_match_rate": 0.9,
+      "created_at_utc": "20260702T030931Z"
     }
   ],
   "last_operator_result": {
-    "executed": false,
-    "reason": "operator_not_needed",
+    "executed": true,
+    "reason": "learning_focus_evidence_tool_routing_gap",
+    "generated_count": 4,
+    "stress_eval_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval.json",
+    "stress_result_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval_result.json",
+    "result_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval_result.json",
+    "repair_operator": "stress_learning_focus_evidence_routing_gap",
+    "repair_hint": "review evidence_judgment routing rows before merging any new prompt into default eval",
+    "stress_eval": {
+      "summary": {
+        "prompt_count": 4,
+        "baseline_match_rate": 1.0,
+        "pretrained_match_rate": 1.0,
+        "baseline_avg_steps": 5.25,
+        "pretrained_avg_steps": 5.25
+      },
+      "rows": [
+        {
+          "id": "stress-learning-focus-evidence-routing-001",
+          "logic_skill": "evidence_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-learning-focus-evidence-routing-002",
+          "logic_skill": "evidence_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-learning-focus-evidence-routing-003",
+          "logic_skill": "evidence_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        },
+        {
+          "id": "stress-learning-focus-evidence-routing-004",
+          "logic_skill": "evidence_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "baseline_match": true,
+          "pretrained_match": true
+        }
+      ]
+    },
     "track_state": {
       "track": "real_prompt_coverage",
-      "target_gap": "quality_stabilization",
+      "target_gap": "learning_focus_evidence_tool_routing_gap",
       "current_prompt_count": 20,
       "target_prompt_count": 20,
       "current_match_rate": 0.9,
@@ -111,23 +303,23 @@
       "mismatch_case_count": 2,
       "high_signal_count": 1,
       "bigmodel_proxy_mismatch_count": 1,
-      "primary_failure_pattern": "",
-      "operator": "stabilize_quality_gap",
+      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
+      "operator": "stress_learning_focus_evidence_routing_gap",
       "operator_args": {
         "target_prompt_count": 20,
         "current_prompt_count": 20,
-        "primary_failure_pattern": ""
+        "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap"
       },
-      "hypothesis": "Increase real prompt coverage without reducing current match rate.",
+      "hypothesis": "Convert evidence_judgment mismatches into search-first stress prompts until public-idea and attention-derived learning tasks stop misrouting to calculator.",
       "expected_metric_delta": {
-        "prompt_count": 0,
-        "pretrained_match_rate": 0.0
+        "specialized_evidence_routing_prompts": 4,
+        "learning_focus_pretrained_match_rate": 0.17859999999999998
       },
       "status": "in_progress",
-      "decision": "stabilize_quality_gap",
-      "failure_reason": "high_signal_quality_gap_active",
-      "repair_hint": "inject_repair_and_quality_focus_prompts"
+      "decision": "stress_learning_focus_evidence_routing_gap",
+      "failure_reason": "learning_focus_evidence_tool_routing_gap_active",
+      "repair_hint": "inject_evidence_judgment_search_first_variants"
     }
   },
-  "updated_at_utc": "20260428T131540Z"
+  "updated_at_utc": "20260702T030931Z"
 }

@@ -1,0 +1,28 @@
+{
+  "prompts": [
+    {
+      "id": "recovery-variant-01",
+      "prompt": "recovery probe: comparison under ranking_flip mutation",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "recovery-variant-02",
+      "prompt": "recovery probe: conflict_detection under missing_evidence mutation",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "recovery-variant-03",
+      "prompt": "recovery probe: conflict_detection under conflicting_sources mutation",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "recovery-variant-04",
+      "prompt": "recovery probe: conflict_detection under contradictory_authority mutation",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    }
+  ]
+}

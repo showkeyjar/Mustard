@@ -1,17 +1,17 @@
 # Top Gap Action Card
 
-- gap_id: attention_verification_handoff_gap
-- problem: 智能体工作流尚未稳定投影成 attention handoff，冲突残差没有可靠流向 verification 或 release gate。
-- current: premature_release_count=1; conflict_to_verification_rate=0.2500
-- target: premature_release_count=0 且 conflict_to_verification_rate>=0.50
-- gap: 25
-- owner: architect + benchmark_owner + trainer
-- why_this_is_top_gap_now: 覆盖已不再是主矛盾，当前更关键的是让冲突/边界残差真正顺流到 verification，而不是过早释放答案。
+- gap_id: new_failure_pattern_stalled
+- problem: 长期停滞但没有新增 failure pattern，说明新增弱点发现环节失灵。
+- current: stagnation_rounds=37; new_failure_pattern_count=0
+- target: 在后续 1~2 个周期内形成至少 1 个新增 failure pattern 或新弱点簇
+- gap: 37
+- owner: researcher + failure_miner + arbiter
+- why_this_is_top_gap_now: 覆盖数已达标，但系统仍未形成新增发现，当前瓶颈已从 coverage 转向 discovery。
 - action_plan:
-  - 围绕 premature release case 生成 follow-up attention supervision 样本
-  - 把 conflict/tool-boundary residual 显式映射到 recommended_transition=VERIFY
-  - 复跑 attention_flow 与 attention_training_views 评估并核对 handoff 改善
+  - 围绕高信号样本簇生成更具区分度的压测 prompt
+  - 优先验证 comparison / conflict_detection / tool_boundary 的新弱点簇
+  - 要求 researcher 明确给出可证伪的新 failure hypothesis
 - acceptance:
-  - attention_flow.premature_release_count == 0
-  - attention_training_views.conflict_to_verification_rate >= 0.50
-- rollback: 若 attention 监督视图只带来噪声，则回退新增 projector / evaluator 样本而不影响默认运行时
+  - 出现至少 1 个新增 failure pattern 或新 recovery cluster
+  - research_quality 不再出现 no_new_failure_pattern
+- rollback: 若新增样本只制造噪声，则回退本轮高压样本并保留有效簇

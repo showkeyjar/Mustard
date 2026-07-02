@@ -21,9 +21,18 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 - 从历史对话中学习动作与工具偏好的概念层
 - 学习何时形成 `PLAN`、`HYP`、`DRAFT` 的自适应推理核
 - 带 `action_items / unknowns / evidence_targets / confidence_band` 的结构化中间表示
-- 搜索、计算器、代码执行和大模型代理的模拟工具
+- **真实可用的4种工具**：
+  - **搜索**（SearchTool）：DuckDuckGo 真实检索 → Wikipedia 中文/英文回退 → 结构化 fallback
+  - **计算器**（CalculatorTool）：递归下降解析器，支持 `+-*/**()`，中文自然语言算式提取（"N的M次方"、"每席位M元按年预算"、"平方根"等）
+  - **代码执行**（CodeExecutorTool）：subprocess 沙箱执行，超时保护，6种常见算法模板（快速排序/冒泡排序/二分查找/斐波那契/归并排序/链表），print 输出正确捕获
+  - **大模型代理**（BigModelProxyTool）：直连 Gemini API 或内置代理回退
+- **语义意图编码器**（SemanticEncoder）：零依赖 Tier 1 同义词模式 + 可选 Tier 2 sentence-transformers 嵌入，覆盖搜索/计算/代码/大模型四类意图，带 LRU 缓存
+- **统一信号模块**（signals.py）：冲突检测、搜索/计算/代码/正式/比较 6 类意图信号，跨模块复用无重复
+- **语义优先工具路由**：policy.py 中 CALL_TOOL 分支基于语义编码器的 intent_scores 做工具选择，硬规则（算式→calculator、冲突→search、代码动作→code_executor）作为高优先级覆盖
+- 自然语言风格的 Decoder 输出："关于「...」"开头，分段展示结论/依据/可信度/风险
 - 用于动作奖励和对话摘要的经验回放存储
-- 离线预训练脚本与预训练产物清单
+- 离线预训练脚本与预训练产物清单，支持增量训练（`reset_artifacts=False`）
+- 增强评测维度：tool_match_rate + answer_completeness_rate + reasonable_confidence_rate + support_items_rate + conflict_risk_marked_rate
 - 结构化在线进化信号管理器
 - 可直接运行的本地入口
 - 覆盖记忆流、代理主循环和桌面桥梁的测试
@@ -413,33 +422,33 @@ python -m unittest discover -s tests -v
 
 ## 当前状态
 
-这是一套两段式学习脚手架。当前版本已经可以：
+CARM 已进入可实用阶段。核心推理 + 工具路由 + 评测闭环均已验证通过：
 
-- 把历史成功轨迹回放成预训练产物
-- 用低成本模板生成 + 程序化标注自动产出通用任务理解/规划预训练集
-- 从成功对话里学习概念层的动作/工具偏好
-- 用轻量自适应推理核学习 `PLAN`、`HYP`、`DRAFT` 的槽位形成倾向
-- 用结构化在线信号把 `goal / preferred_tool / preferred_slot / reward / learn` 精确回喂到运行中的模型
-- 把这些状态收敛到更适合训练和审计的结构化 schema 里
+**已验证能力**：
 
-低成本预训练数据方案现在默认会生成一份 `data/pretrain/pretrain_corpus.jsonl`，覆盖 `compare / calculate / coding / planning / summarize / fact_check` 六类通用任务。每条样本都会自动带上：
+- 4 种真实工具（搜索/计算器/代码执行/大模型代理）端到端可用，10 条真实场景评测 10/10 通过
+- 语义意图编码器驱动工具路由，中文自然语言算式（"N的M次方"、"每席位M元按年预算"、"平方根"等）自动提取并路由到计算器
+- 统一信号模块消除跨模块重复，6 类意图信号 + 冲突检测复用同一份 token/规则定义
+- 自然语言 Decoder 输出，分段展示结论/依据/可信度/风险
+- 增量训练支持（`reset_artifacts=False`），5 维质量评测（tool_match / completeness / confidence / support_items / conflict_risk）
+- 离线预训练 + 在线进化双环闭环，teacher distillation 可选接入真实大模型
 
-- `expected_tool`
-- `target_slot`
-- `plan_action_items`
-- `plan_unknowns`
-- `evidence_targets`
-- `draft_summary`
-- `quality_score`
+**工具路由示例**：
 
-你也可以把公开语料先放到本地，再通过导入器并入同一份数据集。当前导入器会优先读取：
+| 用户输入 | 路由工具 | 输出摘要 |
+|---------|---------|---------|
+| 100个席位每席位129元按年预算多少 | CalculatorTool | 100×129×12 = 154,800 |
+| 100的平方根 | CalculatorTool | 100^0.5 = 10 |
+| 2的10次方 | CalculatorTool | 2^10 = 1024 |
+| 用快速排序排这组数 5,3,8,1 | CodeExecutorTool | [1, 3, 5, 8] |
+| PostgreSQL和MySQL哪个更适合中小团队 | SearchTool | 结构化搜索结果 |
+| 分析这段代码的时间复杂度 | BigModelProxyTool | 大模型推理输出 |
 
-- `prompt`
-- `question`
-- `instruction`
-- `input`
+**已知局限**：
 
-然后自动推断任务类型并转成统一的 CARM 训练结构。
+- 代码执行结果仅展示 stdout 输出，不回显代码本身（可后续迭代）
+- 连续长会话中 experience 回放可能让 FACT slot 内容膨胀
+- 搜索在部分网络环境下可能降级到 Wikipedia fallback
 
 下一步的重点仍然是两条：
 - 用真正的递归核或状态空间模块替换当前轻量推理核
