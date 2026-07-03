@@ -501,112 +501,134 @@ BFCL_CASES = [
 # ===========================================================================
 
 MMLU_CN_CASES = [
-    # ══ L1 Easy: common knowledge ═══════════════════════════════════
+    # ══ L1 Easy: clear-cut routing — search for facts ════════════════
     {
         "query": "中国的首都是哪个城市",
-        "expected_answer": "北京",
+        "expected_tool": "search",
         "category": "geography",
         "level": "L1",
-        "note": "Common knowledge — any search should find this",
     },
     {
         "query": "水的化学式是什么",
-        "expected_answer": "H2O",
+        "expected_tool": "search",
         "category": "chemistry",
         "level": "L1",
     },
     {
         "query": "一年有多少天",
-        "expected_answer": "365",
+        "expected_tool": "search",
         "category": "common",
         "level": "L1",
     },
-    # ══ L2 Medium: domain knowledge ═════════════════════════════════
+    # ══ L2 Medium: routing still clear but knowledge is deeper ══════
     {
         "query": "量子纠缠是什么现象",
-        "expected_answer": "量子",
+        "expected_tool": "search",
         "category": "physics",
         "level": "L2",
-        "note": "Answer should contain '量子' — search should return relevant info",
     },
     {
         "query": "TCP和UDP的区别是什么",
-        "expected_answer": "连接",
+        "expected_tool": "search",
         "category": "cs",
         "level": "L2",
-        "note": "Answer should mention connection-oriented vs connectionless",
     },
     {
         "query": "Python的GIL是什么",
-        "expected_answer": "全局解释器锁",
+        "expected_tool": "search",
         "category": "cs",
         "level": "L2",
-        "note": "GIL = Global Interpreter Lock",
     },
     {
         "query": "什么是通货膨胀",
-        "expected_answer": "物价",
+        "expected_tool": "search",
         "category": "economics",
         "level": "L2",
-        "note": "Answer should mention price/物价 rising",
     },
-    # ══ L3 Hard: multi-hop reasoning, niche knowledge ═══════════════
+    # ══ L3 Hard: routing ambiguity — knowledge questions that could
+    # plausibly be answered by bigmodel_proxy instead of search ══════
     {
-        "query": "深度学习中的注意力机制最早是在哪篇论文提出的",
-        "expected_answer": "Bahdanau",
-        "category": "ml_history",
+        "query": "帮我总结一下深度学习的核心思想",
+        "expected_tool": "bigmodel_proxy",
+        "category": "synthesis",
         "level": "L3",
-        "note": "Bahdanau et al. 2014 — requires precise academic knowledge",
+        "note": "Summary/synthesis → bigmodel, not search",
     },
     {
-        "query": "相对论和牛顿力学的根本区别是什么",
-        "expected_answer": "时空",
-        "category": "physics",
+        "query": "解释一下量子计算的基本原理",
+        "expected_tool": "search",
+        "category": "explanation",
         "level": "L3",
-        "note": "Answer should mention spacetime/时空",
+        "note": "Explanation but factual → search is acceptable too",
+        "acceptable_tools": ["search", "bigmodel_proxy"],
     },
     {
-        "query": "BERT和GPT的架构差异是什么",
-        "expected_answer": "编码器",
-        "category": "cs",
+        "query": "写一篇关于气候变化的科普文章",
+        "expected_tool": "bigmodel_proxy",
+        "category": "writing",
         "level": "L3",
-        "note": "Answer should mention encoder vs decoder — requires comparative understanding",
+        "note": "Writing request → bigmodel",
     },
     {
-        "query": "中国的五年计划是从哪一年开始的",
-        "expected_answer": "1953",
-        "category": "history",
+        "query": "比较BERT和GPT的架构差异并给出选择建议",
+        "expected_tool": "bigmodel_proxy",
+        "category": "comparative_synthesis",
         "level": "L3",
-        "note": "First Five-Year Plan started 1953 — niche factual knowledge",
+        "note": "Compare + advice → bigmodel synthesis, not just search",
     },
     {
-        "query": "Transformer模型为什么比RNN更适合并行计算",
-        "expected_answer": "序列",
-        "category": "cs",
+        "query": "归纳一下这三种排序算法的优缺点",
+        "expected_tool": "bigmodel_proxy",
+        "category": "synthesis",
         "level": "L3",
-        "note": "Answer should mention sequential/序列 dependency removal",
+        "note": "归纳 is a synthesis verb → bigmodel",
     },
-    # ══ L4 Beyond: requires synthesis, reasoning, or expertise ══════
+    # Tricky: looks like search but needs LLM reasoning
     {
-        "query": "根据费曼物理学讲义解释为什么天空是蓝色的",
-        "expected_answer": "散射",
-        "category": "physics",
+        "query": "为什么深度学习需要大量数据而传统机器学习不需要",
+        "expected_tool": "bigmodel_proxy",
+        "category": "reasoning",
+        "level": "L3",
+        "note": "'为什么' triggers search but this needs comparative reasoning → bigmodel",
+    },
+    # Tricky: "分析" with domain term could go either way
+    {
+        "query": "分析一下这个业务方案的可行性",
+        "expected_tool": "bigmodel_proxy",
+        "category": "advisory",
+        "level": "L3",
+        "note": "Business analysis → bigmodel, not search",
+    },
+    # Tricky: code term but advisory intent
+    {
+        "query": "微服务和单体架构在什么场景下分别适用",
+        "expected_tool": "search",
+        "category": "boundary",
+        "level": "L3",
+        "note": "Advisory/comparative → search for evidence",
+        "acceptable_tools": ["search", "bigmodel_proxy"],
+    },
+    # ══ L4 Beyond: multi-intent or requires capabilities beyond CARM ═
+    {
+        "query": "搜索一下康德纯粹理性批判的核心论点，然后帮我写个读书笔记",
+        "expected_tool": "multi_intent",
+        "category": "multi_intent",
         "level": "L4",
-        "note": "Requires Rayleigh scattering explanation — synthesis of physics concepts",
+        "note": "Search + write = two tools in sequence",
     },
     {
-        "query": "分析康德纯粹理性批判中先验演绎的核心论证",
-        "expected_answer": "范畴",
-        "category": "philosophy",
+        "query": "上次查的那篇论文的核心结论是什么",
+        "expected_tool": "context_needed",
+        "category": "coreference",
         "level": "L4",
-        "note": "Deep philosophy — requires understanding of categories/范畴",
+        "note": "Requires conversation context — '上次查的'",
     },
     {
-        "query": "为什么图灵测试不能作为衡量智能的唯一标准",
-        "expected_answer": "中文房间",
-        "category": "ai_philosophy",
+        "query": "对比分析量子计算和经典计算在不同问题上的性能差异并给出应用建议",
+        "expected_tool": "multi_step",
+        "category": "deep_reasoning",
         "level": "L4",
-        "note": "Should mention Chinese Room argument — requires philosophical reasoning",
+        "note": "Requires deep analysis + comparison + synthesis — beyond single tool",
     },
 ]
 
@@ -907,14 +929,17 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
 
     for case in MMLU_CN_CASES:
         level = case.get("level", "L1")
+        expected_tool = case.get("expected_tool", "search")
+        acceptable = case.get("acceptable_tools", [expected_tool])
         try:
             actual_tool = _route_query(policy, case["query"])
 
-            # For MMLU, correct routing means search or bigmodel_proxy
-            # (both are valid for knowledge questions)
-            correct_routing = actual_tool in ("search", "bigmodel_proxy")
-            # L3/L4 questions that need deep reasoning may not be answered
-            # correctly even with good routing — that's the ceiling
+            # L4 cases: if expected is multi_intent/context_needed/multi_step,
+            # CARM cannot handle these — always mark as incorrect
+            if expected_tool in ("multi_intent", "context_needed", "multi_step"):
+                correct_routing = False
+            else:
+                correct_routing = actual_tool in acceptable
 
             result.total += 1
             result.level_stats[level]["total"] += 1
@@ -925,9 +950,9 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                 {
                     "query": case["query"][:50],
                     "category": case["category"],
-                    "expected_routing": "search or bigmodel_proxy",
+                    "expected": expected_tool,
                     "actual": actual_tool or "None",
-                    "routing_correct": correct_routing,
+                    "correct": correct_routing,
                     "level": level,
                 }
             )
@@ -939,9 +964,9 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                 {
                     "query": case["query"][:50],
                     "category": case["category"],
-                    "expected_routing": "search or bigmodel_proxy",
+                    "expected": expected_tool,
                     "actual": f"CRASH: {e}",
-                    "routing_correct": False,
+                    "correct": False,
                     "level": level,
                 }
             )
@@ -1065,8 +1090,15 @@ def print_benchmark_report(results: list[BenchmarkResult]) -> None:
         if unexpected_failures:
             print(f"  Unexpected failures (L1/L2) ({len(unexpected_failures)}):")
             for f in unexpected_failures:
+                exp = (
+                    f.get("expected")
+                    or f.get("expected_answer")
+                    or f.get("expected_routing")
+                    or "?"
+                )
+                act = f.get("actual") or f.get("actual_answer") or "?"
                 print(
-                    f"    expected={f.get('expected', f.get('expected_routing', '?')):20s} actual={str(f.get('actual', '?')):15s} | {f.get('query', '')[:40]}"
+                    f"    expected={str(exp):20s} actual={str(act):15s} | {f.get('query', '')[:40]}"
                 )
             print()
 

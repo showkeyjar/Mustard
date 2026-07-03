@@ -139,6 +139,13 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "怎么回事",
         "指的是",
         "如何理解",
+        # Consultative/advisory intent (overrides code intent — "如何选择排序" → search)
+        "优化",
+        "瓶颈",
+        "改进",
+        "提升",
+        "性能",
+        "评估",
     ],
     "calculator": [
         # Direct calculation synonyms
@@ -306,7 +313,16 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "告警",
         "复盘",
         "反思",
-        "分析",
+        # Translation
+        "翻译",
+        "译成",
+        "译为",
+        "translate",
+        # Text polishing
+        "修饰",
+        "调整措辞",
+        "文风",
+        "语气",
     ],
 }
 

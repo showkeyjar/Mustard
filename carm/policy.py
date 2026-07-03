@@ -21,6 +21,9 @@ from carm.signals import (
     has_explain_signal,
     has_writing_signal,
     has_search_action_signal,
+    has_translate_signal,
+    has_polish_signal,
+    has_consult_signal,
 )
 from carm.state import AgentState
 
@@ -352,6 +355,25 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Writing/synthesis intent detected — routing to big model."
                 )
+                hard_rule_hit = True
+            # Override 0c: Translate/polish intent → bigmodel_proxy
+            # "翻译一下这段英文" / "帮我润色一下这段文字"
+            elif has_translate_signal(user_input) or has_polish_signal(user_input):
+                chosen_tool = "bigmodel_proxy"
+                chosen_reason = (
+                    "Translate/polish intent detected — routing to big model."
+                )
+                hard_rule_hit = True
+            # Override 0d: Consultative intent without strong code verb → search
+            # "如何选择排序算法" / "优化排序性能" / "代码性能瓶颈分析"
+            # These are advisory questions, not execution requests.
+            # But "写一个排序" still goes to code_executor (strong code verb).
+            elif has_consult_signal(user_input) and not any(
+                v in user_input
+                for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
+            ):
+                chosen_tool = "search"
+                chosen_reason = "Consultative/advisory intent without code action — knowledge search."
                 hard_rule_hit = True
             # Override 1: Conflict tasks always search first
             elif hard_conflict:

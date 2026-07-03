@@ -169,6 +169,44 @@ ALGORITHM_TOKENS = (
     "二分",
     "阶乘",
 )
+# Tokens that indicate a CONSULTATIVE/ADVISORY intent, not an execution intent.
+# When these appear alongside code/algorithm tokens, the user wants
+# advice/analysis/knowledge, not code execution.
+CONSULT_TOKENS = (
+    "优化",
+    "分析",
+    "选择",
+    "选哪个",
+    "哪种",
+    "如何选择",
+    "该怎么",
+    "瓶颈",
+    "改进",
+    "提升",
+    "性能",
+    "评估",
+    "对比",
+)
+
+# Tokens that indicate a TRANSLATION intent — always bigmodel_proxy.
+TRANSLATE_TOKENS = (
+    "翻译",
+    "译成",
+    "译为",
+    "translate",
+)
+
+# Tokens that indicate a TEXT POLISHING intent — always bigmodel_proxy.
+POLISH_TOKENS = (
+    "润色",
+    "修改",
+    "改写",
+    "修饰",
+    "调整措辞",
+    "文风",
+    "语气",
+)
+
 FORMAL_TOKENS = (
     "负责人",
     "管理层",
@@ -206,11 +244,24 @@ def has_code_signal(text: str) -> bool:
     has_explain = any(token in text for token in EXPLAIN_TOKENS)
     has_writing = any(token in text for token in WRITING_TOKENS)
     has_search_action = has_search_action_signal(text)
+    has_translate = has_translate_signal(text)
+    has_polish = has_polish_signal(text)
+    has_consult = has_consult_signal(text)
     # Writing intent ("写一篇议论文") overrides code intent from "写"
     if has_writing:
         return False
+    # Translation/polish intent always overrides code intent
+    if has_translate or has_polish:
+        return False
     # Explicit search actions ("搜索一下Python") override code intent
     if has_search_action:
+        return False
+    # Consultative/advisory intent ("优化/分析/选择") overrides algorithm signals
+    # "如何选择排序算法" is advisory, not execution — but "写一个排序" is still code.
+    # Consult only overrides when there is NO strong code action verb ("运行/写/实现/执行").
+    _strong_code_verbs = ("运行", "写", "实现", "编写", "执行", "跑一下")
+    has_strong_code_verb = any(v in text for v in _strong_code_verbs)
+    if has_consult and not has_strong_code_verb:
         return False
     # Language name alone is not enough — must pair with action or have
     # an explicit code/debugging/algorithm token.
@@ -306,6 +357,28 @@ def has_writing_signal(text: str) -> bool:
     (bigmodel_proxy), not code execution.
     """
     return any(token in text for token in WRITING_TOKENS)
+
+
+def has_translate_signal(text: str) -> bool:
+    """Return True if the text indicates a translation intent."""
+    return any(token in text for token in TRANSLATE_TOKENS)
+
+
+def has_polish_signal(text: str) -> bool:
+    """Return True if the text indicates a text polishing intent."""
+    return any(token in text for token in POLISH_TOKENS)
+
+
+def has_consult_signal(text: str) -> bool:
+    """Return True if the text indicates a consultative/advisory intent.
+
+    When code/algorithm tokens are also present, the user likely wants
+    advice or analysis, not code execution.  For example:
+    - "如何选择合适的排序算法" → search (advisory)
+    - "优化排序算法性能" → search (advisory)
+    - "写一个快速排序" → code_executor (execution)
+    """
+    return any(token in text for token in CONSULT_TOKENS)
 
 
 def has_search_action_signal(text: str) -> bool:
