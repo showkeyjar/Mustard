@@ -11,25 +11,40 @@ class BigModelProxyTool:
     name = "bigmodel_proxy"
 
     def execute(self, query: str, arguments: dict) -> ToolResult:
+        # Strategy 1: Gemini API (cloud, highest quality)
         if self._gemini_enabled():
             live_result = self._execute_gemini(query, arguments)
             if live_result is not None:
                 return live_result
+
+        # Strategy 2: Ollama local LLM (zero-config, good quality)
+        ollama_result = self._execute_ollama(query, arguments)
+        if ollama_result is not None:
+            return ollama_result
+
+        # Strategy 3: Distill mode (structured teacher sample)
         if arguments.get("mode") == "distill":
             return ToolResult(
                 ok=True,
                 tool_name=self.name,
                 result=json.dumps(self._distill_payload(query), ensure_ascii=False),
                 confidence=0.88,
-                source="tool/bigmodel_proxy",
+                source="tool/bigmodel_proxy:distill_fallback",
             )
+
+        # Strategy 4: Honest fallback — tell user what's missing
         return ToolResult(
-            ok=True,
+            ok=False,
             tool_name=self.name,
-            result=f"外部大模型建议: 先拆解任务，再补充缺失专业事实。原问题: {query[:60]}",
-            confidence=0.8,
-            source="tool/bigmodel_proxy",
+            result=(
+                f"无可用大模型后端。请设置 GEMINI_API_KEY 环境变量连接 Gemini，"
+                f"或启动 Ollama（ollama serve）连接本地模型。原问题: {query[:80]}"
+            ),
+            confidence=0.15,
+            source="tool/bigmodel_proxy:no_backend",
         )
+
+    # ── Gemini ──────────────────────────────────────────────────────────
 
     def _gemini_enabled(self) -> bool:
         return bool(os.environ.get("GEMINI_API_KEY", "").strip())
@@ -39,7 +54,10 @@ class BigModelProxyTool:
         if not api_key:
             return None
 
-        model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+        model = (
+            os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
+            or "gemini-2.5-flash"
+        )
         timeout_s = float(os.environ.get("GEMINI_TIMEOUT_S", "30") or 30)
         mode = str(arguments.get("mode", "")).strip().lower()
         endpoint = (
@@ -149,6 +167,82 @@ class BigModelProxyTool:
                     return str(part.get("text", "")).strip()
         return ""
 
+    # ── Ollama local LLM ────────────────────────────────────────────────
+
+    def _execute_ollama(self, query: str, arguments: dict) -> ToolResult | None:
+        """Try Ollama local LLM (default http://localhost:11434)."""
+        base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip(
+            "/"
+        )
+        model = os.environ.get("OLLAMA_MODEL", "qwen3-coder")
+        timeout_s = float(os.environ.get("OLLAMA_TIMEOUT_S", "30") or 30)
+
+        endpoint = f"{base_url}/api/generate"
+        mode = str(arguments.get("mode", "")).strip().lower()
+
+        system_prompt = (
+            "You are an external large model assisting a small logic controller. "
+            "Return a concise, practical answer grounded in the user's request. "
+            "Prefer structure over flourish. Respond in the same language as the query."
+        )
+        if mode == "distill":
+            system_prompt = (
+                "You are a teacher model for a small reasoning controller. "
+                "Convert the task into a compact JSON training sample."
+            )
+
+        payload = {
+            "model": model,
+            "prompt": f"{system_prompt}\n\n{query}",
+            "stream": False,
+            "options": {"temperature": 0.2},
+        }
+
+        req = request.Request(
+            endpoint,
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with request.urlopen(req, timeout=timeout_s) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+        except (
+            error.URLError,
+            error.HTTPError,
+            TimeoutError,
+            json.JSONDecodeError,
+            OSError,
+        ):
+            return None
+
+        text = str(body.get("response", "")).strip()
+        if not text:
+            return None
+
+        # Extract the non-thinking part if the model uses <think> tags
+        if "<think>" in text and "</think>" in text:
+            after_think = text.split("</think>", 1)
+            text = after_think[1].strip() if len(after_think) > 1 else text
+
+        if mode == "distill":
+            try:
+                normalized = json.loads(text)
+                text = json.dumps(normalized, ensure_ascii=False)
+            except json.JSONDecodeError:
+                return None
+
+        return ToolResult(
+            ok=True,
+            tool_name=self.name,
+            result=text,
+            confidence=0.84 if mode == "distill" else 0.80,
+            source=f"tool/bigmodel_proxy:ollama/{model}",
+        )
+
+        # ── Distill fallback ────────────────────────────────────────────────
+
     def _distill_schema(self) -> dict[str, object]:
         return {
             "type": "object",
@@ -198,7 +292,10 @@ class BigModelProxyTool:
             unknowns = ["场景约束可能不完整"]
             evidence_targets = ["成本", "性能", "维护复杂度", "生态成熟度"]
             draft_summary = "按维度整合比较证据并输出建议。"
-        elif any(token in query for token in ("计算", "预算", "总价", "每席位", "按年", "分几批", "多少")) or any(op in query for op in ("*", "/", "+", "-")):
+        elif any(
+            token in query
+            for token in ("计算", "预算", "总价", "每席位", "按年", "分几批", "多少")
+        ) or any(op in query for op in ("*", "/", "+", "-")):
             task_type = "calculate"
             logic_skill = "tool_selection"
             expected_tool = "calculator"
@@ -207,7 +304,10 @@ class BigModelProxyTool:
             unknowns = ["是否存在额外计费口径"]
             evidence_targets = ["精确数值", "单位", "计费口径"]
             draft_summary = "基于精确计算结果输出简洁结论。"
-        elif any(token in lower for token in ("python", "code", "script", "代码", "脚本", "报错")):
+        elif any(
+            token in lower
+            for token in ("python", "code", "script", "代码", "脚本", "报错")
+        ):
             task_type = "coding"
             logic_skill = "tool_selection"
             expected_tool = "code_executor"
@@ -216,7 +316,10 @@ class BigModelProxyTool:
             unknowns = ["执行上下文可能不完整"]
             evidence_targets = ["异常信息", "输入输出", "执行结果"]
             draft_summary = "基于可执行验证输出修复建议。"
-        elif any(token in query for token in ("负责人", "管理层", "正式", "简洁", "材料", "资料", "组织")):
+        elif any(
+            token in query
+            for token in ("负责人", "管理层", "正式", "简洁", "材料", "资料", "组织")
+        ):
             task_type = "summarize"
             logic_skill = "result_integration"
             expected_tool = "bigmodel_proxy"
@@ -227,7 +330,9 @@ class BigModelProxyTool:
             draft_summary = "把多源材料整合成适合对外或对上沟通的正式结论。"
         elif any(token in query for token in ("核验", "验证", "可靠", "冲突", "过时")):
             task_type = "fact_check"
-            logic_skill = "evidence_judgment" if "冲突" not in query else "conflict_detection"
+            logic_skill = (
+                "evidence_judgment" if "冲突" not in query else "conflict_detection"
+            )
             expected_tool = "search"
             target_slot = "HYP"
             action_items = ["拆出待核验陈述", "对照来源与时效", "确认冲突后再下结论"]

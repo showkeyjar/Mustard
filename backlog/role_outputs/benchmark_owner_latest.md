@@ -5,4 +5,4 @@
 - real_prompt_count: 20
 - real_prompt_match_rate: 0.9000
 - target: 在后续 1~2 个周期内形成至少 1 个新增 failure pattern 或新弱点簇
-- gap: 37
+- gap: 55

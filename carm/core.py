@@ -236,9 +236,14 @@ class AdaptiveReasoningCore:
                 # Derive summary from actual result content, not a generic template
                 result_payload = memory.parse_content(result)
                 raw_result = str(result_payload.get("raw", result_text))
+                result_source = str(result_payload.get("source", ""))
                 # For calculator results, surface the computation directly
                 if has_calc_signal(user_input) and "=" in raw_result:
                     payload["summary"] = raw_result
+                elif has_code_signal(user_input) or result_source.startswith(
+                    "tool/code"
+                ):
+                    payload["summary"] = f"执行结果：{raw_result[:80]}..."
                 elif len(raw_result) > 20:
                     payload["summary"] = f"基于检索结果：{raw_result[:80]}..."
                 else:

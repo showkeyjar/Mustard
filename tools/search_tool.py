@@ -10,16 +10,20 @@ import json
 import re
 import urllib.parse
 import urllib.request
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
 from carm.schemas import ToolResult
+
+_DDGS_TIMEOUT_S = 5
 
 
 class SearchTool:
     name = "search"
 
-    def __init__(self) -> None:
+    def __init__(self, ddgs_timeout: int = _DDGS_TIMEOUT_S) -> None:
         self._ddgs = None
+        self._ddgs_timeout = ddgs_timeout
         self._init_ddgs()
 
     def _init_ddgs(self) -> None:
@@ -39,7 +43,7 @@ class SearchTool:
     def execute(self, query: str, arguments: dict) -> ToolResult:
         top_k = arguments.get("top_k", 5)
 
-        # Strategy 1: DuckDuckGo search (best quality)
+        # Strategy 1: DuckDuckGo search (best quality, with timeout)
         if self._ddgs is not None:
             result = self._search_ddgs(query, top_k)
             if result is not None:
@@ -54,9 +58,11 @@ class SearchTool:
         return self._fallback_response(query, top_k)
 
     def _search_ddgs(self, query: str, top_k: int) -> ToolResult | None:
-        """Search using duckduckgo-search library."""
+        """Search using duckduckgo-search library with timeout protection."""
         try:
-            results = list(self._ddgs.text(query, max_results=top_k))
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future: Future = pool.submit(self._ddgs.text, query, max_results=top_k)
+                results = list(future.result(timeout=self._ddgs_timeout))
             if not results:
                 return None
 

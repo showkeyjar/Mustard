@@ -41,32 +41,47 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 
 ### 0. 环境要求
 
-想在任意机器上正确启动本项目，先满足这几个条件：
-
-- 安装 Python `3.10+`
-- 能在命令行里直接运行 `python`
+- Python `3.10+`
 - 已把仓库完整拉取到本地
-- 当前终端工作目录位于仓库根目录
-
-检查 Python 版本：
 
 ```powershell
 python --version
 ```
 
-如果你要运行 `Claw Team`，上面这些条件就够了。
-如果你还要运行桌面常驻代理，请额外注意：桌面代理当前是 Windows 优先路径，`Claw Team` 本身则是跨平台的纯 Python 入口。
+### 1. 安装
 
-第一次使用只看这一条就够了：
+```powershell
+# 基础安装（含搜索+计算器+代码执行+大模型代理）
+pip install -e .
 
-双击仓库根目录下的 [start_carm.vbs](d:/codes/Mustard/start_carm.vbs)。
+# 可选：语义增强（sentence-transformers 嵌入）
+pip install -e ".[semantic]"
 
-它会一次性完成这三件事：
-- 启动桌面常驻代理
-- 拉起系统托盘入口
-- 打开桌面桥梁弹窗
+# 可选：Windows 桌面代理（OCR + 截屏）
+pip install -e ".[desktop]"
+```
 
-如果你更习惯命令行，等价命令是：
+### 2. 配置 LLM 后端（可选但推荐）
+
+CARM 的 bigmodel_proxy 工具支持三种后端，优先级从高到低：
+
+1. **Gemini API**（云上，质量最高）：设置环境变量 `GEMINI_API_KEY`
+2. **Ollama 本地模型**（零配置，默认 `localhost:11434`）：启动 `ollama serve` 并拉取模型
+3. **Distill 模式**（无 LLM 时的结构化回退）
+
+```powershell
+# 方式一：Gemini
+set GEMINI_API_KEY=your-key-here
+
+# 方式二：Ollama（需先安装 ollama 并拉取模型）
+ollama pull qwen3-coder
+ollama serve
+# 可选：自定义 Ollama 地址和模型
+set OLLAMA_BASE_URL=http://localhost:11434
+set OLLAMA_MODEL=qwen3-coder
+```
+
+### 3. 运行
 
 ```powershell
 python -m scripts.desktop_agent_control launch
@@ -116,21 +131,28 @@ python -m scripts.build_pretrain_dataset
 同时也会启用 `teacher_distill`，借助已有 `bigmodel_proxy` 把当前 prompt 池蒸馏成一批结构化 teacher 样本，输出到 `data/pretrain/teacher_distill.jsonl`，再并入主预训练集。
 如果你配置了真实 Gemini API，`bigmodel_proxy` 会优先直连真实大模型；未配置时才回退到仓库内置代理。
 
-接入真实大模型最简单的方式是设置：
+接入大模型有三种方式（优先级从高到低）：
+
+1. **Gemini API**（云上，质量最高）
+2. **Ollama 本地模型**（零配置，默认 `localhost:11434`）
+3. **Distill 回退**（无 LLM 时的结构化模板）
 
 ```powershell
+# 方式一：Gemini
 $env:GEMINI_API_KEY="你的密钥"
 $env:GEMINI_MODEL="gemini-2.5-flash"
-python -m scripts.auto_train
+
+# 方式二：Ollama（需先 ollama pull qwen3-coder）
+$env:OLLAMA_BASE_URL="http://localhost:11434"
+$env:OLLAMA_MODEL="qwen3-coder"
 ```
 
 可选环境变量：
 
-- `GEMINI_API_KEY`
-- `GEMINI_MODEL`
-- `GEMINI_TIMEOUT_S`
+- `GEMINI_API_KEY` / `GEMINI_MODEL` / `GEMINI_TIMEOUT_S`
+- `OLLAMA_BASE_URL` / `OLLAMA_MODEL` / `OLLAMA_TIMEOUT_S`
 
-如果你现在还不准备接真实大模型，也可以先不配这些环境变量。此时 `bigmodel_proxy` 会自动回退到仓库内置代理，整条训练流水线仍然可以跑通，只是 teacher distillation 的上限会低一些。
+未配置任何 LLM 时，bigmodel_proxy 会给出明确提示而非返回硬编码废话，训练流水线仍可跑通（distill 模式回退）。
 
 如果你已经人工修改了 `review_pack.jsonl` 里的字段，可以把修订结果回流到主训练集：
 
@@ -446,9 +468,10 @@ CARM 已进入可实用阶段。核心推理 + 工具路由 + 评测闭环均已
 
 **已知局限**：
 
-- 代码执行结果仅展示 stdout 输出，不回显代码本身（可后续迭代）
+- 核心推理核是手工权重的 tanh RNN，没有经过梯度训练，智能上限受限于规则引擎
+- 搜索在部分网络环境下可能降级到 Wikipedia 或 fallback（DDGS 5s 超时保护）
+- 代码执行模板覆盖有限（6 种算法），超出模板范围需要用户显式提供代码
 - 连续长会话中 experience 回放可能让 FACT slot 内容膨胀
-- 搜索在部分网络环境下可能降级到 Wikipedia fallback
 
 下一步的重点仍然是两条：
 - 用真正的递归核或状态空间模块替换当前轻量推理核

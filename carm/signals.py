@@ -71,6 +71,16 @@ CODE_ACTION_TOKENS = (
     "函数",
     "方法",
     "算法",
+    "排序",
+    "查找",
+    "搜索",
+    "遍历",
+    "反转",
+    "去重",
+    "合并",
+    "递归",
+    "斐波那契",
+    "二分",
 )
 FORMAL_TOKENS = (
     "负责人",
@@ -92,16 +102,33 @@ def has_code_signal(text: str) -> bool:
     """Return True if the text indicates a code execution intent.
 
     Requires either a code-language keyword paired with an action verb,
-    or an explicit code/debugging token. Bare language names like "Python"
-    without a coding verb do not trigger this signal.
+    an explicit code/debugging token, or a well-known algorithm name
+    (which is itself a strong signal for code execution).
+    Bare language names like "Python" without a coding verb do not
+    trigger this signal.
     """
     lower = text.lower()
     has_lang = any(token in lower for token in CODE_TOKENS_EN)
     has_action = any(token in text for token in CODE_ACTION_TOKENS)
     has_zh_code = any(token in text for token in CODE_TOKENS_ZH)
+    # Well-known algorithm names are strong signals on their own
+    ALGORITHM_TOKENS = (
+        "排序",
+        "快速排序",
+        "冒泡排序",
+        "归并排序",
+        "二分查找",
+        "斐波那契",
+        "递归",
+        "遍历",
+        "反转",
+        "去重",
+        "二分",
+    )
+    has_algorithm = any(token in text for token in ALGORITHM_TOKENS)
     # Language name alone is not enough — must pair with action or have
-    # an explicit code/debugging token
-    return has_zh_code or (has_lang and has_action)
+    # an explicit code/debugging/algorithm token
+    return has_zh_code or (has_lang and has_action) or has_algorithm
 
 
 COMPARISON_EVIDENCE_TOKENS = ("比较", "对比", "区别", "优缺点", "性能表现", "适用性")

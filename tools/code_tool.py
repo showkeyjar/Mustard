@@ -211,12 +211,51 @@ class CodeExecutorTool:
     ]
 
     def _match_template(self, query: str) -> str:
-        """Match a natural language query to a code template."""
+        """Match a natural language query to a code template.
+
+        If the user provides numbers in the query, replace the template's
+        hardcoded test data with the user's numbers.
+        """
+        import re
+
         lower = query.lower()
         for keywords, template in self._ALGORITHM_TEMPLATES:
             if any(kw in lower for kw in keywords):
+                # Try to extract user-provided number list from the query
+                user_numbers = self._extract_number_list(query)
+                if user_numbers:
+                    # Replace the last Python list literal in the template
+                    # (the test data) with the user's numbers
+                    template = re.sub(
+                        r"\[\s*[\d.,\s]+\]",
+                        repr(user_numbers),
+                        template,
+                        count=1,
+                    )
                 return template
         return ""
+
+    def _extract_number_list(self, query: str) -> list[int | float] | None:
+        """Extract a list of numbers from a natural language query.
+
+        Matches any sequence of 2+ numbers in the query text.
+        """
+        import re
+
+        # Extract all number tokens from the query
+        nums_str = re.findall(r"\d+\.?\d*", query)
+        if len(nums_str) < 2:
+            return None
+        result: list[int | float] = []
+        for s in nums_str:
+            try:
+                if "." in s:
+                    result.append(float(s))
+                else:
+                    result.append(int(s))
+            except ValueError:
+                continue
+        return result if len(result) >= 2 else None
 
     def _run_code(self, code: str, timeout: int) -> ToolResult:
         """Execute Python code in a subprocess with timeout."""
