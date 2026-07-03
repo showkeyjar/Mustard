@@ -18,6 +18,7 @@ from carm.signals import (
     has_code_signal,
     has_formal_signal,
     has_comparison_evidence_signal,
+    has_explain_signal,
 )
 from carm.state import AgentState
 
@@ -314,6 +315,7 @@ class OnlinePolicy:
             hard_code_action = has_code_signal(user_input) and not has_calc_signal(
                 user_input
             )
+            hard_explain = has_explain_signal(user_input)
 
             chosen_tool = semantic_best  # default: semantic winner
             chosen_reason = (
@@ -333,9 +335,14 @@ class OnlinePolicy:
                     "Hard rule: explicit arithmetic expression requires calculator."
                 )
             # Override 3: Clear code action without calc → code_executor
-            elif hard_code_action:
+            # BUT: explain intent overrides code — "解释递归" → search, not code
+            elif hard_code_action and not hard_explain:
                 chosen_tool = "code_executor"
                 chosen_reason = "Hard rule: code action verb detected."
+            # Override 4: Explain intent with code keywords → search (knowledge, not execution)
+            elif hard_explain and hard_code_action:
+                chosen_tool = "search"
+                chosen_reason = "Explain intent overrides code action — user wants knowledge, not execution."
 
             # If semantic score is very low (< 0.2) and no hard rule hit, default to search
             if (

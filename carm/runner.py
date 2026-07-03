@@ -168,6 +168,21 @@ class AgentRunner:
                     decision.tool_call.query,
                     decision.tool_call.arguments,
                 )
+                # Auto-escalate to bigmodel_proxy when search falls back to
+                # a no-results response (DDGS/Wikipedia both unavailable).
+                if (
+                    decision.tool_call.tool_name == "search"
+                    and "fallback" in result.source
+                    and self.tool_manager._tools.get("bigmodel_proxy") is not None
+                ):
+                    llm_result = self.tool_manager.execute(
+                        "bigmodel_proxy",
+                        decision.tool_call.query,
+                        decision.tool_call.arguments,
+                    )
+                    if llm_result.ok:
+                        llm_result.source = "tool/search:llm_escalation"
+                        result = llm_result
                 memory.store_result(result.result, result.confidence, result.source)
                 state.last_action = decision.action.value
                 state.uncertainty = max(0.2, state.uncertainty - 0.3)

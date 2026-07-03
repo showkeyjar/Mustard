@@ -125,6 +125,20 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "不一致",
         "相反",
         "分歧",
+        # Explanation/knowledge (overrides code intent — "解释递归" → search)
+        "解释",
+        "什么是",
+        "介绍一下",
+        "说说",
+        "讲解",
+        "理解",
+        "概念",
+        "原理",
+        "含义",
+        "为什么",
+        "怎么回事",
+        "指的是",
+        "如何理解",
     ],
     "calculator": [
         # Direct calculation synonyms
@@ -215,6 +229,8 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "递归",
         "斐波那契",
         "二分",
+        "阶乘",
+        "factorial",
         # Debugging
         "报错",
         "错误",

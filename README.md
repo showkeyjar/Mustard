@@ -461,16 +461,21 @@ CARM 已进入可实用阶段。核心推理 + 工具路由 + 评测闭环均已
 |---------|---------|---------|
 | 100个席位每席位129元按年预算多少 | CalculatorTool | 100×129×12 = 154,800 |
 | 100的平方根 | CalculatorTool | 100^0.5 = 10 |
-| 2的10次方 | CalculatorTool | 2^10 = 1024 |
-| 用快速排序排这组数 5,3,8,1 | CodeExecutorTool | [1, 3, 5, 8] |
-| PostgreSQL和MySQL哪个更适合中小团队 | SearchTool | 结构化搜索结果 |
-| 分析这段代码的时间复杂度 | BigModelProxyTool | 大模型推理输出 |
+| 用快速排序排 5,3,8,1,9,2 | CodeExecutorTool | [1, 2, 3, 5, 8, 9] |
+| 帮我写一个求阶乘的函数 | CodeExecutorTool | 120 (5!) |
+| 什么是机器学习 | SearchTool→LLM | "基于大模型分析：机器学习是…" |
+| 解释一下什么是递归 | SearchTool→LLM | "基于大模型分析：递归是一种…" |
+| Python是什么语言 | SearchTool→LLM | LLM 知识回答 |
+| 对比Python和Go的性能 | SearchTool→LLM | LLM 对比分析 |
+
+> 当 DDGS/Wikipedia 均不可用时，搜索自动升级到 Ollama 本地 LLM 回答知识性问题。
 
 **已知局限**：
 
 - 核心推理核是手工权重的 tanh RNN，没有经过梯度训练，智能上限受限于规则引擎
-- 搜索在部分网络环境下可能降级到 Wikipedia 或 fallback（DDGS 5s 超时保护）
-- 代码执行模板覆盖有限（6 种算法），超出模板范围需要用户显式提供代码
+- 搜索在部分网络环境下可能降级到 Wikipedia 或 LLM 兜底（DDGS 5s 超时保护）
+- 代码执行模板覆盖有限（7 种算法），超出模板范围需要用户显式提供代码
+- LLM 回答的语言/质量取决于 Ollama 模型选择，小模型可能出现非中文回答
 - 连续长会话中 experience 回放可能让 FACT slot 内容膨胀
 
 下一步的重点仍然是两条：

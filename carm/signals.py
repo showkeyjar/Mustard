@@ -81,6 +81,44 @@ CODE_ACTION_TOKENS = (
     "递归",
     "斐波那契",
     "二分",
+    "阶乘",
+)
+
+# Tokens that indicate an EXPLANATION intent, not an execution intent.
+# When these are present alongside algorithm names, the user likely wants
+# to understand the concept, not run code.
+EXPLAIN_TOKENS = (
+    "解释",
+    "什么是",
+    "介绍一下",
+    "说说",
+    "讲解",
+    "理解",
+    "概念",
+    "原理",
+    "含义",
+    "为什么",
+    "怎么回事",
+    "指的是",
+    "指的是什么",
+    "如何理解",
+)
+
+# Well-known algorithm names that are strong signals for code execution.
+# These override the need for a language keyword + action verb pairing.
+ALGORITHM_TOKENS = (
+    "排序",
+    "快速排序",
+    "冒泡排序",
+    "归并排序",
+    "二分查找",
+    "斐波那契",
+    "递归",
+    "遍历",
+    "反转",
+    "去重",
+    "二分",
+    "阶乘",
 )
 FORMAL_TOKENS = (
     "负责人",
@@ -106,29 +144,32 @@ def has_code_signal(text: str) -> bool:
     (which is itself a strong signal for code execution).
     Bare language names like "Python" without a coding verb do not
     trigger this signal.
+
+    Explain tokens (EXPLAIN_TOKENS) override algorithm-name signals —
+    "解释递归" should route to search, not code_executor.
     """
     lower = text.lower()
     has_lang = any(token in lower for token in CODE_TOKENS_EN)
     has_action = any(token in text for token in CODE_ACTION_TOKENS)
     has_zh_code = any(token in text for token in CODE_TOKENS_ZH)
-    # Well-known algorithm names are strong signals on their own
-    ALGORITHM_TOKENS = (
-        "排序",
-        "快速排序",
-        "冒泡排序",
-        "归并排序",
-        "二分查找",
-        "斐波那契",
-        "递归",
-        "遍历",
-        "反转",
-        "去重",
-        "二分",
-    )
     has_algorithm = any(token in text for token in ALGORITHM_TOKENS)
+    has_explain = any(token in text for token in EXPLAIN_TOKENS)
     # Language name alone is not enough — must pair with action or have
-    # an explicit code/debugging/algorithm token
+    # an explicit code/debugging/algorithm token.
+    # BUT: explain tokens override algorithm signals — "解释递归"
+    # should go to search, not code_executor.
+    if has_explain:
+        return has_zh_code or (has_lang and has_action)
     return has_zh_code or (has_lang and has_action) or has_algorithm
+
+
+def has_explain_signal(text: str) -> bool:
+    """Return True if the text indicates an explanation/knowledge intent.
+
+    When this is True, code execution routing should be suppressed —
+    the user wants to understand a concept, not run code.
+    """
+    return any(token in text for token in EXPLAIN_TOKENS)
 
 
 COMPARISON_EVIDENCE_TOKENS = ("比较", "对比", "区别", "优缺点", "性能表现", "适用性")

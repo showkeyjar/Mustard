@@ -236,7 +236,10 @@ class AdaptiveReasoningCore:
                 # Derive summary from actual result content, not a generic template
                 result_payload = memory.parse_content(result)
                 raw_result = str(result_payload.get("raw", result_text))
-                result_source = str(result_payload.get("source", ""))
+                # Get source from the slot itself (parse_content only parses content, not source)
+                result_source = getattr(result, "source", "") or str(
+                    result_payload.get("source", "")
+                )
                 # For calculator results, surface the computation directly
                 if has_calc_signal(user_input) and "=" in raw_result:
                     payload["summary"] = raw_result
@@ -244,6 +247,8 @@ class AdaptiveReasoningCore:
                     "tool/code"
                 ):
                     payload["summary"] = f"执行结果：{raw_result[:80]}..."
+                elif "llm_escalation" in result_source:
+                    payload["summary"] = f"基于大模型分析：{raw_result[:80]}..."
                 elif len(raw_result) > 20:
                     payload["summary"] = f"基于检索结果：{raw_result[:80]}..."
                 else:

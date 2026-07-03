@@ -154,6 +154,20 @@ class CodeExecutorTool:
             """),
         ),
         (
+            ["阶乘", "factorial"],
+            textwrap.dedent("""\
+                def factorial(n):
+                    if n < 0:
+                        return "负数没有阶乘"
+                    result = 1
+                    for i in range(2, n + 1):
+                        result *= i
+                    return result
+
+                print(factorial(5))
+            """),
+        ),
+        (
             ["归并排序", "merge sort", "mergesort"],
             textwrap.dedent("""\
                 def merge_sort(arr):
