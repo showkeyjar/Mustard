@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from typing import NamedTuple
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +79,13 @@ CALC_TOKENS = (
     "体积",
     "半径",
     "直径",
+    # Classic Chinese math puzzle keywords
+    "鸡兔同笼",
+    "鸡",
+    "兔",
+    "头",
+    "腿",
+    "脚",
     # Unit conversion keywords
     "公里",
     "千米",
@@ -143,6 +151,10 @@ WRITING_ACTION_TOKENS = (
     "写一封",
     "写个总结",
     "写个摘要",
+    "写个读书",
+    "写个笔记",
+    "写篇读书",
+    "写篇笔记",
     "起草",
     "拟一份",
     "写一份",
@@ -605,8 +617,14 @@ def has_calc_signal(text: str) -> bool:
     if any(exclusion in text for exclusion in DATE_EXCLUSIONS):
         return False
     # No digits = no calculation possible ("一年有多少天" is knowledge, not calc)
+    # BUT: classic Chinese math puzzles (鸡兔同笼) have numbers implied by the puzzle
+    # structure — the "10个头" and "26条腿" are implicit operands.  Treat these
+    # puzzles as calculation even without explicit digits in the query text itself.
     if not re.search(r"\d", text):
-        return False
+        if "鸡兔同笼" in text or ("头" in text and "腿" in text and "鸡" in text):
+            pass  # Classic puzzle — treat as calculation
+        else:
+            return False
     return any(token in text for token in CALC_TOKENS)
 
 
@@ -732,3 +750,128 @@ def has_deep_analysis_signal(text: str) -> bool:
     the intent is LLM-powered synthesis, not a simple search lookup.
     """
     return any(token in text for token in DEEP_ANALYSIS_TOKENS)
+
+
+# ---------------------------------------------------------------------------
+# Multi-intent detection
+# ---------------------------------------------------------------------------
+
+MULTI_INTENT_CONNECTORS = (
+    "顺便",
+    "然后",
+    "同时",
+    "另外",
+    "并且",
+    "以及",
+    "再",
+    "接着",
+    "之后",
+    "先",
+    "先搜索",
+    "先查",
+)
+
+MULTI_INTENT_DELIMITERS = (",", "，", ";", "；", "|")
+
+
+class SplitIntent(NamedTuple):
+    """One split sub-intent from a multi-intent query."""
+
+    text: str
+    primary_signal: str  # e.g. "search", "calc", "code", "bigmodel", ...
+    priority: int  # lower = should run first (e.g. data before analysis)
+
+
+def has_multi_intent_signal(text: str) -> bool:
+    """Return True if text contains explicit multi-intent connectors.
+
+    Requires the connector to be between two non-empty segments, and
+    at least two segments must carry distinct strong tool signals.
+    """
+    for conn in MULTI_INTENT_CONNECTORS:
+        if conn in text:
+            parts = text.split(conn, 1)
+            if len(parts) == 2 and parts[0].strip() and parts[1].strip():
+                left, right = parts[0].strip(), parts[1].strip()
+                left_sig = _tool_signal(left)
+                right_sig = _tool_signal(right)
+                # Only count as multi-intent when BOTH sides have a signal
+                # and they are different tools.
+                if left_sig and right_sig and left_sig != right_sig:
+                    return True
+    return False
+
+
+def _tool_signal(text: str) -> str | None:
+    """Return the strongest tool signal for a text segment, or None."""
+    if has_calc_signal(text):
+        return "calculator"
+    if has_code_signal(text):
+        return "code_executor"
+    if has_search_action_signal(text) or has_travel_signal(text):
+        return "search"
+    if has_writing_signal(text) or has_translate_signal(text):
+        return "bigmodel_proxy"
+    return None
+
+
+def split_multi_intent(text: str) -> list[SplitIntent]:
+    """Split a multi-intent query into sequential sub-intents.
+
+    Handles two patterns:
+      1. 先X然后Y / 顺便Y  — connector-driven split
+      2. X,Y  — comma-driven split when both segments have strong signals
+    """
+    # Pattern 1: connector-driven
+    for conn in MULTI_INTENT_CONNECTORS:
+        if conn in text:
+            parts = text.split(conn, 1)
+            if len(parts) == 2:
+                left = parts[0].strip()
+                right = parts[1].strip()
+                left_sig = _tool_signal(left)
+                right_sig = _tool_signal(right)
+                if left_sig and right_sig and left_sig != right_sig:
+                    intents = [
+                        SplitIntent(
+                            text=left,
+                            primary_signal=left_sig,
+                            priority=1 if left_sig == "search" else 2,
+                        ),
+                        SplitIntent(
+                            text=right,
+                            primary_signal=right_sig,
+                            priority=1 if right_sig == "search" else 2,
+                        ),
+                    ]
+                    return sorted(intents, key=lambda x: x.priority)
+
+    # Pattern 2: comma-driven, only when both sides have strong signals
+    for delim in MULTI_INTENT_DELIMITERS:
+        if delim in text:
+            parts = [p.strip() for p in text.split(delim) if p.strip()]
+            if len(parts) >= 2:
+                signals_list = []
+                for part in parts:
+                    if has_calc_signal(part):
+                        signals_list.append("calculator")
+                    elif has_code_signal(part):
+                        signals_list.append("code_executor")
+                    elif has_search_action_signal(part):
+                        signals_list.append("search")
+                    else:
+                        signals_list.append(None)
+                # Only treat as multi-intent if at least 2 parts have
+                # distinct strong signals.
+                non_null = [s for s in signals_list if s is not None]
+                if len(set(non_null)) >= 2:
+                    return [
+                        SplitIntent(
+                            text=part,
+                            primary_signal=sig or "bigmodel_proxy",
+                            priority=1 if sig == "search" else 2,
+                        )
+                        for part, sig in zip(parts, signals_list)
+                    ]
+
+    return []

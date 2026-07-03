@@ -1,6 +1,6 @@
 {
   "version": "0.5.0",
-  "timestamp": "2026-07-03 17:30:00",
+  "timestamp": "2026-07-03 18:16:54",
   "evaluation_mode": "direct_policy_routing_and_tool_output_with_L3_L4",
   "reference_scores": {
     "SMP2017-ECDT": {
@@ -507,7 +507,7 @@
       "benchmark": "BFCL-V3",
       "total": 23,
       "correct": 20,
-      "failed_gracefully": 3,
+      "failed_gracefully": 2,
       "crashed": 0,
       "accuracy": 87.0,
       "level_stats": {
@@ -730,7 +730,7 @@
         {
           "query": "用刚才的模型再跑一遍",
           "expected": "context_needed",
-          "actual": "bigmodel_proxy",
+          "actual": "multi_intent",
           "category": "multi_turn",
           "correct": false,
           "level": "L4",

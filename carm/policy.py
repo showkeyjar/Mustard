@@ -322,6 +322,39 @@ class OnlinePolicy:
                     )
                     # We'll set the tool_call below in the CALL_TOOL / CALL_BIGMODEL block
 
+        # Multi-intent override: if the query contains multiple sub-intents,
+        # route directly to multi_intent pseudo-tool.  This bypasses the entire
+        # single-tool override chain because the runner handles sequential
+        # execution of each sub-intent.
+        from carm.signals import has_multi_intent_signal, split_multi_intent
+
+        if has_multi_intent_signal(user_input):
+            intents = split_multi_intent(user_input)
+            if len(intents) >= 2:
+                state.hidden["_multi_intent_splits"] = [
+                    {"text": i.text, "signal": i.primary_signal} for i in intents
+                ]
+                return ActionDecision(
+                    action=Action.CALL_TOOL,
+                    score=0.95,
+                    reason=(
+                        f"Multi-intent detected ({len(intents)} sub-queries): "
+                        + " → ".join(f"{i.text} ({i.primary_signal})" for i in intents)
+                    ),
+                    tool_call=ToolCall(
+                        tool_name="multi_intent",
+                        query=user_input,
+                        arguments={
+                            "intents": [
+                                {"text": i.text, "signal": i.primary_signal}
+                                for i in intents
+                            ]
+                        },
+                        reason=f"Executing {len(intents)} sub-intents in sequence.",
+                    ),
+                    feature_snapshot=features,
+                )
+
         decision = ActionDecision(
             action=action,
             score=score,
@@ -373,6 +406,25 @@ class OnlinePolicy:
             )
             hard_rule_hit = False  # Track whether a hard rule already chose a tool
 
+            # Override -1: Multi-intent detection → multi_intent router
+            # "帮我查一下北京天气，顺便算一下3加5" → split into [search, calculator]
+            # This must be first because it overrides ALL single-tool rules.
+            from carm.signals import has_multi_intent_signal, split_multi_intent
+
+            if has_multi_intent_signal(user_input):
+                intents = split_multi_intent(user_input)
+                if len(intents) >= 2:
+                    chosen_tool = "multi_intent"
+                    chosen_reason = (
+                        f"Multi-intent detected ({len(intents)} sub-queries): "
+                        + " → ".join(f"{i.text} ({i.primary_signal})" for i in intents)
+                    )
+                    # Store split intents in state for runner to pick up
+                    state.hidden["_multi_intent_splits"] = [
+                        {"text": i.text, "signal": i.primary_signal} for i in intents
+                    ]
+                    hard_rule_hit = True
+
             # Override 0: Explicit search action → search
             # "搜索一下Python教程" is clearly a search request, not code.
             if hard_search_action:
@@ -413,10 +465,7 @@ class OnlinePolicy:
             elif (
                 has_consult_signal(user_input)
                 and not has_calc_signal(user_input)
-                and not any(
-                    v in user_input
-                    for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
-                )
+                and not has_strong_code_verb
             ):
                 if has_deep_analysis_signal(user_input):
                     chosen_tool = "bigmodel_proxy"

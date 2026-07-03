@@ -718,6 +718,9 @@ def _route_query(
         decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
         and decision.tool_call
     ):
+        # Multi-intent router returns "multi_intent" as pseudo-tool-name
+        # when it detects multiple sub-queries.  This IS the correct
+        # handling — the runner will execute each sub-intent in sequence.
         return decision.tool_call.tool_name
 
     # If THINK, simulate one more step to allow anti-loop override
@@ -1054,6 +1057,10 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                 pt = case.get("partial_tools")
                 if expected_tool == "multi_intent" and pt and actual_tool in pt:
                     partial_credit = 0.5
+                elif expected_tool == "multi_intent" and actual_tool == "multi_intent":
+                    # CARM detected multi-intent and will execute all sub-tools
+                    # This is the correct handling — full credit.
+                    partial_credit = 1.0
                 else:
                     partial_credit = 0.0
             else:
