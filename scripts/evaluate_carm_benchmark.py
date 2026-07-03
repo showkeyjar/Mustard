@@ -806,6 +806,9 @@ def _scoring_for_smp2017(
     """
     # Architecture-beyond cases: CARM cannot solve
     if expected_tool in ("multi_intent", "context_needed", "external_api"):
+        # CARM now correctly detects multi_intent / multi_step via signals
+        if actual_tool == expected_tool:
+            return True, False, 1.0  # Correctly detected — full credit
         if actual_tool in ("search", "calculator", "code_executor", "bigmodel_proxy"):
             # Check partial credit: did CARM route to one of the valid sub-tools?
             if partial_tools and actual_tool in partial_tools:
@@ -961,22 +964,28 @@ def run_bfcl(policy) -> BenchmarkResult:
             ):
                 correct = False
                 partial = 0.0
-                graceful = actual_tool in (
-                    "search",
-                    "calculator",
-                    "code_executor",
-                    "bigmodel_proxy",
-                    None,
-                )
-                # Partial credit: if multi_intent or context_needed and CARM
-                # routed to one of the valid sub-tools, grant 0.5 credit
-                pt = case.get("partial_tools")
-                if (
-                    expected in ("multi_intent", "context_needed")
-                    and pt
-                    and actual_tool in pt
-                ):
-                    partial = 0.5
+                # CARM now correctly detects multi_intent/multi_step
+                if actual_tool == expected:
+                    correct = True
+                    partial = 1.0
+                    graceful = False
+                else:
+                    graceful = actual_tool in (
+                        "search",
+                        "calculator",
+                        "code_executor",
+                        "bigmodel_proxy",
+                        None,
+                    )
+                    # Partial credit: if multi_intent or context_needed and CARM
+                    # routed to one of the valid sub-tools, grant 0.5 credit
+                    pt = case.get("partial_tools")
+                    if (
+                        expected in ("multi_intent", "context_needed")
+                        and pt
+                        and actual_tool in pt
+                    ):
+                        partial = 0.5
             else:
                 correct = actual_tool == expected
                 graceful = False
