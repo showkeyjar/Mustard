@@ -1,0 +1,609 @@
+{
+  "version": "0.4.0",
+  "timestamp": "2026-07-03 12:01:54",
+  "evaluation_mode": "direct_policy_routing_and_tool_output",
+  "reference_scores": {
+    "SMP2017-ECDT": {
+      "description": "Chinese intent detection, 31 domains",
+      "paper": "SMP2017 workshop, 31-intent classification",
+      "scores": {
+        "BERT-base": 94.1,
+        "GPT-3.5-turbo": 96.0,
+        "GPT-4": 98.0
+      }
+    },
+    "Math23K": {
+      "description": "Chinese math word problems, 23K problems",
+      "paper": "EMNLP 2017 (Wang et al.), algebraic word problems",
+      "scores": {
+        "GTS (seq2tree)": 74.0,
+        "BERT-based (SAU)": 82.6,
+        "GPT-3.5-turbo": 78.0,
+        "GPT-4": 92.0
+      }
+    },
+    "BFCL-V3": {
+      "description": "Berkeley function calling, tool routing accuracy",
+      "paper": "ICML 2025 (Patil et al.), function selection",
+      "scores": {
+        "Mistral-7B": 55.0,
+        "GPT-3.5-turbo": 78.0,
+        "Llama3-70B": 81.0,
+        "Qwen2-72B": 85.0,
+        "GPT-4-turbo": 88.0
+      }
+    }
+  },
+  "results": [
+    {
+      "benchmark": "SMP2017-ECDT",
+      "total": 39,
+      "correct": 39,
+      "failed_gracefully": 0,
+      "crashed": 0,
+      "accuracy": 100.0,
+      "details": [
+        {
+          "query": "帮我算一下123乘以456等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "3.5公里等于多少米",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "一百的平方根是多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "2的20次方是多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "500除以8等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "10亿减去3亿等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "1万亿除以14亿",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "负3加5等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "5加3乘2等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "圆的面积 半径是5",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true
+        },
+        {
+          "query": "帮我写一个冒泡排序",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "写一个二分查找的代码",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "用python实现快速排序",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "帮我写个斐波那契数列",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "运行一个阶乘的代码",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "实现一个插入排序算法",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "帮我写一个归并排序",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "写个线性查找的程序",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "今天天气怎么样",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "北京明天会下雨吗",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "播放一首周杰伦的歌",
+          "expected": "search",
+          "actual": "bigmodel_proxy",
+          "correct": true
+        },
+        {
+          "query": "最近有什么新闻",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "什么是人工智能",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "解释一下量子力学",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "推荐一部好看的电影",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "如何学习英语",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "什么是区块链",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "比较一下Python和Java",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "红楼梦的作者是谁",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "解释一下什么是机器学习",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "中医和西医有什么区别",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "解释冒泡排序的原理",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "比较冒泡排序和快速排序",
+          "expected": "search",
+          "actual": "search",
+          "correct": true
+        },
+        {
+          "query": "帮我写一份项目总结报告",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "correct": true
+        },
+        {
+          "query": "总结一下今年科技行业的趋势",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "correct": true
+        },
+        {
+          "query": "写一篇关于AI伦理的议论文",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "correct": true
+        },
+        {
+          "query": "帮我归纳一下这些资料的核心观点",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "correct": true
+        },
+        {
+          "query": "帮我算一下排序的时间复杂度",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        },
+        {
+          "query": "10的阶乘是多少",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "benchmark": "Math23K",
+      "total": 19,
+      "correct": 16,
+      "failed_gracefully": 3,
+      "crashed": 0,
+      "accuracy": 84.2,
+      "details": [
+        {
+          "query": "5加3",
+          "category": "simple_add",
+          "expected_answer": 8,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 5 + 3 = 8"
+        },
+        {
+          "query": "24乘6",
+          "category": "simple_multiply",
+          "expected_answer": 144,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 24 * 6 = 144"
+        },
+        {
+          "query": "100减37",
+          "category": "simple_subtract",
+          "expected_answer": 63,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 100 - 37 = 63"
+        },
+        {
+          "query": "96除以8",
+          "category": "simple_divide",
+          "expected_answer": 12,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 96 / 8 = 12"
+        },
+        {
+          "query": "2的10次方",
+          "category": "power",
+          "expected_answer": 1024,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 2 ** 10 = 1024"
+        },
+        {
+          "query": "100的平方根",
+          "category": "sqrt",
+          "expected_answer": 10,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 100 ** 0.5 = 10"
+        },
+        {
+          "query": "3.14乘以25",
+          "category": "decimal",
+          "expected_answer": 78.5,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 3.14 * 25 = 78.5"
+        },
+        {
+          "query": "3公里等于多少米",
+          "category": "unit_convert",
+          "expected_answer": 3000,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 3 * 1000 = 3000"
+        },
+        {
+          "query": "2小时等于多少分钟",
+          "category": "unit_convert",
+          "expected_answer": 120,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 2 * 60 = 120"
+        },
+        {
+          "query": "1万亿除以14亿",
+          "category": "large_number",
+          "expected_answer": 714.2857,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 1000000000000 / 1400000000 = 714.2857142857143"
+        },
+        {
+          "query": "10亿减去3亿",
+          "category": "large_number",
+          "expected_answer": 700000000,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 1000000000 - 300000000 = 700000000"
+        },
+        {
+          "query": "负3加5",
+          "category": "negative",
+          "expected_answer": 2,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: -3 + 5 = 2"
+        },
+        {
+          "query": "长方形面积 长8米宽5米",
+          "category": "geometry",
+          "expected_answer": 40,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 8 * 5 = 40"
+        },
+        {
+          "query": "圆的面积 半径3",
+          "category": "geometry",
+          "expected_answer": 28.27,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 3.14159265 * 3 ** 2 = 28.27433385"
+        },
+        {
+          "query": "小明有5个苹果又买了3个一共有多少个",
+          "category": "word_simple",
+          "expected_answer": 8,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 5 + 3 = 8"
+        },
+        {
+          "query": "一本书15元买3本需要多少钱",
+          "category": "word_simple",
+          "expected_answer": 45,
+          "answer_correct": true,
+          "carm_expected_fail": false,
+          "output_sample": "计算结果: 15 * 3 = 45"
+        },
+        {
+          "query": "一个数的3倍加5等于20这个数是多少",
+          "category": "equation",
+          "expected_answer": 5,
+          "answer_correct": false,
+          "carm_expected_fail": true,
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "甲比乙大3岁甲乙之和是27岁甲多少岁",
+          "category": "equation",
+          "expected_answer": 15,
+          "answer_correct": false,
+          "carm_expected_fail": true,
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "鸡兔同笼共10个头26条腿鸡有几只",
+          "category": "equation",
+          "expected_answer": 7,
+          "answer_correct": false,
+          "carm_expected_fail": true,
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        }
+      ]
+    },
+    {
+      "benchmark": "BFCL-V3",
+      "total": 22,
+      "correct": 22,
+      "failed_gracefully": 0,
+      "crashed": 0,
+      "accuracy": 100.0,
+      "details": [
+        {
+          "query": "帮我计算 2 + 3 * 4",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "运行这段代码 print(sum([1,2,3]))",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "搜索一下Python教程",
+          "expected": "search",
+          "actual": "search",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "帮我写一份市场分析报告",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "计算100的平方根",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "写一个快速排序算法",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "category": "simple",
+          "correct": true
+        },
+        {
+          "query": "帮我算一下5的阶乘",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "category": "multiple",
+          "correct": true
+        },
+        {
+          "query": "比较一下Redis和Memcached的性能",
+          "expected": "search",
+          "actual": "search",
+          "category": "multiple",
+          "correct": true
+        },
+        {
+          "query": "解释一下什么是动态规划",
+          "expected": "search",
+          "actual": "search",
+          "category": "multiple",
+          "correct": true
+        },
+        {
+          "query": "5加3乘2等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "multiple",
+          "correct": true
+        },
+        {
+          "query": "帮我算一下排序的时间复杂度",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "category": "multiple",
+          "correct": true
+        },
+        {
+          "query": "你好啊",
+          "expected": "search",
+          "actual": "search",
+          "category": "relevance",
+          "correct": true
+        },
+        {
+          "query": "!@#$%^&*()",
+          "expected": "search",
+          "actual": "search",
+          "category": "relevance",
+          "correct": true
+        },
+        {
+          "query": "帮我写一个关于历史的作文",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "category": "hallucination",
+          "correct": true
+        },
+        {
+          "query": "翻译一下这段话",
+          "expected": "search",
+          "actual": "search",
+          "category": "hallucination",
+          "correct": true
+        },
+        {
+          "query": "今天的日期是多少",
+          "expected": "search",
+          "actual": "search",
+          "category": "hallucination",
+          "correct": true
+        },
+        {
+          "query": "帮我归纳一下这些资料的核心观点",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "category": "hallucination",
+          "correct": true
+        },
+        {
+          "query": "帮我计算圆的面积半径是7",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "parallel",
+          "correct": true
+        },
+        {
+          "query": "用归并排序排3,1,4,1,5,9",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "category": "parallel",
+          "correct": true
+        },
+        {
+          "query": "1万亿除以14亿",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "parallel",
+          "correct": true
+        },
+        {
+          "query": "负3加5等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "category": "parallel",
+          "correct": true
+        },
+        {
+          "query": "总结一下今年科技行业的趋势",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "category": "parallel",
+          "correct": true
+        }
+      ]
+    }
+  ]
+}

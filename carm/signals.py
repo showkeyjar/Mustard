@@ -72,6 +72,17 @@ CALC_TOKENS = (
     "千万",
     "百万",
     "十万",
+    # Geometry calculation keywords
+    "面积",
+    "周长",
+    "体积",
+    "半径",
+    "直径",
+    # Unit conversion keywords
+    "公里",
+    "千米",
+    "小时",
+    "等于多少",
 )
 CODE_TOKENS_EN = ("python", "code", "script")
 CODE_TOKENS_ZH = ("代码", "脚本", "报错")
@@ -88,7 +99,6 @@ CODE_ACTION_TOKENS = (
     "算法",
     "排序",
     "查找",
-    "搜索",
     "遍历",
     "反转",
     "去重",
@@ -97,6 +107,30 @@ CODE_ACTION_TOKENS = (
     "斐波那契",
     "二分",
     "阶乘",
+)
+
+# Tokens that indicate a WRITING/SYNTHESIS intent, not a code intent.
+# When these are present, "写" should be interpreted as writing/essay,
+# not code execution.
+WRITING_TOKENS = (
+    "作文",
+    "议论文",
+    "文章",
+    "散文",
+    "总结",
+    "归纳",
+    "提炼",
+    "报告",
+    "汇报",
+    "方案",
+    "建议书",
+    "心得",
+    "读后感",
+    "观后感",
+    "一首",
+    "一篇",
+    "一封",
+    "封信",
 )
 
 # Tokens that indicate an EXPLANATION intent, not an execution intent.
@@ -160,8 +194,9 @@ def has_code_signal(text: str) -> bool:
     Bare language names like "Python" without a coding verb do not
     trigger this signal.
 
-    Explain tokens (EXPLAIN_TOKENS) override algorithm-name signals —
-    "解释递归" should route to search, not code_executor.
+    Explain tokens and writing tokens override algorithm-name signals —
+    "解释递归" should route to search, "写一篇议论文" to bigmodel_proxy.
+    Explicit search actions ("搜索一下Python教程") also override code.
     """
     lower = text.lower()
     has_lang = any(token in lower for token in CODE_TOKENS_EN)
@@ -169,6 +204,14 @@ def has_code_signal(text: str) -> bool:
     has_zh_code = any(token in text for token in CODE_TOKENS_ZH)
     has_algorithm = any(token in text for token in ALGORITHM_TOKENS)
     has_explain = any(token in text for token in EXPLAIN_TOKENS)
+    has_writing = any(token in text for token in WRITING_TOKENS)
+    has_search_action = has_search_action_signal(text)
+    # Writing intent ("写一篇议论文") overrides code intent from "写"
+    if has_writing:
+        return False
+    # Explicit search actions ("搜索一下Python") override code intent
+    if has_search_action:
+        return False
     # Language name alone is not enough — must pair with action or have
     # an explicit code/debugging/algorithm token.
     # BUT: explain tokens override algorithm signals — "解释递归"
@@ -223,6 +266,14 @@ def has_compare_signal(text: str) -> bool:
 
 
 def has_calc_signal(text: str) -> bool:
+    """Return True if the text indicates a calculation intent.
+
+    Excludes date/time queries (e.g. "今天的日期是多少") which have "多少"
+    but are not calculation requests.
+    """
+    _date_keywords = ("日期", "时间", "几点", "什么时候", "哪天", "星期几", "几号")
+    if any(kw in text for kw in _date_keywords):
+        return False
     return any(token in text for token in CALC_TOKENS) or _has_arithmetic_op(text)
 
 
@@ -237,6 +288,33 @@ def has_comparison_evidence_signal(text: str) -> bool:
 def has_search_signal(text: str) -> bool:
     """Return True if the text indicates a search/information-seeking intent."""
     return any(token in text for token in SEARCH_TOKENS)
+
+
+def has_writing_signal(text: str) -> bool:
+    """Return True if the text indicates a writing/synthesis intent.
+
+    When this is True alongside "写", the intent is writing/essay
+    (bigmodel_proxy), not code execution.
+    """
+    return any(token in text for token in WRITING_TOKENS)
+
+
+def has_search_action_signal(text: str) -> bool:
+    """Return True if the text explicitly requests a search action.
+
+    "搜索一下" / "搜一下" / "查一下" / "帮我查" are explicit search
+    actions that should override code intent.
+    """
+    _search_action_verbs = (
+        "搜索一下",
+        "搜一下",
+        "查一下",
+        "帮我搜",
+        "帮我查",
+        "搜索",
+        "查找资料",
+    )
+    return any(v in text for v in _search_action_verbs)
 
 
 def _has_arithmetic_op(text: str) -> bool:

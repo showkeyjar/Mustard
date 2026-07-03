@@ -19,6 +19,8 @@ from carm.signals import (
     has_formal_signal,
     has_comparison_evidence_signal,
     has_explain_signal,
+    has_writing_signal,
+    has_search_action_signal,
 )
 from carm.state import AgentState
 
@@ -312,10 +314,10 @@ class OnlinePolicy:
             # Hard-rule overrides (highest priority)
             hard_conflict = is_conflict_task(user_input)
             hard_arithmetic = bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
-            hard_code_action = has_code_signal(user_input) and not has_calc_signal(
-                user_input
-            )
+            hard_code_action = has_code_signal(user_input)
             hard_explain = has_explain_signal(user_input)
+            hard_search_action = has_search_action_signal(user_input)
+            hard_writing = has_writing_signal(user_input)
             _synthesis_verbs = ("总结", "报告", "建议", "归纳", "提炼", "综合")
             hard_synthesis = any(v in user_input for v in _synthesis_verbs)
             hard_formal = has_formal_signal(user_input) and hard_synthesis
@@ -335,19 +337,38 @@ class OnlinePolicy:
             chosen_reason = (
                 f"Semantic intent: {semantic_best} ({semantic_best_score:.2f})"
             )
+            hard_rule_hit = False  # Track whether a hard rule already chose a tool
 
+            # Override 0: Explicit search action → search
+            # "搜索一下Python教程" is clearly a search request, not code.
+            if hard_search_action:
+                chosen_tool = "search"
+                chosen_reason = "Explicit search action detected (搜索/搜一下/查一下)."
+                hard_rule_hit = True
+            # Override 0b: Writing/synthesis intent → bigmodel_proxy
+            # "写一篇议论文" / "总结一下趋势" / "帮我归纳"
+            elif hard_writing or (hard_synthesis and not hard_code_action):
+                chosen_tool = "bigmodel_proxy"
+                chosen_reason = (
+                    "Writing/synthesis intent detected — routing to big model."
+                )
+                hard_rule_hit = True
             # Override 1: Conflict tasks always search first
-            if hard_conflict:
+            elif hard_conflict:
                 chosen_tool = "search"
                 chosen_reason = (
                     "Conflict-style questions should gather explicit evidence."
                 )
+                hard_rule_hit = True
             # Override 2: Explicit arithmetic expression → calculator
+            # BUT: if code intent is also present (e.g. "python代码 print(1+1)"),
+            # code execution takes priority — user wants to run code.
             elif hard_arithmetic and not hard_code_action:
                 chosen_tool = "calculator"
                 chosen_reason = (
                     "Hard rule: explicit arithmetic expression requires calculator."
                 )
+                hard_rule_hit = True
             # Override 2b: Calc signal detected (without code intent) → calculator
             # "1万亿除以14亿" has calc tokens but no explicit operator pattern
             # When code_signal is also present (e.g. "写一个阶乘函数"),
@@ -361,6 +382,7 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Hard rule: calc intent signal detected (no code intent)."
                 )
+                hard_rule_hit = True
             # Override 2c: Code signal + calc signal co-occurrence → code_executor
             # "写一个阶乘函数" has both calc and code signals, but the action
             # verb ("写") makes it a code execution request, not a calculation.
@@ -371,6 +393,7 @@ class OnlinePolicy:
             ):
                 chosen_tool = "code_executor"
                 chosen_reason = "Hard rule: code+calc co-occurrence, code action wins."
+                hard_rule_hit = True
             # Override 3: Clear code action without calc → code_executor
             # BUT: explain intent overrides code — "解释递归" → search, not code
             # AND: compare intent overrides code when no strong code verb —
@@ -382,6 +405,7 @@ class OnlinePolicy:
             ):
                 chosen_tool = "code_executor"
                 chosen_reason = "Hard rule: code action verb detected."
+                hard_rule_hit = True
             # Override 4: Explain intent overrides everything → search
             # "解释冒泡排序的原理" has explain signal; even though
             # semantic encoder gives code_executor high score (algorithm name),
@@ -391,6 +415,7 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Explain intent detected — user wants knowledge, not execution."
                 )
+                hard_rule_hit = True
             # Override 5: Formal/synthesis intent → bigmodel_proxy
             # "管理层报告/正式总结" needs LLM synthesis, not search.
             # This MUST come before compare override — "正式报告：总结..."
@@ -400,6 +425,7 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Formal/synthesis intent detected — routing to big model."
                 )
+                hard_rule_hit = True
             # Override 4b: Compare intent without explicit code action → search
             # "比较冒泡排序和快速排序的效率" has compare signal but user
             # wants analysis, not to run code.  Only route to code_executor
@@ -413,10 +439,13 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Compare intent without explicit code action — knowledge search."
                 )
+                hard_rule_hit = True
 
-            # If semantic score is very low (< 0.2) and no hard rule hit, default to search
+            # If semantic score is very low (< 0.2) and no hard rule hit,
+            # default to search
             if (
                 semantic_best_score < 0.2
+                and not hard_rule_hit
                 and not hard_conflict
                 and not hard_arithmetic
                 and not hard_code_action

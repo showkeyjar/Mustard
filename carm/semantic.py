@@ -436,7 +436,27 @@ class SemanticEncoder:
         scores: dict[str, float] = {intent: 0.0 for intent in INTENT_LABELS}
         text_lower = text.lower()
 
+        # Date/time queries should not trigger calculator intent
+        _date_keywords = (
+            "日期",
+            "时间",
+            "几点",
+            "什么时候",
+            "哪天",
+            "星期几",
+            "几号",
+            "今天",
+            "明天",
+            "昨天",
+            "前天",
+            "后天",
+        )
+        is_date_query = any(kw in text for kw in _date_keywords)
+
         for phrase, intent in _PHRASE_TO_INTENT.items():
+            # Skip calculator phrases for date/time queries
+            if intent == "calculator" and is_date_query:
+                continue
             if phrase.lower() in text_lower:
                 # Longer phrases get higher weight (more specific)
                 weight = 1.0 + len(phrase) * 0.1
@@ -448,6 +468,10 @@ class SemanticEncoder:
 
             if re.search(r"\d+\s*[\*\/+\-]\s*\d+", text):
                 scores["calculator"] += 2.0
+
+        # Date queries are search/knowledge intent
+        if is_date_query:
+            scores["search"] += 2.0
 
         return scores
 
