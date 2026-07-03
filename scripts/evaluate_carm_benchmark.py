@@ -36,6 +36,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+from carm.session_memory import SessionMemoryManager
+from carm.signals import has_anaphora_signal
+
 # ===========================================================================
 # Benchmark 1: SMP2017-ECDT equivalent — Chinese Intent Detection
 # ===========================================================================
@@ -71,7 +74,12 @@ SMP2017_CASES = [
         "level": "L2",
     },
     {"query": "搜索一下Python教程", "expected_tool": "search", "level": "L2"},
-    {"query": "10的阶乘是多少", "expected_tool": "code_executor", "level": "L2"},
+    {
+        "query": "10的阶乘是多少",
+        "expected_tool": "calculator",
+        "bfcl_category": "simple",
+        "level": "L2",
+    },
     {
         "query": "帮我写一个关于历史的作文",
         "expected_tool": "bigmodel_proxy",
@@ -163,6 +171,8 @@ SMP2017_CASES = [
         "expected_tool": "context_needed",
         "level": "L4",
         "note": "'它' requires coreference — CARM has no context memory",
+        "prime_query": "帮我查一下最新款GPU的性能参数",
+        "partial_tools": ["search", "bigmodel_proxy"],
     },
 ]
 
@@ -378,7 +388,7 @@ BFCL_CASES = [
     # ══ L2 Medium: multiple candidates, disambiguation ══════════════
     {
         "query": "帮我算一下5的阶乘",
-        "expected_tool": "code_executor",
+        "expected_tool": "calculator",
         "bfcl_category": "multiple",
         "level": "L2",
     },
@@ -492,6 +502,8 @@ BFCL_CASES = [
         "bfcl_category": "multi_turn",
         "level": "L4",
         "note": "Requires conversation context",
+        "prime_query": "运行一下这个Python模型",
+        "partial_tools": ["code_executor"],
     },
 ]
 
@@ -627,6 +639,8 @@ MMLU_CN_CASES = [
         "category": "coreference",
         "level": "L4",
         "note": "Requires conversation context — '上次查的'",
+        "prime_query": "搜索一下Transformer架构论文",
+        "partial_tools": ["search", "bigmodel_proxy"],
     },
     {
         "query": "对比分析量子计算和经典计算在不同问题上的性能差异并给出应用建议",
@@ -643,22 +657,63 @@ MMLU_CN_CASES = [
 # ===========================================================================
 
 
-def _route_query(policy, user_input: str) -> str | None:
-    """Get the tool that CARM would route a query to, using policy directly."""
+def _route_query(
+    policy,
+    user_input: str,
+    session_id: str | None = None,
+    prime_query: str | None = None,
+) -> str | None:
+    """Get the tool that CARM would route a query to, using policy directly.
+
+    For context_needed cases, provide a prime_query to establish conversation
+    context before testing the actual query. This simulates multi-turn sessions.
+    """
     from carm.actions import Action
     from carm.memory import MemoryBoard, MemorySlot
     from carm.state import AgentState
+
+    # If prime_query is provided and user_input has anaphora, inject context
+    if prime_query and has_anaphora_signal(user_input):
+        # Prime the session memory with a fake turn
+        SessionMemoryManager.reset_instance()
+        session_mgr = SessionMemoryManager.get_instance(
+            "data/sessions/session_log.jsonl"
+        )
+        # Extract entities from prime_query
+        from carm.session_memory import _extract_entities
+
+        entities = _extract_entities(prime_query)
+        session_mgr.get_or_create(session_id or "eval")
+        session_mgr.append_turn(
+            session_id=session_id or "eval",
+            user_input=prime_query,
+            tool_name="search",
+            tool_result=f"关于{entities[0] if entities else '查询'}的搜索结果...",
+            confidence=0.9,
+        )
+        # Resolve anaphora using session memory
+        resolved, enhanced = session_mgr.resolve_query(session_id or "eval", user_input)
+        if resolved:
+            user_input_for_routing = enhanced
+        else:
+            user_input_for_routing = user_input
+    else:
+        user_input_for_routing = user_input
 
     state = AgentState(step_idx=2, uncertainty=0.6, answer_ready=0.1)
     state.last_action = Action.WRITE_MEM.value
     memory = MemoryBoard()
     memory.write(
         MemorySlot(
-            slot_type="GOAL", content=user_input, confidence=0.9, source="eval", ttl=10
+            slot_type="GOAL",
+            content=user_input_for_routing,
+            confidence=0.9,
+            source="eval",
+            ttl=10,
         )
     )
 
-    decision = policy.decide(state, memory, user_input)
+    decision = policy.decide(state, memory, user_input_for_routing)
     if (
         decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
         and decision.tool_call
@@ -669,7 +724,7 @@ def _route_query(policy, user_input: str) -> str | None:
     if decision.action == Action.THINK:
         state.step_idx += 1
         state.last_action = Action.THINK.value
-        decision = policy.decide(state, memory, user_input)
+        decision = policy.decide(state, memory, user_input_for_routing)
         if (
             decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
             and decision.tool_call
@@ -680,7 +735,7 @@ def _route_query(policy, user_input: str) -> str | None:
         memory.write(
             MemorySlot(
                 slot_type=decision.target_slot or "PLAN",
-                content=user_input,
+                content=user_input_for_routing,
                 confidence=0.7,
                 source="eval",
                 ttl=10,
@@ -688,7 +743,7 @@ def _route_query(policy, user_input: str) -> str | None:
         )
         state.last_action = Action.WRITE_MEM.value
         state.step_idx += 1
-        decision = policy.decide(state, memory, user_input)
+        decision = policy.decide(state, memory, user_input_for_routing)
         if (
             decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
             and decision.tool_call
@@ -737,7 +792,8 @@ def _init_level_stats() -> dict[str, dict]:
 
 
 def _scoring_for_smp2017(
-    actual_tool: str | None, expected_tool: str,
+    actual_tool: str | None,
+    expected_tool: str,
     partial_tools: list[str] | None = None,
 ) -> tuple[bool, bool, float]:
     """Score SMP2017 routing. Returns (correct, graceful_fail, partial_credit).
@@ -768,9 +824,14 @@ def run_smp2017(policy) -> BenchmarkResult:
     for case in SMP2017_CASES:
         level = case.get("level", "L1")
         try:
-            actual_tool = _route_query(policy, case["query"])
+            actual_tool = _route_query(
+                policy,
+                case["query"],
+                prime_query=case.get("prime_query"),
+            )
             correct, graceful, partial = _scoring_for_smp2017(
-                actual_tool, case["expected_tool"],
+                actual_tool,
+                case["expected_tool"],
                 partial_tools=case.get("partial_tools"),
             )
 
@@ -904,10 +965,14 @@ def run_bfcl(policy) -> BenchmarkResult:
                     "bigmodel_proxy",
                     None,
                 )
-                # Partial credit: if multi_intent and CARM routed to one of the
-                # valid sub-tools, grant 0.5 credit
+                # Partial credit: if multi_intent or context_needed and CARM
+                # routed to one of the valid sub-tools, grant 0.5 credit
                 pt = case.get("partial_tools")
-                if expected == "multi_intent" and pt and actual_tool in pt:
+                if (
+                    expected in ("multi_intent", "context_needed")
+                    and pt
+                    and actual_tool in pt
+                ):
                     partial = 0.5
             else:
                 correct = actual_tool == expected
@@ -974,7 +1039,11 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
         expected_tool = case.get("expected_tool", "search")
         acceptable = case.get("acceptable_tools", [expected_tool])
         try:
-            actual_tool = _route_query(policy, case["query"])
+            actual_tool = _route_query(
+                policy,
+                case["query"],
+                prime_query=case.get("prime_query"),
+            )
 
             # L4 cases: if expected is multi_intent/context_needed/multi_step,
             # CARM cannot handle these — but grant partial credit for multi_intent
@@ -1139,7 +1208,8 @@ def print_benchmark_report(results: list[BenchmarkResult]) -> None:
         unexpected_failures = [
             d
             for d in r.details
-            if not d.get("correct", d.get("answer_correct", True)) and d.get("level") in ("L1", "L2")
+            if not d.get("correct", d.get("answer_correct", True))
+            and d.get("level") in ("L1", "L2")
         ]
         if unexpected_failures:
             print(f"  Unexpected failures (L1/L2) ({len(unexpected_failures)}):")

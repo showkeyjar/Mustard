@@ -27,6 +27,7 @@ from carm.signals import (
     has_travel_signal,
     has_debug_consult_signal,
     has_deep_reason_signal,
+    has_deep_analysis_signal,
 )
 from carm.state import AgentState
 
@@ -305,7 +306,12 @@ class OnlinePolicy:
                 # tool_name="search" will be set in the CALL_TOOL block (Override 0a)
             else:
                 intent_scores = self.semantic.intent_scores(user_input)
-                tool_intents = ["search", "calculator", "code_executor", "bigmodel_proxy"]
+                tool_intents = [
+                    "search",
+                    "calculator",
+                    "code_executor",
+                    "bigmodel_proxy",
+                ]
                 best_intent = max(tool_intents, key=lambda t: intent_scores.get(t, 0.0))
                 best_score = intent_scores.get(best_intent, 0.0)
                 if best_score > 0.0:
@@ -375,7 +381,9 @@ class OnlinePolicy:
                 hard_rule_hit = True
             # Override 0a: Travel/lifestyle intent → search
             # "帮我订一张去上海的机票" / "上海今天天气怎么样" / "去故宫怎么走"
-            elif has_travel_signal(user_input):
+            # BUT: "写一篇关于气候变化的科普文章" — "气候" is in TRAVEL_TOKENS,
+            # but writing intent is stronger.  Writing/synthesis overrides travel.
+            elif has_travel_signal(user_input) and not hard_writing:
                 chosen_tool = "search"
                 chosen_reason = "Travel/lifestyle service intent detected."
                 hard_rule_hit = True
@@ -399,12 +407,23 @@ class OnlinePolicy:
             # "如何选择排序算法" / "优化排序性能" / "代码性能瓶颈分析"
             # These are advisory questions, not execution requests.
             # But "写一个排序" still goes to code_executor (strong code verb).
-            elif has_consult_signal(user_input) and not any(
-                v in user_input
-                for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
+            # Also: "帮我算一下" should NOT be caught here — calc signal overrides consult.
+            # EXCEPTION: consult + deep_analysis → bigmodel_proxy
+            # "分析一下这个业务方案的可行性" needs LLM synthesis, not search.
+            elif (
+                has_consult_signal(user_input)
+                and not has_calc_signal(user_input)
+                and not any(
+                    v in user_input
+                    for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
+                )
             ):
-                chosen_tool = "search"
-                chosen_reason = "Consultative/advisory intent without code action — knowledge search."
+                if has_deep_analysis_signal(user_input):
+                    chosen_tool = "bigmodel_proxy"
+                    chosen_reason = "Consultative + deep analysis intent — routing to big model for synthesis."
+                else:
+                    chosen_tool = "search"
+                    chosen_reason = "Consultative/advisory intent without code action — knowledge search."
                 hard_rule_hit = True
             # Override 0e: Debug consultative intent without strong code verb -> search
             # "代码报错了怎么解决" / "这段代码有什么问题" — seeking help, not execution.
@@ -414,7 +433,9 @@ class OnlinePolicy:
                 for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
             ):
                 chosen_tool = "search"
-                chosen_reason = "Debug consultative intent — seeking help/solutions, not execution."
+                chosen_reason = (
+                    "Debug consultative intent — seeking help/solutions, not execution."
+                )
                 hard_rule_hit = True
             # Override 0f: Deep reasoning/comparative analysis -> bigmodel_proxy
             # "为什么深度学习需要大量数据而传统机器学习不需要" needs LLM synthesis.

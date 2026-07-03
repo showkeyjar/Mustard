@@ -22,7 +22,8 @@ from carm.review import ReviewStore
 from carm.runtime_controls import load_control_state, load_controls
 from carm.training import load_training_config
 from carm.evolution import EvolutionSignal, OnlineEvolutionManager
-from carm.signals import tokenize as _tokenize
+from carm.signals import tokenize as _tokenize, has_anaphora_signal
+from carm.session_memory import SessionMemoryManager
 from carm.schemas import EpisodeRecord, ReviewRecord, StepRecord
 from carm.state import AgentState
 from carm.verifier import SimpleVerifier
@@ -92,10 +93,23 @@ class AgentRunner:
             ),
         )
 
-    def run(self, user_input: str) -> tuple[str, RunTrace]:
+    def run(self, user_input: str, session_id: str = "default") -> tuple[str, RunTrace]:
         # Guard: empty or whitespace-only input
         if not user_input.strip():
             return "请输入您的问题，我会为您分析。", RunTrace()
+
+        # ── Session memory: resolve anaphora (指代) and enrich query ──
+        session_mgr = SessionMemoryManager.get_instance(
+            "data/sessions/session_log.jsonl"
+        )
+        if has_anaphora_signal(user_input):
+            resolved, enhanced = session_mgr.resolve_query(session_id, user_input)
+            if resolved:
+                user_input_for_routing = enhanced
+            else:
+                user_input_for_routing = user_input
+        else:
+            user_input_for_routing = user_input
 
         state = AgentState(
             glance_budget=int(self.controls.get("glance", {}).get("budget", 1))
@@ -103,8 +117,8 @@ class AgentRunner:
         memory = MemoryBoard()
         trace = RunTrace()
         rollback_stack: list[RollbackCheckpoint] = []
-        self._hydrate_from_experience(user_input, memory)
-        guidance = self.evolution.guidance_for(user_input)
+        self._hydrate_from_experience(user_input_for_routing, memory)
+        guidance = self.evolution.guidance_for(user_input_for_routing)
 
         for _ in range(self.max_steps):
             observation = self.encoder.encode(user_input, memory)
@@ -188,6 +202,14 @@ class AgentRunner:
                         llm_result.source = "tool/search:llm_escalation"
                         result = llm_result
                 memory.store_result(result.result, result.confidence, result.source)
+                # ── Session memory: record this turn for context tracking ──
+                session_mgr.append_turn(
+                    session_id=session_id,
+                    user_input=user_input,
+                    tool_name=decision.tool_call.tool_name,
+                    tool_result=result.result,
+                    confidence=result.confidence,
+                )
                 state.last_action = decision.action.value
                 state.uncertainty = max(0.2, state.uncertainty - 0.3)
                 state.hidden.pop("verified", None)

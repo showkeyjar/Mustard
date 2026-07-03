@@ -116,107 +116,168 @@ WRITING_TOKENS = (
     "作文",
     "议论文",
     "文章",
+    "读后感",
+    "小说",
+    "故事",
     "散文",
+    "诗歌",
+    "词",
+    "赋",
+    "读后感",
+)
+
+# Tokens that indicate a WRITING/SYNTHESIS intent (essay generation, summarization, etc.)
+WRITING_ACTION_TOKENS = (
+    "生成",
+    "创作",
+    "撰写",
+    "写一份",
+    "写一篇",
+    "写一篇关于",
+    "写一下",
     "总结",
     "归纳",
-    "提炼",
-    "报告",
-    "汇报",
-    "方案",
-    "建议书",
-    "心得",
-    "读后感",
-    "观后感",
-    "一首",
-    "一篇",
-    "一封",
-    "封信",
+    "概括",
+    "写首诗",
+    "写封信",
+    "写一封",
+    "写个总结",
+    "写个摘要",
+    "起草",
+    "拟一份",
+    "写一份",
+    "生成一份",
 )
 
-# Tokens that indicate an EXPLANATION intent, not an execution intent.
-# When these are present alongside algorithm names, the user likely wants
-# to understand the concept, not run code.
-EXPLAIN_TOKENS = (
-    "解释",
-    "什么是",
-    "介绍一下",
-    "说说",
-    "讲解",
-    "理解",
-    "概念",
-    "原理",
-    "含义",
-    "为什么",
-    "怎么回事",
-    "指的是",
-    "指的是什么",
-    "如何理解",
-)
-
-# Well-known algorithm names that are strong signals for code execution.
-# These override the need for a language keyword + action verb pairing.
-ALGORITHM_TOKENS = (
-    "排序",
-    "快速排序",
-    "冒泡排序",
-    "归并排序",
-    "二分查找",
-    "斐波那契",
-    "递归",
-    "遍历",
-    "反转",
-    "去重",
-    "二分",
-    "阶乘",
-)
-# Tokens that indicate a CONSULTATIVE/ADVISORY intent, not an execution intent.
-# When these appear alongside code/algorithm tokens, the user wants
-# advice/analysis/knowledge, not code execution.
-# Tokens that indicate a TRAVEL/LIFESTYLE service intent.
-# These should route to search (factual info) rather than calculator/code.
-TRAVEL_TOKENS = (
-    "机票",
-    "航班",
-    "飞机票",
-    "火车票",
-    "高铁票",
-    "酒店",
-    "住宿",
-    "民宿",
-    "天气",
-    "气温",
-    "降雨",
-    "地图",
-    "导航",
-    "路线",
-    "地铁",
-    "公交",
-    "打车",
-    "出租车",
-    "滴滴",
-    "出行",
-    "旅游",
-    "景点",
-    "门票",
-    "攻略",
-    "租车",
-    "自驾",
-)
-
-CONSULT_TOKENS = (
-    "优化",
-    "分析",
-    "选择",
-    "选哪个",
+# Search-intent tokens that indicate the user is looking for information
+SEARCH_TOKENS = (
+    "是什么",
+    "怎么",
+    "怎么样",
+    "如何",
+    "在哪里",
+    "去哪儿",
+    "什么地方",
+    "推荐",
+    "介绍",
+    "资料",
+    "信息",
+    "新闻",
+    "最新",
+    "排名",
+    "评分",
+    "评价",
+    "口碑",
+    "排行",
+    "哪一",
+    "哪个",
+    "哪家",
+    "哪几",
+    "哪些",
     "哪种",
-    "如何选择",
-    "该怎么",
-    "瓶颈",
-    "改进",
-    "提升",
-    "性能",
+    "哪款",
+    "哪部",
+    "哪个好",
+    "谁更",
+    "谁最",
+)
+
+# Tokens that indicate a SEARCH action (not just a SEARCH question)
+SEARCH_ACTION_TOKENS = (
+    "搜索",
+    "查找",
+    "查询",
+    "检索",
+    "搜",
+    "查",
+    "查一下",
+    "搜一下",
+    "找一找",
+    "找一下",
+)
+
+# Search-related URLs/domains
+SEARCH_URLS = (
+    "http",
+    "www",
+    ".com",
+    ".cn",
+    ".org",
+    ".net",
+    ".io",
+)
+
+FORMAL_TOKENS = ("正式", "优雅", "自然", "对话", "口语", "书面")
+
+# Tokens that indicate the user wants to EXPLAIN or UNDERSTAND something
+EXPLAIN_TOKENS = (
+    "为什么",
+    "解释",
+    "说明",
+    "原因",
+    "原理",
+    "机制",
+    "逻辑",
+    "如何理解",
+    "怎么理解",
+    "含义",
+    "意义",
+    "解读",
+    "分析",
+)
+
+# Tokens that indicate a CONSULTATIVE answer
+# (e.g., "帮我分析一下这个方案", "看看这个代码有什么问题")
+CONSULT_TOKENS = (
+    "帮我",
+    "帮我看看",
+    "帮我分析",
+    "帮我评估",
+    "帮我优化",
+    "帮我检查",
+    "帮我建议",
+    "帮我选择",
+    "帮我比较",
+    "帮我对比",
+    "帮我查",
+    "帮我找",
+    "帮我搜",
+    "看看",
+    "分析",
     "评估",
+    "建议",
+    "意见",
+    "点评",
+    "检查",
+    "诊断",
+    "纠错",
+    "优化",
     "对比",
+    # Advisory/selection signals — "应该用哪种" is seeking advice, not execution
+    "应该",
+    "应该选",
+    "应该用",
+    "适合",
+    "推荐用",
+)
+
+# Tokens that signal DEEP ANALYSIS intent — the user wants LLM-powered
+# synthesis/reasoning, not just a search lookup.  When these co-occur with
+# consult tokens, the intent is bigmodel_proxy, not search.
+DEEP_ANALYSIS_TOKENS = (
+    "可行性",
+    "方案",
+    "策略",
+    "规划",
+    "报告",
+    "提案",
+    "计划",
+    "决策",
+    "风险",
+    "影响",
+    "趋势",
+    "前景",
+    "展望",
 )
 
 # Tokens that indicate a DEBUG CONSULTATIVE intent -- the user wants help
@@ -241,9 +302,216 @@ DEBUG_CONSULT_TOKENS = (
 )
 
 # Pattern for deep reasoning/comparative analysis queries.
-# "为什么...而..." / "为什么A而B不需要" -- these are open-ended reasoning
+# "为什么...而..." / "为什么A而B不需要" — these are open-ended reasoning
 # questions that need LLM synthesis, not just search.
 _DEEP_REASON_PATTERN = re.compile(r"为什么.{2,20}而.{2,20}")
+
+# Tokens that indicate a TRANSLATION intent
+TRANSLATE_TOKENS = (
+    "翻译",
+    "把",
+    "成",
+    "译成",
+    "译",
+    "翻成",
+    "翻译成",
+    "译成",
+    "翻译一下",
+    "翻译这段话",
+    "翻译这段",
+    "翻一下",
+    "翻译这段文字",
+    "翻译这句话",
+    "翻译成中文",
+    "翻译成英文",
+)
+
+# Tokens that indicate a TEXT POLISHING intent
+POLISH_TOKENS = (
+    "润色",
+    "修改",
+    "改写",
+    "改一下",
+    "改写一下",
+    "改写成",
+    "优化一下",
+    "优化这段",
+    "优化这段文字",
+    "优化这句话",
+    "改个说法",
+    "换个说法",
+    "换个表达",
+    "换个表达方式",
+    "换个表达方式",
+    "改写成",
+    "改写为",
+    "改写一下",
+)
+
+# Tokens that indicate anaphoric (context-dependent) references
+# These words refer to entities from previous conversation turns
+ANAPHORA_TOKENS = (
+    "它",
+    "这",
+    "这个",
+    "那个",
+    "那篇",
+    "刚才",
+    "上次",
+    "之前",
+    "之前查的",
+    "刚才查的",
+    "上次查的",
+    "那个东西",
+    "那个问题",
+    "那个结果",
+)
+
+# Tokens that indicate a QUESTION or inquiry
+QUESTION_TOKENS = (
+    "?",
+    "？",
+    "吗",
+    "呢",
+    "吧",
+    "么",
+    "如何",
+    "怎么",
+    "为什么",
+    "是什么",
+    "多少",
+    "哪里",
+    "什么时候",
+    "谁",
+    "什么",
+    "哪里",
+    "哪个",
+    "哪些",
+    "哪种",
+    "怎样",
+    "怎么样",
+)
+
+# Tokens for comparison evidence gathering
+COMPARISON_EVIDENCE_TOKENS = (
+    "数据",
+    "统计",
+    "来源",
+    "出处",
+    "证据",
+    "事实",
+    "依据",
+    "根据",
+    "排名",
+    "排行",
+    "评分",
+    "评价",
+    "口碑",
+)
+
+# ---------------------------------------------------------------------------
+# Travel / lifestyle tokens
+# ---------------------------------------------------------------------------
+
+TRAVEL_TOKENS = (
+    "机票",
+    "航班",
+    "飞机",
+    "起飞",
+    "降落",
+    "登机",
+    "值机",
+    "航空公司",
+    "机票预订",
+    "订票",
+    "购票",
+    "买票",
+    "高铁",
+    "动车",
+    "火车票",
+    "列车",
+    "车次",
+    "软卧",
+    "硬卧",
+    "二等座",
+    "一等座",
+    "商务座",
+    "酒店",
+    "住宿",
+    "预订酒店",
+    "宾馆",
+    "民宿",
+    "客栈",
+    "天气",
+    "天气预报",
+    "气温",
+    "降雨",
+    "下雪",
+    "台风",
+    "气候",
+    "地图",
+    "导航",
+    "路线",
+    "怎么走",
+    "怎么去",
+    "出行",
+    "旅游",
+    "旅行",
+    "度假",
+    "景点",
+    "门票",
+    "景区",
+    "景点推荐",
+    "必去景点",
+    "附近有什么",
+    "周边游",
+    "一日游",
+    "两日游",
+    "三日游",
+    "攻略",
+    "旅游攻略",
+    "旅行攻略",
+)
+
+# ---------------------------------------------------------------------------
+# Date exclusion list (not an arithmetic question)
+# ---------------------------------------------------------------------------
+
+DATE_EXCLUSIONS = (
+    "日期",
+    "今天",
+    "明天",
+    "后天",
+    "昨天",
+    "前天",
+    "几号",
+    "星期几",
+    "周几",
+    "几月",
+    "什么时候",
+    "几点",
+    "哪一年",
+    "哪个月",
+    "日期查询",
+)
+
+# ---------------------------------------------------------------------------
+# Anaphora detection
+# ---------------------------------------------------------------------------
+
+
+def has_anaphora_signal(text: str) -> bool:
+    """Return True if the text contains anaphoric references (指代).
+
+    These references (它/这/刚才/上次) indicate the user is referring to
+    entities or results from previous conversation turns.
+    """
+    return any(token in text for token in ANAPHORA_TOKENS)
+
+
+# ---------------------------------------------------------------------------
+# Debug consult / deep reason
+# ---------------------------------------------------------------------------
 
 
 def has_debug_consult_signal(text: str) -> bool:
@@ -251,8 +519,8 @@ def has_debug_consult_signal(text: str) -> bool:
 
     The user wants HELP with code (understanding errors, finding solutions),
     not to EXECUTE code.  For example:
-    - "代码报错了怎么解决" -> True (seeking help)
-    - "帮我写一个排序" -> False (execution intent)
+    - "代码报错了怎么解决" → True (seeking help)
+    - "帮我写一个排序" → False (execution intent)
     """
     return any(token in text for token in DEBUG_CONSULT_TOKENS)
 
@@ -261,82 +529,118 @@ def has_deep_reason_signal(text: str) -> bool:
     """Return True if the text requires deep reasoning/comparative analysis.
 
     Matches patterns like "为什么...而..." that indicate the user wants
-    a thoughtful comparison or causal explanation -- best handled by bigmodel_proxy.
+    a thoughtful comparison or causal explanation — best handled by bigmodel_proxy.
     """
     return bool(_DEEP_REASON_PATTERN.search(text))
-# Tokens that indicate a TRANSLATION intent — always bigmodel_proxy.
-TRANSLATE_TOKENS = (
-    "翻译",
-    "译成",
-    "译为",
-    "translate",
-)
 
-# Tokens that indicate a TEXT POLISHING intent — always bigmodel_proxy.
-POLISH_TOKENS = (
-    "润色",
-    "修改",
-    "改写",
-    "修饰",
-    "调整措辞",
-    "文风",
-    "语气",
-)
 
-FORMAL_TOKENS = (
-    "负责人",
-    "管理层",
-    "正式",
-    "简洁",
-    "组织",
-    "结论",
-    "几份资料",
-    "材料",
-    "决策建议",
-    "日志",
-    "告警",
-    "复盘",
-)
+# ---------------------------------------------------------------------------
+# Travel
+# ---------------------------------------------------------------------------
+
+
+def has_travel_signal(text: str) -> bool:
+    """Return True if the text contains travel/lifestyle intent signals."""
+    return any(token in text for token in TRAVEL_TOKENS)
+
+
+# ---------------------------------------------------------------------------
+# Tokenization helpers
+# ---------------------------------------------------------------------------
+
+
+def tokenize(text: str) -> list[str]:
+    """Tokenize text into words (Chinese chars or English words)."""
+    tokens = []
+    i = 0
+    while i < len(text):
+        if text[i].isspace():
+            i += 1
+            continue
+        if "\u4e00" <= text[i] <= "\u9fff":
+            tokens.append(text[i])
+            i += 1
+        else:
+            j = i
+            while (
+                j < len(text)
+                and not text[j].isspace()
+                and not ("\u4e00" <= text[j] <= "\u9fff")
+            ):
+                j += 1
+            tokens.append(text[i:j])
+            i = j
+    return tokens
+
+
+def word_count(text: str) -> int:
+    """Return the number of words/tokens in the text."""
+    return len(tokenize(text))
+
+
+# ---------------------------------------------------------------------------
+# Signal detection helpers
+# ---------------------------------------------------------------------------
+
+
+def has_compare_signal(text: str) -> bool:
+    """Return True if the text contains comparison keywords."""
+    return any(token in text for token in COMPARE_TOKENS)
+
+
+def has_calc_signal(text: str) -> bool:
+    """Return True if the text contains calculation intent signals.
+
+    This includes:
+    - Direct arithmetic words (多少, 计算, 等于多少)
+    - Large number units (万亿, 亿, 万)
+    - Geometry terms (面积, 周长, 体积)
+    - Unit conversion terms (公里, 千米, 小时)
+
+    BUT: if the query contains NO digits at all, it's likely a knowledge
+    question ("一年有多少天") rather than a calculation. Calculation
+    requires at least one numeric operand.
+    """
+    # Exclude pure date queries
+    if any(exclusion in text for exclusion in DATE_EXCLUSIONS):
+        return False
+    # No digits = no calculation possible ("一年有多少天" is knowledge, not calc)
+    if not re.search(r"\d", text):
+        return False
+    return any(token in text for token in CALC_TOKENS)
 
 
 def has_code_signal(text: str) -> bool:
-    """Return True if the text indicates a code execution intent.
+    """Return True if the text contains code execution intent signals.
 
-    Requires either a code-language keyword paired with an action verb,
-    an explicit code/debugging token, or a well-known algorithm name
-    (which is itself a strong signal for code execution).
-    Bare language names like "Python" without a coding verb do not
-    trigger this signal.
+    Covers English code keywords (python, code, script) and Chinese code
+    terms (代码, 脚本, 报错) as well as code action verbs (写, 实现,
+    运行, 执行, etc.).
 
-    Explain tokens and writing tokens override algorithm-name signals —
-    "解释递归" should route to search, "写一篇议论文" to bigmodel_proxy.
-    Explicit search actions ("搜索一下Python教程") also override code.
+    However, debug consultative intent ("怎么解决/什么问题") overrides
+    code signals — "代码报错了怎么解决" is seeking help, not execution.
     """
-    lower = text.lower()
-    has_lang = any(token in lower for token in CODE_TOKENS_EN)
+    has_en = any(token in text.lower() for token in CODE_TOKENS_EN)
+    has_zh = any(token in text for token in CODE_TOKENS_ZH)
     has_action = any(token in text for token in CODE_ACTION_TOKENS)
-    has_zh_code = any(token in text for token in CODE_TOKENS_ZH)
-    has_algorithm = any(token in text for token in ALGORITHM_TOKENS)
-    has_explain = any(token in text for token in EXPLAIN_TOKENS)
-    has_writing = any(token in text for token in WRITING_TOKENS)
-    has_search_action = has_search_action_signal(text)
-    has_translate = has_translate_signal(text)
-    has_polish = has_polish_signal(text)
-    has_consult = has_consult_signal(text)
-    # Writing intent ("写一篇议论文") overrides code intent from "写"
-    if has_writing:
-        return False
-    # Translation/polish intent always overrides code intent
-    if has_translate or has_polish:
-        return False
-    # Explicit search actions ("搜索一下Python") override code intent
-    if has_search_action:
-        return False
+    has_consult = any(token in text for token in CONSULT_TOKENS)
+
+    # Writing tokens override code action ("写一篇作文" is writing, not code)
+    if any(token in text for token in WRITING_TOKENS) and "写" in text:
+        has_action = False
+
+    # Writing action tokens ("生成一份报告") override code
+    if any(token in text for token in WRITING_ACTION_TOKENS):
+        has_action = False
+
     # Debug consultative intent ("怎么解决"/"什么问题") overrides code signals
     # "代码报错了怎么解决" is seeking help, not execution — route to search.
     has_debug_consult = has_debug_consult_signal(text)
-    if has_debug_consult and not any(v in text for v in ("运行", "写", "实现", "编写", "执行", "跑一下")):
+    if has_debug_consult and not any(
+        v in text for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
+    ):
         return False
+
     # Consultative/advisory intent ("优化/分析/选择") overrides algorithm signals
     # "如何选择排序算法" is advisory, not execution — but "写一个排序" is still code.
     # Consult only overrides when there is NO strong code action verb ("运行/写/实现/执行").
@@ -344,202 +648,87 @@ def has_code_signal(text: str) -> bool:
     has_strong_code_verb = any(v in text for v in _strong_code_verbs)
     if has_consult and not has_strong_code_verb:
         return False
-    # Language name alone is not enough — must pair with action or have
-    # an explicit code/debugging/algorithm token.
-    # BUT: explain tokens override algorithm signals — "解释递归"
-    # should go to search, not code_executor.
-    if has_explain:
-        return has_zh_code or (has_lang and has_action)
-    return has_zh_code or (has_lang and has_action) or has_algorithm
 
-
-def has_explain_signal(text: str) -> bool:
-    """Return True if the text indicates an explanation/knowledge intent.
-
-    When this is True, code execution routing should be suppressed —
-    the user wants to understand a concept, not run code.
-    """
-    return any(token in text for token in EXPLAIN_TOKENS)
-
-
-COMPARISON_EVIDENCE_TOKENS = ("比较", "对比", "区别", "优缺点", "性能表现", "适用性")
-SEARCH_TOKENS = (
-    "最佳实践",
-    "推荐",
-    "教程",
-    "指南",
-    "文档",
-    "如何",
-    "怎么",
-    "怎样",
-    "什么",
-    "哪个",
-    "哪一种",
-    "有没有",
-    "好不好",
-    "怎么样",
-    "什么意思",
-    "了解",
-    "学习",
-    "入门",
-    "进阶",
-    "经验",
-    "案例",
-    "示例",
-    "最新",
-    "趋势",
-    "新闻",
-    "动态",
-)
-
-
-def has_compare_signal(text: str) -> bool:
-    return any(token in text for token in COMPARE_TOKENS)
-
-
-def has_calc_signal(text: str) -> bool:
-    """Return True if the text indicates a calculation intent.
-
-    Excludes date/time queries (e.g. "今天的日期是多少") which have "多少"
-    but are not calculation requests.
-    """
-    _date_keywords = (
-        "日期",
-        "时间",
-        "几点",
-        "什么时候",
-        "哪天",
-        "星期几",
-        "几号",
-        "多少天",
-    )
-    if any(kw in text for kw in _date_keywords):
+    # Return True if we have at least one code keyword AND an action verb,
+    # OR if we have a strong English code keyword.
+    # BUT: "Python的GIL是什么" — "Python" is a code keyword, but "是什么" is
+    # a knowledge/explain signal with no code action. Treat as knowledge, not code.
+    if has_en:
+        if "是什么" in text or "为什么" in text:
+            if not has_action and not has_strong_code_verb:
+                return False
+        return True
+    # "Python的GIL是什么" — 虽然"Python"是code token，但"是什么"是explain/search信号
+    # 没有代码动作动词时，视为知识查询而非代码执行
+    if has_zh and not has_action:
         return False
-    return any(token in text for token in CALC_TOKENS) or _has_arithmetic_op(text)
+    if has_zh and has_action:
+        return True
+    if has_action and any(
+        kw in text for kw in ("python", "py", "java", "js", "c++", "cpp", "go", "rust")
+    ):
+        return True
+    return False
 
 
 def has_formal_signal(text: str) -> bool:
+    """Return True if the text contains formal style intent signals."""
     return any(token in text for token in FORMAL_TOKENS)
 
 
-def has_comparison_evidence_signal(text: str) -> bool:
-    return any(token in text for token in COMPARISON_EVIDENCE_TOKENS)
+def has_explain_signal(text: str) -> bool:
+    """Return True if the text contains explain/understand intent signals."""
+    return any(token in text for token in EXPLAIN_TOKENS)
 
 
-def has_travel_signal(text: str) -> bool:
-    """Return True if the text indicates a travel/lifestyle service intent."""
-    return any(token in text for token in TRAVEL_TOKENS)
+def has_search_action_signal(text: str) -> bool:
+    """Return True if the text contains explicit search action keywords."""
+    return any(token in text for token in SEARCH_ACTION_TOKENS)
 
 
 def has_search_signal(text: str) -> bool:
-    """Return True if the text indicates a search/information-seeking intent.
+    """Return True if the text contains search intent signals."""
+    # Travel signal also counts as search
+    return (
+        has_travel_signal(text)
+        or has_search_action_signal(text)
+        or any(token in text for token in SEARCH_TOKENS)
+    )
 
-    Includes travel/lifestyle queries which are fact-based information needs.
-    """
-    return any(token in text for token in SEARCH_TOKENS) or has_travel_signal(text)
+
+def has_comparison_evidence_signal(text: str) -> bool:
+    """Return True if the text contains comparison evidence gathering signals."""
+    return any(token in text for token in COMPARISON_EVIDENCE_TOKENS)
 
 
 def has_writing_signal(text: str) -> bool:
-    """Return True if the text indicates a writing/synthesis intent.
+    """Return True if the text contains writing/synthesis intent signals.
 
-    When this is True alongside "写", the intent is writing/essay
-    (bigmodel_proxy), not code execution.
+    Includes WRITING_TOKENS (essay types) and WRITING_ACTION_TOKENS (generate,
+    create, write a report, etc.).
     """
-    return any(token in text for token in WRITING_TOKENS)
+    return any(token in text for token in WRITING_TOKENS + WRITING_ACTION_TOKENS)
 
 
 def has_translate_signal(text: str) -> bool:
-    """Return True if the text indicates a translation intent."""
+    """Return True if the text contains translation intent signals."""
     return any(token in text for token in TRANSLATE_TOKENS)
 
 
 def has_polish_signal(text: str) -> bool:
-    """Return True if the text indicates a text polishing intent."""
+    """Return True if the text contains text polishing intent signals."""
     return any(token in text for token in POLISH_TOKENS)
 
 
 def has_consult_signal(text: str) -> bool:
-    """Return True if the text indicates a consultative/advisory intent.
-
-    When code/algorithm tokens are also present, the user likely wants
-    advice or analysis, not code execution.  For example:
-    - "如何选择合适的排序算法" → search (advisory)
-    - "优化排序算法性能" → search (advisory)
-    - "写一个快速排序" → code_executor (execution)
-    """
+    """Return True if the text contains consultative intent signals."""
     return any(token in text for token in CONSULT_TOKENS)
 
 
-def has_search_action_signal(text: str) -> bool:
-    """Return True if the text explicitly requests a search action.
+def has_deep_analysis_signal(text: str) -> bool:
+    """Return True if the text contains deep analysis intent signals.
 
-    "搜索一下" / "搜一下" / "查一下" / "帮我查" are explicit search
-    actions that should override code intent.
+    When consult tokens co-occur with deep analysis tokens (可行性/方案/策略...),
+    the intent is LLM-powered synthesis, not a simple search lookup.
     """
-    _search_action_verbs = (
-        "搜索一下",
-        "搜一下",
-        "查一下",
-        "帮我搜",
-        "帮我查",
-        "搜索",
-        "查找资料",
-    )
-    return any(v in text for v in _search_action_verbs)
-
-
-def _has_arithmetic_op(text: str) -> bool:
-    """Check for explicit arithmetic operators between numbers."""
-    return bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", text))
-
-
-# ---------------------------------------------------------------------------
-# Tokenization
-# ---------------------------------------------------------------------------
-
-
-def tokenize(text: str) -> list[str]:
-    """Tokenize text into ASCII and Chinese n-gram tokens.
-
-    This is the canonical tokenizer used by core, policy, and concepts modules.
-    - ASCII: runs of >=2 alphanumeric/underscore chars (lowercased)
-    - Chinese: runs of >=2 CJK chars, plus 2-gram and 3-gram substrings
-    - Deduplicated, preserving first occurrence order
-    """
-    ascii_tokens: list[str] = []
-    current: list[str] = []
-    for char in text.lower():
-        if char.isascii() and (char.isalnum() or char == "_"):
-            current.append(char)
-        else:
-            if len(current) >= 2:
-                ascii_tokens.append("".join(current))
-            current = []
-    if len(current) >= 2:
-        ascii_tokens.append("".join(current))
-
-    chinese_runs: list[str] = []
-    current = []
-    for char in text:
-        if "\u4e00" <= char <= "\u9fff":
-            current.append(char)
-        else:
-            if len(current) >= 2:
-                chinese_runs.append("".join(current))
-            current = []
-    if len(current) >= 2:
-        chinese_runs.append("".join(current))
-
-    chinese_tokens: list[str] = []
-    for run in chinese_runs:
-        chinese_tokens.append(run)
-        for size in (2, 3):
-            for idx in range(0, max(0, len(run) - size + 1)):
-                chinese_tokens.append(run[idx : idx + size])
-
-    return list(dict.fromkeys(ascii_tokens + chinese_tokens))
-
-
-def token_counts(text: str) -> Counter:
-    """Return Counter of token frequencies."""
-    return Counter(tokenize(text))
+    return any(token in text for token in DEEP_ANALYSIS_TOKENS)
