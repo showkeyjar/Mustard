@@ -82,12 +82,14 @@ class ModelResult:
     error: str | None = None
 
 
-def query_ollama(model: str, prompt: str, timeout: int = 30) -> str:
+def query_ollama(
+    model: str, prompt: str, timeout: int = 30, host: str = "http://localhost:11434"
+) -> str:
     """Send a prompt to an Ollama model and return the response text."""
     import urllib.request
     import urllib.error
 
-    url = "http://localhost:11434/api/generate"
+    url = f"{host.rstrip('/')}/api/generate"
     payload = json.dumps(
         {
             "model": model,
@@ -257,17 +259,24 @@ class CARMModel:
 class OllamaModel:
     """Ollama model adapter — uses chat prompt for tool selection."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, host: str = "http://localhost:11434"):
         self.model = model
-        self.name = model.replace(":latest", "")
-        self.is_local = ":cloud" not in model
+        self.host = host
+        self.name = model.replace(":latest", "").replace(":cloud", "")
+        if host != "http://localhost:11434":
+            # Tag remote models so we can distinguish in results
+            short_host = (
+                host.replace("http://", "").replace("https://", "").split(":")[0]
+            )
+            self.name = f"{self.name}@{short_host}"
+        self.is_local = ":cloud" not in model and "localhost" in host
 
     def route(self, query: str) -> ModelResult:
         t0 = time.perf_counter()
         try:
             # Step 1: Tool selection
             prompt = TOOL_PROMPT.format(query=query)
-            response = query_ollama(self.model, prompt, timeout=30)
+            response = query_ollama(self.model, prompt, timeout=30, host=self.host)
             tool = parse_tool_from_response(response)
 
             latency = (time.perf_counter() - t0) * 1000
@@ -277,7 +286,9 @@ class OllamaModel:
             numeric = None
             if tool == "calculator":
                 calc_prompt = CALC_ANSWER_PROMPT.format(query=query)
-                calc_response = query_ollama(self.model, calc_prompt, timeout=30)
+                calc_response = query_ollama(
+                    self.model, calc_prompt, timeout=30, host=self.host
+                )
                 answer = calc_response
                 numeric = parse_numeric_answer(calc_response)
 
@@ -287,6 +298,12 @@ class OllamaModel:
                 answer=answer,
                 answer_numeric=numeric,
                 latency_ms=latency,
+            )
+        except Exception as e:
+            return ModelResult(
+                query=query,
+                error=str(e),
+                latency_ms=(time.perf_counter() - t0) * 1000,
             )
         except Exception as e:
             return ModelResult(
@@ -512,16 +529,22 @@ def main():
 
     parser = argparse.ArgumentParser(description="Cross-model comparison")
     parser.add_argument(
-        "--models",
-        nargs="+",
-        default=["carm", "gemma3:12b"],
-        help="Models to compare (carm, or Ollama model names)",
-    )
-    parser.add_argument(
         "--benchmark",
         choices=list(BENCHMARK_MAP.keys()) + ["all"],
         default="all",
         help="Which benchmark to run",
+    )
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        default=["carm", "gemma3:12b"],
+        help="Models to compare. Format: 'carm' for CARM, or Ollama model names. "
+        "Use 'model@host' syntax for remote Ollama, e.g. 'qwen3-coder@192.168.31.8'",
+    )
+    parser.add_argument(
+        "--ollama-host",
+        default="http://localhost:11434",
+        help="Default Ollama host URL (overridden by @host syntax)",
     )
     parser.add_argument(
         "--output-dir",
@@ -535,15 +558,23 @@ def main():
     for name in args.models:
         if name == "carm":
             models.append(CARMModel())
+            continue
+        # Support 'model@host' syntax for remote Ollama servers
+        if "@" in name:
+            model_name, host_addr = name.rsplit("@", 1)
+            host = f"http://{host_addr}:11434"
         else:
-            # Test if model is available
-            print(f"  Checking {name}...", end=" ", flush=True)
-            resp = query_ollama(name, "1+1", timeout=60)
-            if resp.startswith("ERROR:"):
-                print(f"UNAVAILABLE ({resp})")
-                continue
-            print("OK")
-            models.append(OllamaModel(name))
+            model_name = name
+            host = args.ollama_host
+
+        # Test if model is available
+        print(f"  Checking {model_name} at {host}...", end=" ", flush=True)
+        resp = query_ollama(model_name, "1+1", timeout=60, host=host)
+        if resp.startswith("ERROR:"):
+            print(f"UNAVAILABLE ({resp})")
+            continue
+        print("OK")
+        models.append(OllamaModel(model_name, host=host))
 
     if len(models) < 2:
         print("Need at least 2 models for comparison. Available models:")
