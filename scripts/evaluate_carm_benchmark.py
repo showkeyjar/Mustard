@@ -654,10 +654,22 @@ def _route_query(policy, user_input: str) -> str | None:
     )
 
     decision = policy.decide(state, memory, user_input)
-    if decision.action == Action.CALL_TOOL and decision.tool_call:
+    if (
+        decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
+        and decision.tool_call
+    ):
         return decision.tool_call.tool_name
-    elif decision.action == Action.CALL_BIGMODEL and decision.tool_call:
-        return decision.tool_call.tool_name
+
+    # If THINK, simulate one more step to allow anti-loop override
+    if decision.action == Action.THINK:
+        state.step_idx += 1
+        state.last_action = Action.THINK.value
+        decision = policy.decide(state, memory, user_input)
+        if (
+            decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
+            and decision.tool_call
+        ):
+            return decision.tool_call.tool_name
 
     if decision.action == Action.WRITE_MEM:
         memory.write(
@@ -672,9 +684,10 @@ def _route_query(policy, user_input: str) -> str | None:
         state.last_action = Action.WRITE_MEM.value
         state.step_idx += 1
         decision = policy.decide(state, memory, user_input)
-        if decision.action == Action.CALL_TOOL and decision.tool_call:
-            return decision.tool_call.tool_name
-        elif decision.action == Action.CALL_BIGMODEL and decision.tool_call:
+        if (
+            decision.action in (Action.CALL_TOOL, Action.CALL_BIGMODEL)
+            and decision.tool_call
+        ):
             return decision.tool_call.tool_name
 
     return None

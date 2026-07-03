@@ -24,6 +24,7 @@ from carm.signals import (
     has_translate_signal,
     has_polish_signal,
     has_consult_signal,
+    has_travel_signal,
 )
 from carm.state import AgentState
 
@@ -295,17 +296,23 @@ class OnlinePolicy:
         # force a tool route based on semantic intent. Prevents infinite THINK
         # loops when signals are too weak to trigger CALL_TOOL directly.
         if action == Action.THINK and state.step_idx >= 3:
-            intent_scores = self.semantic.intent_scores(user_input)
-            tool_intents = ["search", "calculator", "code_executor", "bigmodel_proxy"]
-            best_intent = max(tool_intents, key=lambda t: intent_scores.get(t, 0.0))
-            best_score = intent_scores.get(best_intent, 0.0)
-            if best_score > 0.0:
-                action = (
-                    Action.CALL_TOOL
-                    if best_intent != "bigmodel_proxy"
-                    else Action.CALL_BIGMODEL
-                )
-                # We'll set the tool_call below in the CALL_TOOL / CALL_BIGMODEL block
+            # Hard-rule overrides: travel/lifestyle signals force search even
+            # when semantic scores are zero (no embedding model available)
+            if has_travel_signal(user_input):
+                action = Action.CALL_TOOL
+                # tool_name="search" will be set in the CALL_TOOL block (Override 0a)
+            else:
+                intent_scores = self.semantic.intent_scores(user_input)
+                tool_intents = ["search", "calculator", "code_executor", "bigmodel_proxy"]
+                best_intent = max(tool_intents, key=lambda t: intent_scores.get(t, 0.0))
+                best_score = intent_scores.get(best_intent, 0.0)
+                if best_score > 0.0:
+                    action = (
+                        Action.CALL_TOOL
+                        if best_intent != "bigmodel_proxy"
+                        else Action.CALL_BIGMODEL
+                    )
+                    # We'll set the tool_call below in the CALL_TOOL / CALL_BIGMODEL block
 
         decision = ActionDecision(
             action=action,
@@ -363,6 +370,12 @@ class OnlinePolicy:
             if hard_search_action:
                 chosen_tool = "search"
                 chosen_reason = "Explicit search action detected (搜索/搜一下/查一下)."
+                hard_rule_hit = True
+            # Override 0a: Travel/lifestyle intent → search
+            # "帮我订一张去上海的机票" / "上海今天天气怎么样" / "去故宫怎么走"
+            elif has_travel_signal(user_input):
+                chosen_tool = "search"
+                chosen_reason = "Travel/lifestyle service intent detected."
                 hard_rule_hit = True
             # Override 0b: Writing/synthesis intent → bigmodel_proxy
             # "写一篇议论文" / "总结一下趋势" / "帮我归纳"
@@ -479,9 +492,18 @@ class OnlinePolicy:
                 )
                 hard_rule_hit = True
 
-            # If semantic score is very low (< 0.2) and no hard rule hit,
-            # default to search
+            # L4 Fallback: ultra-low confidence (< 0.15) → bigmodel_proxy
+            # Low confidence (0.15-0.2) → search
             if (
+                semantic_best_score < 0.15
+                and not hard_rule_hit
+                and not hard_conflict
+                and not hard_arithmetic
+                and not hard_code_action
+            ):
+                chosen_tool = "bigmodel_proxy"
+                chosen_reason = "L4 catch-all: ultra-low confidence, routing to bigmodel for general reasoning."
+            elif (
                 semantic_best_score < 0.2
                 and not hard_rule_hit
                 and not hard_conflict

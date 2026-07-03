@@ -172,6 +172,37 @@ ALGORITHM_TOKENS = (
 # Tokens that indicate a CONSULTATIVE/ADVISORY intent, not an execution intent.
 # When these appear alongside code/algorithm tokens, the user wants
 # advice/analysis/knowledge, not code execution.
+# Tokens that indicate a TRAVEL/LIFESTYLE service intent.
+# These should route to search (factual info) rather than calculator/code.
+TRAVEL_TOKENS = (
+    "机票",
+    "航班",
+    "飞机票",
+    "火车票",
+    "高铁票",
+    "酒店",
+    "住宿",
+    "民宿",
+    "天气",
+    "气温",
+    "降雨",
+    "地图",
+    "导航",
+    "路线",
+    "地铁",
+    "公交",
+    "打车",
+    "出租车",
+    "滴滴",
+    "出行",
+    "旅游",
+    "景点",
+    "门票",
+    "攻略",
+    "租车",
+    "自驾",
+)
+
 CONSULT_TOKENS = (
     "优化",
     "分析",
@@ -345,9 +376,17 @@ def has_comparison_evidence_signal(text: str) -> bool:
     return any(token in text for token in COMPARISON_EVIDENCE_TOKENS)
 
 
+def has_travel_signal(text: str) -> bool:
+    """Return True if the text indicates a travel/lifestyle service intent."""
+    return any(token in text for token in TRAVEL_TOKENS)
+
+
 def has_search_signal(text: str) -> bool:
-    """Return True if the text indicates a search/information-seeking intent."""
-    return any(token in text for token in SEARCH_TOKENS)
+    """Return True if the text indicates a search/information-seeking intent.
+
+    Includes travel/lifestyle queries which are fact-based information needs.
+    """
+    return any(token in text for token in SEARCH_TOKENS) or has_travel_signal(text)
 
 
 def has_writing_signal(text: str) -> bool:

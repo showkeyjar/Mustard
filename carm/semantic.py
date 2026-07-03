@@ -383,13 +383,28 @@ class SemanticEncoder:
         self._init_model()
 
     def _init_model(self) -> None:
-        """Try to load sentence-transformers model."""
+        """Try to load sentence-transformers model — fast-fail on network issues.
+
+        Set CARM_NO_EMBEDDING=1 in environment to completely skip embedding loading.
+        """
+        import os
+
+        # Skip model download in eval/CI environments BEFORE importing
+        if os.environ.get("CARM_NO_EMBEDDING") == "1":
+            self._model = None
+            self._model_available = False
+            return
+
         try:
             from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
 
-            self._model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+            # Use a short timeout to avoid hanging on slow networks
+            self._model = SentenceTransformer(
+                "paraphrase-multilingual-MiniLM-L12-v2",
+                device="cpu",
+            )
             self._model_available = True
-        except (ImportError, Exception):
+        except Exception:
             self._model = None
             self._model_available = False
 
