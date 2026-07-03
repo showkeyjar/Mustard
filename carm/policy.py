@@ -316,6 +316,20 @@ class OnlinePolicy:
                 user_input
             )
             hard_explain = has_explain_signal(user_input)
+            _synthesis_verbs = ("总结", "报告", "建议", "归纳", "提炼", "综合")
+            hard_synthesis = any(v in user_input for v in _synthesis_verbs)
+            hard_formal = has_formal_signal(user_input) and hard_synthesis
+            _strong_code_verbs = (
+                "运行",
+                "写",
+                "实现",
+                "编写",
+                "代码",
+                "脚本",
+                "执行",
+                "跑",
+            )
+            has_strong_code_verb = any(v in user_input for v in _strong_code_verbs)
 
             chosen_tool = semantic_best  # default: semantic winner
             chosen_reason = (
@@ -334,15 +348,71 @@ class OnlinePolicy:
                 chosen_reason = (
                     "Hard rule: explicit arithmetic expression requires calculator."
                 )
+            # Override 2b: Calc signal detected (without code intent) → calculator
+            # "1万亿除以14亿" has calc tokens but no explicit operator pattern
+            # When code_signal is also present (e.g. "写一个阶乘函数"),
+            # code execution takes priority — user wants to run code, not just compute.
+            elif (
+                has_calc_signal(user_input)
+                and not has_code_signal(user_input)
+                and not hard_explain
+            ):
+                chosen_tool = "calculator"
+                chosen_reason = (
+                    "Hard rule: calc intent signal detected (no code intent)."
+                )
+            # Override 2c: Code signal + calc signal co-occurrence → code_executor
+            # "写一个阶乘函数" has both calc and code signals, but the action
+            # verb ("写") makes it a code execution request, not a calculation.
+            elif (
+                has_calc_signal(user_input)
+                and has_code_signal(user_input)
+                and not hard_explain
+            ):
+                chosen_tool = "code_executor"
+                chosen_reason = "Hard rule: code+calc co-occurrence, code action wins."
             # Override 3: Clear code action without calc → code_executor
             # BUT: explain intent overrides code — "解释递归" → search, not code
-            elif hard_code_action and not hard_explain:
+            # AND: compare intent overrides code when no strong code verb —
+            # "比较冒泡排序和快速排序的效率" is analysis, not execution.
+            elif (
+                hard_code_action
+                and not hard_explain
+                and not (has_compare_signal(user_input) and not has_strong_code_verb)
+            ):
                 chosen_tool = "code_executor"
                 chosen_reason = "Hard rule: code action verb detected."
-            # Override 4: Explain intent with code keywords → search (knowledge, not execution)
-            elif hard_explain and hard_code_action:
+            # Override 4: Explain intent overrides everything → search
+            # "解释冒泡排序的原理" has explain signal; even though
+            # semantic encoder gives code_executor high score (algorithm name),
+            # the user wants knowledge, not code execution.
+            elif hard_explain:
                 chosen_tool = "search"
-                chosen_reason = "Explain intent overrides code action — user wants knowledge, not execution."
+                chosen_reason = (
+                    "Explain intent detected — user wants knowledge, not execution."
+                )
+            # Override 5: Formal/synthesis intent → bigmodel_proxy
+            # "管理层报告/正式总结" needs LLM synthesis, not search.
+            # This MUST come before compare override — "正式报告：总结..."
+            # is a synthesis request, not just a comparison.
+            elif hard_formal and not hard_conflict:
+                chosen_tool = "bigmodel_proxy"
+                chosen_reason = (
+                    "Formal/synthesis intent detected — routing to big model."
+                )
+            # Override 4b: Compare intent without explicit code action → search
+            # "比较冒泡排序和快速排序的效率" has compare signal but user
+            # wants analysis, not to run code.  Only route to code_executor
+            # when there is an explicit code action verb ("运行/写/实现/代码").
+            elif (
+                has_compare_signal(user_input)
+                and not hard_arithmetic
+                and not has_strong_code_verb
+            ):
+                chosen_tool = "search"
+                chosen_reason = (
+                    "Compare intent without explicit code action — knowledge search."
+                )
 
             # If semantic score is very low (< 0.2) and no hard rule hit, default to search
             if (

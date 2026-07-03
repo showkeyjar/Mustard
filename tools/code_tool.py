@@ -246,6 +246,16 @@ class CodeExecutorTool:
                         template,
                         count=1,
                     )
+                else:
+                    # For single-number templates (e.g. factorial),
+                    # replace the function call argument
+                    single_num = self._extract_single_number(query)
+                    if single_num is not None:
+                        template = re.sub(
+                            r"(factorial|fibonacci)\s*\(\s*\d+\s*\)",
+                            rf"\1({single_num})",
+                            template,
+                        )
                 return template
         return ""
 
@@ -270,6 +280,25 @@ class CodeExecutorTool:
             except ValueError:
                 continue
         return result if len(result) >= 2 else None
+
+    def _extract_single_number(self, query: str) -> int | float | None:
+        """Extract a single number from a natural language query.
+
+        Used for templates like factorial(N) where only one number is needed.
+        Returns the largest number found (heuristic: the parameter is usually
+        the most prominent number in the query).
+        """
+        import re
+
+        nums_str = re.findall(r"\d+\.?\d*", query)
+        if not nums_str:
+            return None
+        # Return the last number (most likely the parameter)
+        try:
+            s = nums_str[-1]
+            return float(s) if "." in s else int(s)
+        except ValueError:
+            return None
 
     def _run_code(self, code: str, timeout: int) -> ToolResult:
         """Execute Python code in a subprocess with timeout."""

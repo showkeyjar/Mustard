@@ -57,6 +57,21 @@ CALC_TOKENS = (
     "次方",
     "乘以",
     "除以",
+    # Arithmetic operation words
+    "加上",
+    "加",
+    "减去",
+    "减",
+    "乘",
+    "除",
+    "等于",
+    # Chinese large number units
+    "万亿",
+    "亿",
+    "万",
+    "千万",
+    "百万",
+    "十万",
 )
 CODE_TOKENS_EN = ("python", "code", "script")
 CODE_TOKENS_ZH = ("代码", "脚本", "报错")

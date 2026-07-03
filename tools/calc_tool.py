@@ -101,6 +101,26 @@ class CalculatorTool:
             r"(\d+)\s*的\s*(\d+)\s*次方",
             lambda m: f"{m.group(1)} ** {m.group(2)}",
         ),
+        # Chain arithmetic: "5加3乘2" → 5 + 3 * 2
+        # Matches sequences like: N op M op N op M ...
+        # Also supports negative numbers: "-3加5" → -3 + 5
+        (
+            r"((?:-?\d+(?:\.\d+)?\s*(?:加上?|减去?|乘以?|乘|除以?|除|×|÷)\s*)+-?\d+(?:\.\d+)?)",
+            lambda m: _convert_chain(m.group(1)),
+        ),
+        # Chinese large numbers: "1万亿除以14亿" → 100000000000 / 1400000000
+        (
+            r"(\d+)\s*万亿",
+            lambda m: str(int(m.group(1)) * 100000000000),
+        ),
+        (
+            r"(\d+)\s*亿",
+            lambda m: str(int(m.group(1)) * 100000000),
+        ),
+        (
+            r"(\d+)\s*万",
+            lambda m: str(int(m.group(1)) * 10000),
+        ),
         # "N乘以/乘M" → N * M
         (
             r"(\d+(?:\.\d+)?)\s*(?:乘以|乘|×)\s*(\d+(?:\.\d+)?)",
@@ -141,15 +161,64 @@ class CalculatorTool:
             r"百分之\s*(\d+(?:\.\d+)?)",
             lambda m: f"{m.group(1)} / 100",
         ),
+        # ── Geometry patterns ──────────────────────────────────────────
+        # "圆的面积，半径是N" → pi * N ** 2
+        (
+            r"(?:圆|圆形).*?(?:半径|r)\s*[是为]?\s*(\d+(?:\.\d+)?)",
+            lambda m: f"3.14159265 * {m.group(1)} ** 2",
+        ),
+        # "半径N的圆面积" → pi * N ** 2
+        (
+            r"半径\s*(\d+(?:\.\d+)?).*?(?:圆|面积)",
+            lambda m: f"3.14159265 * {m.group(1)} ** 2",
+        ),
+        # "长A宽B的矩形面积" → A * B
+        (
+            r"长\s*(\d+(?:\.\d+)?)\s*宽\s*(\d+(?:\.\d+)?).*?(?:矩形|面积|的面积)",
+            lambda m: f"{m.group(1)} * {m.group(2)}",
+        ),
+        # "矩形 长5 宽3 面积" → 5 * 3
+        (
+            r"(?:矩形|长方形).*?长\s*(\d+(?:\.\d+)?).*?宽\s*(\d+(?:\.\d+)?)",
+            lambda m: f"{m.group(1)} * {m.group(2)}",
+        ),
+        # ── Negative number arithmetic ────────────────────────────────
+        # "负3加5" → -3 + 5  (after preprocessing "负3" → "-3")
+        (
+            r"(-\d+(?:\.\d+)?)\s*(?:加上?|减去?|乘以?|乘|除以?|除|×|÷)\s*(\d+(?:\.\d+)?)",
+            lambda m: (
+                f"{m.group(1)} + {m.group(2)}"
+                if "加" in (m.group(0))
+                else f"{m.group(1)} - {m.group(2)}"
+                if "减" in m.group(0)
+                else f"{m.group(1)} * {m.group(2)}"
+                if "乘" in m.group(0) or "×" in m.group(0)
+                else f"{m.group(1)} / {m.group(2)}"
+            ),
+        ),
     ]
 
     def _extract_nl_expression(self, query: str) -> str:
         """Convert natural language arithmetic descriptions into expressions."""
+        # Pre-process: expand Chinese large number units
+        preprocessed = self._expand_chinese_numbers(query)
+        # Pre-process: convert negative numbers ("负3" → "-3")
+        preprocessed = re.sub(r"负\s*(\d+)", r"-\1", preprocessed)
         for pattern, builder in self._NL_PATTERNS:
-            m = re.search(pattern, query)
+            m = re.search(pattern, preprocessed)
             if m:
                 return builder(m)
         return ""
+
+    def _expand_chinese_numbers(self, text: str) -> str:
+        """Replace Chinese large number units with their numeric values.
+
+        '1万亿' → '100000000000', '14亿' → '1400000000', '5万' → '50000'
+        """
+        text = re.sub(r"(\d+)\s*万亿", lambda m: str(int(m.group(1)) * 10**12), text)
+        text = re.sub(r"(\d+)\s*亿", lambda m: str(int(m.group(1)) * 10**8), text)
+        text = re.sub(r"(\d+)\s*万", lambda m: str(int(m.group(1)) * 10**4), text)
+        return text
 
     def _tokenize(self, text: str) -> list[tuple[str, Any]]:
         """Tokenize arithmetic expression into (type, value) pairs."""
@@ -299,3 +368,24 @@ class _Parser:
         raise ValueError(
             f"Expected number or '(', got {self.current_type()}: {self.current_value()}"
         )
+
+
+def _convert_chain(text: str) -> str:
+    """Convert a Chinese arithmetic chain like '5加3乘2' into '5 + 3 * 2'."""
+    mapping = {
+        "加上": "+",
+        "加": "+",
+        "减去": "-",
+        "减": "-",
+        "乘以": "*",
+        "乘": "*",
+        "除以": "/",
+        "除": "/",
+        "×": "*",
+        "÷": "/",
+    }
+    result = text
+    # Replace longest operators first to avoid partial matches
+    for zh_op in sorted(mapping, key=len, reverse=True):
+        result = result.replace(zh_op, f" {mapping[zh_op]} ")
+    return result.strip()

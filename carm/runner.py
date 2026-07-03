@@ -93,6 +93,10 @@ class AgentRunner:
         )
 
     def run(self, user_input: str) -> tuple[str, RunTrace]:
+        # Guard: empty or whitespace-only input
+        if not user_input.strip():
+            return "请输入您的问题，我会为您分析。", RunTrace()
+
         state = AgentState(
             glance_budget=int(self.controls.get("glance", {}).get("budget", 1))
         )

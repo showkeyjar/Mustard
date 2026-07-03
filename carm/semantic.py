@@ -202,6 +202,17 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "除以",
         "加上",
         "减去",
+        "加",
+        "减",
+        "乘",
+        "除",
+        "等于",
+        # Chinese large number units
+        "万亿",
+        "亿",
+        "万",
+        "千万",
+        "百万",
     ],
     "code_executor": [
         # Direct coding synonyms — only with action verbs
