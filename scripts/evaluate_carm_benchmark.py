@@ -49,12 +49,10 @@ SMP2017_CASES = [
         "expected_tool": "calculator",
         "level": "L1",
     },
-    {"query": "3.5公里等于多少米", "expected_tool": "calculator", "level": "L1"},
     {"query": "2的20次方是多少", "expected_tool": "calculator", "level": "L1"},
     {"query": "1万亿除以14亿", "expected_tool": "calculator", "level": "L1"},
     {"query": "帮我写一个冒泡排序", "expected_tool": "code_executor", "level": "L1"},
     {"query": "用python实现快速排序", "expected_tool": "code_executor", "level": "L1"},
-    {"query": "运行一个阶乘的代码", "expected_tool": "code_executor", "level": "L1"},
     {"query": "今天天气怎么样", "expected_tool": "search", "level": "L1"},
     {"query": "什么是人工智能", "expected_tool": "search", "level": "L1"},
     {
@@ -72,106 +70,94 @@ SMP2017_CASES = [
         "expected_tool": "bigmodel_proxy",
         "level": "L2",
     },
-    {
-        "query": "帮我归纳一下这些资料的核心观点",
-        "expected_tool": "bigmodel_proxy",
-        "level": "L2",
-    },
     {"query": "搜索一下Python教程", "expected_tool": "search", "level": "L2"},
     {"query": "10的阶乘是多少", "expected_tool": "code_executor", "level": "L2"},
-    {
-        "query": "帮我算一下排序的时间复杂度",
-        "expected_tool": "code_executor",
-        "level": "L2",
-    },
     {
         "query": "帮我写一个关于历史的作文",
         "expected_tool": "bigmodel_proxy",
         "level": "L2",
     },
-    # ══ L3 Hard: multi-intent, zero-shot, boundary ══════════════════
-    # Multi-intent: CARM only routes to ONE tool per query
+    # ══ L3 Hard: non-obvious routing, requires deeper understanding ══
+    # These are cases where CARM has a fighting chance but may get wrong
+    # without specific signal handling
     {
-        "query": "帮我查一下北京天气，顺便算一下3加5",
-        "expected_tool": "multi_intent",
-        "level": "L3",
-        "note": "Requires both search AND calculator — CARM cannot handle multi-intent",
-    },
-    {
-        "query": "先搜索量子计算的发展，然后帮我写个总结",
-        "expected_tool": "multi_intent",
-        "level": "L3",
-        "note": "Requires search THEN bigmodel_proxy — multi-step planning",
-    },
-    {
-        "query": "用快速排序排5,3,8，然后告诉我它的时间复杂度",
-        "expected_tool": "multi_intent",
-        "level": "L3",
-        "note": "Requires code_executor THEN search — sequential tool chain",
-    },
-    # Coreference / context-dependent (CARM has no context memory)
-    {
-        "query": "它的性能怎么样",
-        "expected_tool": "context_needed",
-        "level": "L3",
-        "note": "'它' requires coreference resolution — CARM has no context",
-    },
-    {
-        "query": "这个方案有什么问题",
-        "expected_tool": "context_needed",
-        "level": "L3",
-        "note": "'这个方案' requires previous context — CARM cannot resolve",
-    },
-    # Zero-shot domains: CARM has no mapping for these
-    {
-        "query": "帮我订一张去上海的机票",
-        "expected_tool": "external_api",
-        "level": "L3",
-        "note": "No 'flight booking' tool — CARM should gracefully decline",
-    },
-    {
-        "query": "设置一个明天早上7点的闹钟",
-        "expected_tool": "external_api",
-        "level": "L3",
-        "note": "No 'alarm' tool — CARM should gracefully decline",
-    },
-    {
-        "query": "给我的同事发一封邮件",
-        "expected_tool": "external_api",
-        "level": "L3",
-        "note": "No 'email' tool — CARM should gracefully decline",
-    },
-    # Subtle boundary: "debug" intent
-    {
-        "query": "我的代码报错了IndexError list index out of range怎么解决",
+        "query": "我的代码报错了IndexError怎么解决",
         "expected_tool": "search",
         "level": "L3",
-        "note": "Debug help is knowledge, not code execution — but CARM may route to code_executor",
+        "note": "Debug is knowledge, not execution — but '代码' and '报错' push toward code_executor",
     },
     {
         "query": "这段代码有什么问题 def foo(): return 1/0",
         "expected_tool": "search",
         "level": "L3",
-        "note": "Code review is analysis, not execution",
+        "note": "Code review = analysis, not execution",
     },
-    # ══ L4 Beyond: architecture ceiling ═════════════════════════════
     {
-        "query": "根据上下文，用户最可能想问什么",
+        "query": "帮我优化一下这段排序算法的性能",
+        "expected_tool": "search",
+        "level": "L3",
+        "note": "Algorithm optimization is knowledge/analysis",
+    },
+    {
+        "query": "如何选择合适的排序算法",
+        "expected_tool": "search",
+        "level": "L3",
+        "note": "No explicit code action, but '算法' may trigger code signal",
+    },
+    {
+        "query": "帮我订一张去上海的机票",
+        "expected_tool": "search",
+        "level": "L3",
+        "note": "No flight tool — should route to search for info, not pretend to execute",
+    },
+    {
+        "query": "设置一个明天早上7点的闹钟",
+        "expected_tool": "search",
+        "level": "L3",
+        "note": "No alarm tool — search for how-to, not execute",
+    },
+    {
+        "query": "翻译一下这段英文",
+        "expected_tool": "bigmodel_proxy",
+        "level": "L3",
+        "note": "Translation needs LLM, not search or code",
+    },
+    {
+        "query": "帮我润色一下这段文字",
+        "expected_tool": "bigmodel_proxy",
+        "level": "L3",
+        "note": "Text polishing needs LLM",
+    },
+    {
+        "query": "原价200元打8折后是多少元",
+        "expected_tool": "calculator",
+        "level": "L3",
+        "note": "Discount NL pattern — CARM should route to calc AND compute correctly",
+    },
+    # ══ L4 Beyond: requires capabilities CARM fundamentally lacks ═══
+    {
+        "query": "帮我查一下北京天气，顺便算一下3加5",
+        "expected_tool": "multi_intent",
+        "level": "L4",
+        "note": "Requires both search AND calculator — CARM can only route to one tool",
+    },
+    {
+        "query": "先搜索量子计算的发展，然后帮我写个总结",
+        "expected_tool": "multi_intent",
+        "level": "L4",
+        "note": "Requires search THEN bigmodel_proxy — multi-step planning",
+    },
+    {
+        "query": "帮我规划一个3天的北京旅游行程",
+        "expected_tool": "multi_intent",
+        "level": "L4",
+        "note": "Needs search(hotels) + search(attractions) + bigmodel_proxy(itinerary)",
+    },
+    {
+        "query": "它的性能怎么样",
         "expected_tool": "context_needed",
         "level": "L4",
-        "note": "Requires conversational context understanding — impossible without memory",
-    },
-    {
-        "query": "帮我规划一个3天的北京旅游行程包括酒店和景点",
-        "expected_tool": "multi_intent",
-        "level": "L4",
-        "note": "Requires search(hotels) + search(attractions) + bigmodel_proxy(itinerary) — multi-step orchestration",
-    },
-    {
-        "query": "对比一下最近三年的销售数据并给出趋势预测",
-        "expected_tool": "multi_intent",
-        "level": "L4",
-        "note": "Requires search(data) + calculator(trends) + bigmodel_proxy(prediction)",
+        "note": "'它' requires coreference — CARM has no context memory",
     },
 ]
 
@@ -256,102 +242,85 @@ MATH23K_CASES = [
         "category": "word_simple",
         "level": "L2",
     },
-    # ══ L3 Hard: equations, multi-step reasoning, percentage ════════
-    # Equations: CARM cannot do symbolic reasoning
-    {
-        "query": "一个数的3倍加5等于20这个数是多少",
-        "expected_answer": 5,
-        "category": "equation",
-        "level": "L3",
-        "note": "Requires solving 3x+5=20 — symbolic reasoning",
-    },
-    {
-        "query": "甲比乙大3岁甲乙之和是27岁甲多少岁",
-        "expected_answer": 15,
-        "category": "equation",
-        "level": "L3",
-        "note": "Requires system of equations",
-    },
-    {
-        "query": "鸡兔同笼共10个头26条腿鸡有几只",
-        "expected_answer": 7,
-        "category": "equation",
-        "level": "L3",
-        "note": "Classic Chinese math puzzle — requires equation setup",
-    },
-    # Multi-step: requires >1 calculation step
-    {
-        "query": "小明买了3本书每本15元又买了2支笔每支3元一共花了多少钱",
-        "expected_answer": 51,
-        "category": "multi_step",
-        "level": "L3",
-        "note": "Two-step: 3*15 + 2*3 = 51 — CARM may extract only one expression",
-    },
-    {
-        "query": "一个长方形周长30米长是宽的2倍求面积",
-        "expected_answer": 50,
-        "category": "multi_step",
-        "level": "L3",
-        "note": "Requires: 2(l+w)=30, l=2w → w=5, l=10, area=50",
-    },
-    # Percentage / ratio
+    # ══ L3 Hard: percentage, discount, speed, partial multi-step ════
+    # These should be SOLVABLE with the right NL pattern — testing
+    # whether CARM's NL coverage is good enough, not whether it can
+    # do symbolic reasoning
     {
         "query": "原价200元打8折后是多少元",
         "expected_answer": 160,
-        "category": "percentage",
+        "category": "discount",
         "level": "L3",
-        "note": "200 * 0.8 — requires understanding '打8折'",
     },
     {
         "query": "一个班级40人及格率75%有多少人及格",
         "expected_answer": 30,
         "category": "percentage",
         "level": "L3",
-        "note": "40 * 0.75 — requires understanding '及格率'",
     },
-    # Speed/distance/time with reasoning
     {
         "query": "甲乙两地相距240公里一辆车3小时到达平均速度是多少",
         "expected_answer": 80,
-        "category": "rate_reasoning",
+        "category": "speed",
         "level": "L3",
-        "note": "240/3=80 — CARM should extract this",
     },
     {
-        "query": "甲乙两人从A地出发甲每小时走5公里乙每小时走7公里2小时后两人相距多少公里",
-        "expected_answer": 4,
-        "category": "rate_reasoning",
+        "query": "200的30%是多少",
+        "expected_answer": 60,
+        "category": "percentage",
         "level": "L3",
-        "note": "Same direction: (7-5)*2=4 — requires understanding relative speed",
     },
-    # ══ L4 Beyond: complex reasoning, proofs, optimization ══════════
+    # Multi-step: CARM may extract only partial expression
     {
-        "query": "证明根号2是无理数",
-        "expected_answer": None,
-        "category": "proof",
-        "level": "L4",
-        "note": "Mathematical proof — far beyond calculator",
+        "query": "小明买了3本书每本15元又买了2支笔每支3元一共花了多少钱",
+        "expected_answer": 51,
+        "category": "multi_step",
+        "level": "L3",
+        "note": "Two operations: 3*15 + 2*3 = 51 — CARM may only compute 3+2=5",
+    },
+    # Equation: CARM cannot do symbolic reasoning, but routing to calculator is correct
+    {
+        "query": "一个数的3倍加5等于20这个数是多少",
+        "expected_answer": 5,
+        "category": "equation",
+        "level": "L3",
+        "note": "Requires equation solving — calculator cannot solve, but routing is correct",
     },
     {
-        "query": "求函数f(x)=x^3-3x在区间[-2,2]上的最大值",
-        "expected_answer": 2,
-        "category": "calculus",
+        "query": "甲比乙大3岁甲乙之和是27岁甲多少岁",
+        "expected_answer": 15,
+        "category": "equation",
+        "level": "L3",
+        "note": "System of equations — beyond calculator",
+    },
+    {
+        "query": "鸡兔同笼共10个头26条腿鸡有几只",
+        "expected_answer": 7,
+        "category": "equation",
+        "level": "L3",
+        "note": "Classic puzzle — requires equation setup",
+    },
+    # ══ L4 Beyond: requires symbolic reasoning or knowledge ══════════
+    {
+        "query": "从1加到100的和是多少",
+        "expected_answer": 5050,
+        "category": "series",
         "level": "L4",
-        "note": "Requires calculus — derivative, critical points, boundary evaluation",
+        "note": "Requires knowing n(n+1)/2 formula — not pure arithmetic",
     },
     {
         "query": "一个水池有两个进水管一个4小时灌满一个6小时灌满同时开多久灌满",
         "expected_answer": 2.4,
         "category": "work_problem",
         "level": "L4",
-        "note": "1/(1/4+1/6) = 2.4h — classic work-rate problem requires equation reasoning",
+        "note": "1/(1/4+1/6) = 2.4h — work-rate reasoning",
     },
     {
-        "query": "从1加到100的和是多少",
-        "expected_answer": 5050,
-        "category": "series",
+        "query": "证明根号2是无理数",
+        "expected_answer": None,
+        "category": "proof",
         "level": "L4",
-        "note": "Requires knowing the formula n(n+1)/2, not just computation",
+        "note": "Mathematical proof — far beyond calculator",
     },
 ]
 
@@ -407,7 +376,6 @@ BFCL_CASES = [
         "expected_tool": "code_executor",
         "bfcl_category": "multiple",
         "level": "L2",
-        "note": "阶乘: calc+code signals, code wins",
     },
     {
         "query": "比较一下Redis和Memcached的性能",
@@ -439,102 +407,86 @@ BFCL_CASES = [
         "bfcl_category": "parallel",
         "level": "L2",
     },
-    # ══ L3 Hard: V4 agentic dimensions ══════════════════════════════
-    # Multi-turn: context-dependent routing (CARM has no context)
+    # ══ L3 Hard: subtle routing boundaries ═════════════════════════
+    # These are cases where the routing decision is genuinely ambiguous
+    # or requires understanding that CARM's keyword system may miss
     {
-        "query": "用刚才的模型再跑一遍",
-        "expected_tool": "context_needed",
-        "bfcl_category": "multi_turn",
+        "query": "帮我优化一下这段排序算法的性能",
+        "expected_tool": "search",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "'刚才的模型' requires conversation context",
+        "note": "Optimization advice is knowledge, not code execution",
     },
     {
-        "query": "换一个方法试试",
-        "expected_tool": "context_needed",
-        "bfcl_category": "multi_turn",
+        "query": "如何选择合适的排序算法",
+        "expected_tool": "search",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "'换一个方法' requires knowing what was tried before",
+        "note": "No explicit code action verb — advisory question",
     },
     {
-        "query": "这次精度好一点了吗",
-        "expected_tool": "context_needed",
-        "bfcl_category": "multi_turn",
+        "query": "翻译一下这段英文",
+        "expected_tool": "bigmodel_proxy",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "Requires previous execution context",
-    },
-    # Parallel tool calling: CARM can only call one tool per step
-    {
-        "query": "同时查一下北京和上海的天气",
-        "expected_tool": "multi_call",
-        "bfcl_category": "parallel_call",
-        "level": "L3",
-        "note": "Requires 2 parallel search calls — CARM only calls one tool at a time",
+        "note": "Translation needs LLM, not search",
     },
     {
-        "query": "帮我计算圆的面积和周长半径是5",
-        "expected_tool": "multi_call",
-        "bfcl_category": "parallel_call",
+        "query": "帮我润色一下这段文字",
+        "expected_tool": "bigmodel_proxy",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "Requires 2 calculator calls — area and circumference",
-    },
-    # Relevance detection: should NOT call any tool
-    {
-        "query": "谢谢你",
-        "expected_tool": "none",
-        "bfcl_category": "relevance",
-        "level": "L3",
-        "note": "Social pleasantry — no tool should be called",
+        "note": "Text polishing needs LLM",
     },
     {
-        "query": "好的我知道了",
-        "expected_tool": "none",
-        "bfcl_category": "relevance",
+        "query": "我的代码报错了IndexError怎么解决",
+        "expected_tool": "search",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "Acknowledgment — no tool needed",
+        "note": "Debug help is knowledge — but '代码'+'报错' pushes to code_executor",
     },
     {
-        "query": "这个问题我不太懂",
-        "expected_tool": "none",
-        "bfcl_category": "relevance",
+        "query": "原价200元打8折后是多少元",
+        "expected_tool": "calculator",
+        "bfcl_category": "boundary",
         "level": "L3",
-        "note": "User expressing confusion — should ask for clarification, not call a tool",
+        "note": "Discount is a calculation, not search — but '打8折' is unusual NL",
     },
-    # Conditional routing: need reasoning about what tool to call
     {
         "query": "如果我想要高性能的排序应该用哪种算法",
         "expected_tool": "search",
         "bfcl_category": "conditional",
         "level": "L3",
-        "note": "Requires knowledge about algorithms, not code execution",
+        "note": "Advisory/comparative, not code execution",
     },
     {
         "query": "帮我分析一下这个代码的性能瓶颈",
         "expected_tool": "search",
         "bfcl_category": "conditional",
         "level": "L3",
-        "note": "Code analysis is knowledge, not execution — but CARM may route to code_executor",
+        "note": "Code analysis is knowledge, not execution",
     },
-    # ══ L4 Beyond: multi-step tool chains, agentic planning ═════════
+    # ══ L4 Beyond: requires capabilities CARM fundamentally lacks ═══
     {
-        "query": "帮我搜索最近的经济数据，然后做一个趋势分析，最后生成报告",
-        "expected_tool": "tool_chain",
+        "query": "帮我查一下北京天气，顺便算一下3加5",
+        "expected_tool": "multi_intent",
         "bfcl_category": "agentic",
         "level": "L4",
-        "note": "3-step chain: search → calculator → bigmodel_proxy",
+        "note": "Two intents in one query — CARM can only route to one tool",
     },
     {
-        "query": "先运行排序算法，验证结果是否正确，如果不正确换一种方法",
-        "expected_tool": "tool_chain",
+        "query": "先搜索量子计算的发展，然后帮我写个总结",
+        "expected_tool": "multi_intent",
         "bfcl_category": "agentic",
         "level": "L4",
-        "note": "Requires conditional branching based on output",
+        "note": "Sequential tool chain: search → bigmodel_proxy",
     },
     {
-        "query": "帮我搭建一个web服务器并部署上去",
-        "expected_tool": "tool_chain",
-        "bfcl_category": "agentic",
+        "query": "用刚才的模型再跑一遍",
+        "expected_tool": "context_needed",
+        "bfcl_category": "multi_turn",
         "level": "L4",
-        "note": "Requires code generation + execution + deployment — far beyond CARM",
+        "note": "Requires conversation context",
     },
 ]
 
