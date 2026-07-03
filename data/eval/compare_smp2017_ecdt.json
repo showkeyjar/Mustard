@@ -1,0 +1,722 @@
+{
+  "benchmark": "SMP2017-ECDT",
+  "models": [
+    "CARM-v0.4",
+    "qwen3-coder@192.168.31.8"
+  ],
+  "stats": {
+    "CARM-v0.4": {
+      "L1": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 0
+      },
+      "L2": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 0
+      },
+      "L3": {
+        "total": 9,
+        "routing_correct": 6,
+        "answer_correct": 0
+      },
+      "L4": {
+        "total": 4,
+        "routing_correct": 0,
+        "answer_correct": 0
+      }
+    },
+    "qwen3-coder@192.168.31.8": {
+      "L1": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 0
+      },
+      "L2": {
+        "total": 8,
+        "routing_correct": 7,
+        "answer_correct": 0
+      },
+      "L3": {
+        "total": 9,
+        "routing_correct": 6,
+        "answer_correct": 0
+      },
+      "L4": {
+        "total": 4,
+        "routing_correct": 0,
+        "answer_correct": 0
+      }
+    }
+  },
+  "details": [
+    {
+      "query": "帮我算一下123乘以456等于多少",
+      "level": "L1",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 56088,
+          "answer_correct": null,
+          "latency_ms": 3.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 56088.0,
+          "answer_correct": null,
+          "latency_ms": 5485.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "2的20次方是多少",
+      "level": "L1",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 1048576,
+          "answer_correct": null,
+          "latency_ms": 1.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 1048576.0,
+          "answer_correct": null,
+          "latency_ms": 404.9,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "1万亿除以14亿",
+      "level": "L1",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 714.2857142857143,
+          "answer_correct": null,
+          "latency_ms": 2.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 71.42857142857143,
+          "answer_correct": null,
+          "latency_ms": 379.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我写一个冒泡排序",
+      "level": "L1",
+      "expected_tool": "code_executor",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "code_executor",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "code_executor",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 453.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "用python实现快速排序",
+      "level": "L1",
+      "expected_tool": "code_executor",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "code_executor",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.9,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "code_executor",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 397.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "今天天气怎么样",
+      "level": "L1",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 350.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "什么是人工智能",
+      "level": "L1",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 344.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我写一份项目总结报告",
+      "level": "L1",
+      "expected_tool": "bigmodel_proxy",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 451.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "5加3乘2等于多少",
+      "level": "L2",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 11,
+          "answer_correct": null,
+          "latency_ms": 1.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 11.0,
+          "answer_correct": null,
+          "latency_ms": 338.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "圆的面积 半径是5",
+      "level": "L2",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 78.53981625,
+          "answer_correct": null,
+          "latency_ms": 1.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 78.54,
+          "answer_correct": null,
+          "latency_ms": 410.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "解释一下什么是动态规划",
+      "level": "L2",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 355.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "比较冒泡排序和快速排序",
+      "level": "L2",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 370.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "写一篇关于AI伦理的议论文",
+      "level": "L2",
+      "expected_tool": "bigmodel_proxy",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 500.0,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "搜索一下Python教程",
+      "level": "L2",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 419.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "10的阶乘是多少",
+      "level": "L2",
+      "expected_tool": "code_executor",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "code_executor",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": false,
+          "answer": 3628800.0,
+          "answer_correct": null,
+          "latency_ms": 359.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我写一个关于历史的作文",
+      "level": "L2",
+      "expected_tool": "bigmodel_proxy",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.8,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 414.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "我的代码报错了IndexError怎么解决",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "code_executor",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "code_executor",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 433.9,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "这段代码有什么问题 def foo(): return 1/0",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "code_executor",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.9,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "code_executor",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 371.9,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我优化一下这段排序算法的性能",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "code_executor",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 403.1,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "如何选择合适的排序算法",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 408.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我订一张去上海的机票",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": null,
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 425.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "设置一个明天早上7点的闹钟",
+      "level": "L3",
+      "expected_tool": "search",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.8,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 365.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "翻译一下这段英文",
+      "level": "L3",
+      "expected_tool": "bigmodel_proxy",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 445.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我润色一下这段文字",
+      "level": "L3",
+      "expected_tool": "bigmodel_proxy",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 408.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "原价200元打8折后是多少元",
+      "level": "L3",
+      "expected_tool": "calculator",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 160,
+          "answer_correct": null,
+          "latency_ms": 3.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 160.0,
+          "answer_correct": null,
+          "latency_ms": 359.0,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我查一下北京天气，顺便算一下3加5",
+      "level": "L4",
+      "expected_tool": "multi_intent",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 497.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "先搜索量子计算的发展，然后帮我写个总结",
+      "level": "L4",
+      "expected_tool": "multi_intent",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 3.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 425.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "帮我规划一个3天的北京旅游行程",
+      "level": "L4",
+      "expected_tool": "multi_intent",
+      "models": {
+        "CARM-v0.4": {
+          "tool": null,
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 4.5,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 392.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "它的性能怎么样",
+      "level": "L4",
+      "expected_tool": "context_needed",
+      "models": {
+        "CARM-v0.4": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "search",
+          "routing_correct": false,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 396.9,
+          "error": null
+        }
+      }
+    }
+  ]
+}

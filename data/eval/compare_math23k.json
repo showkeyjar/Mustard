@@ -1,0 +1,630 @@
+{
+  "benchmark": "Math23K",
+  "models": [
+    "CARM-v0.4",
+    "qwen3-coder@192.168.31.8"
+  ],
+  "stats": {
+    "CARM-v0.4": {
+      "L1": {
+        "total": 6,
+        "routing_correct": 6,
+        "answer_correct": 6
+      },
+      "L2": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 8
+      },
+      "L3": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 5
+      },
+      "L4": {
+        "total": 3,
+        "routing_correct": 3,
+        "answer_correct": 0
+      }
+    },
+    "qwen3-coder@192.168.31.8": {
+      "L1": {
+        "total": 6,
+        "routing_correct": 6,
+        "answer_correct": 6
+      },
+      "L2": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 7
+      },
+      "L3": {
+        "total": 8,
+        "routing_correct": 8,
+        "answer_correct": 8
+      },
+      "L4": {
+        "total": 3,
+        "routing_correct": 3,
+        "answer_correct": 2
+      }
+    }
+  },
+  "details": [
+    {
+      "query": "5加3",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 8,
+          "answer_correct": true,
+          "latency_ms": 2.6,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 8.0,
+          "answer_correct": true,
+          "latency_ms": 340.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "24乘6",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 144,
+          "answer_correct": true,
+          "latency_ms": 2.3,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 144.0,
+          "answer_correct": true,
+          "latency_ms": 464.7,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "100减37",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 63,
+          "answer_correct": true,
+          "latency_ms": 1.9,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 63.0,
+          "answer_correct": true,
+          "latency_ms": 393.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "96除以8",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 12,
+          "answer_correct": true,
+          "latency_ms": 2.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 12.0,
+          "answer_correct": true,
+          "latency_ms": 428.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "2的10次方",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 1024,
+          "answer_correct": true,
+          "latency_ms": 3.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 1024.0,
+          "answer_correct": true,
+          "latency_ms": 542.0,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "3.14乘以25",
+      "level": "L1",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 78.5,
+          "answer_correct": true,
+          "latency_ms": 1.7,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 78.5,
+          "answer_correct": true,
+          "latency_ms": 416.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "3公里等于多少米",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 3000,
+          "answer_correct": true,
+          "latency_ms": 1.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 3000.0,
+          "answer_correct": true,
+          "latency_ms": 404.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "2小时等于多少分钟",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 120,
+          "answer_correct": true,
+          "latency_ms": 1.4,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 120.0,
+          "answer_correct": true,
+          "latency_ms": 629.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "1万亿除以14亿",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 714.2857142857143,
+          "answer_correct": true,
+          "latency_ms": 1.9,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 71.42857142857143,
+          "answer_correct": false,
+          "latency_ms": 492.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "负3加5",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 2,
+          "answer_correct": true,
+          "latency_ms": 2.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 2.0,
+          "answer_correct": true,
+          "latency_ms": 371.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "长方形面积 长8米宽5米",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 40,
+          "answer_correct": true,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 40.0,
+          "answer_correct": true,
+          "latency_ms": 412.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "圆的面积 半径3",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 28.27433385,
+          "answer_correct": true,
+          "latency_ms": 3.8,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 28.26,
+          "answer_correct": true,
+          "latency_ms": 433.1,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "小明有5个苹果又买了3个一共有多少个",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 8,
+          "answer_correct": true,
+          "latency_ms": 2.5,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 8.0,
+          "answer_correct": true,
+          "latency_ms": 431.9,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "一本书15元买3本需要多少钱",
+      "level": "L2",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 45,
+          "answer_correct": true,
+          "latency_ms": 2.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 45.0,
+          "answer_correct": true,
+          "latency_ms": 433.9,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "原价200元打8折后是多少元",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 160,
+          "answer_correct": true,
+          "latency_ms": 2.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 160.0,
+          "answer_correct": true,
+          "latency_ms": 429.5,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "一个班级40人及格率75%有多少人及格",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 30,
+          "answer_correct": true,
+          "latency_ms": 2.3,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 30.0,
+          "answer_correct": true,
+          "latency_ms": 431.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "甲乙两地相距240公里一辆车3小时到达平均速度是多少",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 80,
+          "answer_correct": true,
+          "latency_ms": 1.6,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 80.0,
+          "answer_correct": true,
+          "latency_ms": 500.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "200的30%是多少",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 60,
+          "answer_correct": true,
+          "latency_ms": 1.9,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 60.0,
+          "answer_correct": true,
+          "latency_ms": 418.8,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "小明买了3本书每本15元又买了2支笔每支3元一共花了多少钱",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 51,
+          "answer_correct": true,
+          "latency_ms": 4.5,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 51.0,
+          "answer_correct": true,
+          "latency_ms": 482.2,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "一个数的3倍加5等于20这个数是多少",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 5.0,
+          "answer_correct": true,
+          "latency_ms": 432.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "甲比乙大3岁甲乙之和是27岁甲多少岁",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 1.6,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 15.0,
+          "answer_correct": true,
+          "latency_ms": 422.4,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "鸡兔同笼共10个头26条腿鸡有几只",
+      "level": "L3",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": null,
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 3.1,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 7.0,
+          "answer_correct": true,
+          "latency_ms": 451.6,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "从1加到100的和是多少",
+      "level": "L4",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.0,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 5050.0,
+          "answer_correct": true,
+          "latency_ms": 403.3,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "一个水池有两个进水管一个4小时灌满一个6小时灌满同时开多久灌满",
+      "level": "L4",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": null,
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 4.6,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "calculator",
+          "routing_correct": true,
+          "answer": 2.4,
+          "answer_correct": true,
+          "latency_ms": 503.1,
+          "error": null
+        }
+      }
+    },
+    {
+      "query": "证明根号2是无理数",
+      "level": "L4",
+      "expected_tool": null,
+      "models": {
+        "CARM-v0.4": {
+          "tool": null,
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 2.2,
+          "error": null
+        },
+        "qwen3-coder@192.168.31.8": {
+          "tool": "bigmodel_proxy",
+          "routing_correct": true,
+          "answer": null,
+          "answer_correct": null,
+          "latency_ms": 557.6,
+          "error": null
+        }
+      }
+    }
+  ]
+}

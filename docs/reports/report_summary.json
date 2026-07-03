@@ -1,0 +1,16 @@
+{
+  "CARM-v0.4": {
+    "routing_total": 95,
+    "routing_correct": 79,
+    "answer_total": 95,
+    "answer_correct": 19,
+    "latency_median": 1.9
+  },
+  "qwen3-coder@192.168.31.8": {
+    "routing_total": 95,
+    "routing_correct": 72,
+    "answer_total": 95,
+    "answer_correct": 23,
+    "latency_median": 410.8
+  }
+}
