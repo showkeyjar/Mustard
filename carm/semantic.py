@@ -148,11 +148,12 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "评估",
     ],
     "calculator": [
-        # Direct calculation synonyms
+        # Direct computation
         "计算",
         "算",
         "求值",
         "估算",
+        # Cost/price
         "预算",
         "总价",
         "费用",
@@ -162,12 +163,18 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "多少钱",
         "总额",
         "合计",
-        # Arithmetic indicators
+        # Arithmetic operations
         "乘以",
         "除以",
         "加上",
         "减去",
         "倍",
+        "加",
+        "减",
+        "乘",
+        "除",
+        "等于",
+        # Percentage/ratio
         "折",
         "百分比",
         "比例",
@@ -175,7 +182,7 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "增长率",
         "同比",
         "环比",
-        # Financial/budget
+        # Pricing
         "每席位",
         "按年",
         "每月",
@@ -188,38 +195,43 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "收费",
         "计费",
         "报价",
-        # Forecast
+        # Estimation
         "预测",
         "预计",
         "预估",
         "推算",
         "测算",
-        # Math context
+        # Quantity
         "多少",
         "数字",
         "数量",
         "量化",
-        # Mathematical operations
+        # Powers/roots
         "平方根",
         "开方",
         "开根号",
         "平方",
         "次方",
-        "乘以",
-        "除以",
-        "加上",
-        "减去",
-        "加",
-        "减",
-        "乘",
-        "除",
-        "等于",
         # Chinese large number units
         "万亿",
         "亿",
         "万",
         "千万",
         "百万",
+        "十万",
+        # Geometry (from CALC_TOKENS in signals.py)
+        "面积",
+        "周长",
+        "体积",
+        "半径",
+        "直径",
+        # Unit conversion (from CALC_TOKENS)
+        "公里",
+        "千米",
+        "等于多少",
+        # Discount/percentage patterns
+        "打",
+        "及格率",
     ],
     "code_executor": [
         # Direct coding synonyms — only with action verbs
@@ -323,6 +335,22 @@ INTENT_SYNONYMS: dict[str, list[str]] = {
         "调整措辞",
         "文风",
         "语气",
+        # Writing genres (from WRITING_TOKENS in signals.py)
+        "作文",
+        "议论文",
+        "文章",
+        "故事",
+        "小说",
+        "诗歌",
+        "散文",
+        "随笔",
+        "演讲稿",
+        "读后感",
+        "观后感",
+        "文案",
+        "邮件",
+        "信件",
+        "通知",
     ],
 }
 

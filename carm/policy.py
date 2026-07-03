@@ -291,6 +291,22 @@ class OnlinePolicy:
             (guidance or {}).get("preferred_tool", "")
         ) or self.concepts.preferred_tool(user_input)
 
+        # Anti-loop: if THINK was chosen but we've been thinking for too long,
+        # force a tool route based on semantic intent. Prevents infinite THINK
+        # loops when signals are too weak to trigger CALL_TOOL directly.
+        if action == Action.THINK and state.step_idx >= 3:
+            intent_scores = self.semantic.intent_scores(user_input)
+            tool_intents = ["search", "calculator", "code_executor", "bigmodel_proxy"]
+            best_intent = max(tool_intents, key=lambda t: intent_scores.get(t, 0.0))
+            best_score = intent_scores.get(best_intent, 0.0)
+            if best_score > 0.0:
+                action = (
+                    Action.CALL_TOOL
+                    if best_intent != "bigmodel_proxy"
+                    else Action.CALL_BIGMODEL
+                )
+                # We'll set the tool_call below in the CALL_TOOL / CALL_BIGMODEL block
+
         decision = ActionDecision(
             action=action,
             score=score,
