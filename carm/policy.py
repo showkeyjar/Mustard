@@ -355,6 +355,25 @@ class OnlinePolicy:
                     feature_snapshot=features,
                 )
 
+        # Multi-step override: single intent requiring sequential tool execution
+        # "对比分析A和B的差异并给出建议" → search → compare → bigmodel_proxy
+        from carm.signals import has_multi_step_signal
+
+        if has_multi_step_signal(user_input):
+            state.hidden["_multi_step_plan"] = "search → compare → bigmodel_proxy"
+            return ActionDecision(
+                action=Action.CALL_TOOL,
+                score=0.95,
+                reason="Multi-step reasoning chain detected — requires sequential tool execution.",
+                tool_call=ToolCall(
+                    tool_name="multi_step",
+                    query=user_input,
+                    arguments={"plan": "search → compare → bigmodel_proxy"},
+                    reason="Multi-step: gather evidence, compare, then synthesize.",
+                ),
+                feature_snapshot=features,
+            )
+
         decision = ActionDecision(
             action=action,
             score=score,

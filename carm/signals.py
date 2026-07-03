@@ -752,6 +752,33 @@ def has_deep_analysis_signal(text: str) -> bool:
     return any(token in text for token in DEEP_ANALYSIS_TOKENS)
 
 
+# Tokens that signal MULTI-STEP reasoning — a single intent that requires
+# multiple tools executed in sequence (e.g., search → compare → synthesize).
+MULTI_STEP_TOKENS = (
+    "对比分析",
+    "比较分析",
+    "对比并",
+    "比较并",
+    "分析并给出",
+    "对比给出",
+    "分析总结",
+    "分析归纳",
+    "调研并",
+    "研究并",
+)
+
+
+def has_multi_step_signal(text: str) -> bool:
+    """Return True if text contains multi-step reasoning signals.
+
+    Multi-step queries have a single intent but require sequential tool
+    execution (e.g., gather evidence → compare → synthesize).
+    These differ from multi-intent queries which have multiple independent
+    intents joined by connectors ("顺便", "然后").
+    """
+    return any(token in text for token in MULTI_STEP_TOKENS)
+
+
 # ---------------------------------------------------------------------------
 # Multi-intent detection
 # ---------------------------------------------------------------------------

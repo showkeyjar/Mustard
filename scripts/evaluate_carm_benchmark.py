@@ -1058,9 +1058,11 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                 if expected_tool == "multi_intent" and pt and actual_tool in pt:
                     partial_credit = 0.5
                 elif expected_tool == "multi_intent" and actual_tool == "multi_intent":
-                    # CARM detected multi-intent and will execute all sub-tools
-                    # This is the correct handling — full credit.
                     partial_credit = 1.0
+                elif expected_tool == "multi_step" and actual_tool == "multi_step":
+                    partial_credit = 1.0
+                elif expected_tool == "multi_step" and pt and actual_tool in pt:
+                    partial_credit = 0.5
                 else:
                     partial_credit = 0.0
             else:
