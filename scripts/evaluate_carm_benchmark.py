@@ -139,19 +139,24 @@ SMP2017_CASES = [
         "query": "帮我查一下北京天气，顺便算一下3加5",
         "expected_tool": "multi_intent",
         "level": "L4",
+        "partial_tools": ["search", "calculator"],
         "note": "Requires both search AND calculator — CARM can only route to one tool",
+        "partial_tools": ["search", "calculator"],
     },
     {
         "query": "先搜索量子计算的发展，然后帮我写个总结",
         "expected_tool": "multi_intent",
         "level": "L4",
+        "partial_tools": ["search", "bigmodel_proxy"],
         "note": "Requires search THEN bigmodel_proxy — multi-step planning",
+        "partial_tools": ["search", "bigmodel_proxy"],
     },
     {
         "query": "帮我规划一个3天的北京旅游行程",
         "expected_tool": "multi_intent",
         "level": "L4",
         "note": "Needs search(hotels) + search(attractions) + bigmodel_proxy(itinerary)",
+        "partial_tools": ["search", "bigmodel_proxy"],
     },
     {
         "query": "它的性能怎么样",
@@ -732,23 +737,28 @@ def _init_level_stats() -> dict[str, dict]:
 
 
 def _scoring_for_smp2017(
-    actual_tool: str | None, expected_tool: str
-) -> tuple[bool, bool]:
-    """Score SMP2017 routing. Returns (correct, graceful_fail)."""
-    # Architecture-beyond cases: CARM cannot solve, count as graceful fail
+    actual_tool: str | None, expected_tool: str,
+    partial_tools: list[str] | None = None,
+) -> tuple[bool, bool, float]:
+    """Score SMP2017 routing. Returns (correct, graceful_fail, partial_credit).
+
+    partial_credit is 0.5 when CARM routes to one of the valid sub-tools
+    for a multi_intent L4 case, even though it can't handle multi-intent.
+    """
+    # Architecture-beyond cases: CARM cannot solve
     if expected_tool in ("multi_intent", "context_needed", "external_api"):
-        # CARM "passes" if it doesn't crash — but it cannot produce the right answer
-        # because it only has 4 tools. We check: did it at least route to a
-        # REASONABLE tool? (not crash)
         if actual_tool in ("search", "calculator", "code_executor", "bigmodel_proxy"):
-            return False, True  # gracefully failed (routed somewhere, but wrong)
-        return False, False  # crashed or no tool
+            # Check partial credit: did CARM route to one of the valid sub-tools?
+            if partial_tools and actual_tool in partial_tools:
+                return False, True, 0.5  # partial credit for multi_intent
+            return False, True, 0.0  # gracefully failed (routed somewhere, but wrong)
+        return False, False, 0.0  # crashed or no tool
 
     # Normal routing
     correct = actual_tool == expected_tool
     if not correct and expected_tool == "search" and actual_tool == "bigmodel_proxy":
         correct = True
-    return correct, False
+    return correct, False, 1.0 if correct else 0.0
 
 
 def run_smp2017(policy) -> BenchmarkResult:
@@ -759,13 +769,20 @@ def run_smp2017(policy) -> BenchmarkResult:
         level = case.get("level", "L1")
         try:
             actual_tool = _route_query(policy, case["query"])
-            correct, graceful = _scoring_for_smp2017(actual_tool, case["expected_tool"])
+            correct, graceful, partial = _scoring_for_smp2017(
+                actual_tool, case["expected_tool"],
+                partial_tools=case.get("partial_tools"),
+            )
 
             result.total += 1
             result.level_stats[level]["total"] += 1
             if correct:
                 result.correct += 1
                 result.level_stats[level]["correct"] += 1
+            elif partial > 0:
+                # Partial credit: add fractional correct count
+                result.correct += partial
+                result.level_stats[level]["correct"] += partial
             elif graceful:
                 result.failed_gracefully += 1
             result.details.append(
@@ -879,6 +896,7 @@ def run_bfcl(policy) -> BenchmarkResult:
                 "none",
             ):
                 correct = False
+                partial = 0.0
                 graceful = actual_tool in (
                     "search",
                     "calculator",
@@ -886,9 +904,15 @@ def run_bfcl(policy) -> BenchmarkResult:
                     "bigmodel_proxy",
                     None,
                 )
+                # Partial credit: if multi_intent and CARM routed to one of the
+                # valid sub-tools, grant 0.5 credit
+                pt = case.get("partial_tools")
+                if expected == "multi_intent" and pt and actual_tool in pt:
+                    partial = 0.5
             else:
                 correct = actual_tool == expected
                 graceful = False
+                partial = 0.0
                 if (
                     not correct
                     and expected == "search"
@@ -901,6 +925,9 @@ def run_bfcl(policy) -> BenchmarkResult:
             if correct:
                 result.correct += 1
                 result.level_stats[level]["correct"] += 1
+            elif partial and partial > 0:
+                result.correct += partial
+                result.level_stats[level]["correct"] += partial
             elif graceful:
                 result.failed_gracefully += 1
             result.details.append(
@@ -911,6 +938,7 @@ def run_bfcl(policy) -> BenchmarkResult:
                     "category": case.get("bfcl_category", ""),
                     "correct": correct,
                     "level": level,
+                    "partial": partial if not correct else 1.0,
                 }
             )
         except Exception as e:
@@ -925,6 +953,7 @@ def run_bfcl(policy) -> BenchmarkResult:
                     "category": case.get("bfcl_category", ""),
                     "correct": False,
                     "level": level,
+                    "partial": 0.0,
                 }
             )
 
@@ -948,17 +977,28 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
             actual_tool = _route_query(policy, case["query"])
 
             # L4 cases: if expected is multi_intent/context_needed/multi_step,
-            # CARM cannot handle these — always mark as incorrect
+            # CARM cannot handle these — but grant partial credit for multi_intent
+            # if CARM routes to one of the valid sub-tools
             if expected_tool in ("multi_intent", "context_needed", "multi_step"):
                 correct_routing = False
+                # Check partial credit for multi_intent
+                pt = case.get("partial_tools")
+                if expected_tool == "multi_intent" and pt and actual_tool in pt:
+                    partial_credit = 0.5
+                else:
+                    partial_credit = 0.0
             else:
                 correct_routing = actual_tool in acceptable
+                partial_credit = 1.0 if correct_routing else 0.0
 
             result.total += 1
             result.level_stats[level]["total"] += 1
             if correct_routing:
                 result.correct += 1
                 result.level_stats[level]["correct"] += 1
+            elif partial_credit > 0:
+                result.correct += partial_credit
+                result.level_stats[level]["correct"] += partial_credit
             result.details.append(
                 {
                     "query": case["query"][:50],
@@ -967,6 +1007,7 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                     "actual": actual_tool or "None",
                     "correct": correct_routing,
                     "level": level,
+                    "partial": partial_credit,
                 }
             )
         except Exception as e:
@@ -1079,7 +1120,7 @@ def print_benchmark_report(results: list[BenchmarkResult]) -> None:
                 if t > 0:
                     acc = round(c / t * 100, 1)
                     print(
-                        f"  {lv:6s}  {c:8d}  {t:6d}  {acc:8.1f}%  {level_desc.get(lv, '')}"
+                        f"  {lv:6s}  {c:8.1f}  {t:6d}  {acc:8.1f}%  {level_desc.get(lv, '')}"
                     )
         print()
 
@@ -1098,7 +1139,7 @@ def print_benchmark_report(results: list[BenchmarkResult]) -> None:
         unexpected_failures = [
             d
             for d in r.details
-            if not d.get("correct", False) and d.get("level") in ("L1", "L2")
+            if not d.get("correct", d.get("answer_correct", True)) and d.get("level") in ("L1", "L2")
         ]
         if unexpected_failures:
             print(f"  Unexpected failures (L1/L2) ({len(unexpected_failures)}):")

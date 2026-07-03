@@ -320,6 +320,33 @@ class CalculatorTool:
                 else f"{m.group(1)} / {m.group(2)}"
             ),
         ),
+        # ── Simple equation patterns (ax + b = c form) ────────────────
+        # "一个数的N倍加/减M等于K这个数是多少" → (K - M) / N or (K + M) / N
+        (
+            r"一个数\s*的?\s*(\d+(?:\.\d+)?)\s*倍\s*(?:加|加上?|加上)\s*(\d+(?:\.\d+)?)\s*等于\s*(\d+(?:\.\d+)?)",
+            lambda m: f"({m.group(3)} - {m.group(2)}) / {m.group(1)}",
+        ),
+        # "一个数的N倍减/减去M等于K" → (K + M) / N
+        (
+            r"一个数\s*的?\s*(\d+(?:\.\d+)?)\s*倍\s*(?:减|减去)\s*(\d+(?:\.\d+)?)\s*等于\s*(\d+(?:\.\d+)?)",
+            lambda m: f"({m.group(3)} + {m.group(2)}) / {m.group(1)}",
+        ),
+        # "甲比乙大N岁 甲乙之和是K 甲多少岁" → (K + N) / 2
+        # Pattern: A比B大N...A和B之和是K
+        (
+            r"甲比乙大\s*(\d+(?:\.\d+)?)\s*岁\s*甲乙之和?\s*(?:是|为|等于)\s*(\d+(?:\.\d+)?)",
+            lambda m: f"({m.group(2)} + {m.group(1)}) / 2",
+        ),
+        # "甲比乙小N岁 甲乙之和是K 甲多少岁" → (K - N) / 2
+        (
+            r"甲比乙小\s*(\d+(?:\.\d+)?)\s*岁\s*甲乙之和?\s*(?:是|为|等于)\s*(\d+(?:\.\d+)?)",
+            lambda m: f"({m.group(2)} - {m.group(1)}) / 2",
+        ),
+        # 鸡兔同笼: "共N个头M条腿 鸡有几只" → (4*N - M) / 2
+        (
+            r"鸡兔同笼\s*共?\s*(\d+(?:\.\d+)?)\s*(?:个?头|头)\s*(\d+(?:\.\d+)?)\s*(?:条腿|腿)\s*鸡有?几?只",
+            lambda m: f"({m.group(1)} * 4 - {m.group(2)}) / 2",
+        ),
     ]
 
     def _extract_nl_expression(self, query: str) -> str:

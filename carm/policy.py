@@ -25,6 +25,8 @@ from carm.signals import (
     has_polish_signal,
     has_consult_signal,
     has_travel_signal,
+    has_debug_consult_signal,
+    has_deep_reason_signal,
 )
 from carm.state import AgentState
 
@@ -403,6 +405,23 @@ class OnlinePolicy:
             ):
                 chosen_tool = "search"
                 chosen_reason = "Consultative/advisory intent without code action — knowledge search."
+                hard_rule_hit = True
+            # Override 0e: Debug consultative intent without strong code verb -> search
+            # "代码报错了怎么解决" / "这段代码有什么问题" — seeking help, not execution.
+            # But "运行一下出错的代码" still goes to code_executor (strong code verb).
+            elif has_debug_consult_signal(user_input) and not any(
+                v in user_input
+                for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
+            ):
+                chosen_tool = "search"
+                chosen_reason = "Debug consultative intent — seeking help/solutions, not execution."
+                hard_rule_hit = True
+            # Override 0f: Deep reasoning/comparative analysis -> bigmodel_proxy
+            # "为什么深度学习需要大量数据而传统机器学习不需要" needs LLM synthesis.
+            # This pattern "为什么...而..." indicates causal comparison, not just search.
+            elif has_deep_reason_signal(user_input):
+                chosen_tool = "bigmodel_proxy"
+                chosen_reason = "Deep reasoning/comparative analysis detected — routing to big model."
                 hard_rule_hit = True
             # Override 1: Conflict tasks always search first
             elif hard_conflict:

@@ -219,6 +219,51 @@ CONSULT_TOKENS = (
     "对比",
 )
 
+# Tokens that indicate a DEBUG CONSULTATIVE intent -- the user wants help
+# understanding or fixing code, NOT executing it. When these appear alongside
+# code tokens, the intent is advisory (search for solutions), not execution.
+DEBUG_CONSULT_TOKENS = (
+    "怎么解决",
+    "怎么办",
+    "如何解决",
+    "怎么修",
+    "如何修复",
+    "什么问题",
+    "什么原因",
+    "为什么报错",
+    "出错了怎么办",
+    "出了什么问题",
+    "怎么排查",
+    "如何排查",
+    "怎么处理",
+    "如何处理",
+    "如何调试",
+)
+
+# Pattern for deep reasoning/comparative analysis queries.
+# "为什么...而..." / "为什么A而B不需要" -- these are open-ended reasoning
+# questions that need LLM synthesis, not just search.
+_DEEP_REASON_PATTERN = re.compile(r"为什么.{2,20}而.{2,20}")
+
+
+def has_debug_consult_signal(text: str) -> bool:
+    """Return True if the text indicates a debug consultative intent.
+
+    The user wants HELP with code (understanding errors, finding solutions),
+    not to EXECUTE code.  For example:
+    - "代码报错了怎么解决" -> True (seeking help)
+    - "帮我写一个排序" -> False (execution intent)
+    """
+    return any(token in text for token in DEBUG_CONSULT_TOKENS)
+
+
+def has_deep_reason_signal(text: str) -> bool:
+    """Return True if the text requires deep reasoning/comparative analysis.
+
+    Matches patterns like "为什么...而..." that indicate the user wants
+    a thoughtful comparison or causal explanation -- best handled by bigmodel_proxy.
+    """
+    return bool(_DEEP_REASON_PATTERN.search(text))
 # Tokens that indicate a TRANSLATION intent — always bigmodel_proxy.
 TRANSLATE_TOKENS = (
     "翻译",
@@ -286,6 +331,11 @@ def has_code_signal(text: str) -> bool:
         return False
     # Explicit search actions ("搜索一下Python") override code intent
     if has_search_action:
+        return False
+    # Debug consultative intent ("怎么解决"/"什么问题") overrides code signals
+    # "代码报错了怎么解决" is seeking help, not execution — route to search.
+    has_debug_consult = has_debug_consult_signal(text)
+    if has_debug_consult and not any(v in text for v in ("运行", "写", "实现", "编写", "执行", "跑一下")):
         return False
     # Consultative/advisory intent ("优化/分析/选择") overrides algorithm signals
     # "如何选择排序算法" is advisory, not execution — but "写一个排序" is still code.
