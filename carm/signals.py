@@ -271,7 +271,16 @@ def has_calc_signal(text: str) -> bool:
     Excludes date/time queries (e.g. "今天的日期是多少") which have "多少"
     but are not calculation requests.
     """
-    _date_keywords = ("日期", "时间", "几点", "什么时候", "哪天", "星期几", "几号")
+    _date_keywords = (
+        "日期",
+        "时间",
+        "几点",
+        "什么时候",
+        "哪天",
+        "星期几",
+        "几号",
+        "多少天",
+    )
     if any(kw in text for kw in _date_keywords):
         return False
     return any(token in text for token in CALC_TOKENS) or _has_arithmetic_op(text)

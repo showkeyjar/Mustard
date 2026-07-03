@@ -450,6 +450,7 @@ class SemanticEncoder:
             "昨天",
             "前天",
             "后天",
+            "多少天",
         )
         is_date_query = any(kw in text for kw in _date_keywords)
 

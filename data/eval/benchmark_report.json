@@ -1,11 +1,11 @@
 {
-  "version": "0.4.0",
-  "timestamp": "2026-07-03 12:01:54",
-  "evaluation_mode": "direct_policy_routing_and_tool_output",
+  "version": "0.5.0",
+  "timestamp": "2026-07-03 13:05:13",
+  "evaluation_mode": "direct_policy_routing_and_tool_output_with_L3_L4",
   "reference_scores": {
     "SMP2017-ECDT": {
-      "description": "Chinese intent detection, 31 domains",
-      "paper": "SMP2017 workshop, 31-intent classification",
+      "description": "Chinese intent detection, 31 domains (now with multi-intent/context/zero-shot)",
+      "paper": "SMP2017 workshop + extended L3/L4 cases",
       "scores": {
         "BERT-base": 94.1,
         "GPT-3.5-turbo": 96.0,
@@ -13,8 +13,8 @@
       }
     },
     "Math23K": {
-      "description": "Chinese math word problems, 23K problems",
-      "paper": "EMNLP 2017 (Wang et al.), algebraic word problems",
+      "description": "Chinese math word problems (now with equations/percentage/multi-step/proofs)",
+      "paper": "EMNLP 2017 (Wang et al.) + extended L3/L4 cases",
       "scores": {
         "GTS (seq2tree)": 74.0,
         "BERT-based (SAU)": 82.6,
@@ -23,8 +23,8 @@
       }
     },
     "BFCL-V3": {
-      "description": "Berkeley function calling, tool routing accuracy",
-      "paper": "ICML 2025 (Patil et al.), function selection",
+      "description": "Berkeley function calling (now with multi-turn/parallel/agentic)",
+      "paper": "ICML 2025 (Patil et al.) + V4 agentic extensions",
       "scores": {
         "Mistral-7B": 55.0,
         "GPT-3.5-turbo": 78.0,
@@ -32,267 +32,309 @@
         "Qwen2-72B": 85.0,
         "GPT-4-turbo": 88.0
       }
+    },
+    "MMLU-CN": {
+      "description": "Chinese general knowledge reasoning (routing quality only)",
+      "paper": "MMLU benchmark adapted for Chinese",
+      "scores": {
+        "BERT-base": 42.0,
+        "GPT-3.5-turbo": 68.0,
+        "GPT-4": 87.0
+      }
     }
   },
   "results": [
     {
       "benchmark": "SMP2017-ECDT",
-      "total": 39,
-      "correct": 39,
-      "failed_gracefully": 0,
+      "total": 33,
+      "correct": 20,
+      "failed_gracefully": 11,
       "crashed": 0,
-      "accuracy": 100.0,
+      "accuracy": 60.6,
+      "level_stats": {
+        "L1": {
+          "total": 10,
+          "correct": 10
+        },
+        "L2": {
+          "total": 10,
+          "correct": 10
+        },
+        "L3": {
+          "total": 10,
+          "correct": 0
+        },
+        "L4": {
+          "total": 3,
+          "correct": 0
+        }
+      },
       "details": [
         {
           "query": "帮我算一下123乘以456等于多少",
           "expected": "calculator",
           "actual": "calculator",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "3.5公里等于多少米",
           "expected": "calculator",
           "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "一百的平方根是多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "2的20次方是多少",
           "expected": "calculator",
           "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "500除以8等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "10亿减去3亿等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "1万亿除以14亿",
           "expected": "calculator",
           "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "负3加5等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "5加3乘2等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
-        },
-        {
-          "query": "圆的面积 半径是5",
-          "expected": "calculator",
-          "actual": "calculator",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "帮我写一个冒泡排序",
           "expected": "code_executor",
           "actual": "code_executor",
-          "correct": true
-        },
-        {
-          "query": "写一个二分查找的代码",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "用python实现快速排序",
           "expected": "code_executor",
           "actual": "code_executor",
-          "correct": true
-        },
-        {
-          "query": "帮我写个斐波那契数列",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "运行一个阶乘的代码",
           "expected": "code_executor",
           "actual": "code_executor",
-          "correct": true
-        },
-        {
-          "query": "实现一个插入排序算法",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
-        },
-        {
-          "query": "帮我写一个归并排序",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
-        },
-        {
-          "query": "写个线性查找的程序",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "今天天气怎么样",
           "expected": "search",
           "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "北京明天会下雨吗",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "播放一首周杰伦的歌",
-          "expected": "search",
-          "actual": "bigmodel_proxy",
-          "correct": true
-        },
-        {
-          "query": "最近有什么新闻",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "什么是人工智能",
           "expected": "search",
           "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "解释一下量子力学",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "推荐一部好看的电影",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "如何学习英语",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "什么是区块链",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "比较一下Python和Java",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "红楼梦的作者是谁",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "解释一下什么是机器学习",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "中医和西医有什么区别",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "解释冒泡排序的原理",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
-        },
-        {
-          "query": "比较冒泡排序和快速排序",
-          "expected": "search",
-          "actual": "search",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "帮我写一份项目总结报告",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
-          "query": "总结一下今年科技行业的趋势",
-          "expected": "bigmodel_proxy",
-          "actual": "bigmodel_proxy",
-          "correct": true
+          "query": "5加3乘2等于多少",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "圆的面积 半径是5",
+          "expected": "calculator",
+          "actual": "calculator",
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "解释一下什么是动态规划",
+          "expected": "search",
+          "actual": "search",
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "比较冒泡排序和快速排序",
+          "expected": "search",
+          "actual": "search",
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "写一篇关于AI伦理的议论文",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "帮我归纳一下这些资料的核心观点",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
-          "query": "帮我算一下排序的时间复杂度",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "correct": true
+          "query": "搜索一下Python教程",
+          "expected": "search",
+          "actual": "search",
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "10的阶乘是多少",
           "expected": "code_executor",
           "actual": "code_executor",
-          "correct": true
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "帮我算一下排序的时间复杂度",
+          "expected": "code_executor",
+          "actual": "code_executor",
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "帮我写一个关于历史的作文",
+          "expected": "bigmodel_proxy",
+          "actual": "bigmodel_proxy",
+          "correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "帮我查一下北京天气，顺便算一下3加5",
+          "expected": "multi_intent",
+          "actual": "search",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "先搜索量子计算的发展，然后帮我写个总结",
+          "expected": "multi_intent",
+          "actual": "search",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "用快速排序排5,3,8，然后告诉我它的时间复杂度",
+          "expected": "multi_intent",
+          "actual": "code_executor",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "它的性能怎么样",
+          "expected": "context_needed",
+          "actual": "search",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "这个方案有什么问题",
+          "expected": "context_needed",
+          "actual": "bigmodel_proxy",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "帮我订一张去上海的机票",
+          "expected": "external_api",
+          "actual": "search",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "设置一个明天早上7点的闹钟",
+          "expected": "external_api",
+          "actual": "search",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "给我的同事发一封邮件",
+          "expected": "external_api",
+          "actual": "bigmodel_proxy",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "我的代码报错了IndexError list index out of range怎么解决",
+          "expected": "search",
+          "actual": "code_executor",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "这段代码有什么问题 def foo(): return 1/0",
+          "expected": "search",
+          "actual": "code_executor",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "根据上下文，用户最可能想问什么",
+          "expected": "context_needed",
+          "actual": "search",
+          "correct": false,
+          "level": "L4"
+        },
+        {
+          "query": "帮我规划一个3天的北京旅游行程包括酒店和景点",
+          "expected": "multi_intent",
+          "actual": "search",
+          "correct": false,
+          "level": "L4"
+        },
+        {
+          "query": "对比一下最近三年的销售数据并给出趋势预测",
+          "expected": "multi_intent",
+          "actual": "search",
+          "correct": false,
+          "level": "L4"
         }
       ]
     },
     {
       "benchmark": "Math23K",
-      "total": 19,
-      "correct": 16,
-      "failed_gracefully": 3,
+      "total": 27,
+      "correct": 14,
+      "failed_gracefully": 1,
       "crashed": 0,
-      "accuracy": 84.2,
+      "accuracy": 51.9,
+      "level_stats": {
+        "L1": {
+          "total": 6,
+          "correct": 6
+        },
+        "L2": {
+          "total": 8,
+          "correct": 8
+        },
+        "L3": {
+          "total": 9,
+          "correct": 0
+        },
+        "L4": {
+          "total": 4,
+          "correct": 0
+        }
+      },
       "details": [
         {
           "query": "5加3",
           "category": "simple_add",
           "expected_answer": 8,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 5 + 3 = 8"
         },
         {
@@ -300,7 +342,7 @@
           "category": "simple_multiply",
           "expected_answer": 144,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 24 * 6 = 144"
         },
         {
@@ -308,7 +350,7 @@
           "category": "simple_subtract",
           "expected_answer": 63,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 100 - 37 = 63"
         },
         {
@@ -316,7 +358,7 @@
           "category": "simple_divide",
           "expected_answer": 12,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 96 / 8 = 12"
         },
         {
@@ -324,23 +366,15 @@
           "category": "power",
           "expected_answer": 1024,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 2 ** 10 = 1024"
-        },
-        {
-          "query": "100的平方根",
-          "category": "sqrt",
-          "expected_answer": 10,
-          "answer_correct": true,
-          "carm_expected_fail": false,
-          "output_sample": "计算结果: 100 ** 0.5 = 10"
         },
         {
           "query": "3.14乘以25",
           "category": "decimal",
           "expected_answer": 78.5,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L1",
           "output_sample": "计算结果: 3.14 * 25 = 78.5"
         },
         {
@@ -348,7 +382,7 @@
           "category": "unit_convert",
           "expected_answer": 3000,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 3 * 1000 = 3000"
         },
         {
@@ -356,7 +390,7 @@
           "category": "unit_convert",
           "expected_answer": 120,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 2 * 60 = 120"
         },
         {
@@ -364,23 +398,15 @@
           "category": "large_number",
           "expected_answer": 714.2857,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 1000000000000 / 1400000000 = 714.2857142857143"
-        },
-        {
-          "query": "10亿减去3亿",
-          "category": "large_number",
-          "expected_answer": 700000000,
-          "answer_correct": true,
-          "carm_expected_fail": false,
-          "output_sample": "计算结果: 1000000000 - 300000000 = 700000000"
         },
         {
           "query": "负3加5",
           "category": "negative",
           "expected_answer": 2,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: -3 + 5 = 2"
         },
         {
@@ -388,7 +414,7 @@
           "category": "geometry",
           "expected_answer": 40,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 8 * 5 = 40"
         },
         {
@@ -396,7 +422,7 @@
           "category": "geometry",
           "expected_answer": 28.27,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 3.14159265 * 3 ** 2 = 28.27433385"
         },
         {
@@ -404,7 +430,7 @@
           "category": "word_simple",
           "expected_answer": 8,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 5 + 3 = 8"
         },
         {
@@ -412,7 +438,7 @@
           "category": "word_simple",
           "expected_answer": 45,
           "answer_correct": true,
-          "carm_expected_fail": false,
+          "level": "L2",
           "output_sample": "计算结果: 15 * 3 = 45"
         },
         {
@@ -420,7 +446,7 @@
           "category": "equation",
           "expected_answer": 5,
           "answer_correct": false,
-          "carm_expected_fail": true,
+          "level": "L3",
           "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
         },
         {
@@ -428,7 +454,7 @@
           "category": "equation",
           "expected_answer": 15,
           "answer_correct": false,
-          "carm_expected_fail": true,
+          "level": "L3",
           "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
         },
         {
@@ -436,172 +462,464 @@
           "category": "equation",
           "expected_answer": 7,
           "answer_correct": false,
-          "carm_expected_fail": true,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "小明买了3本书每本15元又买了2支笔每支3元一共花了多少钱",
+          "category": "multi_step",
+          "expected_answer": 51,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "计算结果: 3 + 2 = 5"
+        },
+        {
+          "query": "一个长方形周长30米长是宽的2倍求面积",
+          "category": "multi_step",
+          "expected_answer": 50,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "原价200元打8折后是多少元",
+          "category": "percentage",
+          "expected_answer": 160,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "一个班级40人及格率75%有多少人及格",
+          "category": "percentage",
+          "expected_answer": 30,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "甲乙两地相距240公里一辆车3小时到达平均速度是多少",
+          "category": "rate_reasoning",
+          "expected_answer": 80,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "甲乙两人从A地出发甲每小时走5公里乙每小时走7公里2小时后两人相距多少公里",
+          "category": "rate_reasoning",
+          "expected_answer": 4,
+          "answer_correct": false,
+          "level": "L3",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "证明根号2是无理数",
+          "category": "proof",
+          "expected_answer": null,
+          "answer_correct": false,
+          "level": "L4",
+          "note": "Beyond calculator capability"
+        },
+        {
+          "query": "求函数f(x)=x^3-3x在区间[-2,2]上的最大值",
+          "category": "calculus",
+          "expected_answer": 2,
+          "answer_correct": false,
+          "level": "L4",
+          "output_sample": "计算结果: 3-3 = 0"
+        },
+        {
+          "query": "一个水池有两个进水管一个4小时灌满一个6小时灌满同时开多久灌满",
+          "category": "work_problem",
+          "expected_answer": 2.4,
+          "answer_correct": false,
+          "level": "L4",
+          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+        },
+        {
+          "query": "从1加到100的和是多少",
+          "category": "series",
+          "expected_answer": 5050,
+          "answer_correct": false,
+          "level": "L4",
           "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
         }
       ]
     },
     {
       "benchmark": "BFCL-V3",
-      "total": 22,
-      "correct": 22,
-      "failed_gracefully": 0,
+      "total": 25,
+      "correct": 12,
+      "failed_gracefully": 11,
       "crashed": 0,
-      "accuracy": 100.0,
+      "accuracy": 48.0,
+      "level_stats": {
+        "L1": {
+          "total": 6,
+          "correct": 6
+        },
+        "L2": {
+          "total": 6,
+          "correct": 6
+        },
+        "L3": {
+          "total": 10,
+          "correct": 0
+        },
+        "L4": {
+          "total": 3,
+          "correct": 0
+        }
+      },
       "details": [
         {
           "query": "帮我计算 2 + 3 * 4",
           "expected": "calculator",
           "actual": "calculator",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "运行这段代码 print(sum([1,2,3]))",
           "expected": "code_executor",
           "actual": "code_executor",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "搜索一下Python教程",
           "expected": "search",
           "actual": "search",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "帮我写一份市场分析报告",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "计算100的平方根",
           "expected": "calculator",
           "actual": "calculator",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "写一个快速排序算法",
           "expected": "code_executor",
           "actual": "code_executor",
           "category": "simple",
-          "correct": true
+          "correct": true,
+          "level": "L1"
         },
         {
           "query": "帮我算一下5的阶乘",
           "expected": "code_executor",
           "actual": "code_executor",
           "category": "multiple",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "比较一下Redis和Memcached的性能",
           "expected": "search",
           "actual": "search",
           "category": "multiple",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "解释一下什么是动态规划",
           "expected": "search",
           "actual": "search",
           "category": "multiple",
-          "correct": true
-        },
-        {
-          "query": "5加3乘2等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "category": "multiple",
-          "correct": true
-        },
-        {
-          "query": "帮我算一下排序的时间复杂度",
-          "expected": "code_executor",
-          "actual": "code_executor",
-          "category": "multiple",
-          "correct": true
-        },
-        {
-          "query": "你好啊",
-          "expected": "search",
-          "actual": "search",
-          "category": "relevance",
-          "correct": true
-        },
-        {
-          "query": "!@#$%^&*()",
-          "expected": "search",
-          "actual": "search",
-          "category": "relevance",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "帮我写一个关于历史的作文",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "category": "hallucination",
-          "correct": true
-        },
-        {
-          "query": "翻译一下这段话",
-          "expected": "search",
-          "actual": "search",
-          "category": "hallucination",
-          "correct": true
-        },
-        {
-          "query": "今天的日期是多少",
-          "expected": "search",
-          "actual": "search",
-          "category": "hallucination",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "帮我归纳一下这些资料的核心观点",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "category": "hallucination",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
           "query": "帮我计算圆的面积半径是7",
           "expected": "calculator",
           "actual": "calculator",
           "category": "parallel",
-          "correct": true
+          "correct": true,
+          "level": "L2"
         },
         {
-          "query": "用归并排序排3,1,4,1,5,9",
-          "expected": "code_executor",
+          "query": "用刚才的模型再跑一遍",
+          "expected": "context_needed",
+          "actual": "search",
+          "category": "multi_turn",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "换一个方法试试",
+          "expected": "context_needed",
           "actual": "code_executor",
-          "category": "parallel",
-          "correct": true
+          "category": "multi_turn",
+          "correct": false,
+          "level": "L3"
         },
         {
-          "query": "1万亿除以14亿",
-          "expected": "calculator",
+          "query": "这次精度好一点了吗",
+          "expected": "context_needed",
+          "actual": "search",
+          "category": "multi_turn",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "同时查一下北京和上海的天气",
+          "expected": "multi_call",
+          "actual": "search",
+          "category": "parallel_call",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "帮我计算圆的面积和周长半径是5",
+          "expected": "multi_call",
           "actual": "calculator",
-          "category": "parallel",
-          "correct": true
+          "category": "parallel_call",
+          "correct": false,
+          "level": "L3"
         },
         {
-          "query": "负3加5等于多少",
-          "expected": "calculator",
-          "actual": "calculator",
-          "category": "parallel",
-          "correct": true
+          "query": "谢谢你",
+          "expected": "none",
+          "actual": "search",
+          "category": "relevance",
+          "correct": false,
+          "level": "L3"
         },
         {
-          "query": "总结一下今年科技行业的趋势",
-          "expected": "bigmodel_proxy",
+          "query": "好的我知道了",
+          "expected": "none",
+          "actual": "search",
+          "category": "relevance",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "这个问题我不太懂",
+          "expected": "none",
+          "actual": "search",
+          "category": "relevance",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "如果我想要高性能的排序应该用哪种算法",
+          "expected": "search",
+          "actual": "code_executor",
+          "category": "conditional",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "帮我分析一下这个代码的性能瓶颈",
+          "expected": "search",
+          "actual": "code_executor",
+          "category": "conditional",
+          "correct": false,
+          "level": "L3"
+        },
+        {
+          "query": "帮我搜索最近的经济数据，然后做一个趋势分析，最后生成报告",
+          "expected": "tool_chain",
+          "actual": "search",
+          "category": "agentic",
+          "correct": false,
+          "level": "L4"
+        },
+        {
+          "query": "先运行排序算法，验证结果是否正确，如果不正确换一种方法",
+          "expected": "tool_chain",
+          "actual": "code_executor",
+          "category": "agentic",
+          "correct": false,
+          "level": "L4"
+        },
+        {
+          "query": "帮我搭建一个web服务器并部署上去",
+          "expected": "tool_chain",
+          "actual": "search",
+          "category": "agentic",
+          "correct": false,
+          "level": "L4"
+        }
+      ]
+    },
+    {
+      "benchmark": "MMLU-CN",
+      "total": 15,
+      "correct": 15,
+      "failed_gracefully": 0,
+      "crashed": 0,
+      "accuracy": 100.0,
+      "level_stats": {
+        "L1": {
+          "total": 3,
+          "correct": 3
+        },
+        "L2": {
+          "total": 4,
+          "correct": 4
+        },
+        "L3": {
+          "total": 5,
+          "correct": 5
+        },
+        "L4": {
+          "total": 3,
+          "correct": 3
+        }
+      },
+      "details": [
+        {
+          "query": "中国的首都是哪个城市",
+          "category": "geography",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L1"
+        },
+        {
+          "query": "水的化学式是什么",
+          "category": "chemistry",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L1"
+        },
+        {
+          "query": "一年有多少天",
+          "category": "common",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L1"
+        },
+        {
+          "query": "量子纠缠是什么现象",
+          "category": "physics",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "TCP和UDP的区别是什么",
+          "category": "cs",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "Python的GIL是什么",
+          "category": "cs",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "什么是通货膨胀",
+          "category": "economics",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L2"
+        },
+        {
+          "query": "深度学习中的注意力机制最早是在哪篇论文提出的",
+          "category": "ml_history",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L3"
+        },
+        {
+          "query": "相对论和牛顿力学的根本区别是什么",
+          "category": "physics",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L3"
+        },
+        {
+          "query": "BERT和GPT的架构差异是什么",
+          "category": "cs",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L3"
+        },
+        {
+          "query": "中国的五年计划是从哪一年开始的",
+          "category": "history",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L3"
+        },
+        {
+          "query": "Transformer模型为什么比RNN更适合并行计算",
+          "category": "cs",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L3"
+        },
+        {
+          "query": "根据费曼物理学讲义解释为什么天空是蓝色的",
+          "category": "physics",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L4"
+        },
+        {
+          "query": "分析康德纯粹理性批判中先验演绎的核心论证",
+          "category": "philosophy",
+          "expected_routing": "search or bigmodel_proxy",
           "actual": "bigmodel_proxy",
-          "category": "parallel",
-          "correct": true
+          "routing_correct": true,
+          "level": "L4"
+        },
+        {
+          "query": "为什么图灵测试不能作为衡量智能的唯一标准",
+          "category": "ai_philosophy",
+          "expected_routing": "search or bigmodel_proxy",
+          "actual": "search",
+          "routing_correct": true,
+          "level": "L4"
         }
       ]
     }
