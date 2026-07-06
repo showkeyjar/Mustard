@@ -28,6 +28,9 @@ from carm.signals import (
     has_debug_consult_signal,
     has_deep_reason_signal,
     has_deep_analysis_signal,
+    has_anaphora_signal,
+    has_multi_intent_signal,
+    has_multi_step_signal,
 )
 from carm.state import AgentState
 
@@ -628,22 +631,42 @@ class OnlinePolicy:
                     user_input  # CodeExecutorTool extracts code from natural language
                 )
 
+            # Build arguments — inject CARM signal analysis for bigmodel_proxy
+            tool_args = {}
+            if chosen_tool == "search":
+                tool_args = {"top_k": 3}
+            elif chosen_tool == "bigmodel_proxy":
+                signal_summary = self._build_signal_summary(user_input)
+                if signal_summary:
+                    tool_args = {"carm_signals": signal_summary}
+            elif chosen_tool == "multi_intent":
+                tool_args = {
+                    "split_intents": state.hidden.get("_multi_intent_splits", [])
+                }
+            elif chosen_tool == "multi_step":
+                tool_args = {"plan": "search → compare → bigmodel_proxy"}
+
             decision.tool_call = ToolCall(
                 tool_name=chosen_tool,
                 query=tool_query,
-                arguments={"top_k": 3} if chosen_tool == "search" else {},
+                arguments=tool_args,
                 reason=chosen_reason,
             )
             decision.reason = f"Use {chosen_tool}: {chosen_reason}"
             return decision
 
         if action == Action.CALL_BIGMODEL:
+            # Path-C: inject CARM signal analysis into LLM prompt
+            signal_summary = self._build_signal_summary(user_input)
             decision.tool_call = ToolCall(
                 tool_name="bigmodel_proxy",
                 query=user_input,
+                arguments={"carm_signals": signal_summary} if signal_summary else {},
                 reason="Need stronger external reasoning support.",
             )
             decision.reason = "Escalate to larger external model."
+            if signal_summary:
+                decision.reason += f" Signals: {signal_summary}"
             return decision
 
         if action == Action.READ_MEM:
@@ -873,3 +896,50 @@ class OnlinePolicy:
             )
 
         return decision
+
+    # ── Path-C: Signal summary for LLM escalation ──────────────────────
+
+    def _build_signal_summary(self, user_input: str) -> str:
+        """Build a compact signal analysis summary for LLM consumption.
+
+        When CARM escalates to bigmodel_proxy, this summary tells the LLM
+        what signals CARM detected, so the LLM can use them as priors.
+        Format: "signal1, signal2, signal3" — kept short to avoid token waste.
+        """
+        signals = []
+        if has_calc_signal(user_input):
+            signals.append("calc")
+        if has_code_signal(user_input):
+            signals.append("code")
+        if has_search_action_signal(user_input):
+            signals.append("search")
+        if has_writing_signal(user_input):
+            signals.append("writing")
+        if has_translate_signal(user_input):
+            signals.append("translate")
+        if has_consult_signal(user_input):
+            signals.append("consult")
+        if has_travel_signal(user_input):
+            signals.append("travel")
+        if has_compare_signal(user_input):
+            signals.append("compare")
+        if has_explain_signal(user_input):
+            signals.append("explain")
+        if has_formal_signal(user_input):
+            signals.append("formal")
+        if has_deep_reason_signal(user_input):
+            signals.append("deep_reason")
+        if has_deep_analysis_signal(user_input):
+            signals.append("deep_analysis")
+        if has_anaphora_signal(user_input):
+            signals.append("anaphora")
+        if has_multi_intent_signal(user_input):
+            signals.append("multi_intent")
+        if has_multi_step_signal(user_input):
+            signals.append("multi_step")
+        if has_debug_consult_signal(user_input):
+            signals.append("debug_consult")
+        if is_conflict_task(user_input):
+            signals.append("conflict")
+
+        return ",".join(signals)

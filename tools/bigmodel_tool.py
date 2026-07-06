@@ -11,14 +11,17 @@ class BigModelProxyTool:
     name = "bigmodel_proxy"
 
     def execute(self, query: str, arguments: dict) -> ToolResult:
+        # Path-C: extract CARM signal analysis if present
+        carm_signals = arguments.get("carm_signals", "")
+
         # Strategy 1: Gemini API (cloud, highest quality)
         if self._gemini_enabled():
-            live_result = self._execute_gemini(query, arguments)
+            live_result = self._execute_gemini(query, arguments, carm_signals)
             if live_result is not None:
                 return live_result
 
         # Strategy 2: Ollama local LLM (zero-config, good quality)
-        ollama_result = self._execute_ollama(query, arguments)
+        ollama_result = self._execute_ollama(query, arguments, carm_signals)
         if ollama_result is not None:
             return ollama_result
 
@@ -49,7 +52,9 @@ class BigModelProxyTool:
     def _gemini_enabled(self) -> bool:
         return bool(os.environ.get("GEMINI_API_KEY", "").strip())
 
-    def _execute_gemini(self, query: str, arguments: dict) -> ToolResult | None:
+    def _execute_gemini(
+        self, query: str, arguments: dict, carm_signals: str = ""
+    ) -> ToolResult | None:
         api_key = os.environ.get("GEMINI_API_KEY", "").strip()
         if not api_key:
             return None
@@ -65,7 +70,7 @@ class BigModelProxyTool:
             f"{parse.quote(model, safe='')}:generateContent?key={parse.quote(api_key, safe='')}"
         )
 
-        payload = self._build_gemini_payload(query, mode)
+        payload = self._build_gemini_payload(query, mode, carm_signals)
         req = request.Request(
             endpoint,
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -101,7 +106,9 @@ class BigModelProxyTool:
             source=f"tool/bigmodel_proxy:{model}",
         )
 
-    def _build_gemini_payload(self, query: str, mode: str) -> dict[str, object]:
+    def _build_gemini_payload(
+        self, query: str, mode: str, carm_signals: str = ""
+    ) -> dict[str, object]:
         if mode == "distill":
             return {
                 "contents": [
@@ -123,15 +130,23 @@ class BigModelProxyTool:
                 },
             }
 
+        # Path-C: build system prompt with CARM signal context
+        system_text = (
+            "You are an external large model used by a small logic controller (CARM). "
+            "Return a concise, practical answer grounded in the user's request. "
+            "Prefer structure over flourish."
+        )
+        if carm_signals:
+            system_text += (
+                f"\n\nCARM detected these intent signals: [{carm_signals}]. "
+                "Use these as priors to guide your response."
+            )
+
         return {
             "systemInstruction": {
                 "parts": [
                     {
-                        "text": (
-                            "You are an external large model used by a small logic controller. "
-                            "Return a concise, practical answer grounded in the user's request. "
-                            "Prefer structure over flourish."
-                        )
+                        "text": system_text,
                     }
                 ]
             },
@@ -169,7 +184,9 @@ class BigModelProxyTool:
 
     # ── Ollama local LLM ────────────────────────────────────────────────
 
-    def _execute_ollama(self, query: str, arguments: dict) -> ToolResult | None:
+    def _execute_ollama(
+        self, query: str, arguments: dict, carm_signals: str = ""
+    ) -> ToolResult | None:
         """Try Ollama local LLM (default http://localhost:11434)."""
         base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip(
             "/"
@@ -181,10 +198,16 @@ class BigModelProxyTool:
         mode = str(arguments.get("mode", "")).strip().lower()
 
         system_prompt = (
-            "You are an external large model assisting a small logic controller. "
+            "You are an external large model assisting a small logic controller (CARM). "
             "Return a concise, practical answer grounded in the user's request. "
             "Prefer structure over flourish. Respond in the same language as the query."
         )
+        # Path-C: inject CARM signal analysis
+        if carm_signals:
+            system_prompt += (
+                f"\n\nCARM detected these intent signals: [{carm_signals}]. "
+                "Use these as priors to guide your response."
+            )
         if mode == "distill":
             system_prompt = (
                 "You are a teacher model for a small reasoning controller. "
