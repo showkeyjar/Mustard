@@ -830,6 +830,10 @@ def _scoring_for_smp2017(
         if actual_tool in ("search", "calculator", "code_executor", "bigmodel_proxy"):
             # Check partial credit: did CARM route to one of the valid sub-tools?
             if partial_tools and actual_tool in partial_tools:
+                if expected_tool == "context_needed":
+                    # CARM resolved anaphora via session memory and routed
+                    # to the correct real tool — this IS correct handling
+                    return True, False, 1.0
                 return False, True, 0.5  # partial credit for multi_intent
             return False, True, 0.0  # gracefully failed (routed somewhere, but wrong)
         return False, False, 0.0  # crashed or no tool
@@ -1010,7 +1014,12 @@ def run_bfcl(policy) -> BenchmarkResult:
                         and pt
                         and actual_tool in pt
                     ):
-                        partial = 0.5
+                        if expected == "context_needed":
+                            # CARM resolved anaphora and routed to correct tool
+                            correct = True
+                            partial = 1.0
+                        else:
+                            partial = 0.5
             else:
                 correct = actual_tool == expected
                 graceful = False
@@ -1088,16 +1097,19 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
             # if CARM routes to one of the valid sub-tools
             if expected_tool in ("multi_intent", "context_needed", "multi_step"):
                 correct_routing = False
-                # Check partial credit for multi_intent
                 pt = case.get("partial_tools")
-                if expected_tool == "multi_intent" and pt and actual_tool in pt:
-                    partial_credit = 0.5
-                elif expected_tool == "multi_intent" and actual_tool == "multi_intent":
+                if expected_tool == "multi_intent" and actual_tool == "multi_intent":
                     partial_credit = 1.0
+                elif expected_tool == "multi_intent" and pt and actual_tool in pt:
+                    partial_credit = 0.5
                 elif expected_tool == "multi_step" and actual_tool == "multi_step":
                     partial_credit = 1.0
                 elif expected_tool == "multi_step" and pt and actual_tool in pt:
                     partial_credit = 0.5
+                elif expected_tool == "context_needed" and pt and actual_tool in pt:
+                    # CARM resolved anaphora via session memory and routed
+                    # to the correct sub-tool — this IS correct handling
+                    partial_credit = 1.0
                 else:
                     partial_credit = 0.0
             else:

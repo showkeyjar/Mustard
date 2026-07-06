@@ -181,6 +181,40 @@ class AgentRunner:
                 and decision.tool_call
             ):
                 rollback_stack.append(self._checkpoint(state, memory))
+                tool_name = decision.tool_call.tool_name
+
+                # ── Multi-intent: execute each sub-intent in sequence ──
+                if tool_name == "multi_intent":
+                    self._execute_multi_intent(
+                        decision,
+                        state,
+                        memory,
+                        session_mgr,
+                        session_id,
+                        user_input,
+                        trace,
+                    )
+                    state.last_action = Action.CALL_TOOL.value
+                    state.uncertainty = max(0.2, state.uncertainty - 0.3)
+                    state.hidden.pop("verified", None)
+                    continue
+
+                # ── Multi-step: execute the tool chain in sequence ──
+                if tool_name == "multi_step":
+                    self._execute_multi_step(
+                        decision,
+                        state,
+                        memory,
+                        session_mgr,
+                        session_id,
+                        user_input,
+                        trace,
+                    )
+                    state.last_action = Action.CALL_TOOL.value
+                    state.uncertainty = max(0.2, state.uncertainty - 0.3)
+                    state.hidden.pop("verified", None)
+                    continue
+
                 result = self.tool_manager.execute(
                     decision.tool_call.tool_name,
                     decision.tool_call.query,
@@ -657,3 +691,116 @@ class AgentRunner:
             if meaningful_risks and memory.latest("RESULT") is None:
                 return True
         return False
+
+    # ── Multi-intent / multi-step execution ──────────────────────────
+
+    def _execute_multi_intent(
+        self,
+        decision,
+        state: AgentState,
+        memory: MemoryBoard,
+        session_mgr,
+        session_id: str,
+        user_input: str,
+        trace: RunTrace,
+    ) -> None:
+        """Execute each sub-intent from a multi-intent query in sequence.
+
+        The split intents are stored in decision.tool_call.arguments['intents']
+        or in state.hidden['_multi_intent_splits'].  Each sub-intent has a
+        'text' and 'signal' field.  We execute each one via the tool manager
+        and accumulate results.
+        """
+        splits = decision.tool_call.arguments.get("intents") or state.hidden.get(
+            "_multi_intent_splits", []
+        )
+        combined_results = []
+        for sub in splits:
+            sub_text = sub.get("text", user_input)
+            sub_tool = sub.get("signal", "search")
+            # Map signal to real tool name
+            tool_map = {
+                "calculator": "calculator",
+                "code_executor": "code_executor",
+                "search": "search",
+                "bigmodel_proxy": "bigmodel_proxy",
+            }
+            real_tool = tool_map.get(sub_tool, "search")
+            try:
+                result = self.tool_manager.execute(real_tool, sub_text, {})
+                combined_results.append(
+                    f"[{sub_tool}] {sub_text} → {result.result[:200]}"
+                )
+                memory.store_result(result.result, result.confidence, result.source)
+                session_mgr.append_turn(
+                    session_id=session_id,
+                    user_input=sub_text,
+                    tool_name=real_tool,
+                    tool_result=result.result,
+                    confidence=result.confidence,
+                )
+            except Exception as exc:
+                combined_results.append(f"[{sub_tool}] {sub_text} → ERROR: {exc}")
+        trace.notes.append(f"Multi-intent: executed {len(splits)} sub-intents.")
+        # Store combined result
+        combined_text = "\n".join(combined_results)
+        memory.store_result(combined_text, 0.8, "tool/multi_intent")
+
+    def _execute_multi_step(
+        self,
+        decision,
+        state: AgentState,
+        memory: MemoryBoard,
+        session_mgr,
+        session_id: str,
+        user_input: str,
+        trace: RunTrace,
+    ) -> None:
+        """Execute a multi-step tool chain (search → compare → bigmodel_proxy).
+
+        The plan is stored in decision.tool_call.arguments['plan'].
+        Standard plan: search → compare → bigmodel_proxy.
+        """
+        combined_results = []
+        # Step 1: Search for evidence
+        try:
+            search_result = self.tool_manager.execute(
+                "search", user_input, {"top_k": 3}
+            )
+            combined_results.append(f"[search] → {search_result.result[:200]}")
+            memory.store_result(
+                search_result.result, search_result.confidence, search_result.source
+            )
+            session_mgr.append_turn(
+                session_id=session_id,
+                user_input=user_input,
+                tool_name="search",
+                tool_result=search_result.result,
+                confidence=search_result.confidence,
+            )
+        except Exception as exc:
+            combined_results.append(f"[search] → ERROR: {exc}")
+
+        # Step 2: Compare / analyze (use bigmodel_proxy if available)
+        if self.tool_manager._tools.get("bigmodel_proxy") is not None:
+            try:
+                llm_result = self.tool_manager.execute(
+                    "bigmodel_proxy", user_input, decision.tool_call.arguments
+                )
+                combined_results.append(f"[bigmodel_proxy] → {llm_result.result[:200]}")
+                memory.store_result(
+                    llm_result.result, llm_result.confidence, llm_result.source
+                )
+                session_mgr.append_turn(
+                    session_id=session_id,
+                    user_input=user_input,
+                    tool_name="bigmodel_proxy",
+                    tool_result=llm_result.result,
+                    confidence=llm_result.confidence,
+                )
+            except Exception as exc:
+                combined_results.append(f"[bigmodel_proxy] → ERROR: {exc}")
+
+        trace.notes.append("Multi-step: executed search → bigmodel_proxy chain.")
+        combined_text = "\n".join(combined_results)
+        memory.store_result(combined_text, 0.85, "tool/multi_step")
