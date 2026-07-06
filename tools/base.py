@@ -25,7 +25,11 @@ class ToolManager:
                 self.register(tool)
 
     def register(self, tool: Tool) -> None:
-        """Register a tool with its capability tags."""
+        """Register a tool with its capability tags.
+
+        The first tool registered for a given category becomes the
+        primary handler.  Use set_primary() to change this.
+        """
         self._tools[tool.name] = tool
         tags = getattr(tool, "capability_tags", [])
         if not tags:
@@ -36,6 +40,24 @@ class ToolManager:
                 self._capability_index[tag] = []
             if tool.name not in self._capability_index[tag]:
                 self._capability_index[tag].append(tool.name)
+
+    def set_primary(self, tool_name: str, category: IntentCategory) -> None:
+        """Promote a tool to be the primary handler for a category.
+
+        Moves the tool to the front of the capability list for the
+        given category, so find_by_capability() returns it first.
+
+        Raises KeyError if tool_name is not registered or does not
+        declare this category.
+        """
+        candidates = self._capability_index.get(category, [])
+        if tool_name not in candidates:
+            raise KeyError(
+                f"Tool '{tool_name}' is not registered for category '{category.value}'"
+            )
+        # Move to front
+        candidates.remove(tool_name)
+        candidates.insert(0, tool_name)
 
     def execute(
         self, tool_name: str, query: str, arguments: dict | None = None
