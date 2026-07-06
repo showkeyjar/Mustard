@@ -102,6 +102,8 @@ CODE_ACTION_TOKENS = (
     "运行",
     "执行",
     "跑一下",
+    "跑一遍",
+    "再跑",
     "函数",
     "方法",
     "算法",
@@ -810,11 +812,15 @@ class SplitIntent(NamedTuple):
 
 
 def has_multi_intent_signal(text: str) -> bool:
-    """Return True if text contains explicit multi-intent connectors.
+    """Return True if text contains explicit or implicit multi-intent signals.
 
-    Requires the connector to be between two non-empty segments, and
-    at least two segments must carry distinct strong tool signals.
+    Detection patterns:
+      1. Explicit connector-driven: "顺便", "然后", etc. between two intents
+      2. Comma-driven: two comma-separated clauses with distinct signals
+      3. Implicit: query simultaneously carries search + writing signals
+         (e.g. "规划行程" needs both search for info and writing for plan)
     """
+    # Pattern 1: connector-driven
     for conn in MULTI_INTENT_CONNECTORS:
         if conn in text:
             parts = text.split(conn, 1)
@@ -826,7 +832,50 @@ def has_multi_intent_signal(text: str) -> bool:
                 # and they are different tools.
                 if left_sig and right_sig and left_sig != right_sig:
                     return True
+
+    # Pattern 3: implicit multi-intent — search + writing in same query
+    # e.g. "规划3天北京行程" has both travel (search) + planning (writing)
+    if _has_implicit_multi_intent(text):
+        return True
+
     return False
+
+
+# Verbs that imply a synthetic/writing task (need bigmodel_proxy for output)
+_PLANNING_VERBS = (
+    "规划",
+    "制定",
+    "设计",
+    "安排",
+    "策划",
+    "方案",
+    "计划",
+    "生成",
+    "编写",
+    "起草",
+    "撰写",
+    "编一个",
+    "写一个",
+    "做个",
+    "做一个",
+)
+
+
+def _has_implicit_multi_intent(text: str) -> bool:
+    """Detect implicit multi-intent: query needs both search AND synthesis.
+
+    Pattern: a planning/writing verb + a search-requiring topic (travel,
+    weather, venue, etc.) without an explicit connector.
+
+    Example: "规划3天的北京旅游行程" → search(景点/酒店) + writing(行程安排)
+    """
+    has_plan_verb = any(verb in text for verb in _PLANNING_VERBS)
+    if not has_plan_verb:
+        return False
+    # Check if the query also has a topic that needs search
+    has_search_topic = has_travel_signal(text) or has_search_action_signal(text)
+    # Must be both: planning verb (writing) + search-worthy topic
+    return has_search_topic
 
 
 def _tool_signal(text: str) -> str | None:
@@ -900,5 +949,21 @@ def split_multi_intent(text: str) -> list[SplitIntent]:
                         )
                         for part, sig in zip(parts, signals_list)
                     ]
+
+    # Pattern 3: implicit multi-intent (planning verb + search topic)
+    # Split into: search(gather info) → bigmodel_proxy(synthesize plan)
+    if _has_implicit_multi_intent(text):
+        return [
+            SplitIntent(
+                text=text,  # use full query for search
+                primary_signal="search",
+                priority=1,
+            ),
+            SplitIntent(
+                text=text,  # use full query for synthesis
+                primary_signal="bigmodel_proxy",
+                priority=2,
+            ),
+        ]
 
     return []

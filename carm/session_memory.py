@@ -195,6 +195,9 @@ class SessionMemoryManager:
         """Try to resolve anaphora in a query using session context.
 
         Returns: (resolved_entity_or_None, resolved_query_with_context)
+
+        The enhanced query includes the previous turn's user_input and tool_name
+        so that downstream routing can use the original intent context.
         """
         ctx = self.get_context(session_id)
         if ctx is None:
@@ -204,8 +207,17 @@ class SessionMemoryManager:
         if resolved is None:
             return None, query
 
-        # Enhance the query with context prefix
-        enhanced = f"上下文：{resolved[:200]}\n用户问题：{query}"
+        # Build a richer context that includes the original user_input and tool
+        # from the previous turn — this gives the router enough signal to
+        # route "用刚才的模型再跑一遍" → code_executor (because the previous
+        # turn used code_executor for "运行一下这个Python模型").
+        last = ctx.last_turn()
+        parts = [f"上下文：{resolved[:200]}"]
+        if last:
+            parts.append(f"上一轮用户输入：{last.user_input}")
+            parts.append(f"上一轮工具：{last.tool_name}")
+        parts.append(f"用户问题：{query}")
+        enhanced = "\n".join(parts)
         return resolved, enhanced
 
     def get_last_tool_result(

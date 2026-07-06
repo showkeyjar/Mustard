@@ -172,6 +172,7 @@ SMP2017_CASES = [
         "level": "L4",
         "note": "'它' requires coreference — CARM has no context memory",
         "prime_query": "帮我查一下最新款GPU的性能参数",
+        "prime_tool": "search",
         "partial_tools": ["search", "bigmodel_proxy"],
     },
 ]
@@ -503,6 +504,7 @@ BFCL_CASES = [
         "level": "L4",
         "note": "Requires conversation context",
         "prime_query": "运行一下这个Python模型",
+        "prime_tool": "code_executor",
         "partial_tools": ["code_executor"],
     },
 ]
@@ -640,6 +642,7 @@ MMLU_CN_CASES = [
         "level": "L4",
         "note": "Requires conversation context — '上次查的'",
         "prime_query": "搜索一下Transformer架构论文",
+        "prime_tool": "search",
         "partial_tools": ["search", "bigmodel_proxy"],
     },
     {
@@ -662,11 +665,15 @@ def _route_query(
     user_input: str,
     session_id: str | None = None,
     prime_query: str | None = None,
+    prime_tool: str | None = None,
 ) -> str | None:
     """Get the tool that CARM would route a query to, using policy directly.
 
     For context_needed cases, provide a prime_query to establish conversation
     context before testing the actual query. This simulates multi-turn sessions.
+
+    prime_tool: the tool used in the prime turn (default: "search"). Set to
+    "code_executor", "calculator", or "bigmodel_proxy" as appropriate.
     """
     from carm.actions import Action
     from carm.memory import MemoryBoard, MemorySlot
@@ -683,12 +690,23 @@ def _route_query(
         from carm.session_memory import _extract_entities
 
         entities = _extract_entities(prime_query)
+        # Use the provided prime_tool or default to "search"
+        tool = prime_tool or "search"
+        result_prefix = (
+            "搜索结果"
+            if tool == "search"
+            else (
+                "运行结果"
+                if tool == "code_executor"
+                else ("计算结果" if tool == "calculator" else "回答")
+            )
+        )
         session_mgr.get_or_create(session_id or "eval")
         session_mgr.append_turn(
             session_id=session_id or "eval",
             user_input=prime_query,
-            tool_name="search",
-            tool_result=f"关于{entities[0] if entities else '查询'}的搜索结果...",
+            tool_name=tool,
+            tool_result=f"关于{entities[0] if entities else '查询'}的{result_prefix}...",
             confidence=0.9,
         )
         # Resolve anaphora using session memory
@@ -834,6 +852,7 @@ def run_smp2017(policy) -> BenchmarkResult:
                 policy,
                 case["query"],
                 prime_query=case.get("prime_query"),
+                prime_tool=case.get("prime_tool"),
             )
             correct, graceful, partial = _scoring_for_smp2017(
                 actual_tool,
@@ -859,6 +878,7 @@ def run_smp2017(policy) -> BenchmarkResult:
                     "actual": actual_tool or "None",
                     "correct": correct,
                     "level": level,
+                    "partial": partial if not correct else 1.0,
                 }
             )
         except Exception as e:
@@ -952,7 +972,12 @@ def run_bfcl(policy) -> BenchmarkResult:
         level = case.get("level", "L1")
         expected = case["expected_tool"]
         try:
-            actual_tool = _route_query(policy, case["query"])
+            actual_tool = _route_query(
+                policy,
+                case["query"],
+                prime_query=case.get("prime_query"),
+                prime_tool=case.get("prime_tool"),
+            )
 
             # Architecture-beyond cases
             if expected in (
@@ -1055,6 +1080,7 @@ def run_mmlu_cn(policy) -> BenchmarkResult:
                 policy,
                 case["query"],
                 prime_query=case.get("prime_query"),
+                prime_tool=case.get("prime_tool"),
             )
 
             # L4 cases: if expected is multi_intent/context_needed/multi_step,

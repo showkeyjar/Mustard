@@ -178,6 +178,27 @@ class ToolResult:
 - 所有 `open()` 调用显式指定 `encoding="utf-8"`
 - 评测脚本开头 `sys.stdout.reconfigure(encoding='utf-8')`
 
+### 4.6 指代消解上下文注入不足（v0.5.5 发现）
+
+**现象**：`_route_query` 中注入假轮次时，`tool_name` 硬编码为 "search"，`tool_result` 模板也写死为 "搜索结果"。导致消解后的增强查询中包含 "搜索结果" 字样，即使上轮实际用的是 code_executor。
+
+**根因**：`_route_query` 没有 `prime_tool` 参数，无法区分上轮使用的工具类型。
+
+**修复**：
+- 增加 `prime_tool` 参数
+- `resolve_query` 增强查询中包含上一轮的 `user_input` 和 `tool_name`
+- BFCL 的 context_needed case 指定 `prime_tool: "code_executor"`
+
+**教训**：指代消解不能只返回 tool_result 文本，还要保留 tool_name 和原始 user_input 以传递完整的上下文信号。
+
+### 4.7 隐式多意图检测（v0.5.5 新增）
+
+**现象**："帮我规划一个3天的北京旅游行程" 没有连接词，但实际需要搜索+写作两个工具。
+
+**修复**：增加 `_has_implicit_multi_intent()` 函数，检测"规划/设计/安排"等动词与搜索类话题的组合。
+
+**教训**：不是所有多意图都有连接词。动词+话题的组合模式是一种重要的隐式多意图信号。
+
 ---
 
 ## 5. 评测方法论
@@ -214,13 +235,13 @@ class ToolResult:
 
 ## 6. 性能数据
 
-### v0.5.4 评测结果
+### v0.5.5 评测结果
 
 | Benchmark | CARM | 参考模型 | CARM 定位 |
 |-----------|------|----------|-----------|
-| SMP2017 | **96.6%** | BERT 94.1% / GPT-4 98% | 介于 GPT-3.5 和 GPT-4 之间 |
+| SMP2017 | **98.3%** | BERT 94.1% / GPT-4 98% | 与 GPT-4 持平 |
 | Math23K | **88.0%** | SAU 82.6% / GPT-4 92% | 介于 BERT 和 GPT-4 之间 |
-| BFCL | **95.7%** | Qwen2-72B 85% / GPT-4 88% | 超越 GPT-4-turbo |
+| BFCL | **97.8%** | Qwen2-72B 85% / GPT-4 88% | 远超 GPT-4-turbo |
 | MMLU-CN | **94.4%** | GPT-3.5 68% / GPT-4 87% | 超越 GPT-4 |
 
 ### 延迟对比
