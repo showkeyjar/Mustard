@@ -513,9 +513,38 @@ class SemanticEncoder:
         )
         is_date_query = any(kw in text for kw in _date_keywords)
 
+        # Tech metric queries should strongly boost search and suppress calculator
+        # "latency是多少" / "GPU利用率" / "P99" are status queries, not calculations
+        _tech_metrics = (
+            "latency",
+            "qps",
+            "tps",
+            "p99",
+            "p95",
+            "p90",
+            "gmv",
+            "dau",
+            "mau",
+            "cpu",
+            "gpu",
+            "memory",
+            "throughput",
+            "uptime",
+            "bandwidth",
+            "iops",
+            "fps",
+            "rpm",
+            "concurrency",
+            "availability",
+        )
+        is_tech_metric_query = any(m in text_lower for m in _tech_metrics)
+
         for phrase, intent in _PHRASE_TO_INTENT.items():
             # Skip calculator phrases for date/time queries
             if intent == "calculator" and is_date_query:
+                continue
+            # Skip calculator phrases for tech metric queries ("latency是多少" is NOT calc)
+            if intent == "calculator" and is_tech_metric_query:
                 continue
             if phrase.lower() in text_lower:
                 # Longer phrases get higher weight (more specific)
@@ -532,6 +561,23 @@ class SemanticEncoder:
         # Date queries are search/knowledge intent
         if is_date_query:
             scores["search"] += 2.0
+
+        # Tech metric queries are search/status intent, NOT calculation
+        if is_tech_metric_query:
+            scores["search"] += 3.0
+            scores["calculator"] *= 0.1  # Strongly suppress calculator
+
+        # Code visualization intent ("画图"/"画个图"/"绘图"/"可视化") → code_executor
+        _viz_keywords = ("画图", "画个图", "绘图", "可视化", "画出来", "图表")
+        if any(kw in text for kw in _viz_keywords):
+            scores["code_executor"] += 2.0
+            scores["bigmodel_proxy"] *= 0.3  # Suppress writing/consult override
+
+        # Crawler/scraping intent ("爬虫"/"抓"/"抓取") → code_executor
+        _crawl_keywords = ("爬虫", "抓取", "抓数据", "采集", "爬下", "scrape", "crawl")
+        if any(kw in text_lower for kw in _crawl_keywords):
+            scores["code_executor"] += 2.5
+            scores["search"] *= 0.3  # Suppress search override from "热搜" etc.
 
         return scores
 

@@ -39,7 +39,16 @@ def is_conflict_task(text: str) -> bool:
 # Intent signals
 # ---------------------------------------------------------------------------
 
-COMPARE_TOKENS = ("比较", "区别", "优缺点", "vs", "对比")
+COMPARE_TOKENS = (
+    "比较",
+    "区别",
+    "优缺点",
+    "vs",
+    "对比",
+    "分别适用",
+    "各自适用",
+    "分别",
+)
 CALC_TOKENS = (
     "多少",
     "计算",
@@ -94,8 +103,18 @@ CALC_TOKENS = (
     "小时",
     "等于多少",
 )
-CODE_TOKENS_EN = ("python", "code", "script")
-CODE_TOKENS_ZH = ("代码", "脚本", "报错")
+CODE_TOKENS_EN = (
+    "python",
+    "code",
+    "script",
+    "crawler",
+    "spider",
+    "scrape",
+    "scraping",
+    "hack",
+    "debug",
+)
+CODE_TOKENS_ZH = ("代码", "脚本", "报错", "爬虫", "抓取", "抓数据", "数据采集", "采集")
 CODE_ACTION_TOKENS = (
     "写",
     "实现",
@@ -119,6 +138,16 @@ CODE_ACTION_TOKENS = (
     "斐波那契",
     "二分",
     "阶乘",
+    # Real-world code actions
+    "爬",
+    "抓",
+    "画图",
+    "绘图",
+    "可视化",
+    "画个图",
+    "画出来",
+    "跑个",
+    "跑一下",
 )
 
 # Tokens that indicate a WRITING/SYNTHESIS intent, not a code intent.
@@ -168,6 +197,8 @@ WRITING_ACTION_TOKENS = (
 # Search-intent tokens that indicate the user is looking for information
 SEARCH_TOKENS = (
     "是什么",
+    "什么是",
+    "有什么",
     "怎么",
     "怎么样",
     "如何",
@@ -196,20 +227,40 @@ SEARCH_TOKENS = (
     "哪个好",
     "谁更",
     "谁最",
+    # Real-world: tech metrics and status queries
+    "指标",
+    "监控",
+    "性能",
+    "参数",
+    "状态",
+    "利用率",
+    "容量",
+    "配置",
+    "版本",
+    "日志",
+    "报错",
+    "错误",
+    "异常",
+    "告警",
+    "场景",
+    "适用",
 )
 
 # Tokens that indicate a SEARCH action (not just a SEARCH question)
+# NOTE: Single-char "搜"/"查" are too broad ("热搜"=trending, "查bug"=debug).
+# Use compound forms that clearly indicate a search ACTION.
 SEARCH_ACTION_TOKENS = (
     "搜索",
     "查找",
     "查询",
     "检索",
-    "搜",
-    "查",
-    "查一下",
     "搜一下",
+    "查一下",
     "找一找",
     "找一下",
+    "搜搜",
+    "搜搜看",
+    "查查看",
 )
 
 # Search-related URLs/domains
@@ -221,6 +272,37 @@ SEARCH_URLS = (
     ".org",
     ".net",
     ".io",
+)
+
+# English tech-metric terms that signal a SEARCH intent (status/metrics lookup)
+TECH_METRIC_TOKENS = (
+    "latency",
+    "qps",
+    "tps",
+    "p99",
+    "p95",
+    "p90",
+    "gmv",
+    "dau",
+    "mau",
+    "cpu",
+    "gpu",
+    "memory",
+    "ram",
+    "disk",
+    "throughput",
+    "uptime",
+    "availability",
+    "bandwidth",
+    "iops",
+    "rps",
+    "error_rate",
+    "timeout",
+    "slow_query",
+    "benchmark",
+    "fps",
+    "rpm",
+    "concurrency",
 )
 
 FORMAL_TOKENS = ("正式", "优雅", "自然", "对话", "口语", "书面")
@@ -244,9 +326,10 @@ EXPLAIN_TOKENS = (
 
 # Tokens that indicate a CONSULTATIVE answer
 # (e.g., "帮我分析一下这个方案", "看看这个代码有什么问题")
+# NOTE: "帮我" alone is very broad — only triggers when combined with
+# advisory verbs.  "帮我订个外卖" has no advisory verb, so consult
+# should NOT fire.
 CONSULT_TOKENS = (
-    "帮我",
-    "帮我看看",
     "帮我分析",
     "帮我评估",
     "帮我优化",
@@ -323,10 +406,10 @@ DEBUG_CONSULT_TOKENS = (
 _DEEP_REASON_PATTERN = re.compile(r"为什么.{2,20}而.{2,20}")
 
 # Tokens that indicate a TRANSLATION intent
+# NOTE: "把" alone is NOT a translate token — "把CSV画个图" is code, not translation.
+# "把" is only a translate signal when followed by "成/译" pattern.
 TRANSLATE_TOKENS = (
     "翻译",
-    "把",
-    "成",
     "译成",
     "译",
     "翻成",
@@ -341,6 +424,20 @@ TRANSLATE_TOKENS = (
     "翻译成中文",
     "翻译成英文",
 )
+
+# Pattern: "把...成/译" → translation intent (e.g. "把hello翻成中文")
+_TRANSLATE_PATTERN = re.compile(r"把.{1,30}(成|译|翻译|翻成)")
+
+
+def has_translate_signal(text: str) -> bool:
+    """Return True if the text contains translation intent signals."""
+    if any(token in text for token in TRANSLATE_TOKENS):
+        return True
+    # "把...成/译" pattern without explicit "翻译" keyword
+    if _TRANSLATE_PATTERN.search(text):
+        return True
+    return False
+
 
 # Tokens that indicate a TEXT POLISHING intent
 POLISH_TOKENS = (
@@ -716,11 +813,26 @@ def has_search_action_signal(text: str) -> bool:
 def has_search_signal(text: str) -> bool:
     """Return True if the text contains search intent signals."""
     # Travel signal also counts as search
-    return (
+    # English tech metrics also count as search (status/metrics lookup)
+    # Date-related knowledge questions ("一年有多少天") are search, not calc
+    has_basic = (
         has_travel_signal(text)
         or has_search_action_signal(text)
         or any(token in text for token in SEARCH_TOKENS)
+        or any(token in text.lower() for token in TECH_METRIC_TOKENS)
     )
+    if has_basic:
+        return True
+    # "多少" + time/date word = knowledge question, not calculation
+    _time_quantity_words = ("天", "年", "周", "月", "日", "季度", "世纪")
+    if "多少" in text and any(w in text for w in _time_quantity_words):
+        return True
+    # Date exclusion words + question pattern = knowledge search
+    if any(ex in text for ex in DATE_EXCLUSIONS) and (
+        "多少" in text or "什么" in text or "几" in text
+    ):
+        return True
+    return False
 
 
 def has_comparison_evidence_signal(text: str) -> bool:
@@ -759,6 +871,175 @@ def has_deep_analysis_signal(text: str) -> bool:
     the intent is LLM-powered synthesis, not a simple search lookup.
     """
     return any(token in text for token in DEEP_ANALYSIS_TOKENS)
+
+
+# ---------------------------------------------------------------------------
+# Low-intent / no-intent detection
+# ---------------------------------------------------------------------------
+
+# Fillers and noise words that alone carry zero actionable intent
+_LOW_INTENT_FILLERS = frozenset(
+    {
+        "嗯",
+        "啊",
+        "哦",
+        "额",
+        "呃",
+        "唉",
+        "诶",
+        "哈",
+        "嘿",
+        "呀",
+        "好",
+        "好的",
+        "行",
+        "对",
+        "是",
+        "嗯嗯",
+        "噢",
+        "喔",
+        "OK",
+        "ok",
+        "yes",
+        "no",
+        "nope",
+        "nah",
+    }
+)
+
+# Patterns that look intent-like but are actually too vague to route
+_LOW_INTENT_PATTERNS = (
+    re.compile(r"^.{0,4}$"),  # ≤4 chars total
+    re.compile(r"^(帮我)?看看$"),  # just "看看" or "帮我看看"
+    re.compile(r"^(帮我)?弄(一下|一弄)?$"),  # just "帮我弄一下"
+    re.compile(r"^(不是|不要|别)(这个|那个|这样|那样)$"),  # "不是那个"
+    re.compile(r"^(太|好|真|好|超).{0,4}(了|啊|吧)$"),  # pure emotion "太慢了"
+    re.compile(r"^(能不能|可以|可否|能否).{0,6}$"),  # bare "能不能快点"
+)
+
+
+def has_low_intent_signal(text: str) -> bool:
+    """Return True if the text has no actionable intent.
+
+    These queries should NOT be routed to any tool — they are filler,
+    pure emotion, or too vague to act on. The router should return a
+    "no tool" result and prompt the user to clarify.
+
+    Detection strategy:
+      1. Very short text (≤4 chars) with no strong signal keywords
+      2. Pure filler/emotion words
+      3. Specific low-intent patterns (帮我看看, 太慢了, 不是那个)
+      4. Text that triggers no signal at all (no calc/code/search/consult)
+    """
+    stripped = text.strip()
+
+    # Rescue: if ANY strong action verb is present, it's NOT low-intent
+    # "算一下" / "搞不定" / "画个图" / "订个" / "查一下" etc.
+    _strong_action_verbs = (
+        "算",
+        "计算",
+        "查",
+        "搜索",
+        "搜",
+        "写",
+        "编",
+        "画",
+        "跑",
+        "执行",
+        "运行",
+        "实现",
+        "开发",
+        "翻译",
+        "润色",
+        "分析",
+        "画图",
+        "绘图",
+        "爬",
+        "抓",
+        "订",
+        "买",
+        "找",
+        "问",
+        "搞",
+        "弄",
+        "做",
+        "调",
+        "改",
+        "删",
+        "加",
+        "减",
+        "设置",
+        "配置",
+        "安装",
+        "部署",
+        "启动",
+        "停止",
+        "重启",
+    )
+    if any(v in stripped for v in _strong_action_verbs):
+        return False
+
+    # Rescue: if any tech metric keyword is present, it's NOT low-intent
+    if any(t in stripped.lower() for t in TECH_METRIC_TOKENS):
+        return False
+
+    # Rescue: if any CODE_TOKENS are present, it's NOT low-intent
+    if any(t in stripped.lower() for t in CODE_TOKENS_EN):
+        return False
+
+    # Rule 1: Very short + no strong signal
+    if len(stripped) <= 4:
+        if stripped in _LOW_INTENT_FILLERS:
+            return True
+        # Short but has a real signal? Keep it.
+        if not any(
+            f(stripped)
+            for f in (
+                has_calc_signal,
+                has_code_signal,
+                has_search_action_signal,
+                has_travel_signal,
+                has_translate_signal,
+            )
+        ):
+            # Check tech metrics too
+            if not any(t in stripped.lower() for t in TECH_METRIC_TOKENS):
+                return True
+
+    # Rule 2: Pure filler/emotion
+    if stripped in _LOW_INTENT_FILLERS:
+        return True
+
+    # Rule 3: Known low-intent patterns
+    for pat in _LOW_INTENT_PATTERNS:
+        if pat.search(stripped):
+            return True
+
+    # Rule 4: No signal at all — the query triggers zero intent detectors
+    has_any_signal = any(
+        f(stripped)
+        for f in (
+            has_calc_signal,
+            has_code_signal,
+            has_search_signal,
+            has_consult_signal,
+            has_writing_signal,
+            has_translate_signal,
+            has_polish_signal,
+            has_compare_signal,
+            has_explain_signal,
+            has_travel_signal,
+            has_deep_analysis_signal,
+            has_deep_reason_signal,
+        )
+    )
+    if not has_any_signal:
+        # Extra check: English tech metrics and code tokens
+        if not any(t in stripped.lower() for t in TECH_METRIC_TOKENS):
+            if not any(t in stripped.lower() for t in CODE_TOKENS_EN):
+                return True
+
+    return False
 
 
 # Tokens that signal MULTI-STEP reasoning — a single intent that requires
@@ -889,11 +1170,16 @@ def _has_implicit_multi_intent(text: str) -> bool:
 
 def _tool_signal(text: str) -> IntentCategory | None:
     """Return the strongest intent category for a text segment, or None."""
+    if has_low_intent_signal(text):
+        return None
     if has_calc_signal(text):
         return IntentCategory.CALC
     if has_code_signal(text):
         return IntentCategory.CODE
     if has_search_action_signal(text) or has_travel_signal(text):
+        return IntentCategory.SEARCH
+    # English tech metrics → search (status/metrics lookup)
+    if any(t in text.lower() for t in TECH_METRIC_TOKENS):
         return IntentCategory.SEARCH
     if has_writing_signal(text) or has_translate_signal(text):
         return IntentCategory.CONSULT

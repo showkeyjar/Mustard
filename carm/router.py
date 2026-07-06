@@ -149,6 +149,8 @@ class CARMRouter:
         self,
         query: str,
         session_id: str | None = None,
+        dry_run: bool = False,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> RouteResult:
         """Route a query to the best-matching tool and execute it.
@@ -158,6 +160,9 @@ class CARMRouter:
             session_id: Optional session ID for multi-turn context.
                 When provided, anaphora resolution ("它", "上次") uses
                 previous turns in this session.
+            dry_run: If True, only decide routing without executing the tool.
+                The result field will contain the resolved query instead.
+            timeout: Max seconds for tool execution. None = no limit.
 
         Returns:
             RouteResult with tool_name, result text, confidence, etc.
@@ -186,23 +191,75 @@ class CARMRouter:
 
         decision = self._policy.decide(state, memory, resolved_query)
 
-        # 3. Execute
+        # 3. Execute (or dry-run)
         if decision.tool_call:
             tool_name = decision.tool_call.tool_name
-            tool_result = self._tool_manager.execute(
-                tool_name,
-                decision.tool_call.query or resolved_query,
-                decision.tool_call.arguments or {},
-            )
-            result = RouteResult(
-                query=query,
-                tool_name=tool_result.tool_name,
-                result=tool_result.result,
-                confidence=tool_result.confidence,
-                source=tool_result.source,
-                ok=tool_result.ok,
-                session_id=session_id or "",
-            )
+
+            if dry_run:
+                result = RouteResult(
+                    query=query,
+                    tool_name=tool_name,
+                    result=resolved_query,
+                    confidence=0.0,
+                    source="carm/router:dry_run",
+                    ok=True,
+                    intent_category=decision.tool_call.intent_category
+                    if hasattr(decision.tool_call, "intent_category")
+                    else None,
+                    session_id=session_id or "",
+                )
+            else:
+                import signal as _signal
+
+                tool_result = None
+                timed_out = False
+
+                if timeout is not None and hasattr(_signal, "SIGALRM"):
+                    # Unix: use SIGALRM
+                    def _handler(signum, frame):
+                        raise TimeoutError("tool execution timed out")
+
+                    old = _signal.signal(_signal.SIGALRM, _handler)
+                    _signal.alarm(int(timeout))
+                    try:
+                        tool_result = self._tool_manager.execute(
+                            tool_name,
+                            decision.tool_call.query or resolved_query,
+                            decision.tool_call.arguments or {},
+                        )
+                    except TimeoutError:
+                        timed_out = True
+                    finally:
+                        _signal.alarm(0)
+                        _signal.signal(_signal.SIGALRM, old)
+                else:
+                    # Windows or no timeout: just execute
+                    tool_result = self._tool_manager.execute(
+                        tool_name,
+                        decision.tool_call.query or resolved_query,
+                        decision.tool_call.arguments or {},
+                    )
+
+                if timed_out:
+                    result = RouteResult(
+                        query=query,
+                        tool_name=tool_name,
+                        result=f"工具执行超时（{timeout}s）",
+                        confidence=0.0,
+                        source="carm/router:timeout",
+                        ok=False,
+                        session_id=session_id or "",
+                    )
+                else:
+                    result = RouteResult(
+                        query=query,
+                        tool_name=tool_result.tool_name,
+                        result=tool_result.result,
+                        confidence=tool_result.confidence,
+                        source=tool_result.source,
+                        ok=tool_result.ok,
+                        session_id=session_id or "",
+                    )
         else:
             # No tool call — policy chose THINK/ANSWER/VERIFY/etc.
             result = RouteResult(

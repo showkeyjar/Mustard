@@ -32,6 +32,7 @@ from carm.signals import (
     has_anaphora_signal,
     has_multi_intent_signal,
     has_multi_step_signal,
+    has_low_intent_signal,
 )
 from carm.state import AgentState
 
@@ -338,6 +339,17 @@ class OnlinePolicy:
             (guidance or {}).get("preferred_tool", "")
         ) or self.concepts.preferred_tool(user_input)
 
+        # --- Low-intent gate: reject queries with no actionable intent ---
+        # "嗯", "帮我看看", "太慢了", "不是那个" → no tool, ask user to clarify
+        if has_low_intent_signal(user_input):
+            return ActionDecision(
+                action=Action.ANSWER,
+                score=0.9,
+                reason="Low/no-intent query — no tool can meaningfully handle this. Prompting user to clarify.",
+                tool_call=None,
+                feature_snapshot=features,
+            )
+
         # Anti-loop: if THINK was chosen but we've been thinking for too long,
         # force a tool route based on semantic intent. Prevents infinite THINK
         # loops when signals are too weak to trigger CALL_TOOL directly.
@@ -503,7 +515,12 @@ class OnlinePolicy:
                     hard_rule_hit = True
 
             # Override 0: Explicit search action → search
-            if hard_search_action:
+            # When both search action and code action are present:
+            #   - "搜索一下Python教程" → search wins (explicit "搜索" action verb)
+            #   - "写个爬虫抓微博热搜" → code wins ("热搜" is content target, not search action)
+            if hard_search_action and not (
+                hard_code_action and not has_search_action_signal(user_input)
+            ):
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Explicit search action detected (搜索/搜一下/查一下)."
                 hard_rule_hit = True
