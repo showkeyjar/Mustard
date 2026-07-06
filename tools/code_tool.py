@@ -13,11 +13,13 @@ import textwrap
 import traceback
 from pathlib import Path
 
+from carm.intent import IntentCategory
 from carm.schemas import ToolResult
 
 
 class CodeExecutorTool:
     name = "code_executor"
+    capability_tags = [IntentCategory.CODE]
 
     # Default timeout in seconds
     DEFAULT_TIMEOUT = 15

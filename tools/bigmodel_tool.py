@@ -4,11 +4,13 @@ import json
 import os
 from urllib import error, parse, request
 
+from carm.intent import IntentCategory
 from carm.schemas import ToolResult
 
 
 class BigModelProxyTool:
     name = "bigmodel_proxy"
+    capability_tags = [IntentCategory.CONSULT, IntentCategory.SEARCH]
 
     def execute(self, query: str, arguments: dict) -> ToolResult:
         # Path-C: extract CARM signal analysis if present

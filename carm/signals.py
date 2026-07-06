@@ -11,6 +11,8 @@ import re
 from collections import Counter
 from typing import NamedTuple
 
+from carm.intent import IntentCategory
+
 
 # ---------------------------------------------------------------------------
 # Conflict detection
@@ -807,7 +809,9 @@ class SplitIntent(NamedTuple):
     """One split sub-intent from a multi-intent query."""
 
     text: str
-    primary_signal: str  # e.g. "search", "calc", "code", "bigmodel", ...
+    primary_signal: (
+        IntentCategory | str
+    )  # IntentCategory for known signals, str for compat
     priority: int  # lower = should run first (e.g. data before analysis)
 
 
@@ -878,16 +882,16 @@ def _has_implicit_multi_intent(text: str) -> bool:
     return has_search_topic
 
 
-def _tool_signal(text: str) -> str | None:
-    """Return the strongest tool signal for a text segment, or None."""
+def _tool_signal(text: str) -> IntentCategory | None:
+    """Return the strongest intent category for a text segment, or None."""
     if has_calc_signal(text):
-        return "calculator"
+        return IntentCategory.CALC
     if has_code_signal(text):
-        return "code_executor"
+        return IntentCategory.CODE
     if has_search_action_signal(text) or has_travel_signal(text):
-        return "search"
+        return IntentCategory.SEARCH
     if has_writing_signal(text) or has_translate_signal(text):
-        return "bigmodel_proxy"
+        return IntentCategory.CONSULT
     return None
 
 
@@ -912,12 +916,12 @@ def split_multi_intent(text: str) -> list[SplitIntent]:
                         SplitIntent(
                             text=left,
                             primary_signal=left_sig,
-                            priority=1 if left_sig == "search" else 2,
+                            priority=1 if left_sig == IntentCategory.SEARCH else 2,
                         ),
                         SplitIntent(
                             text=right,
                             primary_signal=right_sig,
-                            priority=1 if right_sig == "search" else 2,
+                            priority=1 if right_sig == IntentCategory.SEARCH else 2,
                         ),
                     ]
                     return sorted(intents, key=lambda x: x.priority)
@@ -930,11 +934,11 @@ def split_multi_intent(text: str) -> list[SplitIntent]:
                 signals_list = []
                 for part in parts:
                     if has_calc_signal(part):
-                        signals_list.append("calculator")
+                        signals_list.append(IntentCategory.CALC)
                     elif has_code_signal(part):
-                        signals_list.append("code_executor")
+                        signals_list.append(IntentCategory.CODE)
                     elif has_search_action_signal(part):
-                        signals_list.append("search")
+                        signals_list.append(IntentCategory.SEARCH)
                     else:
                         signals_list.append(None)
                 # Only treat as multi-intent if at least 2 parts have
@@ -944,8 +948,8 @@ def split_multi_intent(text: str) -> list[SplitIntent]:
                     return [
                         SplitIntent(
                             text=part,
-                            primary_signal=sig or "bigmodel_proxy",
-                            priority=1 if sig == "search" else 2,
+                            primary_signal=sig or IntentCategory.CONSULT,
+                            priority=1 if sig == IntentCategory.SEARCH else 2,
                         )
                         for part, sig in zip(parts, signals_list)
                     ]
@@ -956,12 +960,12 @@ def split_multi_intent(text: str) -> list[SplitIntent]:
         return [
             SplitIntent(
                 text=text,  # use full query for search
-                primary_signal="search",
+                primary_signal=IntentCategory.SEARCH,
                 priority=1,
             ),
             SplitIntent(
                 text=text,  # use full query for synthesis
-                primary_signal="bigmodel_proxy",
+                primary_signal=IntentCategory.CONSULT,
                 priority=2,
             ),
         ]

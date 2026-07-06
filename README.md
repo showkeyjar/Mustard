@@ -23,9 +23,11 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
 - 带 `action_items / unknowns / evidence_targets / confidence_band` 的结构化中间表示
 - **真实可用的4种工具**：
   - **搜索**（SearchTool）：DuckDuckGo 真实检索 → Wikipedia 中文/英文回退 → 结构化 fallback
-  - **计算器**（CalculatorTool）：递归下降解析器，支持 `+-*/**()`，中文自然语言算式提取（"N的M次方"、"每席位M元按年预算"、"平方根"等）
+  - **计算器**（CalculatorTool）：递归下降解析器，支持 `+-*/**()`，中文自然语言算式提取（"N的M次方"、"每席位M元按年预算"、"平方根"、"从1加到N"、"水管灌池"等）
   - **代码执行**（CodeExecutorTool）：subprocess 沙箱执行，超时保护，6种常见算法模板（快速排序/冒泡排序/二分查找/斐波那契/归并排序/链表），print 输出正确捕获
-  - **大模型代理**（BigModelProxyTool）：直连 Gemini API 或内置代理回退
+  - **大模型代理**（BigModelProxyTool）：直连 Gemini API 或内置代理回退，CARM 信号注入
+- **动态工具注册**：用户可注册任意工具（带 capability_tags 声明意图类别），CARM 自动路由到匹配工具，无需修改核心代码
+- **意图类别解耦**（IntentCategory）：信号检测返回意图类别（CALC/CODE/SEARCH/CONSULT），不绑定具体工具名；Policy 通过 ToolManager.find_by_capability() 动态解析
 - **语义意图编码器**（SemanticEncoder）：零依赖 Tier 1 同义词模式 + 可选 Tier 2 sentence-transformers 嵌入，覆盖搜索/计算/代码/大模型四类意图，带 LRU 缓存
 - **统一信号模块**（signals.py）：冲突检测、搜索/计算/代码/正式/比较 6 类意图信号，跨模块复用无重复
 - **语义优先工具路由**：policy.py 中 CALL_TOOL 分支基于语义编码器的 intent_scores 做工具选择，硬规则（算式→calculator、冲突→search、代码动作→code_executor）作为高优先级覆盖

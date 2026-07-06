@@ -11,11 +11,13 @@ import math
 import re
 from typing import Any
 
+from carm.intent import IntentCategory
 from carm.schemas import ToolResult
 
 
 class CalculatorTool:
     name = "calculator"
+    capability_tags = [IntentCategory.CALC]
 
     # Token types
     _NUM = "NUM"

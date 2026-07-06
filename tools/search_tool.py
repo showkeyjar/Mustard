@@ -13,6 +13,7 @@ import urllib.request
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
+from carm.intent import IntentCategory
 from carm.schemas import ToolResult
 
 _DDGS_TIMEOUT_S = 5
@@ -20,6 +21,7 @@ _DDGS_TIMEOUT_S = 5
 
 class SearchTool:
     name = "search"
+    capability_tags = [IntentCategory.SEARCH]
 
     def __init__(self, ddgs_timeout: int = _DDGS_TIMEOUT_S) -> None:
         self._ddgs = None

@@ -18,6 +18,7 @@ from carm.experience import ExperienceStore
 from carm.glance import InternalGlance
 from carm.memory import MemoryBoard, MemorySlot
 from carm.policy import OnlinePolicy
+from carm.intent import IntentCategory, DEFAULT_TOOL_MAP
 from carm.review import ReviewStore
 from carm.runtime_controls import load_control_state, load_controls
 from carm.training import load_training_config
@@ -220,20 +221,26 @@ class AgentRunner:
                     decision.tool_call.query,
                     decision.tool_call.arguments,
                 )
-                # Auto-escalate to bigmodel_proxy when search falls back to
+                # Auto-escalate to consult tool when search falls back to
                 # a no-results response (DDGS/Wikipedia both unavailable).
+                search_tool = self.tool_manager.find_by_capability(
+                    IntentCategory.SEARCH, fallback="search"
+                )
+                consult_tool = self.tool_manager.find_by_capability(
+                    IntentCategory.CONSULT, fallback="bigmodel_proxy"
+                )
                 if (
-                    decision.tool_call.tool_name == "search"
+                    decision.tool_call.tool_name == search_tool
                     and "fallback" in result.source
-                    and self.tool_manager._tools.get("bigmodel_proxy") is not None
+                    and self.tool_manager.has_tool(consult_tool)
                 ):
                     llm_result = self.tool_manager.execute(
-                        "bigmodel_proxy",
+                        consult_tool,
                         decision.tool_call.query,
                         decision.tool_call.arguments,
                     )
                     if llm_result.ok:
-                        llm_result.source = "tool/search:llm_escalation"
+                        llm_result.source = f"tool/{search_tool}:llm_escalation"
                         result = llm_result
                 memory.store_result(result.result, result.confidence, result.source)
                 # ── Session memory: record this turn for context tracking ──
@@ -717,15 +724,21 @@ class AgentRunner:
         combined_results = []
         for sub in splits:
             sub_text = sub.get("text", user_input)
-            sub_tool = sub.get("signal", "search")
-            # Map signal to real tool name
-            tool_map = {
-                "calculator": "calculator",
-                "code_executor": "code_executor",
-                "search": "search",
-                "bigmodel_proxy": "bigmodel_proxy",
-            }
-            real_tool = tool_map.get(sub_tool, "search")
+            sub_signal = sub.get("signal", IntentCategory.SEARCH)
+            # Resolve signal (IntentCategory or legacy string) to real tool name
+            if isinstance(sub_signal, IntentCategory):
+                real_tool = self.tool_manager.find_by_capability(
+                    sub_signal, fallback=DEFAULT_TOOL_MAP.get(sub_signal, "search")
+                )
+            else:
+                # Legacy string signal — try as IntentCategory name, else as tool name
+                try:
+                    cat = IntentCategory(sub_signal)
+                    real_tool = self.tool_manager.find_by_capability(
+                        cat, fallback=sub_signal
+                    )
+                except ValueError:
+                    real_tool = sub_signal
             try:
                 result = self.tool_manager.execute(real_tool, sub_text, {})
                 combined_results.append(
@@ -762,44 +775,51 @@ class AgentRunner:
         Standard plan: search → compare → bigmodel_proxy.
         """
         combined_results = []
+        # Resolve tool names dynamically from ToolManager
+        search_tool = self.tool_manager.find_by_capability(
+            IntentCategory.SEARCH, fallback="search"
+        )
+        consult_tool = self.tool_manager.find_by_capability(
+            IntentCategory.CONSULT, fallback="bigmodel_proxy"
+        )
         # Step 1: Search for evidence
         try:
             search_result = self.tool_manager.execute(
-                "search", user_input, {"top_k": 3}
+                search_tool, user_input, {"top_k": 3}
             )
-            combined_results.append(f"[search] → {search_result.result[:200]}")
+            combined_results.append(f"[{search_tool}] → {search_result.result[:200]}")
             memory.store_result(
                 search_result.result, search_result.confidence, search_result.source
             )
             session_mgr.append_turn(
                 session_id=session_id,
                 user_input=user_input,
-                tool_name="search",
+                tool_name=search_tool,
                 tool_result=search_result.result,
                 confidence=search_result.confidence,
             )
         except Exception as exc:
-            combined_results.append(f"[search] → ERROR: {exc}")
+            combined_results.append(f"[{search_tool}] → ERROR: {exc}")
 
-        # Step 2: Compare / analyze (use bigmodel_proxy if available)
-        if self.tool_manager._tools.get("bigmodel_proxy") is not None:
+        # Step 2: Compare / analyze (use consult tool if available)
+        if self.tool_manager.has_tool(consult_tool):
             try:
                 llm_result = self.tool_manager.execute(
-                    "bigmodel_proxy", user_input, decision.tool_call.arguments
+                    consult_tool, user_input, decision.tool_call.arguments
                 )
-                combined_results.append(f"[bigmodel_proxy] → {llm_result.result[:200]}")
+                combined_results.append(f"[{consult_tool}] → {llm_result.result[:200]}")
                 memory.store_result(
                     llm_result.result, llm_result.confidence, llm_result.source
                 )
                 session_mgr.append_turn(
                     session_id=session_id,
                     user_input=user_input,
-                    tool_name="bigmodel_proxy",
+                    tool_name=consult_tool,
                     tool_result=llm_result.result,
                     confidence=llm_result.confidence,
                 )
             except Exception as exc:
-                combined_results.append(f"[bigmodel_proxy] → ERROR: {exc}")
+                combined_results.append(f"[{consult_tool}] → ERROR: {exc}")
 
         trace.notes.append("Multi-step: executed search → bigmodel_proxy chain.")
         combined_text = "\n".join(combined_results)

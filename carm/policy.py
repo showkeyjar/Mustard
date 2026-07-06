@@ -10,6 +10,7 @@ from carm.concepts import AdaptiveConceptModel
 from carm.memory import MemoryBoard
 from carm.runtime_controls import DEFAULT_CONTROLS
 from carm.schemas import ActionDecision, StepRecord, ToolCall
+from carm.intent import IntentCategory, DEFAULT_TOOL_MAP
 from carm.semantic import SemanticEncoder
 from carm.signals import (
     is_conflict_task,
@@ -50,12 +51,14 @@ class OnlinePolicy:
         state_path: str | Path,
         concept_state_path: str | Path | None = None,
         controls: dict[str, float | int] | None = None,
+        tool_manager: object | None = None,
     ) -> None:
         self.state_path = Path(state_path)
         if concept_state_path is None:
             concept_state_path = self.state_path.with_name("concept_state.json")
         self.concepts = AdaptiveConceptModel(concept_state_path)
         self.semantic = SemanticEncoder()
+        self._tool_manager = tool_manager  # ToolManager reference for dynamic routing
         base_controls = dict(DEFAULT_CONTROLS["policy"])
         if controls:
             base_controls.update(controls)
@@ -66,6 +69,19 @@ class OnlinePolicy:
         }
         self.bias: dict[str, float] = {action.value: 0.0 for action in Action}
         self._load()
+
+    def _resolve_tool_name(self, category: IntentCategory) -> str:
+        """Map an IntentCategory to an actual tool name.
+
+        Priority:
+        1. ToolManager.find_by_capability() if a tool manager is registered
+        2. DEFAULT_TOOL_MAP fallback
+        """
+        if self._tool_manager is not None:
+            result = self._tool_manager.find_by_capability(category)
+            if result is not None:
+                return result
+        return DEFAULT_TOOL_MAP.get(category, "search")
 
     def decide(
         self,
@@ -127,14 +143,30 @@ class OnlinePolicy:
             "needs_calc": 1.0 if has_calc_signal(user_input) else 0.0,
             "needs_code": 1.0 if has_code_signal(user_input) else 0.0,
             "needs_formal_synthesis": 1.0 if has_formal_signal(user_input) else 0.0,
-            "concept_tool_search": 1.0 if preferred_tool == "search" else 0.0,
-            "concept_tool_calc": 1.0 if preferred_tool == "calculator" else 0.0,
-            "concept_tool_code": 1.0 if preferred_tool == "code_executor" else 0.0,
-            "concept_tool_bigmodel": 1.0 if preferred_tool == "bigmodel_proxy" else 0.0,
-            "user_tool_search": 1.0 if guided_tool == "search" else 0.0,
-            "user_tool_calc": 1.0 if guided_tool == "calculator" else 0.0,
-            "user_tool_code": 1.0 if guided_tool == "code_executor" else 0.0,
-            "user_tool_bigmodel": 1.0 if guided_tool == "bigmodel_proxy" else 0.0,
+            "concept_tool_search": 1.0
+            if preferred_tool in ("search", IntentCategory.SEARCH.value)
+            else 0.0,
+            "concept_tool_calc": 1.0
+            if preferred_tool in ("calculator", IntentCategory.CALC.value)
+            else 0.0,
+            "concept_tool_code": 1.0
+            if preferred_tool in ("code_executor", IntentCategory.CODE.value)
+            else 0.0,
+            "concept_tool_bigmodel": 1.0
+            if preferred_tool in ("bigmodel_proxy", IntentCategory.CONSULT.value)
+            else 0.0,
+            "user_tool_search": 1.0
+            if guided_tool in ("search", IntentCategory.SEARCH.value)
+            else 0.0,
+            "user_tool_calc": 1.0
+            if guided_tool in ("calculator", IntentCategory.CALC.value)
+            else 0.0,
+            "user_tool_code": 1.0
+            if guided_tool in ("code_executor", IntentCategory.CODE.value)
+            else 0.0,
+            "user_tool_bigmodel": 1.0
+            if guided_tool in ("bigmodel_proxy", IntentCategory.CONSULT.value)
+            else 0.0,
             "semantic_search": intent_scores.get("search", 0.0),
             "semantic_calculator": intent_scores.get("calculator", 0.0),
             "semantic_code": intent_scores.get("code_executor", 0.0),
@@ -263,19 +295,27 @@ class OnlinePolicy:
             default=("search", 0.0),
         )
         if top_intent[1] > 0.3:
-            if top_intent[0] == "calculator":
+            # Map semantic intent key to IntentCategory for tool resolution
+            _intent_to_category = {
+                "calculator": IntentCategory.CALC,
+                "code_executor": IntentCategory.CODE,
+                "search": IntentCategory.SEARCH,
+                "bigmodel_proxy": IntentCategory.CONSULT,
+            }
+            top_category = _intent_to_category.get(top_intent[0])
+            if top_category == IntentCategory.CALC:
                 priors[Action.CALL_TOOL.value] = max(
                     priors[Action.CALL_TOOL.value], 0.65
                 )
-            elif top_intent[0] == "code_executor":
+            elif top_category == IntentCategory.CODE:
                 priors[Action.CALL_TOOL.value] = max(
                     priors[Action.CALL_TOOL.value], 0.55
                 )
-            elif top_intent[0] == "search":
+            elif top_category == IntentCategory.SEARCH:
                 priors[Action.CALL_TOOL.value] = max(
                     priors[Action.CALL_TOOL.value], 0.5
                 )
-            elif top_intent[0] == "bigmodel_proxy":
+            elif top_category == IntentCategory.CONSULT:
                 priors[Action.CALL_BIGMODEL.value] = max(
                     priors[Action.CALL_BIGMODEL.value], 0.55
                 )
@@ -309,18 +349,30 @@ class OnlinePolicy:
                 # tool_name="search" will be set in the CALL_TOOL block (Override 0a)
             else:
                 intent_scores = self.semantic.intent_scores(user_input)
-                tool_intents = [
+                # Map semantic intent keys to IntentCategory for resolution
+                _tool_intent_keys = [
                     "search",
                     "calculator",
                     "code_executor",
                     "bigmodel_proxy",
                 ]
-                best_intent = max(tool_intents, key=lambda t: intent_scores.get(t, 0.0))
+                _key_to_category = {
+                    "calculator": IntentCategory.CALC,
+                    "code_executor": IntentCategory.CODE,
+                    "search": IntentCategory.SEARCH,
+                    "bigmodel_proxy": IntentCategory.CONSULT,
+                }
+                best_intent = max(
+                    _tool_intent_keys, key=lambda t: intent_scores.get(t, 0.0)
+                )
                 best_score = intent_scores.get(best_intent, 0.0)
                 if best_score > 0.0:
+                    best_category = _key_to_category.get(
+                        best_intent, IntentCategory.SEARCH
+                    )
                     action = (
                         Action.CALL_TOOL
-                        if best_intent != "bigmodel_proxy"
+                        if best_category not in (IntentCategory.CONSULT,)
                         else Action.CALL_BIGMODEL
                     )
                     # We'll set the tool_call below in the CALL_TOOL / CALL_BIGMODEL block
@@ -422,7 +474,10 @@ class OnlinePolicy:
             )
             has_strong_code_verb = any(v in user_input for v in _strong_code_verbs)
 
-            chosen_tool = semantic_best  # default: semantic winner
+            chosen_intent: IntentCategory | None = None  # Set by hard-rule overrides
+            chosen_tool = (
+                semantic_best  # default: semantic winner (still a string for compat)
+            )
             chosen_reason = (
                 f"Semantic intent: {semantic_best} ({semantic_best_score:.2f})"
             )
@@ -436,7 +491,7 @@ class OnlinePolicy:
             if has_multi_intent_signal(user_input):
                 intents = split_multi_intent(user_input)
                 if len(intents) >= 2:
-                    chosen_tool = "multi_intent"
+                    chosen_intent = IntentCategory.MULTI_INTENT
                     chosen_reason = (
                         f"Multi-intent detected ({len(intents)} sub-queries): "
                         + " → ".join(f"{i.text} ({i.primary_signal})" for i in intents)
@@ -448,163 +503,127 @@ class OnlinePolicy:
                     hard_rule_hit = True
 
             # Override 0: Explicit search action → search
-            # "搜索一下Python教程" is clearly a search request, not code.
             if hard_search_action:
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Explicit search action detected (搜索/搜一下/查一下)."
                 hard_rule_hit = True
             # Override 0a: Travel/lifestyle intent → search
-            # "帮我订一张去上海的机票" / "上海今天天气怎么样" / "去故宫怎么走"
-            # BUT: "写一篇关于气候变化的科普文章" — "气候" is in TRAVEL_TOKENS,
-            # but writing intent is stronger.  Writing/synthesis overrides travel.
             elif has_travel_signal(user_input) and not hard_writing:
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Travel/lifestyle service intent detected."
                 hard_rule_hit = True
-            # Override 0b: Writing/synthesis intent → bigmodel_proxy
-            # "写一篇议论文" / "总结一下趋势" / "帮我归纳"
+            # Override 0b: Writing/synthesis intent → consult (bigmodel)
             elif hard_writing or (hard_synthesis and not hard_code_action):
-                chosen_tool = "bigmodel_proxy"
+                chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
-                    "Writing/synthesis intent detected — routing to big model."
+                    "Writing/synthesis intent detected — routing to consult tool."
                 )
                 hard_rule_hit = True
-            # Override 0c: Translate/polish intent → bigmodel_proxy
-            # "翻译一下这段英文" / "帮我润色一下这段文字"
+            # Override 0c: Translate/polish intent → consult (bigmodel)
             elif has_translate_signal(user_input) or has_polish_signal(user_input):
-                chosen_tool = "bigmodel_proxy"
+                chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
-                    "Translate/polish intent detected — routing to big model."
+                    "Translate/polish intent detected — routing to consult tool."
                 )
                 hard_rule_hit = True
-            # Override 0d: Consultative intent without strong code verb → search
-            # "如何选择排序算法" / "优化排序性能" / "代码性能瓶颈分析"
-            # These are advisory questions, not execution requests.
-            # But "写一个排序" still goes to code_executor (strong code verb).
-            # Also: "帮我算一下" should NOT be caught here — calc signal overrides consult.
-            # EXCEPTION: consult + deep_analysis → bigmodel_proxy
-            # "分析一下这个业务方案的可行性" needs LLM synthesis, not search.
+            # Override 0d: Consultative intent → search or consult
             elif (
                 has_consult_signal(user_input)
                 and not has_calc_signal(user_input)
                 and not has_strong_code_verb
             ):
                 if has_deep_analysis_signal(user_input):
-                    chosen_tool = "bigmodel_proxy"
-                    chosen_reason = "Consultative + deep analysis intent — routing to big model for synthesis."
+                    chosen_intent = IntentCategory.CONSULT
+                    chosen_reason = "Consultative + deep analysis intent — routing to consult tool for synthesis."
                 else:
-                    chosen_tool = "search"
+                    chosen_intent = IntentCategory.SEARCH
                     chosen_reason = "Consultative/advisory intent without code action — knowledge search."
                 hard_rule_hit = True
-            # Override 0e: Debug consultative intent without strong code verb -> search
-            # "代码报错了怎么解决" / "这段代码有什么问题" — seeking help, not execution.
-            # But "运行一下出错的代码" still goes to code_executor (strong code verb).
+            # Override 0e: Debug consultative intent → search
             elif has_debug_consult_signal(user_input) and not any(
                 v in user_input
                 for v in ("运行", "写", "实现", "编写", "执行", "跑一下")
             ):
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Debug consultative intent — seeking help/solutions, not execution."
                 )
                 hard_rule_hit = True
-            # Override 0f: Deep reasoning/comparative analysis -> bigmodel_proxy
-            # "为什么深度学习需要大量数据而传统机器学习不需要" needs LLM synthesis.
-            # This pattern "为什么...而..." indicates causal comparison, not just search.
+            # Override 0f: Deep reasoning → consult (bigmodel)
             elif has_deep_reason_signal(user_input):
-                chosen_tool = "bigmodel_proxy"
-                chosen_reason = "Deep reasoning/comparative analysis detected — routing to big model."
+                chosen_intent = IntentCategory.CONSULT
+                chosen_reason = "Deep reasoning/comparative analysis detected — routing to consult tool."
                 hard_rule_hit = True
-            # Override 1: Conflict tasks always search first
+            # Override 1: Conflict tasks → search
             elif hard_conflict:
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Conflict-style questions should gather explicit evidence."
                 )
                 hard_rule_hit = True
-            # Override 2: Explicit arithmetic expression → calculator
-            # BUT: if code intent is also present (e.g. "python代码 print(1+1)"),
-            # code execution takes priority — user wants to run code.
+            # Override 2: Explicit arithmetic → calc
             elif hard_arithmetic and not hard_code_action:
-                chosen_tool = "calculator"
+                chosen_intent = IntentCategory.CALC
                 chosen_reason = (
                     "Hard rule: explicit arithmetic expression requires calculator."
                 )
                 hard_rule_hit = True
-            # Override 2b: Calc signal detected (without code intent) → calculator
-            # "1万亿除以14亿" has calc tokens but no explicit operator pattern
-            # When code_signal is also present (e.g. "写一个阶乘函数"),
-            # code execution takes priority — user wants to run code, not just compute.
+            # Override 2b: Calc signal → calc
             elif (
                 has_calc_signal(user_input)
                 and not has_code_signal(user_input)
                 and not hard_explain
             ):
-                chosen_tool = "calculator"
+                chosen_intent = IntentCategory.CALC
                 chosen_reason = (
                     "Hard rule: calc intent signal detected (no code intent)."
                 )
                 hard_rule_hit = True
-            # Override 2c: Code signal + calc signal co-occurrence → code_executor
-            # "写一个阶乘函数" has both calc and code signals, but the action
-            # verb ("写") makes it a code execution request, not a calculation.
+            # Override 2c: Code + calc → code
             elif (
                 has_calc_signal(user_input)
                 and has_code_signal(user_input)
                 and not hard_explain
             ):
-                chosen_tool = "code_executor"
+                chosen_intent = IntentCategory.CODE
                 chosen_reason = "Hard rule: code+calc co-occurrence, code action wins."
                 hard_rule_hit = True
-            # Override 3: Clear code action without calc → code_executor
-            # BUT: explain intent overrides code — "解释递归" → search, not code
-            # AND: compare intent overrides code when no strong code verb —
-            # "比较冒泡排序和快速排序的效率" is analysis, not execution.
+            # Override 3: Clear code action → code
             elif (
                 hard_code_action
                 and not hard_explain
                 and not (has_compare_signal(user_input) and not has_strong_code_verb)
             ):
-                chosen_tool = "code_executor"
+                chosen_intent = IntentCategory.CODE
                 chosen_reason = "Hard rule: code action verb detected."
                 hard_rule_hit = True
-            # Override 4: Explain intent overrides everything → search
-            # "解释冒泡排序的原理" has explain signal; even though
-            # semantic encoder gives code_executor high score (algorithm name),
-            # the user wants knowledge, not code execution.
+            # Override 4: Explain intent → search
             elif hard_explain:
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Explain intent detected — user wants knowledge, not execution."
                 )
                 hard_rule_hit = True
-            # Override 5: Formal/synthesis intent → bigmodel_proxy
-            # "管理层报告/正式总结" needs LLM synthesis, not search.
-            # This MUST come before compare override — "正式报告：总结..."
-            # is a synthesis request, not just a comparison.
+            # Override 5: Formal/synthesis → consult
             elif hard_formal and not hard_conflict:
-                chosen_tool = "bigmodel_proxy"
+                chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
-                    "Formal/synthesis intent detected — routing to big model."
+                    "Formal/synthesis intent detected — routing to consult tool."
                 )
                 hard_rule_hit = True
-            # Override 4b: Compare intent without explicit code action → search
-            # "比较冒泡排序和快速排序的效率" has compare signal but user
-            # wants analysis, not to run code.  Only route to code_executor
-            # when there is an explicit code action verb ("运行/写/实现/代码").
+            # Override 4b: Compare intent → search
             elif (
                 has_compare_signal(user_input)
                 and not hard_arithmetic
                 and not has_strong_code_verb
             ):
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Compare intent without explicit code action — knowledge search."
                 )
                 hard_rule_hit = True
 
-            # L4 Fallback: ultra-low confidence (< 0.15) → bigmodel_proxy
-            # Low confidence (0.15-0.2) → search
+            # L4 Fallback: ultra-low confidence → consult (bigmodel)
             if (
                 semantic_best_score < 0.15
                 and not hard_rule_hit
@@ -612,8 +631,8 @@ class OnlinePolicy:
                 and not hard_arithmetic
                 and not hard_code_action
             ):
-                chosen_tool = "bigmodel_proxy"
-                chosen_reason = "L4 catch-all: ultra-low confidence, routing to bigmodel for general reasoning."
+                chosen_intent = IntentCategory.CONSULT
+                chosen_reason = "L4 catch-all: ultra-low confidence, routing to consult tool for general reasoning."
             elif (
                 semantic_best_score < 0.2
                 and not hard_rule_hit
@@ -621,8 +640,13 @@ class OnlinePolicy:
                 and not hard_arithmetic
                 and not hard_code_action
             ):
-                chosen_tool = "search"
+                chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Low-confidence semantic routing, defaulting to search."
+
+            # Resolve IntentCategory → actual tool name
+            if chosen_intent is not None:
+                chosen_tool = self._resolve_tool_name(chosen_intent)
+            # else: chosen_tool stays as semantic_best (backward compat)
 
             # Code executor needs a safe default query
             tool_query = user_input
@@ -658,8 +682,9 @@ class OnlinePolicy:
         if action == Action.CALL_BIGMODEL:
             # Path-C: inject CARM signal analysis into LLM prompt
             signal_summary = self._build_signal_summary(user_input)
+            consult_tool = self._resolve_tool_name(IntentCategory.CONSULT)
             decision.tool_call = ToolCall(
-                tool_name="bigmodel_proxy",
+                tool_name=consult_tool,
                 query=user_input,
                 arguments={"carm_signals": signal_summary} if signal_summary else {},
                 reason="Need stronger external reasoning support.",
@@ -785,7 +810,8 @@ class OnlinePolicy:
                 or (
                     decision.action == Action.CALL_TOOL
                     and decision.tool_call is not None
-                    and decision.tool_call.tool_name == "bigmodel_proxy"
+                    and decision.tool_call.tool_name
+                    == self._resolve_tool_name(IntentCategory.CONSULT)
                 )
             )
         ):
@@ -794,7 +820,7 @@ class OnlinePolicy:
                 score=decision.score,
                 reason="Candidate gate: use search for comparison/evidence task before synthesis.",
                 tool_call=ToolCall(
-                    tool_name="search",
+                    tool_name=self._resolve_tool_name(IntentCategory.SEARCH),
                     query=context.user_input,
                     arguments={"top_k": 3},
                     reason="Comparison/evidence tasks need source grounding before generation.",
@@ -827,7 +853,7 @@ class OnlinePolicy:
                 score=decision.score,
                 reason="Conflict task needs evidence before synthesis — forcing search.",
                 tool_call=ToolCall(
-                    tool_name="search",
+                    tool_name=self._resolve_tool_name(IntentCategory.SEARCH),
                     query=context.user_input,
                     arguments={"top_k": 3},
                     reason="Conflict tasks must gather evidence before proceeding.",
