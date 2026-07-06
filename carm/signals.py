@@ -594,6 +594,11 @@ def word_count(text: str) -> int:
     return len(tokenize(text))
 
 
+def token_counts(text: str) -> Counter:
+    """Return a Counter mapping each token to its frequency."""
+    return Counter(tokenize(text))
+
+
 # ---------------------------------------------------------------------------
 # Signal detection helpers
 # ---------------------------------------------------------------------------
