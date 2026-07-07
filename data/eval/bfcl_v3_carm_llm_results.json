@@ -1,0 +1,68 @@
+{
+  "model": "CARM-v0.9.2-CARM-only",
+  "benchmark": "BFCL-V3",
+  "evaluation_dimension": "function_selection_only",
+  "overall_accuracy": 61.31,
+  "avg_latency_ms": 0.0,
+  "llm_call_rate": 0.0,
+  "subsets": {
+    "simple": {
+      "correct": 336,
+      "total": 400,
+      "accuracy": 84.0,
+      "llm_calls": 0
+    },
+    "multiple": {
+      "correct": 164,
+      "total": 200,
+      "accuracy": 82.0,
+      "llm_calls": 0
+    },
+    "parallel": {
+      "correct": 182,
+      "total": 200,
+      "accuracy": 91.0,
+      "llm_calls": 0
+    },
+    "parallel_multiple": {
+      "correct": 189,
+      "total": 200,
+      "accuracy": 94.5,
+      "llm_calls": 0
+    },
+    "irrelevance": {
+      "correct": 204,
+      "total": 240,
+      "accuracy": 85.0,
+      "llm_calls": 0
+    },
+    "live_simple": {
+      "correct": 111,
+      "total": 258,
+      "accuracy": 43.02,
+      "llm_calls": 0
+    },
+    "live_multiple": {
+      "correct": 378,
+      "total": 1053,
+      "accuracy": 35.9,
+      "llm_calls": 0
+    }
+  },
+  "leaderboard_fc": {
+    "GPT-4o (FC)": 89.52,
+    "Claude-3.5-Sonnet (FC)": 88.85,
+    "Gemini-1.5-Pro (FC)": 86.42,
+    "GPT-4-Turbo (FC)": 85.03,
+    "Qwen2.5-72B (FC)": 81.33,
+    "Llama-3.1-70B (FC)": 78.67,
+    "GPT-3.5-Turbo (FC)": 63.44,
+    "Llama-3-8B (FC)": 52.89
+  },
+  "leaderboard_prompt": {
+    "GPT-4o (Prompt)": 80.54,
+    "Claude-3.5-Sonnet (Prompt)": 72.51,
+    "Llama-3.1-70B (Prompt)": 61.27
+  },
+  "carm_rank_among_fc": 10
+}

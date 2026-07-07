@@ -1,0 +1,57 @@
+{
+  "model": "CARM-v0.9.2",
+  "benchmark": "BFCL-V3",
+  "evaluation_dimension": "function_selection_only",
+  "overall_accuracy": 55.74,
+  "subsets": {
+    "simple": {
+      "correct": 264,
+      "total": 400,
+      "accuracy": 66.0
+    },
+    "multiple": {
+      "correct": 164,
+      "total": 200,
+      "accuracy": 82.0
+    },
+    "parallel": {
+      "correct": 150,
+      "total": 200,
+      "accuracy": 75.0
+    },
+    "parallel_multiple": {
+      "correct": 189,
+      "total": 200,
+      "accuracy": 94.5
+    },
+    "irrelevance": {
+      "correct": 233,
+      "total": 240,
+      "accuracy": 97.08
+    },
+    "live_simple": {
+      "correct": 44,
+      "total": 258,
+      "accuracy": 17.05
+    },
+    "live_multiple": {
+      "correct": 378,
+      "total": 1053,
+      "accuracy": 35.9
+    }
+  },
+  "leaderboard_comparison": {
+    "GPT-4o-2024-08-06 (FC)": 89.52,
+    "Claude-3.5-Sonnet (FC)": 88.85,
+    "Gemini-1.5-Pro (FC)": 86.42,
+    "GPT-4-Turbo (FC)": 85.03,
+    "Qwen2.5-72B-Instruct (FC)": 81.33,
+    "Llama-3.1-70B-Instruct (FC)": 78.67,
+    "GPT-3.5-Turbo (FC)": 63.44,
+    "Llama-3-8B-Instruct (FC)": 52.89,
+    "GPT-4o-2024-08-06 (Prompt)": 80.54,
+    "Claude-3.5-Sonnet (Prompt)": 72.51,
+    "Llama-3.1-70B-Instruct (Prompt)": 61.27
+  },
+  "note": "CARM is a lightweight routing system (signal-based, ~2ms latency). BFCL leaderboard scores are for full function calling (name+params). CARM's selection-only score is not directly comparable to full FC scores, but provides a reference point for routing quality."
+}
