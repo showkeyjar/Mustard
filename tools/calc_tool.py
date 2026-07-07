@@ -434,6 +434,28 @@ class CalculatorTool:
                     int(m.group(3)),
                 ),
             ),
+            # Compound interest: flexible form "复利计算：本金10万，年利率5%，10年后"
+            (
+                r"(?:复利|利滚利).*?本金\s*(\d+(?:\.\d+)?)\s*(?:万(?:块|元)?|元|块).*?"
+                r"(?:年利率|年化|利率)\s*(\d+(?:\.\d+)?)\s*[%％].*?"
+                r"(\d+)\s*年",
+                lambda m: _compound_result(
+                    float(m.group(1)) * (10000 if "万" in m.group(0) else 1),
+                    float(m.group(2)) / 100,
+                    int(m.group(3)),
+                ),
+            ),
+            # Compound interest: "本金N万 年利率X% N年" without explicit 复利 keyword
+            (
+                r"本金\s*(\d+(?:\.\d+)?)\s*(?:万(?:块|元)?|元|块).*?"
+                r"(?:年利率|年化|利率)\s*(\d+(?:\.\d+)?)\s*[%％].*?"
+                r"(\d+)\s*年",
+                lambda m: _compound_result(
+                    float(m.group(1)) * (10000 if "万" in m.group(0) else 1),
+                    float(m.group(2)) / 100,
+                    int(m.group(3)),
+                ),
+            ),
             # Proportion: "N人中M人占比"
             (
                 r"(\d+(?:\.\d+)?)\s*(?:人|个|名|位).*?"

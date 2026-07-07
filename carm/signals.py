@@ -244,6 +244,19 @@ SEARCH_TOKENS = (
     "告警",
     "场景",
     "适用",
+    # Spatial/distance quantity questions — "北京到上海多远" is search/consult
+    "多远",
+    "多长",
+    "距离",
+    "多高",
+    "多深",
+    "多宽",
+    "多厚",
+    "多大",
+    "多快",
+    "时速",
+    "公里",
+    "千米",
 )
 
 # Tokens that indicate a SEARCH action (not just a SEARCH question)
@@ -722,6 +735,9 @@ def has_calc_signal(text: str) -> bool:
     # Exclude pure date queries
     if any(exclusion in text for exclusion in DATE_EXCLUSIONS):
         return False
+    # Pure arithmetic expression (e.g. "1+2+3+4+5", "3*7-2") triggers calc
+    if re.match(r"^[\d\s+\-*/().^]+$", text.strip()):
+        return True
     # No digits = no calculation possible ("一年有多少天" is knowledge, not calc)
     # BUT: classic Chinese math puzzles (鸡兔同笼) have numbers implied by the puzzle
     # structure — the "10个头" and "26条腿" are implicit operands.  Treat these

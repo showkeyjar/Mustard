@@ -189,20 +189,58 @@ class BigModelProxyTool:
     def _execute_ollama(
         self, query: str, arguments: dict, carm_signals: str = ""
     ) -> ToolResult | None:
-        """Try Ollama local LLM (default http://localhost:11434)."""
+        """Try Ollama local LLM (default http://localhost:11434).
+
+        Uses streaming to avoid HTTP timeout on large models.
+        Automatically disables thinking (/no_think) for supported models
+        to reduce latency.
+        """
         base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip(
             "/"
         )
         model = os.environ.get("OLLAMA_MODEL", "qwen3-coder")
-        timeout_s = float(os.environ.get("OLLAMA_TIMEOUT_S", "120") or 120)
+        timeout_s = float(os.environ.get("OLLAMA_TIMEOUT_S", "30") or 30)
+        warmup_timeout_s = float(
+            os.environ.get("OLLAMA_WARMUP_TIMEOUT_S", "180") or 180
+        )
 
         endpoint = f"{base_url}/api/generate"
         mode = str(arguments.get("mode", "")).strip().lower()
 
+        # Pre-warm: check if model is loaded; if not, trigger a keep_alive load.
+        # Cold-start loading an 18GB model takes ~2 min; after that inference is <1s.
+        try:
+            with request.urlopen(f"{base_url}/api/ps", timeout=5) as ps_resp:
+                ps_data = json.loads(ps_resp.read().decode("utf-8"))
+            loaded = [m.get("name", "") for m in ps_data.get("models", [])]
+            # Model name may appear as "qwen3-coder:latest" in /api/ps
+            model_base = model.split(":")[0]
+            if not any(model_base in name for name in loaded):
+                # Send a minimal generate request to trigger model loading
+                warm_payload = json.dumps(
+                    {
+                        "model": model,
+                        "prompt": "hi",
+                        "stream": False,
+                        "options": {"num_predict": 1},
+                    }
+                ).encode("utf-8")
+                warm_req = request.Request(
+                    f"{base_url}/api/generate",
+                    data=warm_payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with request.urlopen(warm_req, timeout=warmup_timeout_s) as _:
+                    pass  # Model now loaded
+        except (error.URLError, error.HTTPError, TimeoutError, OSError):
+            pass  # Pre-warm best-effort; don't block the actual request
+
         system_prompt = (
             "You are an external large model assisting a small logic controller (CARM). "
             "Return a concise, practical answer grounded in the user's request. "
-            "Prefer structure over flourish. Respond in the same language as the query."
+            "Prefer structure over flourish. Respond in the same language as the query. "
+            "Keep responses under 100 words unless the query explicitly asks for detail."
         )
         # Path-C: inject CARM signal analysis
         if carm_signals:
@@ -216,57 +254,79 @@ class BigModelProxyTool:
                 "Convert the task into a compact JSON training sample."
             )
 
+        # For qwen3/deepseek-r1/phi4-reasoning models, disable thinking tokens
+        # via Ollama's 'think: False' parameter (v0.6+).
+        # This reduces latency from ~60s to <2s for 30B models.
+        disable_think = any(
+            kw in model.lower()
+            for kw in ("qwen3", "deepseek-r1", "phi4-reasoning", "magistral")
+        )
+
+        user_prompt = f"{system_prompt}\n\n{query}"
+
+        # Adjust max output tokens based on mode
+        max_tokens = 128 if mode != "distill" else 256
         payload = {
             "model": model,
-            "prompt": f"{system_prompt}\n\n{query}",
-            "stream": False,
-            "options": {"temperature": 0.2},
+            "prompt": user_prompt,
+            "stream": True,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": max_tokens,
+                "num_ctx": 2048,
+            },
         }
-
-        req = request.Request(
-            endpoint,
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
+        if disable_think:
+            payload["think"] = False
 
         try:
+            req = request.Request(
+                endpoint,
+                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            # Stream response chunks
+            full_text = ""
             with request.urlopen(req, timeout=timeout_s) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-        except (
-            error.URLError,
-            error.HTTPError,
-            TimeoutError,
-            json.JSONDecodeError,
-            OSError,
-        ):
-            return None
+                for raw_line in resp:
+                    if not raw_line:
+                        continue
+                    try:
+                        chunk = json.loads(raw_line.decode("utf-8"))
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        continue
+                    if chunk.get("done"):
+                        break
+                    full_text += chunk.get("response", "")
 
-        text = str(body.get("response", "")).strip()
-        if not text:
-            return None
-
-        # Extract the non-thinking part if the model uses <think> tags
-        if "<think>" in text and "</think>" in text:
-            after_think = text.split("</think>", 1)
-            text = after_think[1].strip() if len(after_think) > 1 else text
-
-        if mode == "distill":
-            try:
-                normalized = json.loads(text)
-                text = json.dumps(normalized, ensure_ascii=False)
-            except json.JSONDecodeError:
+            text = full_text.strip()
+            if not text:
                 return None
 
-        return ToolResult(
-            ok=True,
-            tool_name=self.name,
-            result=text,
-            confidence=0.84 if mode == "distill" else 0.80,
-            source=f"tool/bigmodel_proxy:ollama/{model}",
-        )
+            # Extract the non-thinking part if the model still outputs thinking tags
+            if "<think>" in text and "</think>" in text:
+                after_think = text.split("</think>", 1)
+                text = after_think[1].strip() if len(after_think) > 1 else text
 
-        # ── Distill fallback ────────────────────────────────────────────────
+            if mode == "distill":
+                try:
+                    normalized = json.loads(text)
+                    text = json.dumps(normalized, ensure_ascii=False)
+                except json.JSONDecodeError:
+                    return None
+
+            return ToolResult(
+                ok=True,
+                tool_name=self.name,
+                result=text,
+                confidence=0.84 if mode == "distill" else 0.80,
+                source=f"tool/bigmodel_proxy:ollama/{model}",
+            )
+        except (error.URLError, error.HTTPError, TimeoutError, OSError):
+            return None
+
+    # ── Distill fallback ───────────────────────────────────────────────────────────────
 
     def _distill_schema(self) -> dict[str, object]:
         return {

@@ -156,8 +156,22 @@ class SearchTool:
             return None
 
     def _fallback_response(self, query: str, top_k: int) -> ToolResult:
-        """Fallback when no search backend is available — still provides structured guidance."""
-        # Extract key concepts from the query to give a more useful fallback
+        """Fallback when no search backend is available — try bigmodel proxy first."""
+        # Try upgrading to bigmodel_proxy for real answers instead of just guidance
+        try:
+            from tools.bigmodel_tool import BigModelProxyTool
+
+            proxy = BigModelProxyTool()
+            llm_result = proxy.execute(query, {"mode": "search_fallback"})
+            if llm_result is not None and llm_result.ok:
+                # Tag the source so caller knows it came from LLM, not real search
+                llm_result.source = "tool/search:bigmodel_upgrade"
+                llm_result.confidence = min(llm_result.confidence, 0.70)
+                return llm_result
+        except Exception:
+            pass
+
+        # Final fallback: structured guidance when no LLM available either
         keywords = self._extract_keywords(query)
         guidance_parts: list[str] = []
 
@@ -181,7 +195,7 @@ class SearchTool:
         )
 
         return ToolResult(
-            ok=True,
+            ok=False,
             tool_name=self.name,
             result=summary,
             confidence=0.35,
