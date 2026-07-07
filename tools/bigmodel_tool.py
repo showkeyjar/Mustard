@@ -194,7 +194,7 @@ class BigModelProxyTool:
             "/"
         )
         model = os.environ.get("OLLAMA_MODEL", "qwen3-coder")
-        timeout_s = float(os.environ.get("OLLAMA_TIMEOUT_S", "30") or 30)
+        timeout_s = float(os.environ.get("OLLAMA_TIMEOUT_S", "120") or 120)
 
         endpoint = f"{base_url}/api/generate"
         mode = str(arguments.get("mode", "")).strip().lower()

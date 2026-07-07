@@ -30,6 +30,17 @@ class CalculatorTool:
         # First try to parse natural-language arithmetic patterns
         expression = self._extract_nl_expression(query)
 
+        # __CARM_DIRECT__ prefix: pre-computed result from NL patterns
+        # (e.g. mortgage, compound interest) — skip parser entirely
+        if expression and expression.startswith("__CARM_DIRECT__"):
+            return ToolResult(
+                ok=True,
+                tool_name=self.name,
+                result=expression[len("__CARM_DIRECT__") :],
+                confidence=0.95,
+                source="tool/calculator",
+            )
+
         if not expression:
             # Fall back to extracting explicit arithmetic expressions
             candidates = re.findall(r"[0-9\.\+\-\*\/\(\) ]+", query)
@@ -391,10 +402,59 @@ class CalculatorTool:
 
     def _extract_nl_expression(self, query: str) -> str:
         """Convert natural language arithmetic descriptions into expressions."""
-        # Pre-process: expand Chinese large number units
-        preprocessed = self._expand_chinese_numbers(query)
         # Pre-process: convert negative numbers ("负3" → "-3")
-        preprocessed = re.sub(r"负\s*(\d+)", r"-\1", preprocessed)
+        preprocessed = re.sub(r"负\s*(\d+)", r"-\1", query)
+
+        # Pass 1: Match patterns that use Chinese number units (万/亿)
+        # These must match BEFORE _expand_chinese_numbers destroys the unit markers
+        _CHINESE_UNIT_PATTERNS = [
+            # Mortgage patterns
+            (
+                r"(?:房贷|贷款|等额本息)[月供]?\s*(\d+(?:\.\d+)?)\s*万\s*(\d+)\s*年"
+                r"(?:利率|年利率|年化)?\s*(\d+(?:\.\d+)?)\s*[%％]",
+                lambda m: _mortgage_result(
+                    float(m.group(1)) * 10000, int(m.group(2)), float(m.group(3)) / 100
+                ),
+            ),
+            (
+                r"(\d+(?:\.\d+)?)\s*万\s*(\d+)\s*年"
+                r"(?:利率|年利率|年化)?\s*(\d+(?:\.\d+)?)\s*[%％]"
+                r"\s*(?:房贷|贷款|等额本息|月供)",
+                lambda m: _mortgage_result(
+                    float(m.group(1)) * 10000, int(m.group(2)), float(m.group(3)) / 100
+                ),
+            ),
+            # Compound interest
+            (
+                r"(\d+(?:\.\d+)?)\s*(?:万(?:块|元)?|元|块)\s*(?:买理财|投资|存).*?"
+                r"年化\s*(\d+(?:\.\d+)?)\s*[%％]\s*复利\s*(\d+)\s*年",
+                lambda m: _compound_result(
+                    float(m.group(1)) * (10000 if "万" in m.group(0) else 1),
+                    float(m.group(2)) / 100,
+                    int(m.group(3)),
+                ),
+            ),
+            # Proportion: "N人中M人占比"
+            (
+                r"(\d+(?:\.\d+)?)\s*(?:人|个|名|位).*?"
+                r"(?:其中|里有|里面有)\s*(\d+(?:\.\d+)?)\s*(?:人|个|名|位).*?"
+                r"(?:占比|比例|百分比|占多少|占比多少)",
+                lambda m: f"{m.group(2)} / {m.group(1)} * 100",
+            ),
+            (
+                r"(\d+(?:\.\d+)?)\s*(?:人|个|名|位|只).*?"
+                r"(\d+(?:\.\d+)?)\s*(?:人|个|名|位|只).*?"
+                r"(?:占比|比例|百分比|占多少)",
+                lambda m: f"{m.group(2)} / {m.group(1)} * 100",
+            ),
+        ]
+        for pattern, builder in _CHINESE_UNIT_PATTERNS:
+            m = re.search(pattern, preprocessed)
+            if m:
+                return builder(m)
+
+        # Pass 2: Expand Chinese number units, then match remaining patterns
+        preprocessed = self._expand_chinese_numbers(preprocessed)
         for pattern, builder in self._NL_PATTERNS:
             m = re.search(pattern, preprocessed)
             if m:
@@ -580,3 +640,36 @@ def _convert_chain(text: str) -> str:
     for zh_op in sorted(mapping, key=len, reverse=True):
         result = result.replace(zh_op, f" {mapping[zh_op]} ")
     return result.strip()
+
+
+def _mortgage_result(principal: float, years: int, annual_rate: float) -> str:
+    """Calculate equal-installment monthly payment and return formatted string.
+
+    Uses the __CARM_DIRECT__ prefix to signal that execute() should
+    use this string as the final result, bypassing the parser.
+    """
+    n = years * 12  # total months
+    r = annual_rate / 12  # monthly rate
+    if r == 0:
+        monthly = principal / n
+    else:
+        factor = (1 + r) ** n
+        monthly = principal * r * factor / (factor - 1)
+    total = monthly * n
+    interest = total - principal
+    return (
+        f"__CARM_DIRECT__房贷月供(等额本息): "
+        f"贷款{principal / 10000:.0f}万, {years}年, 年利率{annual_rate * 100:.1f}% → "
+        f"月供 {monthly:.2f} 元, 总还款 {total:.2f} 元, 总利息 {interest:.2f} 元"
+    )
+
+
+def _compound_result(principal: float, annual_rate: float, years: int) -> str:
+    """Calculate compound interest and return formatted string."""
+    amount = principal * (1 + annual_rate) ** years
+    profit = amount - principal
+    return (
+        f"__CARM_DIRECT__复利计算: "
+        f"本金{principal:.0f}元, 年化{annual_rate * 100:.1f}%, {years}年 → "
+        f"终值 {amount:.2f} 元, 收益 {profit:.2f} 元"
+    )
