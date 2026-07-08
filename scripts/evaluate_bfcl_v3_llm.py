@@ -103,6 +103,7 @@ def route_keyword(query: str, available_funcs: list[dict]) -> tuple[str | None, 
 # ── LLM-augmented routing ────────────────────────────────────────────
 
 _ollama_available = None
+_last_llm_tokens: dict = {"eval": 0, "prompt_eval": 0}
 
 
 def check_ollama() -> bool:
@@ -157,6 +158,8 @@ def route_llm(query: str, available_funcs: list[dict]) -> str | None:
         )
 
         full_text = ""
+        eval_count = 0
+        prompt_eval_count = 0
         with request.urlopen(req, timeout=30) as resp:
             for raw_line in resp:
                 if not raw_line:
@@ -166,6 +169,8 @@ def route_llm(query: str, available_funcs: list[dict]) -> str | None:
                 except (json.JSONDecodeError, UnicodeDecodeError):
                     continue
                 if chunk.get("done"):
+                    eval_count = chunk.get("eval_count", 0)
+                    prompt_eval_count = chunk.get("prompt_eval_count", 0)
                     break
                 full_text += chunk.get("response", "")
 
@@ -173,6 +178,10 @@ def route_llm(query: str, available_funcs: list[dict]) -> str | None:
         result = full_text.strip()
         # Clean up: remove quotes, dots at end
         result = result.strip("\"'`.").strip()
+
+        # Store token stats in module-level global for callers to read
+        global _last_llm_tokens
+        _last_llm_tokens = {"eval": eval_count, "prompt_eval": prompt_eval_count}
 
         # Verify the result matches one of the available functions
         available_names = {f.get("name", "") for f in available_funcs}
