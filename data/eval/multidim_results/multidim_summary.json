@@ -1,0 +1,116 @@
+[
+  {
+    "dimension": "D1_Function_Selection",
+    "framework": "autogen",
+    "accuracy": 96.4,
+    "correct": 135,
+    "total": 140,
+    "latency_ms": 309,
+    "tokens_per_call": 138,
+    "llm_call_rate": 100,
+    "per_subset": {
+      "simple": {
+        "accuracy": 100.0,
+        "correct": 20,
+        "total": 20
+      },
+      "multiple": {
+        "accuracy": 90.0,
+        "correct": 18,
+        "total": 20
+      },
+      "parallel": {
+        "accuracy": 100.0,
+        "correct": 20,
+        "total": 20
+      },
+      "parallel_multiple": {
+        "accuracy": 100.0,
+        "correct": 20,
+        "total": 20
+      },
+      "irrelevance": {
+        "accuracy": 85.0,
+        "correct": 17,
+        "total": 20
+      },
+      "live_simple": {
+        "accuracy": 100.0,
+        "correct": 20,
+        "total": 20
+      },
+      "live_multiple": {
+        "accuracy": 100.0,
+        "correct": 20,
+        "total": 20
+      }
+    }
+  },
+  {
+    "dimension": "D2_Parameter_Extraction",
+    "framework": "autogen",
+    "name_recall": 81.5,
+    "value_match": 74.3,
+    "overall": 77.9,
+    "total": 60,
+    "latency_ms": 499,
+    "tokens_per_call": 164
+  },
+  {
+    "dimension": "D5_Robustness",
+    "framework": "autogen",
+    "original_accuracy": 80.0,
+    "perturbed_accuracy": 80.0,
+    "robustness_ratio": 1.0,
+    "consistency": 100.0,
+    "total": 15,
+    "latency_ms": 336,
+    "per_type": {
+      "typo": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 3
+      },
+      "noise_prefix": {
+        "orig_acc": 50,
+        "pert_acc": 50,
+        "total": 2
+      },
+      "noise_suffix": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 1
+      },
+      "rephrase": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 3
+      },
+      "boundary_minimal": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 1
+      },
+      "boundary_greeting": {
+        "orig_acc": 0,
+        "pert_acc": 0,
+        "total": 1
+      },
+      "boundary_mixed": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 1
+      },
+      "boundary_vague": {
+        "orig_acc": 0,
+        "pert_acc": 0,
+        "total": 1
+      },
+      "mixed_lang": {
+        "orig_acc": 100,
+        "pert_acc": 100,
+        "total": 2
+      }
+    }
+  }
+]

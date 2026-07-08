@@ -1,0 +1,130 @@
+{
+  "case__0": {
+    "query": "3加5等于多少",
+    "expected_tool": "calculator",
+    "response": "3加5等于8。",
+    "result_ok": true,
+    "elapsed": 0.19,
+    "tokens": 31
+  },
+  "case__1": {
+    "query": "123乘以456",
+    "expected_tool": "calculator",
+    "response": "56088",
+    "result_ok": true,
+    "elapsed": 0.226,
+    "tokens": 33
+  },
+  "case__2": {
+    "query": "2的10次方",
+    "expected_tool": "calculator",
+    "response": "1024",
+    "result_ok": true,
+    "elapsed": 0.169,
+    "tokens": 30
+  },
+  "case__3": {
+    "query": "买了3本书每本15元又买了2支笔每支5元一共多少钱",
+    "expected_tool": "calculator",
+    "response": "3本书的费用：3 × 15 = 45元\n2支笔的费用：2 × 5 = 10元\n总共：45 + 10 = 55元\n\n答案：55元",
+    "result_ok": true,
+    "elapsed": 0.509,
+    "tokens": 90
+  },
+  "case__4": {
+    "query": "原价200元打8折多少钱",
+    "expected_tool": "calculator",
+    "response": "160元",
+    "result_ok": true,
+    "elapsed": 0.213,
+    "tokens": 34
+  },
+  "case__5": {
+    "query": "圆的面积半径是5",
+    "expected_tool": "calculator",
+    "response": "圆的面积 = π × r² = π × 5² = 25π ≈ 78.54平方单位",
+    "result_ok": true,
+    "elapsed": 0.431,
+    "tokens": 56
+  },
+  "case__6": {
+    "query": "从1加到100",
+    "expected_tool": "calculator",
+    "response": "5050\n\n使用公式：n(n+1)/2 = 100×101/2 = 5050",
+    "result_ok": true,
+    "elapsed": 0.396,
+    "tokens": 58
+  },
+  "case__7": {
+    "query": "鸡兔同笼共35个头94条腿鸡有几只",
+    "expected_tool": "calculator",
+    "response": "设鸡有x只，兔有y只。\n\n根据题意：\n- 头的总数：x + y = 35\n- 腿的总数：2x + 4y = 94\n\n解得：x = 23，y = 12\n\n所以鸡有23只。",
+    "result_ok": true,
+    "elapsed": 0.642,
+    "tokens": 106
+  },
+  "case__8": {
+    "query": "房贷100万30年利率4.5%",
+    "expected_tool": "calculator",
+    "response": "每月还款约4,830元\n\n总利息约838,800元\n\n总还款约1,838,800元",
+    "result_ok": false,
+    "elapsed": 0.393,
+    "tokens": 68
+  },
+  "case__9": {
+    "query": "一个数的3倍加5等于20这个数是多少",
+    "expected_tool": "calculator",
+    "response": "设这个数为x，则有方程：3x + 5 = 20\n\n解得：3x = 15，x = 5\n\n这个数是5。",
+    "result_ok": true,
+    "elapsed": 0.49,
+    "tokens": 73
+  },
+  "case__10": {
+    "query": "帮我写一个快速排序",
+    "expected_tool": "code_executor",
+    "response": "```python\ndef quicksort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    middle = [x for x in arr if x == pivot]\n    right = [",
+    "result_ok": true,
+    "elapsed": 0.908,
+    "tokens": 136
+  },
+  "case__11": {
+    "query": "写一个斐波那契数列前10项",
+    "expected_tool": "code_executor",
+    "response": "1, 1, 2, 3, 5, 8, 13, 21, 34, 55",
+    "result_ok": false,
+    "elapsed": 0.355,
+    "tokens": 64
+  },
+  "case__12": {
+    "query": "请详细分析一下人工智能在医疗领域的应用前景",
+    "expected_tool": "bigmodel_proxy",
+    "response": "**人工智能在医疗领域的应用前景分析：**\n\n**主要应用领域：**\n- **医学影像诊断**：CT、MRI、X光片分析，准确率已超过人类医生\n- **药物研发**：加速新药发现和临床试验\n- **个性化治疗**：基于基因组学的精准医疗\n- **辅助诊疗**：智能问诊、疾病预测、风险评估\n- **手术机器人**：提高手术精度和安全性\n\n**发展前景：**\n- **优势**：提高诊断准确率、降低医疗",
+    "result_ok": true,
+    "elapsed": 1.404,
+    "tokens": 207
+  },
+  "case__13": {
+    "query": "Python和JavaScript哪个更适合初学者",
+    "expected_tool": "bigmodel_proxy",
+    "response": "Python更适合初学者。\n\nPython语法简洁清晰，接近自然语言，学习曲线平缓；JavaScript虽然也很流行，但涉及浏览器环境和DOM操作等复杂概念，对初学者来说门槛相对较高。",
+    "result_ok": true,
+    "elapsed": 0.486,
+    "tokens": 70
+  },
+  "case__14": {
+    "query": "帮我算一下15的20%是多少，顺便查一下北京天气",
+    "expected_tool": "calculator",
+    "response": "15的20% = 3\n\n北京天气：请查询实时天气预报，我无法提供当前的天气信息。",
+    "result_ok": true,
+    "elapsed": 0.301,
+    "tokens": 63
+  },
+  "case__15": {
+    "query": "最新的AI技术趋势是什么",
+    "expected_tool": "search",
+    "response": "最新的AI技术趋势包括：\n\n1. **大语言模型** - 更强大的自然语言处理能力\n2. **多模态AI** - 整合文本、图像、音频等多种数据类型\n3. **边缘AI** - 在设备端进行AI计算\n4. **AI安全与伦理** - 关注AI的可控性和公平性\n5. **自动化机器学习** - 简化AI模型开发流程\n6. **联邦学习** - 保护数据隐私的分布式AI训练\n7. **生成式AI** ",
+    "result_ok": true,
+    "elapsed": 1.039,
+    "tokens": 150
+  }
+}

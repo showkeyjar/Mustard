@@ -1,0 +1,2145 @@
+{
+  "simple__0": {
+    "query": "Find the area of a triangle with a base of 10 units and height of 5 units.",
+    "gt_params": {
+      "calculate_triangle_area": "{'base': 10, 'height': 5, 'unit': 'units'}"
+    },
+    "predicted_params": {
+      "calculate_triangle_area": {
+        "base": 10,
+        "height": 5,
+        "unit": "units"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "calculate_triangle_area::base",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      },
+      {
+        "key": "calculate_triangle_area::height",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "calculate_triangle_area::unit",
+        "status": "MATCH",
+        "gt": "units",
+        "pred": "units"
+      }
+    ],
+    "elapsed": 0.469,
+    "tokens": 153
+  },
+  "simple__1": {
+    "query": "Calculate the factorial of 5 using math functions.",
+    "gt_params": {
+      "math.factorial": "{'number': 5}"
+    },
+    "predicted_params": {
+      "math.factorial": {
+        "number": 5
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "math.factorial::number",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      }
+    ],
+    "elapsed": 0.232,
+    "tokens": 93
+  },
+  "simple__2": {
+    "query": "Calculate the hypotenuse of a right triangle given the lengths of the other two sides as 4 and 5.",
+    "gt_params": {
+      "math.hypot": "{'x': 4, 'y': 5, 'z': ''}"
+    },
+    "predicted_params": {
+      "math.hypot": {
+        "x": 4,
+        "y": 5
+      }
+    },
+    "name_recall": 0.667,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "math.hypot::x",
+        "status": "MATCH",
+        "gt": "4",
+        "pred": "4"
+      },
+      {
+        "key": "math.hypot::y",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "math.hypot::z",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.322,
+    "tokens": 134
+  },
+  "simple__3": {
+    "query": "Find the roots of a quadratic equation with coefficients a=1, b=-3, c=2.",
+    "gt_params": {
+      "algebra.quadratic_roots": "{'a': 1, 'b': -3, 'c': 2}"
+    },
+    "predicted_params": {
+      "algebra.quadratic_roots": {
+        "a": 1,
+        "b": -3,
+        "c": 2
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "algebra.quadratic_roots::a",
+        "status": "MATCH",
+        "gt": "1",
+        "pred": "1"
+      },
+      {
+        "key": "algebra.quadratic_roots::b",
+        "status": "MATCH",
+        "gt": "-3",
+        "pred": "-3"
+      },
+      {
+        "key": "algebra.quadratic_roots::c",
+        "status": "MATCH",
+        "gt": "2",
+        "pred": "2"
+      }
+    ],
+    "elapsed": 0.372,
+    "tokens": 133
+  },
+  "simple__4": {
+    "query": "Solve a quadratic equation where a=2, b=6, and c=5",
+    "gt_params": {
+      "solve_quadratic_equation": "{'a': 2, 'b': 6, 'c': 5}"
+    },
+    "predicted_params": {
+      "solve_quadratic_equation": {
+        "a": 2,
+        "b": 6,
+        "c": 5
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "solve_quadratic_equation::a",
+        "status": "MATCH",
+        "gt": "2",
+        "pred": "2"
+      },
+      {
+        "key": "solve_quadratic_equation::b",
+        "status": "MATCH",
+        "gt": "6",
+        "pred": "6"
+      },
+      {
+        "key": "solve_quadratic_equation::c",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      }
+    ],
+    "elapsed": 0.393,
+    "tokens": 132
+  },
+  "simple__5": {
+    "query": "Find all the roots of a quadratic equation given coefficients a = 3, b = -11, and c = -4.",
+    "gt_params": {
+      "solve_quadratic": "{'a': 3, 'b': -11, 'c': -4, 'root_type': 'all'}"
+    },
+    "predicted_params": {
+      "solve_quadratic": {
+        "a": 3,
+        "b": -11,
+        "c": -4
+      }
+    },
+    "name_recall": 0.75,
+    "value_match": 0.75,
+    "details": [
+      {
+        "key": "solve_quadratic::a",
+        "status": "MATCH",
+        "gt": "3",
+        "pred": "3"
+      },
+      {
+        "key": "solve_quadratic::b",
+        "status": "MATCH",
+        "gt": "-11",
+        "pred": "-11"
+      },
+      {
+        "key": "solve_quadratic::c",
+        "status": "MATCH",
+        "gt": "-4",
+        "pred": "-4"
+      },
+      {
+        "key": "solve_quadratic::root_type",
+        "status": "MISS",
+        "gt": "all"
+      }
+    ],
+    "elapsed": 0.362,
+    "tokens": 169
+  },
+  "simple__6": {
+    "query": "What are the roots of the quadratic equation where a=2, b=5 and c=3 ?",
+    "gt_params": {
+      "solve_quadratic": "{'a': 2, 'b': 5, 'c': 3}"
+    },
+    "predicted_params": {
+      "solve_quadratic": {
+        "a": 2,
+        "b": 5,
+        "c": 3
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "solve_quadratic::a",
+        "status": "MATCH",
+        "gt": "2",
+        "pred": "2"
+      },
+      {
+        "key": "solve_quadratic::b",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "solve_quadratic::c",
+        "status": "MATCH",
+        "gt": "3",
+        "pred": "3"
+      }
+    ],
+    "elapsed": 0.414,
+    "tokens": 127
+  },
+  "simple__7": {
+    "query": "What is the circumference of a circle with a radius of 4 inches?",
+    "gt_params": {
+      "calculate_circumference": "{'radius': 4, 'unit': 'inches'}"
+    },
+    "predicted_params": {
+      "calculate_circumference": {
+        "radius": 4,
+        "unit": "inches"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "calculate_circumference::radius",
+        "status": "MATCH",
+        "gt": "4",
+        "pred": "4"
+      },
+      {
+        "key": "calculate_circumference::unit",
+        "status": "MATCH",
+        "gt": "inches",
+        "pred": "inches"
+      }
+    ],
+    "elapsed": 0.375,
+    "tokens": 123
+  },
+  "simple__8": {
+    "query": "What's the area of a circle with a radius of 10?",
+    "gt_params": {
+      "geometry.area_circle": "{'radius': 10, 'units': 'meters'}"
+    },
+    "predicted_params": {
+      "geometry.area_circle": {
+        "radius": 10
+      }
+    },
+    "name_recall": 0.5,
+    "value_match": 0.5,
+    "details": [
+      {
+        "key": "geometry.area_circle::radius",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      },
+      {
+        "key": "geometry.area_circle::units",
+        "status": "MISS",
+        "gt": "meters"
+      }
+    ],
+    "elapsed": 0.273,
+    "tokens": 109
+  },
+  "simple__9": {
+    "query": "Calculate the area of a circle with a radius of 5 units.",
+    "gt_params": {
+      "geometry.calculate_area_circle": "{'radius': 5, 'unit': 'units'}"
+    },
+    "predicted_params": {
+      "geometry.calculate_area_circle": {
+        "radius": 5,
+        "unit": "units"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "geometry.calculate_area_circle::radius",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "geometry.calculate_area_circle::unit",
+        "status": "MATCH",
+        "gt": "units",
+        "pred": "units"
+      }
+    ],
+    "elapsed": 0.325,
+    "tokens": 118
+  },
+  "multiple__0": {
+    "query": "Can I find the dimensions and properties of a triangle, if I know its three sides are 5 units, 4 units and 3 units long?",
+    "gt_params": {
+      "triangle_properties.get": "{'side1': 5, 'side2': 4, 'side3': 3, 'get_area': '', 'get_perimeter': '', 'get_angles': ''}"
+    },
+    "predicted_params": {
+      "triangle_properties.get": {
+        "side1": 5,
+        "side2": 4,
+        "side3": 3,
+        "get_area": true,
+        "get_perimeter": true,
+        "get_angles": true
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "triangle_properties.get::side1",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "triangle_properties.get::side2",
+        "status": "MATCH",
+        "gt": "4",
+        "pred": "4"
+      },
+      {
+        "key": "triangle_properties.get::side3",
+        "status": "MATCH",
+        "gt": "3",
+        "pred": "3"
+      },
+      {
+        "key": "triangle_properties.get::get_area",
+        "status": "MATCH",
+        "gt": "",
+        "pred": "True"
+      },
+      {
+        "key": "triangle_properties.get::get_perimeter",
+        "status": "MATCH",
+        "gt": "",
+        "pred": "True"
+      },
+      {
+        "key": "triangle_properties.get::get_angles",
+        "status": "MATCH",
+        "gt": "",
+        "pred": "True"
+      }
+    ],
+    "elapsed": 0.654,
+    "tokens": 238
+  },
+  "multiple__1": {
+    "query": "Calculate the area of a triangle, given the lengths of its three sides: 3, 4, and 5.",
+    "gt_params": {
+      "math.triangle_area_heron": "{'side1': 3, 'side2': 4, 'side3': 5}"
+    },
+    "predicted_params": {
+      "math.triangle_area_heron": {
+        "side1": 3,
+        "side2": 4,
+        "side3": 5
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "math.triangle_area_heron::side1",
+        "status": "MATCH",
+        "gt": "3",
+        "pred": "3"
+      },
+      {
+        "key": "math.triangle_area_heron::side2",
+        "status": "MATCH",
+        "gt": "4",
+        "pred": "4"
+      },
+      {
+        "key": "math.triangle_area_heron::side3",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      }
+    ],
+    "elapsed": 0.421,
+    "tokens": 156
+  },
+  "multiple__2": {
+    "query": "What is the capital of Brazil?",
+    "gt_params": {
+      "country_info.capital": "{'country': 'Brazil'}"
+    },
+    "predicted_params": {
+      "country_info.capital": {
+        "country": "Brazil"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "country_info.capital::country",
+        "status": "MATCH",
+        "gt": "Brazil",
+        "pred": "Brazil"
+      }
+    ],
+    "elapsed": 0.358,
+    "tokens": 86
+  },
+  "multiple__3": {
+    "query": "Compute the Euclidean distance between two points A(3,4) and B(1,2).",
+    "gt_params": {
+      "EuclideanDistance.calculate": "{'pointA': [3, 4], 'pointB': [1, 2], 'rounding': ''}"
+    },
+    "predicted_params": {
+      "EuclideanDistance.calculate": {
+        "pointA": [
+          3,
+          4
+        ],
+        "pointB": [
+          1,
+          2
+        ]
+      }
+    },
+    "name_recall": 0.667,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "EuclideanDistance.calculate::pointA",
+        "status": "MATCH",
+        "gt": "[3, 4]",
+        "pred": "[3, 4]"
+      },
+      {
+        "key": "EuclideanDistance.calculate::pointB",
+        "status": "MATCH",
+        "gt": "[1, 2]",
+        "pred": "[1, 2]"
+      },
+      {
+        "key": "EuclideanDistance.calculate::rounding",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.434,
+    "tokens": 148
+  },
+  "multiple__4": {
+    "query": "Can you calculate the displacement of a car moving at an initial speed of 20 m/s and then accelerates at 10 m/s^2 for 5 seconds? (assuming a straight ",
+    "gt_params": {
+      "kinematics.calculate_displacement": "{'initial_speed': 20, 'acceleration': 10, 'time': 5, 'rounding': ''}"
+    },
+    "predicted_params": {
+      "kinematics.calculate_displacement": {
+        "initial_speed": 20,
+        "acceleration": 10,
+        "time": 5
+      }
+    },
+    "name_recall": 0.75,
+    "value_match": 0.75,
+    "details": [
+      {
+        "key": "kinematics.calculate_displacement::initial_speed",
+        "status": "MATCH",
+        "gt": "20",
+        "pred": "20"
+      },
+      {
+        "key": "kinematics.calculate_displacement::acceleration",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      },
+      {
+        "key": "kinematics.calculate_displacement::time",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "kinematics.calculate_displacement::rounding",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.466,
+    "tokens": 201
+  },
+  "multiple__5": {
+    "query": "What is the wind speed and temperature in location given by coordinates 46.603354,1.8883340 on December 13, 2019?",
+    "gt_params": {
+      "weather.get_by_coordinates_date": "{'coordinates': [46.603354, 1.888334], 'date': '2019-12-13'}"
+    },
+    "predicted_params": {
+      "weather.get_by_coordinates_date": {
+        "coordinates": [
+          46.603354,
+          1.888334
+        ],
+        "date": "2019-12-13"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "weather.get_by_coordinates_date::coordinates",
+        "status": "MATCH",
+        "gt": "[46.603354, 1.888334]",
+        "pred": "[46.603354, 1.888334]"
+      },
+      {
+        "key": "weather.get_by_coordinates_date::date",
+        "status": "MATCH",
+        "gt": "2019-12-13",
+        "pred": "2019-12-13"
+      }
+    ],
+    "elapsed": 0.634,
+    "tokens": 188
+  },
+  "multiple__6": {
+    "query": "Calculate the capacitance of a parallel plate capacitor where the area of the plate is 10 square meters, the distance between plates is 0.01 meters an",
+    "gt_params": {
+      "capacitance_calculator.calculate": "{'A': 10, 'd': 0.01, 'K': 1.0}"
+    },
+    "predicted_params": {
+      "capacitance_calculator.calculate": {
+        "A": 10,
+        "d": 0.01,
+        "K": 1.0
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "capacitance_calculator.calculate::A",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      },
+      {
+        "key": "capacitance_calculator.calculate::d",
+        "status": "MATCH",
+        "gt": "0.01",
+        "pred": "0.01"
+      },
+      {
+        "key": "capacitance_calculator.calculate::K",
+        "status": "MATCH",
+        "gt": "1.0",
+        "pred": "1.0"
+      }
+    ],
+    "elapsed": 0.615,
+    "tokens": 185
+  },
+  "multiple__7": {
+    "query": "How to assess the population growth in deer and their impact on woodland in Washington state over the past decade?",
+    "gt_params": {
+      "wildlife_population.assess_growth": "{'species': 'deer', 'location': 'Washington state', 'duration': 10}"
+    },
+    "predicted_params": {
+      "wildlife_population.assess_growth": {
+        "species": "deer",
+        "location": "Washington state",
+        "duration": 10
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "wildlife_population.assess_growth::species",
+        "status": "MATCH",
+        "gt": "deer",
+        "pred": "deer"
+      },
+      {
+        "key": "wildlife_population.assess_growth::location",
+        "status": "MATCH",
+        "gt": "Washington state",
+        "pred": "Washington state"
+      },
+      {
+        "key": "wildlife_population.assess_growth::duration",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      }
+    ],
+    "elapsed": 0.508,
+    "tokens": 162
+  },
+  "multiple__8": {
+    "query": "Find a 3 bedroom villa for sale within $300,000 to $400,000 budget in San Diego.",
+    "gt_params": {
+      "realestate.find_properties": "{'location': 'SD', 'propertyType': 'villa', 'bedrooms': 3, 'budget': {'min': [300000], 'max': [40000"
+    },
+    "predicted_params": {
+      "location": "San Diego",
+      "propertyType": "villa",
+      "bedrooms": 3,
+      "budget": {
+        "min": 300000,
+        "max": 400000
+      }
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "realestate.find_properties::location",
+        "status": "MISS",
+        "gt": "SD"
+      },
+      {
+        "key": "realestate.find_properties::propertyType",
+        "status": "MISS",
+        "gt": "villa"
+      },
+      {
+        "key": "realestate.find_properties::bedrooms",
+        "status": "MISS",
+        "gt": "3"
+      },
+      {
+        "key": "realestate.find_properties::budget",
+        "status": "MISS",
+        "gt": "{'min': [300000], 'max': [400000]}"
+      }
+    ],
+    "elapsed": 0.688,
+    "tokens": 213
+  },
+  "multiple__9": {
+    "query": "Calculate the average grade for student John who has these scores {'math':90, 'science':75, 'history':82, 'music':89} across different subjects.",
+    "gt_params": {
+      "calculate_average": "{'gradeDict': {'math': [90], 'science': [75], 'history': [82], 'music': [89]}}"
+    },
+    "predicted_params": {
+      "gradeDict": {
+        "math": 90,
+        "science": 75,
+        "history": 82,
+        "music": 89
+      }
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "calculate_average::gradeDict",
+        "status": "MISS",
+        "gt": "{'math': [90], 'science': [75], 'history': [82], 'music': [89]}"
+      }
+    ],
+    "elapsed": 0.575,
+    "tokens": 164
+  },
+  "parallel__0": {
+    "query": "Play songs from the artists Taylor Swift and Maroon 5, with a play time of 20 minutes and 15 minutes respectively, on Spotify.",
+    "gt_params": {
+      "spotify.play": "{'artist': 'Maroon 5', 'duration': 15}"
+    },
+    "predicted_params": {
+      "spotify.play": {
+        "artist": "Taylor Swift",
+        "duration": 20
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "spotify.play::artist",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "Maroon 5",
+        "pred": "Taylor Swift"
+      },
+      {
+        "key": "spotify.play::duration",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "15",
+        "pred": "20"
+      }
+    ],
+    "elapsed": 0.481,
+    "tokens": 146
+  },
+  "parallel__1": {
+    "query": "Calculate the induced electromagnetic force for a magnetic field of 5 Tesla, area of 2 square meters and change in time of 4 seconds, then repeat with",
+    "gt_params": {
+      "calculate_em_force": "{'b_field': 5, 'area': 2, 'd_time': 10}"
+    },
+    "predicted_params": {
+      "calculate_em_force": {
+        "b_field": 5,
+        "area": 2,
+        "d_time": 4
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "calculate_em_force::b_field",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "calculate_em_force::area",
+        "status": "MATCH",
+        "gt": "2",
+        "pred": "2"
+      },
+      {
+        "key": "calculate_em_force::d_time",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "10",
+        "pred": "4"
+      }
+    ],
+    "elapsed": 0.47,
+    "tokens": 175
+  },
+  "parallel__2": {
+    "query": "Calculate the resistance of a wire with a length of 5m and cross sectional area 0.01m² with resistivity of copper and aluminum",
+    "gt_params": {
+      "calculate_resistance": "{'length': 5, 'area': 0.01, 'resistivity': 'aluminum'}"
+    },
+    "predicted_params": {
+      "calculate_resistance": {
+        "length": 5,
+        "area": 0.01,
+        "resistivity": "copper"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "calculate_resistance::length",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "calculate_resistance::area",
+        "status": "MATCH",
+        "gt": "0.01",
+        "pred": "0.01"
+      },
+      {
+        "key": "calculate_resistance::resistivity",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "aluminum",
+        "pred": "copper"
+      }
+    ],
+    "elapsed": 0.487,
+    "tokens": 177
+  },
+  "parallel__3": {
+    "query": "Get the protein sequence of human HbA1c, normal hemoglobin, and rat hemoglobin and their 3D models",
+    "gt_params": {
+      "protein_info.get_sequence_and_3D": "{'protein_name': 'rat hemoglobin', 'model_3d': True}"
+    },
+    "predicted_params": {
+      "protein_info.get_sequence_and_3D": {
+        "protein_name": "human HbA1c",
+        "model_3d": true
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.5,
+    "details": [
+      {
+        "key": "protein_info.get_sequence_and_3D::protein_name",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "rat hemoglobin",
+        "pred": "human HbA1c"
+      },
+      {
+        "key": "protein_info.get_sequence_and_3D::model_3d",
+        "status": "MATCH",
+        "gt": "True",
+        "pred": "True"
+      }
+    ],
+    "elapsed": 0.501,
+    "tokens": 162
+  },
+  "parallel__4": {
+    "query": "Calculate the body mass index for a person who is 6 feet tall and weighs 80 kg, also for a person who is 5.6 feet and weighs 60 kg.",
+    "gt_params": {
+      "calculate_bmi": "{'height': 5.6, 'weight': 60}"
+    },
+    "predicted_params": {
+      "calculate_bmi": {
+        "height": 6,
+        "weight": 80
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.5,
+    "details": [
+      {
+        "key": "calculate_bmi::height",
+        "status": "MATCH",
+        "gt": "5.6",
+        "pred": "6"
+      },
+      {
+        "key": "calculate_bmi::weight",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "60",
+        "pred": "80"
+      }
+    ],
+    "elapsed": 0.403,
+    "tokens": 150
+  },
+  "parallel__5": {
+    "query": "Find the list of TV shows and their ratings on Netflix for 'Friends', and Hulu for 'The Office' and 'Stranger Things' and sort by its rating",
+    "gt_params": {
+      "streaming_services.shows_list_and_ratings": "{'streaming_service': 'Hulu', 'show_list': ['The Office', 'Stranger Things'], 'sort_by_rating': True"
+    },
+    "predicted_params": {
+      "streaming_services.shows_list_and_ratings": {
+        "streaming_service": "Hulu",
+        "show_list": [
+          "The Office",
+          "Stranger Things"
+        ],
+        "sort_by_rating": true
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "streaming_services.shows_list_and_ratings::streaming_service",
+        "status": "MATCH",
+        "gt": "Hulu",
+        "pred": "Hulu"
+      },
+      {
+        "key": "streaming_services.shows_list_and_ratings::show_list",
+        "status": "MATCH",
+        "gt": "['The Office', 'Stranger Things']",
+        "pred": "['The Office', 'Stranger Things']"
+      },
+      {
+        "key": "streaming_services.shows_list_and_ratings::sort_by_rating",
+        "status": "MATCH",
+        "gt": "True",
+        "pred": "True"
+      }
+    ],
+    "elapsed": 0.821,
+    "tokens": 232
+  },
+  "parallel__6": {
+    "query": "Calculate the amount of sales tax to be added on a purchase amount of $30.45 in Chicago, Illinois, $52.33 in Sacramento, California and $11.23 in Port",
+    "gt_params": {
+      "calculate_sales_tax": "{'purchase_amount': 11.23, 'city': 'Portland', 'state': 'OR'}"
+    },
+    "predicted_params": {
+      "calculate_sales_tax": [
+        {
+          "purchase_amount": 30.45,
+          "city": "Chicago",
+          "state": "Illinois"
+        },
+        {
+          "purchase_amount": 52.33,
+          "city": "Sacramento",
+          "state": "California"
+        },
+        {
+          "purchase_amount": 11.23,
+          "city": "Portland",
+          "state": "Oregon"
+        }
+      ]
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "calculate_sales_tax::purchase_amount",
+        "status": "MISS",
+        "gt": "11.23"
+      },
+      {
+        "key": "calculate_sales_tax::city",
+        "status": "MISS",
+        "gt": "Portland"
+      },
+      {
+        "key": "calculate_sales_tax::state",
+        "status": "MISS",
+        "gt": "OR"
+      }
+    ],
+    "elapsed": 0.943,
+    "tokens": 245
+  },
+  "parallel__7": {
+    "query": "Find the factorial of 5,10 and 15.",
+    "gt_params": {
+      "math.factorial": "{'number': 15}"
+    },
+    "predicted_params": {
+      "math.factorial": {
+        "number": 5
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "math.factorial::number",
+        "status": "MATCH",
+        "gt": "15",
+        "pred": "5"
+      }
+    ],
+    "elapsed": 0.818,
+    "tokens": 176
+  },
+  "parallel__8": {
+    "query": "Fetch the population of New York City, NY,  and Los Angeles, CA from US Census Database, and also get the population data for Alaska state and USA",
+    "gt_params": {
+      "database_us_census.get_population": "{'area': 'USA', 'type': 'country', 'year': ''}"
+    },
+    "predicted_params": {
+      "database_us_census.get_population": {
+        "area": "USA",
+        "type": "country",
+        "year": null
+      }
+    },
+    "name_recall": 0.667,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "database_us_census.get_population::area",
+        "status": "MATCH",
+        "gt": "USA",
+        "pred": "USA"
+      },
+      {
+        "key": "database_us_census.get_population::type",
+        "status": "MATCH",
+        "gt": "country",
+        "pred": "country"
+      },
+      {
+        "key": "database_us_census.get_population::year",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 1.727,
+    "tokens": 332
+  },
+  "parallel__9": {
+    "query": "Find two movie theatres near San Diego with availability for Tenet at 5 pm and No Time To Die at 7:30 pm.",
+    "gt_params": {
+      "find_movie_showing": "{'location': 'San Diego', 'movie': ['No Time To Die'], 'time': ['7:30 pm']}"
+    },
+    "predicted_params": {
+      "find_movie_showing": {
+        "location": "San Diego, CA",
+        "movie": [
+          "Tenet",
+          "No Time To Die"
+        ],
+        "time": [
+          "5:00 pm",
+          "7:30 pm"
+        ]
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.333,
+    "details": [
+      {
+        "key": "find_movie_showing::location",
+        "status": "MATCH",
+        "gt": "San Diego",
+        "pred": "San Diego, CA"
+      },
+      {
+        "key": "find_movie_showing::movie",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "['No Time To Die']",
+        "pred": "['Tenet', 'No Time To Die']"
+      },
+      {
+        "key": "find_movie_showing::time",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "['7:30 pm']",
+        "pred": "['5:00 pm', '7:30 pm']"
+      }
+    ],
+    "elapsed": 0.611,
+    "tokens": 177
+  },
+  "parallel_multiple__0": {
+    "query": "Find the sum of all the multiples of 3 and 5 between 1 and 1000. Also find the product of the first five prime numbers.",
+    "gt_params": {
+      "math_toolkit.sum_of_multiples": "{'lower_limit': 1, 'upper_limit': 1000, 'multiples': [3, 5]}",
+      "math_toolkit.product_of_primes": "{'count': 5}"
+    },
+    "predicted_params": {
+      "math_toolkit.sum_of_multiples": {
+        "lower_limit": 1,
+        "upper_limit": 1000,
+        "multiples": [
+          3,
+          5
+        ]
+      },
+      "math_toolkit.product_of_primes": {
+        "count": 5
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "math_toolkit.sum_of_multiples::lower_limit",
+        "status": "MATCH",
+        "gt": "1",
+        "pred": "1"
+      },
+      {
+        "key": "math_toolkit.sum_of_multiples::upper_limit",
+        "status": "MATCH",
+        "gt": "1000",
+        "pred": "1000"
+      },
+      {
+        "key": "math_toolkit.sum_of_multiples::multiples",
+        "status": "MATCH",
+        "gt": "[3, 5]",
+        "pred": "[3, 5]"
+      },
+      {
+        "key": "math_toolkit.product_of_primes::count",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      }
+    ],
+    "elapsed": 0.823,
+    "tokens": 224
+  },
+  "parallel_multiple__1": {
+    "query": "Find the area of a rectangle with length 7 and breadth 3. Also, calculate the area of a circle with radius 5.",
+    "gt_params": {
+      "area_rectangle.calculate": "{'length': 7.0, 'breadth': 3.0}",
+      "area_circle.calculate": "{'radius': 5.0}"
+    },
+    "predicted_params": {
+      "area_rectangle.calculate": {
+        "length": 7.0,
+        "breadth": 3.0
+      },
+      "area_circle.calculate": {
+        "radius": 5.0
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "area_rectangle.calculate::length",
+        "status": "MATCH",
+        "gt": "7.0",
+        "pred": "7.0"
+      },
+      {
+        "key": "area_rectangle.calculate::breadth",
+        "status": "MATCH",
+        "gt": "3.0",
+        "pred": "3.0"
+      },
+      {
+        "key": "area_circle.calculate::radius",
+        "status": "MATCH",
+        "gt": "5.0",
+        "pred": "5.0"
+      }
+    ],
+    "elapsed": 0.555,
+    "tokens": 171
+  },
+  "parallel_multiple__2": {
+    "query": "Find the area and perimeter of a circle with a radius of 5 and also find the circumference of a circle with diameter of 10.",
+    "gt_params": {
+      "circle.calculate_area": "{'radius': 5}",
+      "circle.calculate_circumference": "{'diameter': 10}"
+    },
+    "predicted_params": {
+      "circle.calculate_area": {
+        "radius": 5
+      },
+      "circle.calculate_circumference": {
+        "diameter": 10
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "circle.calculate_area::radius",
+        "status": "MATCH",
+        "gt": "5",
+        "pred": "5"
+      },
+      {
+        "key": "circle.calculate_circumference::diameter",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      }
+    ],
+    "elapsed": 0.561,
+    "tokens": 157
+  },
+  "parallel_multiple__3": {
+    "query": "What are the length and the width of a rectangle which has a perimeter of 14 and area of 15.",
+    "gt_params": {
+      "get_rectangle_property": "{'perimeter': 14, 'area': 15, 'property': 'length', 'tolerance': ''}"
+    },
+    "predicted_params": {
+      "get_rectangle_property": {
+        "perimeter": 14,
+        "area": 15
+      }
+    },
+    "name_recall": 0.5,
+    "value_match": 0.5,
+    "details": [
+      {
+        "key": "get_rectangle_property::perimeter",
+        "status": "MATCH",
+        "gt": "14",
+        "pred": "14"
+      },
+      {
+        "key": "get_rectangle_property::area",
+        "status": "MATCH",
+        "gt": "15",
+        "pred": "15"
+      },
+      {
+        "key": "get_rectangle_property::property",
+        "status": "MISS",
+        "gt": "length"
+      },
+      {
+        "key": "get_rectangle_property::tolerance",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.38,
+    "tokens": 152
+  },
+  "parallel_multiple__4": {
+    "query": "Calculate the area under the curve from x=1 to x=5 for the function f(x)=x^2. And find the derivative at x=3.",
+    "gt_params": {
+      "integral": "{'function': 'x**2', 'a': 1.0, 'b': 5.0}",
+      "derivative": "{'function': 'x**2', 'x': 3.0}"
+    },
+    "predicted_params": {
+      "integral": {
+        "function": "x^2",
+        "a": 1.0,
+        "b": 5.0
+      },
+      "derivative": {
+        "function": "x^2",
+        "x": 3.0
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.6,
+    "details": [
+      {
+        "key": "integral::function",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "x**2",
+        "pred": "x^2"
+      },
+      {
+        "key": "integral::a",
+        "status": "MATCH",
+        "gt": "1.0",
+        "pred": "1.0"
+      },
+      {
+        "key": "integral::b",
+        "status": "MATCH",
+        "gt": "5.0",
+        "pred": "5.0"
+      },
+      {
+        "key": "derivative::function",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "x**2",
+        "pred": "x^2"
+      },
+      {
+        "key": "derivative::x",
+        "status": "MATCH",
+        "gt": "3.0",
+        "pred": "3.0"
+      }
+    ],
+    "elapsed": 0.68,
+    "tokens": 208
+  },
+  "parallel_multiple__5": {
+    "query": "Calculate the Greatest Common Divisor (GCD) of 96 and 128, and the least common multiple (LCM) of 15 and 25.",
+    "gt_params": {
+      "gcd": "{'num1': 96, 'num2': 128}",
+      "lcm": "{'num1': 15, 'num2': 25}"
+    },
+    "predicted_params": {
+      "gcd": {
+        "num1": 96,
+        "num2": 128
+      },
+      "lcm": {
+        "num1": 15,
+        "num2": 25
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "gcd::num1",
+        "status": "MATCH",
+        "gt": "96",
+        "pred": "96"
+      },
+      {
+        "key": "gcd::num2",
+        "status": "MATCH",
+        "gt": "128",
+        "pred": "128"
+      },
+      {
+        "key": "lcm::num1",
+        "status": "MATCH",
+        "gt": "15",
+        "pred": "15"
+      },
+      {
+        "key": "lcm::num2",
+        "status": "MATCH",
+        "gt": "25",
+        "pred": "25"
+      }
+    ],
+    "elapsed": 0.575,
+    "tokens": 185
+  },
+  "parallel_multiple__6": {
+    "query": "Find all prime numbers between 50 and 150. Then get the fibonacci series upto 150.",
+    "gt_params": {
+      "find_prime_numbers": "{'start': 50, 'end': 150}",
+      "get_fibonacci_sequence": "{'count': 150}"
+    },
+    "predicted_params": {
+      "find_prime_numbers": {
+        "start": 50,
+        "end": 150
+      }
+    },
+    "name_recall": 0.667,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "find_prime_numbers::start",
+        "status": "MATCH",
+        "gt": "50",
+        "pred": "50"
+      },
+      {
+        "key": "find_prime_numbers::end",
+        "status": "MATCH",
+        "gt": "150",
+        "pred": "150"
+      },
+      {
+        "key": "get_fibonacci_sequence::count",
+        "status": "MISS",
+        "gt": "150"
+      }
+    ],
+    "elapsed": 0.458,
+    "tokens": 153
+  },
+  "parallel_multiple__7": {
+    "query": "Calculate the time required for a car moving at 50 m/s to travel a distance of 600 m. Also calculate the time required for a bullet moving at 400 m/s ",
+    "gt_params": {
+      "kinematics.calculate_time": "{'velocity': 400, 'distance': 1000}"
+    },
+    "predicted_params": {
+      "kinematics.calculate_time": [
+        {
+          "velocity": 50,
+          "distance": 600
+        },
+        {
+          "velocity": 400,
+          "distance": 1000
+        }
+      ]
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "kinematics.calculate_time::velocity",
+        "status": "MISS",
+        "gt": "400"
+      },
+      {
+        "key": "kinematics.calculate_time::distance",
+        "status": "MISS",
+        "gt": "1000"
+      }
+    ],
+    "elapsed": 0.673,
+    "tokens": 198
+  },
+  "parallel_multiple__8": {
+    "query": "Calculate the final velocity of a moving object given initial velocity of 20 m/s, acceleration of 5 m/s^2 and time of 6 seconds. Also, compute the tot",
+    "gt_params": {
+      "kinematics.final_velocity": "{'initial_velocity': 20.0, 'acceleration': 5.0, 'time': 6.0}",
+      "kinematics.distance_traveled": "{'initial_velocity': 20.0, 'acceleration': 5.0, 'time': 6.0}"
+    },
+    "predicted_params": {
+      "kinematics.final_velocity": {
+        "initial_velocity": 20.0,
+        "acceleration": 5.0,
+        "time": 6.0
+      },
+      "kinematics.distance_traveled": {
+        "initial_velocity": 20.0,
+        "acceleration": 5.0,
+        "time": 6.0
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "kinematics.final_velocity::initial_velocity",
+        "status": "MATCH",
+        "gt": "20.0",
+        "pred": "20.0"
+      },
+      {
+        "key": "kinematics.final_velocity::acceleration",
+        "status": "MATCH",
+        "gt": "5.0",
+        "pred": "5.0"
+      },
+      {
+        "key": "kinematics.final_velocity::time",
+        "status": "MATCH",
+        "gt": "6.0",
+        "pred": "6.0"
+      },
+      {
+        "key": "kinematics.distance_traveled::initial_velocity",
+        "status": "MATCH",
+        "gt": "20.0",
+        "pred": "20.0"
+      },
+      {
+        "key": "kinematics.distance_traveled::acceleration",
+        "status": "MATCH",
+        "gt": "5.0",
+        "pred": "5.0"
+      },
+      {
+        "key": "kinematics.distance_traveled::time",
+        "status": "MATCH",
+        "gt": "6.0",
+        "pred": "6.0"
+      }
+    ],
+    "elapsed": 0.837,
+    "tokens": 287
+  },
+  "parallel_multiple__9": {
+    "query": "Book a flight from Seattle to Boston with American Airlines and book a hotel in Boston for 4 nights. ",
+    "gt_params": {
+      "flight_book": "{'_from': 'Seattle', 'to': 'Boston', 'airlines': 'American Airlines'}",
+      "hotel_book": "{'location': 'Boston', 'nights': 4}"
+    },
+    "predicted_params": {
+      "flight_book": {
+        "_from": "Seattle",
+        "to": "Boston",
+        "airlines": "American Airlines"
+      },
+      "hotel_book": {
+        "location": "Boston",
+        "nights": 4
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "flight_book::_from",
+        "status": "MATCH",
+        "gt": "Seattle",
+        "pred": "Seattle"
+      },
+      {
+        "key": "flight_book::to",
+        "status": "MATCH",
+        "gt": "Boston",
+        "pred": "Boston"
+      },
+      {
+        "key": "flight_book::airlines",
+        "status": "MATCH",
+        "gt": "American Airlines",
+        "pred": "American Airlines"
+      },
+      {
+        "key": "hotel_book::location",
+        "status": "MATCH",
+        "gt": "Boston",
+        "pred": "Boston"
+      },
+      {
+        "key": "hotel_book::nights",
+        "status": "MATCH",
+        "gt": "4",
+        "pred": "4"
+      }
+    ],
+    "elapsed": 0.702,
+    "tokens": 195
+  },
+  "live_simple__0": {
+    "query": "Can you retrieve the details for the user with the ID 7890, who has black as their special request?",
+    "gt_params": {
+      "get_user_info": "{'user_id': 7890, 'special': 'black'}"
+    },
+    "predicted_params": {
+      "get_user_info": {
+        "user_id": 7890,
+        "special": "black"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_user_info::user_id",
+        "status": "MATCH",
+        "gt": "7890",
+        "pred": "7890"
+      },
+      {
+        "key": "get_user_info::special",
+        "status": "MATCH",
+        "gt": "black",
+        "pred": "black"
+      }
+    ],
+    "elapsed": 0.433,
+    "tokens": 146
+  },
+  "live_simple__1": {
+    "query": "I want to see the star history of ShishirPatil/gorilla and gorilla-llm/gorilla-cli, with the timelines aligned, so that I can more clearly observe the",
+    "gt_params": {
+      "github_star": "{'repos': 'ShishirPatil/gorilla,gorilla-llm/gorilla-cli', 'aligned': True}"
+    },
+    "predicted_params": {
+      "github_star": {
+        "repos": "ShishirPatil/gorilla,gorilla-llm/gorilla-cli",
+        "aligned": true
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "github_star::repos",
+        "status": "MATCH",
+        "gt": "ShishirPatil/gorilla,gorilla-llm/gorilla-cli",
+        "pred": "ShishirPatil/gorilla,gorilla-llm/gorilla-cli"
+      },
+      {
+        "key": "github_star::aligned",
+        "status": "MATCH",
+        "gt": "True",
+        "pred": "True"
+      }
+    ],
+    "elapsed": 0.568,
+    "tokens": 177
+  },
+  "live_simple__2": {
+    "query": "I need a Comfort Uber ride from 2020 Addison Street, Berkeley, CA, USA, and I can wait up to 600 seconds for it.",
+    "gt_params": {
+      "uber.ride": "{'loc': '2020 Addison Street, Berkeley, CA, USA', 'type': 'comfort', 'time': 600}"
+    },
+    "predicted_params": {
+      "uber.ride": {
+        "loc": "2020 Addison Street, Berkeley, CA, USA",
+        "type": "Comfort",
+        "time": 600
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "uber.ride::loc",
+        "status": "MATCH",
+        "gt": "2020 Addison Street, Berkeley, CA, USA",
+        "pred": "2020 Addison Street, Berkeley, CA, USA"
+      },
+      {
+        "key": "uber.ride::type",
+        "status": "MATCH",
+        "gt": "comfort",
+        "pred": "Comfort"
+      },
+      {
+        "key": "uber.ride::time",
+        "status": "MATCH",
+        "gt": "600",
+        "pred": "600"
+      }
+    ],
+    "elapsed": 0.526,
+    "tokens": 181
+  },
+  "live_simple__3": {
+    "query": "I need a 'Plus' type Uber from 221B Baker Street, Berkeley, CA, USA, and I can wait up to 600 seconds for it. ",
+    "gt_params": {
+      "uber.ride": "{'loc': '221B Baker Street, Berkeley, CA, USA', 'type': 'plus', 'time': 600}"
+    },
+    "predicted_params": {
+      "uber.ride": {
+        "loc": "221B Baker Street, Berkeley, CA, USA",
+        "type": "Plus",
+        "time": 600
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "uber.ride::loc",
+        "status": "MATCH",
+        "gt": "221B Baker Street, Berkeley, CA, USA",
+        "pred": "221B Baker Street, Berkeley, CA, USA"
+      },
+      {
+        "key": "uber.ride::type",
+        "status": "MATCH",
+        "gt": "plus",
+        "pred": "Plus"
+      },
+      {
+        "key": "uber.ride::time",
+        "status": "MATCH",
+        "gt": "600",
+        "pred": "600"
+      }
+    ],
+    "elapsed": 0.592,
+    "tokens": 188
+  },
+  "live_simple__4": {
+    "query": "What are the current weather conditions in Tel Aviv, and could you provide that in Fahrenheit, please?",
+    "gt_params": {
+      "get_current_weather": "{'location': 'Tel Aviv, Israel', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "Tel Aviv",
+        "unit": "Fahrenheit"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "Tel Aviv, Israel",
+        "pred": "Tel Aviv"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "fahrenheit",
+        "pred": "Fahrenheit"
+      }
+    ],
+    "elapsed": 0.414,
+    "tokens": 133
+  },
+  "live_simple__5": {
+    "query": "Qual a temperatura atual em Divinópolis, MG? fahrenheit",
+    "gt_params": {
+      "get_current_weather": "{'location': 'Divinópolis, MG', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "Divinópolis, MG",
+        "unit": "fahrenheit"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "Divinópolis, MG",
+        "pred": "Divinópolis, MG"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "fahrenheit",
+        "pred": "fahrenheit"
+      }
+    ],
+    "elapsed": 0.405,
+    "tokens": 134
+  },
+  "live_simple__6": {
+    "query": "Can you tell me the weather in fahrenheit so that I decide if I need to wear a jacket today? San Francisco",
+    "gt_params": {
+      "get_current_weather": "{'location': 'San Francisco, CA', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "San Francisco",
+        "unit": "fahrenheit"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "San Francisco, CA",
+        "pred": "San Francisco"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "fahrenheit",
+        "pred": "fahrenheit"
+      }
+    ],
+    "elapsed": 0.406,
+    "tokens": 138
+  },
+  "live_simple__7": {
+    "query": "Im at Riga, Latvia, Can you tell me the current temperature?",
+    "gt_params": {
+      "get_current_weather": "{'location': 'Riga, Latvia', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "Riga, Latvia"
+      }
+    },
+    "name_recall": 0.5,
+    "value_match": 0.5,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "Riga, Latvia",
+        "pred": "Riga, Latvia"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MISS",
+        "gt": "fahrenheit"
+      }
+    ],
+    "elapsed": 0.329,
+    "tokens": 122
+  },
+  "live_simple__8": {
+    "query": "I want to know weather conditions? I'm at London, UK in fahr",
+    "gt_params": {
+      "get_current_weather": "{'location': 'London, UK', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "London, UK",
+        "unit": "fahr"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "London, UK",
+        "pred": "London, UK"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "fahrenheit",
+        "pred": "fahr"
+      }
+    ],
+    "elapsed": 0.426,
+    "tokens": 135
+  },
+  "live_simple__9": {
+    "query": "What's weather in Hyderabad in Fahrenheit",
+    "gt_params": {
+      "get_current_weather": "{'location': 'Hyderabad, India', 'unit': 'fahrenheit'}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "Hyderabad",
+        "unit": "Fahrenheit"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "Hyderabad, India",
+        "pred": "Hyderabad"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "fahrenheit",
+        "pred": "Fahrenheit"
+      }
+    ],
+    "elapsed": 0.349,
+    "tokens": 121
+  },
+  "live_multiple__0": {
+    "query": "update my latte to a large size with coconut milk and make it extra sweet? make it served 'boiling hot' as the special request. The drink id is 'latte",
+    "gt_params": {
+      "ChaDri.change_drink": "{'drink_id': 'latte', 'new_preferences': {'size': ['large'], 'milk_type': ['coconut'], 'sweetness_le"
+    },
+    "predicted_params": {
+      "drink_id": "latte",
+      "new_preferences": {
+        "size": "large",
+        "milk_type": "coconut milk",
+        "sweetness": "extra sweet",
+        "temperature": "boiling hot"
+      }
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "ChaDri.change_drink::drink_id",
+        "status": "MISS",
+        "gt": "latte"
+      },
+      {
+        "key": "ChaDri.change_drink::new_preferences",
+        "status": "MISS",
+        "gt": "{'size': ['large'], 'milk_type': ['coconut'], 'sweetness_level': ['extra'], 'tem"
+      }
+    ],
+    "elapsed": 0.719,
+    "tokens": 198
+  },
+  "live_multiple__1": {
+    "query": "NO SUGAR in my coffee loll. Can you change my drink with drink id '1234' order to have no sweetness, and also make sure it's served hot?",
+    "gt_params": {
+      "ChaDri.change_drink": "{'drink_id': '1234', 'new_preferences': {'sweetness_level': ['none'], 'temperature': ['hot']}}"
+    },
+    "predicted_params": {
+      "drink_id": "1234",
+      "new_preferences": {
+        "no_sugar": true,
+        "temperature": "hot"
+      }
+    },
+    "name_recall": 0.0,
+    "value_match": 0.0,
+    "details": [
+      {
+        "key": "ChaDri.change_drink::drink_id",
+        "status": "MISS",
+        "gt": "1234"
+      },
+      {
+        "key": "ChaDri.change_drink::new_preferences",
+        "status": "MISS",
+        "gt": "{'sweetness_level': ['none'], 'temperature': ['hot']}"
+      }
+    ],
+    "elapsed": 0.548,
+    "tokens": 180
+  },
+  "live_multiple__2": {
+    "query": "Tôi cần một chuyến xe Uber loại 'Plus' từ địa chỉ '2150 Shattuck Ave, Berkeley, CA' và tôi có thể chờ tối đa 10 phút.",
+    "gt_params": {
+      "uber.ride": "{'loc': '2150 Shattuck Ave, Berkeley, CA', 'type': 'plus', 'time': 10}"
+    },
+    "predicted_params": {
+      "uber.ride": {
+        "loc": "2150 Shattuck Ave, Berkeley, CA",
+        "type": "Plus",
+        "time": 10
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "uber.ride::loc",
+        "status": "MATCH",
+        "gt": "2150 Shattuck Ave, Berkeley, CA",
+        "pred": "2150 Shattuck Ave, Berkeley, CA"
+      },
+      {
+        "key": "uber.ride::type",
+        "status": "MATCH",
+        "gt": "plus",
+        "pred": "Plus"
+      },
+      {
+        "key": "uber.ride::time",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      }
+    ],
+    "elapsed": 0.496,
+    "tokens": 184
+  },
+  "live_multiple__3": {
+    "query": "Get weather of Ha Noi for me",
+    "gt_params": {
+      "api.weather": "{'loc': 'Ha Noi, Vietnam'}"
+    },
+    "predicted_params": {
+      "api.weather": {
+        "loc": "Ha Noi"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "api.weather::loc",
+        "status": "MATCH",
+        "gt": "Ha Noi, Vietnam",
+        "pred": "Ha Noi"
+      }
+    ],
+    "elapsed": 0.298,
+    "tokens": 98
+  },
+  "live_multiple__4": {
+    "query": "Tìm chuyến xe cho tôi từ Hà Nội loại Plus trong 10 phút nữa. Address: 123 Hanoi Street",
+    "gt_params": {
+      "uber.ride": "{'loc': '123 Hanoi Street', 'type': 'plus', 'time': 10}"
+    },
+    "predicted_params": {
+      "uber.ride": {
+        "loc": "Hà Nội",
+        "type": "Plus",
+        "time": 10
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "uber.ride::loc",
+        "status": "NAME_OK_VALUE_MISS",
+        "gt": "123 Hanoi Street",
+        "pred": "Hà Nội"
+      },
+      {
+        "key": "uber.ride::type",
+        "status": "MATCH",
+        "gt": "plus",
+        "pred": "Plus"
+      },
+      {
+        "key": "uber.ride::time",
+        "status": "MATCH",
+        "gt": "10",
+        "pred": "10"
+      }
+    ],
+    "elapsed": 0.447,
+    "tokens": 163
+  },
+  "live_multiple__5": {
+    "query": "Could you tell me the current weather conditions in Shanghai, using the metric system?",
+    "gt_params": {
+      "get_current_weather": "{'location': 'Shanghai, China', 'unit': ''}"
+    },
+    "predicted_params": {
+      "get_current_weather": {
+        "location": "Shanghai",
+        "unit": "metric"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "get_current_weather::location",
+        "status": "MATCH",
+        "gt": "Shanghai, China",
+        "pred": "Shanghai"
+      },
+      {
+        "key": "get_current_weather::unit",
+        "status": "MATCH",
+        "gt": "",
+        "pred": "metric"
+      }
+    ],
+    "elapsed": 0.391,
+    "tokens": 127
+  },
+  "live_multiple__6": {
+    "query": "我可以创建一个名为'DevelopmentEnv'的workspace，基于'feature-branch'吗？",
+    "gt_params": {
+      "create_workspace": "{'name': 'DevelopmentEnv', 'base_branch': 'feature-branch'}"
+    },
+    "predicted_params": {
+      "create_workspace": {
+        "name": "DevelopmentEnv",
+        "base_branch": "feature-branch"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "create_workspace::name",
+        "status": "MATCH",
+        "gt": "DevelopmentEnv",
+        "pred": "DevelopmentEnv"
+      },
+      {
+        "key": "create_workspace::base_branch",
+        "status": "MATCH",
+        "gt": "feature-branch",
+        "pred": "feature-branch"
+      }
+    ],
+    "elapsed": 0.49,
+    "tokens": 140
+  },
+  "live_multiple__7": {
+    "query": "我想在 mbox 系统中创建一个新的工作空间，基于 git 仓库的 master 分支。工作空间的名字叫做 'DevelopersHub'。",
+    "gt_params": {
+      "create_workspace": "{'name': 'DevelopersHub', 'base_branch': 'master'}"
+    },
+    "predicted_params": {
+      "create_workspace": {
+        "name": "DevelopersHub",
+        "base_branch": "master"
+      }
+    },
+    "name_recall": 1.0,
+    "value_match": 1.0,
+    "details": [
+      {
+        "key": "create_workspace::name",
+        "status": "MATCH",
+        "gt": "DevelopersHub",
+        "pred": "DevelopersHub"
+      },
+      {
+        "key": "create_workspace::base_branch",
+        "status": "MATCH",
+        "gt": "master",
+        "pred": "master"
+      }
+    ],
+    "elapsed": 0.46,
+    "tokens": 150
+  },
+  "live_multiple__8": {
+    "query": "how can i cook steak Indian style??",
+    "gt_params": {
+      "cookbook.search_recipe": "{'keyword': 'steak', 'cuisine': 'Indian', 'max_results': ''}"
+    },
+    "predicted_params": {
+      "cookbook.search_recipe": {
+        "keyword": "steak",
+        "cuisine": "Indian"
+      }
+    },
+    "name_recall": 0.667,
+    "value_match": 0.667,
+    "details": [
+      {
+        "key": "cookbook.search_recipe::keyword",
+        "status": "MATCH",
+        "gt": "steak",
+        "pred": "steak"
+      },
+      {
+        "key": "cookbook.search_recipe::cuisine",
+        "status": "MATCH",
+        "gt": "Indian",
+        "pred": "Indian"
+      },
+      {
+        "key": "cookbook.search_recipe::max_results",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.41,
+    "tokens": 136
+  },
+  "live_multiple__9": {
+    "query": "what is Imjin war",
+    "gt_params": {
+      "HNA_WQA.search": "{'keyword': 'Imjin war', 'result_format': '', 'language': '', 'max_results': ''}"
+    },
+    "predicted_params": {
+      "HNA_WQA.search": {
+        "keyword": "Imjin war"
+      }
+    },
+    "name_recall": 0.25,
+    "value_match": 0.25,
+    "details": [
+      {
+        "key": "HNA_WQA.search::keyword",
+        "status": "MATCH",
+        "gt": "Imjin war",
+        "pred": "Imjin war"
+      },
+      {
+        "key": "HNA_WQA.search::result_format",
+        "status": "MISS",
+        "gt": ""
+      },
+      {
+        "key": "HNA_WQA.search::language",
+        "status": "MISS",
+        "gt": ""
+      },
+      {
+        "key": "HNA_WQA.search::max_results",
+        "status": "MISS",
+        "gt": ""
+      }
+    ],
+    "elapsed": 0.395,
+    "tokens": 141
+  }
+}

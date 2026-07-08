@@ -1,0 +1,74 @@
+{
+  "carm_mt__mt_calc_then_followup": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.004,
+    "anaphora_correct": 2,
+    "anaphora_total": 2,
+    "tokens": 0
+  },
+  "carm_mt__mt_code_then_calc": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.008,
+    "anaphora_correct": 0,
+    "anaphora_total": 0,
+    "tokens": 0
+  },
+  "carm_mt__mt_greeting_then_real": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.007,
+    "anaphora_correct": 0,
+    "anaphora_total": 0,
+    "tokens": 0
+  },
+  "carm_mt__mt_calc_anaphora_it": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.008,
+    "anaphora_correct": 2,
+    "anaphora_total": 2,
+    "tokens": 0
+  },
+  "carm_mt__mt_search_then_consult": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.004,
+    "anaphora_correct": 0,
+    "anaphora_total": 0,
+    "tokens": 0
+  },
+  "carm_mt__mt_multi_intent_followup": {
+    "turn_correct": 2,
+    "turn_total": 2,
+    "conv_correct": true,
+    "elapsed": 0.004,
+    "anaphora_correct": 0,
+    "anaphora_total": 0,
+    "tokens": 0
+  },
+  "carm_mt__mt_reject_then_real": {
+    "turn_correct": 1,
+    "turn_total": 2,
+    "conv_correct": false,
+    "elapsed": 0.003,
+    "anaphora_correct": 0,
+    "anaphora_total": 0,
+    "tokens": 0
+  },
+  "carm_mt__mt_calc_chain": {
+    "turn_correct": 2,
+    "turn_total": 3,
+    "conv_correct": false,
+    "elapsed": 0.004,
+    "anaphora_correct": 2,
+    "anaphora_total": 3,
+    "tokens": 0
+  }
+}

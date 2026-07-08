@@ -1,0 +1,1554 @@
+{
+  "simple__0": {
+    "query": "Find the area of a triangle with a base of 10 units and height of 5 units.",
+    "predicted": "calculate_triangle_area",
+    "gt": [
+      "calculate_triangle_area"
+    ],
+    "correct": true,
+    "elapsed": 0.289,
+    "llm_used": true,
+    "tokens": 107
+  },
+  "simple__1": {
+    "query": "Calculate the factorial of 5 using math functions.",
+    "predicted": "math.factorial",
+    "gt": [
+      "math.factorial"
+    ],
+    "correct": true,
+    "elapsed": 0.256,
+    "llm_used": true,
+    "tokens": 81
+  },
+  "simple__2": {
+    "query": "Calculate the hypotenuse of a right triangle given the lengths of the other two sides as 4 and 5.",
+    "predicted": "math.hypot",
+    "gt": [
+      "math.hypot"
+    ],
+    "correct": true,
+    "elapsed": 0.265,
+    "llm_used": true,
+    "tokens": 109
+  },
+  "simple__3": {
+    "query": "Find the roots of a quadratic equation with coefficients a=1, b=-3, c=2.",
+    "predicted": "algebra.quadratic_roots",
+    "gt": [
+      "algebra.quadratic_roots"
+    ],
+    "correct": true,
+    "elapsed": 0.263,
+    "llm_used": true,
+    "tokens": 117
+  },
+  "simple__4": {
+    "query": "Solve a quadratic equation where a=2, b=6, and c=5",
+    "predicted": "solve_quadratic_equation",
+    "gt": [
+      "solve_quadratic_equation"
+    ],
+    "correct": true,
+    "elapsed": 0.237,
+    "llm_used": true,
+    "tokens": 104
+  },
+  "simple__5": {
+    "query": "Find all the roots of a quadratic equation given coefficients a = 3, b = -11, and c = -4.",
+    "predicted": "solve_quadratic",
+    "gt": [
+      "solve_quadratic"
+    ],
+    "correct": true,
+    "elapsed": 0.253,
+    "llm_used": true,
+    "tokens": 121
+  },
+  "simple__6": {
+    "query": "What are the roots of the quadratic equation where a=2, b=5 and c=3 ?",
+    "predicted": "solve_quadratic",
+    "gt": [
+      "solve_quadratic"
+    ],
+    "correct": true,
+    "elapsed": 0.273,
+    "llm_used": true,
+    "tokens": 106
+  },
+  "simple__7": {
+    "query": "What is the circumference of a circle with a radius of 4 inches?",
+    "predicted": "calculate_circumference",
+    "gt": [
+      "calculate_circumference"
+    ],
+    "correct": true,
+    "elapsed": 0.222,
+    "llm_used": true,
+    "tokens": 98
+  },
+  "simple__8": {
+    "query": "What's the area of a circle with a radius of 10?",
+    "predicted": "geometry.area_circle",
+    "gt": [
+      "geometry.area_circle"
+    ],
+    "correct": true,
+    "elapsed": 0.225,
+    "llm_used": true,
+    "tokens": 94
+  },
+  "simple__9": {
+    "query": "Calculate the area of a circle with a radius of 5 units.",
+    "predicted": "geometry.calculate_area_circle",
+    "gt": [
+      "geometry.calculate_area_circle"
+    ],
+    "correct": true,
+    "elapsed": 0.289,
+    "llm_used": true,
+    "tokens": 94
+  },
+  "simple__10": {
+    "query": "Calculate the area of a right-angled triangle given the lengths of its base and height as 6cm and 10cm.",
+    "predicted": "calculate_area",
+    "gt": [
+      "calculate_area"
+    ],
+    "correct": true,
+    "elapsed": 0.252,
+    "llm_used": true,
+    "tokens": 111
+  },
+  "simple__11": {
+    "query": "What is the area of a triangle with base of 10 units and height of 5 units?",
+    "predicted": "calculate_triangle_area",
+    "gt": [
+      "calculate_triangle_area"
+    ],
+    "correct": true,
+    "elapsed": 0.248,
+    "llm_used": true,
+    "tokens": 102
+  },
+  "simple__12": {
+    "query": "Calculate the circumference of a circle with radius 3",
+    "predicted": "geometry.circumference",
+    "gt": [
+      "geometry.circumference"
+    ],
+    "correct": true,
+    "elapsed": 0.211,
+    "llm_used": true,
+    "tokens": 91
+  },
+  "simple__13": {
+    "query": "Calculate the area under the curve y=x^2 from x=1 to x=3.",
+    "predicted": "calculate_area_under_curve",
+    "gt": [
+      "calculate_area_under_curve"
+    ],
+    "correct": true,
+    "elapsed": 0.306,
+    "llm_used": true,
+    "tokens": 110
+  },
+  "simple__14": {
+    "query": "Calculate the derivative of the function 3x^2 + 2x - 1.",
+    "predicted": "calculate_derivative",
+    "gt": [
+      "calculate_derivative"
+    ],
+    "correct": true,
+    "elapsed": 0.349,
+    "llm_used": true,
+    "tokens": 104
+  },
+  "simple__15": {
+    "query": "Calculate the area under the curve from x = -2 to x = 3 for the function y = x^3 using simpson method.",
+    "predicted": "integrate",
+    "gt": [
+      "integrate"
+    ],
+    "correct": true,
+    "elapsed": 0.327,
+    "llm_used": true,
+    "tokens": 126
+  },
+  "simple__16": {
+    "query": "Calculate the derivative of the function 2x^2 at x = 1.",
+    "predicted": "calculus.derivative",
+    "gt": [
+      "calculus.derivative"
+    ],
+    "correct": true,
+    "elapsed": 0.27,
+    "llm_used": true,
+    "tokens": 106
+  },
+  "simple__17": {
+    "query": "Find the prime factors of 450",
+    "predicted": "get_prime_factors",
+    "gt": [
+      "get_prime_factors"
+    ],
+    "correct": true,
+    "elapsed": 0.211,
+    "llm_used": true,
+    "tokens": 85
+  },
+  "simple__18": {
+    "query": "Find the prime factors of the number 123456.",
+    "predicted": "number_analysis.prime_factors",
+    "gt": [
+      "number_analysis.prime_factors"
+    ],
+    "correct": true,
+    "elapsed": 0.249,
+    "llm_used": true,
+    "tokens": 95
+  },
+  "simple__19": {
+    "query": "Calculate the greatest common divisor of two numbers: 40 and 50",
+    "predicted": "math.gcd",
+    "gt": [
+      "math.gcd"
+    ],
+    "correct": true,
+    "elapsed": 0.223,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "multiple__0": {
+    "query": "Can I find the dimensions and properties of a triangle, if I know its three sides are 5 units, 4 units and 3 units long?",
+    "predicted": "triangle_properties.get",
+    "gt": [
+      "triangle_properties.get"
+    ],
+    "correct": true,
+    "elapsed": 0.301,
+    "llm_used": true,
+    "tokens": 162
+  },
+  "multiple__1": {
+    "query": "Calculate the area of a triangle, given the lengths of its three sides: 3, 4, and 5.",
+    "predicted": "math.triangle_area_heron",
+    "gt": [
+      "math.triangle_area_heron"
+    ],
+    "correct": true,
+    "elapsed": 0.295,
+    "llm_used": true,
+    "tokens": 164
+  },
+  "multiple__2": {
+    "query": "What is the capital of Brazil?",
+    "predicted": "country_info.capital",
+    "gt": [
+      "country_info.capital"
+    ],
+    "correct": true,
+    "elapsed": 0.268,
+    "llm_used": true,
+    "tokens": 114
+  },
+  "multiple__3": {
+    "query": "Compute the Euclidean distance between two points A(3,4) and B(1,2).",
+    "predicted": "EuclideanDistance.calculate",
+    "gt": [
+      "EuclideanDistance.calculate"
+    ],
+    "correct": true,
+    "elapsed": 0.236,
+    "llm_used": true,
+    "tokens": 125
+  },
+  "multiple__4": {
+    "query": "Can you calculate the displacement of a car moving at an initial speed of 20 m/s and then accelerates at 10 m/s^2 for 5 seconds? (assuming a straight ",
+    "predicted": "kinematics.calculate_displacement",
+    "gt": [
+      "kinematics.calculate_displacement"
+    ],
+    "correct": true,
+    "elapsed": 0.297,
+    "llm_used": true,
+    "tokens": 163
+  },
+  "multiple__5": {
+    "query": "What is the wind speed and temperature in location given by coordinates 46.603354,1.8883340 on December 13, 2019?",
+    "predicted": "weather.get_by_coordinates_date",
+    "gt": [
+      "weather.get_by_coordinates_date"
+    ],
+    "correct": true,
+    "elapsed": 0.488,
+    "llm_used": true,
+    "tokens": 199
+  },
+  "multiple__6": {
+    "query": "Calculate the capacitance of a parallel plate capacitor where the area of the plate is 10 square meters, the distance between plates is 0.01 meters an",
+    "predicted": "capacitance_calculator.calculate",
+    "gt": [
+      "capacitance_calculator.calculate"
+    ],
+    "correct": true,
+    "elapsed": 0.318,
+    "llm_used": true,
+    "tokens": 179
+  },
+  "multiple__7": {
+    "query": "How to assess the population growth in deer and their impact on woodland in Washington state over the past decade?",
+    "predicted": "ecological_impact.analyze",
+    "gt": [
+      "wildlife_population.assess_growth"
+    ],
+    "correct": false,
+    "elapsed": 0.419,
+    "llm_used": true,
+    "tokens": 163
+  },
+  "multiple__8": {
+    "query": "Find a 3 bedroom villa for sale within $300,000 to $400,000 budget in San Diego.",
+    "predicted": "realestate.find_properties",
+    "gt": [
+      "realestate.find_properties"
+    ],
+    "correct": true,
+    "elapsed": 0.491,
+    "llm_used": true,
+    "tokens": 172
+  },
+  "multiple__9": {
+    "query": "Calculate the average grade for student John who has these scores {'math':90, 'science':75, 'history':82, 'music':89} across different subjects.",
+    "predicted": "calculate_average",
+    "gt": [
+      "calculate_average"
+    ],
+    "correct": true,
+    "elapsed": 0.363,
+    "llm_used": true,
+    "tokens": 173
+  },
+  "multiple__10": {
+    "query": "I need to delete some columns from my employees database on personal_data table. I want to remove their email addresses and social security numbers to",
+    "predicted": "database.modify_columns",
+    "gt": [
+      "database.modify_columns"
+    ],
+    "correct": true,
+    "elapsed": 0.17,
+    "llm_used": true,
+    "tokens": 132
+  },
+  "multiple__11": {
+    "query": "Calculate the roots of a quadratic equation with coefficients 5, 20, and -25",
+    "predicted": "math_roots.quadratic",
+    "gt": [
+      "math_roots.quadratic"
+    ],
+    "correct": true,
+    "elapsed": 0.284,
+    "llm_used": true,
+    "tokens": 148
+  },
+  "multiple__12": {
+    "query": "What is the year over year growth rate for company 'Tech Inc' with revenues of $1M in 2019 and $1.2M in 2020?",
+    "predicted": "corporate_finance.calculate_YOY_growth_rate",
+    "gt": [
+      "corporate_finance.calculate_YOY_growth_rate"
+    ],
+    "correct": true,
+    "elapsed": 0.48,
+    "llm_used": true,
+    "tokens": 231
+  },
+  "multiple__13": {
+    "query": "How much revenue would company XYZ generate if we increase the sales units of product A by 10% while keeping the price the same?",
+    "predicted": "corporate_finance.revenue_forecast",
+    "gt": [
+      "corporate_finance.revenue_forecast"
+    ],
+    "correct": true,
+    "elapsed": 0.325,
+    "llm_used": true,
+    "tokens": 150
+  },
+  "multiple__14": {
+    "query": "Calculate the depreciated value of a property costing $200,000 with an annual depreciation rate of 3% for 5 years.",
+    "predicted": "finance.property_depreciation",
+    "gt": [
+      "finance.property_depreciation"
+    ],
+    "correct": true,
+    "elapsed": 0.334,
+    "llm_used": true,
+    "tokens": 185
+  },
+  "multiple__15": {
+    "query": "How much is the potential of the Solar farm at location with coordinates [43.653225, -79.383186] in December, given that it has a total solar panel ar",
+    "predicted": "solarFarm.potential",
+    "gt": [
+      "solarFarm.potential"
+    ],
+    "correct": true,
+    "elapsed": 0.553,
+    "llm_used": true,
+    "tokens": 196
+  },
+  "multiple__16": {
+    "query": "What's the required minimum population size (Ne) for maintaining the genetic diversity of a wild tiger population for the next 100 generations with a ",
+    "predicted": "population_genetics.calculate_ne",
+    "gt": [
+      "population_genetics.calculate_ne"
+    ],
+    "correct": true,
+    "elapsed": 0.325,
+    "llm_used": true,
+    "tokens": 189
+  },
+  "multiple__17": {
+    "query": "Find the conversion rate from Euro to Dollar at January 1, 2022",
+    "predicted": "currency_conversion.get_rate",
+    "gt": [
+      "currency_conversion.get_rate"
+    ],
+    "correct": true,
+    "elapsed": 0.314,
+    "llm_used": true,
+    "tokens": 162
+  },
+  "multiple__18": {
+    "query": "Who were the main participants and what was the location of the Battle of Stalingrad?",
+    "predicted": null,
+    "gt": [
+      "european_history.battle_details"
+    ],
+    "correct": false,
+    "elapsed": 0.18,
+    "llm_used": true,
+    "tokens": 129
+  },
+  "multiple__19": {
+    "query": "What are the three great Schism in Christianity history?",
+    "predicted": "religion_history.get_schisms",
+    "gt": [
+      "religion_history.get_schisms"
+    ],
+    "correct": true,
+    "elapsed": 0.318,
+    "llm_used": true,
+    "tokens": 148
+  },
+  "parallel__0": {
+    "query": "Play songs from the artists Taylor Swift and Maroon 5, with a play time of 20 minutes and 15 minutes respectively, on Spotify.",
+    "predicted": "spotify.play",
+    "gt": [
+      "spotify.play",
+      "spotify.play"
+    ],
+    "correct": true,
+    "elapsed": 0.439,
+    "llm_used": true,
+    "tokens": 127
+  },
+  "parallel__1": {
+    "query": "Calculate the induced electromagnetic force for a magnetic field of 5 Tesla, area of 2 square meters and change in time of 4 seconds, then repeat with",
+    "predicted": "calculate_em_force",
+    "gt": [
+      "calculate_em_force",
+      "calculate_em_force"
+    ],
+    "correct": true,
+    "elapsed": 0.344,
+    "llm_used": true,
+    "tokens": 139
+  },
+  "parallel__2": {
+    "query": "Calculate the resistance of a wire with a length of 5m and cross sectional area 0.01m² with resistivity of copper and aluminum",
+    "predicted": "calculate_resistance",
+    "gt": [
+      "calculate_resistance",
+      "calculate_resistance"
+    ],
+    "correct": true,
+    "elapsed": 0.453,
+    "llm_used": true,
+    "tokens": 146
+  },
+  "parallel__3": {
+    "query": "Get the protein sequence of human HbA1c, normal hemoglobin, and rat hemoglobin and their 3D models",
+    "predicted": "protein_info.get_sequence_and_3D",
+    "gt": [
+      "protein_info.get_sequence_and_3D",
+      "protein_info.get_sequence_and_3D",
+      "protein_info.get_sequence_and_3D"
+    ],
+    "correct": true,
+    "elapsed": 0.34,
+    "llm_used": true,
+    "tokens": 133
+  },
+  "parallel__4": {
+    "query": "Calculate the body mass index for a person who is 6 feet tall and weighs 80 kg, also for a person who is 5.6 feet and weighs 60 kg.",
+    "predicted": "calculate_bmi",
+    "gt": [
+      "calculate_bmi",
+      "calculate_bmi"
+    ],
+    "correct": true,
+    "elapsed": 0.161,
+    "llm_used": true,
+    "tokens": 112
+  },
+  "parallel__5": {
+    "query": "Find the list of TV shows and their ratings on Netflix for 'Friends', and Hulu for 'The Office' and 'Stranger Things' and sort by its rating",
+    "predicted": "streaming_services.shows_list_and_ratings",
+    "gt": [
+      "streaming_services.shows_list_and_ratings",
+      "streaming_services.shows_list_and_ratings"
+    ],
+    "correct": true,
+    "elapsed": 0.438,
+    "llm_used": true,
+    "tokens": 153
+  },
+  "parallel__6": {
+    "query": "Calculate the amount of sales tax to be added on a purchase amount of $30.45 in Chicago, Illinois, $52.33 in Sacramento, California and $11.23 in Port",
+    "predicted": "calculate_sales_tax",
+    "gt": [
+      "calculate_sales_tax",
+      "calculate_sales_tax",
+      "calculate_sales_tax"
+    ],
+    "correct": true,
+    "elapsed": 0.515,
+    "llm_used": true,
+    "tokens": 172
+  },
+  "parallel__7": {
+    "query": "Find the factorial of 5,10 and 15.",
+    "predicted": "math.factorial",
+    "gt": [
+      "math.factorial",
+      "math.factorial",
+      "math.factorial"
+    ],
+    "correct": true,
+    "elapsed": 0.282,
+    "llm_used": true,
+    "tokens": 100
+  },
+  "parallel__8": {
+    "query": "Fetch the population of New York City, NY,  and Los Angeles, CA from US Census Database, and also get the population data for Alaska state and USA",
+    "predicted": "database_us_census.get_population",
+    "gt": [
+      "database_us_census.get_population",
+      "database_us_census.get_population",
+      "database_us_census.get_population",
+      "database_us_census.get_population"
+    ],
+    "correct": true,
+    "elapsed": 0.179,
+    "llm_used": true,
+    "tokens": 110
+  },
+  "parallel__9": {
+    "query": "Find two movie theatres near San Diego with availability for Tenet at 5 pm and No Time To Die at 7:30 pm.",
+    "predicted": "find_movie_showing",
+    "gt": [
+      "find_movie_showing",
+      "find_movie_showing"
+    ],
+    "correct": true,
+    "elapsed": 0.313,
+    "llm_used": true,
+    "tokens": 122
+  },
+  "parallel__10": {
+    "query": "Compute the Pythagorean Theorem of two side lengths: 3 and 4, 5 and 12.",
+    "predicted": "math.pythagoras",
+    "gt": [
+      "math.pythagoras",
+      "math.pythagoras"
+    ],
+    "correct": true,
+    "elapsed": 0.188,
+    "llm_used": true,
+    "tokens": 102
+  },
+  "parallel__11": {
+    "query": "Predict house price for a house of size 3000 sq ft. in location New York and 4000 sq ft. in Los Angeles using Machine Learning Model.",
+    "predicted": "ml.predict_house_price",
+    "gt": [
+      "ml.predict_house_price",
+      "ml.predict_house_price"
+    ],
+    "correct": true,
+    "elapsed": 0.201,
+    "llm_used": true,
+    "tokens": 115
+  },
+  "parallel__12": {
+    "query": "Build a decision tree classifier model with gini criterion, maximum depth of 5 and random state of 1, another with entropy criterion, maximum depth of",
+    "predicted": "model.DecisionTreeClassifier",
+    "gt": [
+      "model.DecisionTreeClassifier",
+      "model.DecisionTreeClassifier"
+    ],
+    "correct": true,
+    "elapsed": 0.537,
+    "llm_used": true,
+    "tokens": 159
+  },
+  "parallel__13": {
+    "query": "Can you give me 95% confidence interval for a sample mean with standard deviation of 10, sample size of 50 and sample mean of 25? And can you do the s",
+    "predicted": "confidence_interval.calculate",
+    "gt": [
+      "confidence_interval.calculate",
+      "confidence_interval.calculate"
+    ],
+    "correct": true,
+    "elapsed": 0.732,
+    "llm_used": true,
+    "tokens": 173
+  },
+  "parallel__14": {
+    "query": "Calculate the Present Value of an investment paying $1000 per year, with an interest rate of 5%, for 10, 20 and 30 years.",
+    "predicted": "calculate_present_value",
+    "gt": [
+      "calculate_present_value",
+      "calculate_present_value",
+      "calculate_present_value"
+    ],
+    "correct": true,
+    "elapsed": 0.561,
+    "llm_used": true,
+    "tokens": 170
+  },
+  "parallel__15": {
+    "query": "What will be the capital gains tax for a short term capital gains of $15000, long term gains of $25000 in the state of California and $20000 short ter",
+    "predicted": "calculate_capital_gains_tax",
+    "gt": [
+      "calculate_capital_gains_tax",
+      "calculate_capital_gains_tax"
+    ],
+    "correct": true,
+    "elapsed": 0.491,
+    "llm_used": true,
+    "tokens": 183
+  },
+  "parallel__16": {
+    "query": "Calculate return on investment for an initial investment of $2000 with a gain of $500. Do the same calculation for an initial investment of $5000 with",
+    "predicted": "calculate_return_on_investment",
+    "gt": [
+      "calculate_return_on_investment",
+      "calculate_return_on_investment"
+    ],
+    "correct": true,
+    "elapsed": 0.399,
+    "llm_used": true,
+    "tokens": 154
+  },
+  "parallel__17": {
+    "query": "Get the latest closing prices and volumes for Apple Inc., Google LLC., and Microsoft Corporation in the New York Stock Exchange",
+    "predicted": "get_stock_data",
+    "gt": [
+      "get_stock_data",
+      "get_stock_data",
+      "get_stock_data"
+    ],
+    "correct": true,
+    "elapsed": 0.395,
+    "llm_used": true,
+    "tokens": 125
+  },
+  "parallel__18": {
+    "query": "Calculate the Future Value of an investment of $1000 with an annual interest rate of 5% for 1,5 and 10 years.",
+    "predicted": "financials.calculate_future_value",
+    "gt": [
+      "financials.calculate_future_value",
+      "financials.calculate_future_value",
+      "financials.calculate_future_value"
+    ],
+    "correct": true,
+    "elapsed": 0.321,
+    "llm_used": true,
+    "tokens": 118
+  },
+  "parallel__19": {
+    "query": "Calculate the monthly mortgage payment for a loan amount of $400,000, with an annual interest rate of 4% and a loan term of 15, 20 and 30 years.",
+    "predicted": "calculate_mortgage_payment",
+    "gt": [
+      "calculate_mortgage_payment",
+      "calculate_mortgage_payment",
+      "calculate_mortgage_payment"
+    ],
+    "correct": true,
+    "elapsed": 0.666,
+    "llm_used": true,
+    "tokens": 193
+  },
+  "parallel_multiple__0": {
+    "query": "Find the sum of all the multiples of 3 and 5 between 1 and 1000. Also find the product of the first five prime numbers.",
+    "predicted": "math_toolkit.product_of_primes",
+    "gt": [
+      "math_toolkit.sum_of_multiples",
+      "math_toolkit.product_of_primes"
+    ],
+    "correct": true,
+    "elapsed": 0.378,
+    "llm_used": true,
+    "tokens": 165
+  },
+  "parallel_multiple__1": {
+    "query": "Find the area of a rectangle with length 7 and breadth 3. Also, calculate the area of a circle with radius 5.",
+    "predicted": "area_rectangle.calculate",
+    "gt": [
+      "area_rectangle.calculate",
+      "area_circle.calculate"
+    ],
+    "correct": true,
+    "elapsed": 0.239,
+    "llm_used": true,
+    "tokens": 143
+  },
+  "parallel_multiple__2": {
+    "query": "Find the area and perimeter of a circle with a radius of 5 and also find the circumference of a circle with diameter of 10.",
+    "predicted": "circle.calculate_area",
+    "gt": [
+      "circle.calculate_area",
+      "circle.calculate_circumference"
+    ],
+    "correct": true,
+    "elapsed": 0.355,
+    "llm_used": true,
+    "tokens": 158
+  },
+  "parallel_multiple__3": {
+    "query": "What are the length and the width of a rectangle which has a perimeter of 14 and area of 15.",
+    "predicted": "get_rectangle_property",
+    "gt": [
+      "get_rectangle_property",
+      "get_rectangle_property"
+    ],
+    "correct": true,
+    "elapsed": 0.42,
+    "llm_used": true,
+    "tokens": 153
+  },
+  "parallel_multiple__4": {
+    "query": "Calculate the area under the curve from x=1 to x=5 for the function f(x)=x^2. And find the derivative at x=3.",
+    "predicted": "integral",
+    "gt": [
+      "integral",
+      "derivative"
+    ],
+    "correct": true,
+    "elapsed": 0.334,
+    "llm_used": true,
+    "tokens": 147
+  },
+  "parallel_multiple__5": {
+    "query": "Calculate the Greatest Common Divisor (GCD) of 96 and 128, and the least common multiple (LCM) of 15 and 25.",
+    "predicted": "lcm",
+    "gt": [
+      "gcd",
+      "lcm"
+    ],
+    "correct": true,
+    "elapsed": 0.293,
+    "llm_used": true,
+    "tokens": 159
+  },
+  "parallel_multiple__6": {
+    "query": "Find all prime numbers between 50 and 150. Then get the fibonacci series upto 150.",
+    "predicted": "get_fibonacci_sequence",
+    "gt": [
+      "find_prime_numbers",
+      "get_fibonacci_sequence"
+    ],
+    "correct": true,
+    "elapsed": 0.409,
+    "llm_used": true,
+    "tokens": 150
+  },
+  "parallel_multiple__7": {
+    "query": "Calculate the time required for a car moving at 50 m/s to travel a distance of 600 m. Also calculate the time required for a bullet moving at 400 m/s ",
+    "predicted": "kinematics.calculate_time",
+    "gt": [
+      "kinematics.calculate_time",
+      "kinematics.calculate_time"
+    ],
+    "correct": true,
+    "elapsed": 0.445,
+    "llm_used": true,
+    "tokens": 173
+  },
+  "parallel_multiple__8": {
+    "query": "Calculate the final velocity of a moving object given initial velocity of 20 m/s, acceleration of 5 m/s^2 and time of 6 seconds. Also, compute the tot",
+    "predicted": "kinematics.distance_traveled",
+    "gt": [
+      "kinematics.final_velocity",
+      "kinematics.distance_traveled"
+    ],
+    "correct": true,
+    "elapsed": 0.434,
+    "llm_used": true,
+    "tokens": 170
+  },
+  "parallel_multiple__9": {
+    "query": "Book a flight from Seattle to Boston with American Airlines and book a hotel in Boston for 4 nights. ",
+    "predicted": "flight_book",
+    "gt": [
+      "flight_book",
+      "hotel_book"
+    ],
+    "correct": true,
+    "elapsed": 0.381,
+    "llm_used": true,
+    "tokens": 132
+  },
+  "parallel_multiple__10": {
+    "query": "Buy me a ticket to the Mamma Mia musical for next Friday, June 30th 2023, also get me a train ticket from New York to Chicago for the same day.",
+    "predicted": "musical_ticket.buy",
+    "gt": [
+      "musical_ticket.buy",
+      "train_ticket.buy"
+    ],
+    "correct": true,
+    "elapsed": 0.476,
+    "llm_used": true,
+    "tokens": 183
+  },
+  "parallel_multiple__11": {
+    "query": "What is the Electric field at 3m from a point charge with a value of 4C? Also, calculate the magnetic field for an electric current of 0.5A flowing th",
+    "predicted": "physics.magnetic_field",
+    "gt": [
+      "physics.electric_field",
+      "physics.magnetic_field"
+    ],
+    "correct": true,
+    "elapsed": 0.34,
+    "llm_used": true,
+    "tokens": 179
+  },
+  "parallel_multiple__12": {
+    "query": "Calculate the magnetic field produced by a wire carrying a current of 4 amps with a distance of 2 m from the wire. And find the voltage difference of ",
+    "predicted": "calculate_magnetic_field",
+    "gt": [
+      "calculate_magnetic_field",
+      "calculate_voltage_difference"
+    ],
+    "correct": true,
+    "elapsed": 0.484,
+    "llm_used": true,
+    "tokens": 202
+  },
+  "parallel_multiple__13": {
+    "query": "'Calculate the energy required to heat 100 grams of water from 25 degrees Celsius to 100 degrees Celsius in joules, and also calculate the energy requ",
+    "predicted": "energy_calculator.calculate",
+    "gt": [
+      "energy_calculator.calculate",
+      "energy_calculator.calculate"
+    ],
+    "correct": true,
+    "elapsed": 0.741,
+    "llm_used": true,
+    "tokens": 230
+  },
+  "parallel_multiple__14": {
+    "query": "Give me the population size of tigers in Bangladesh and India for the last 5 years. Also provide the projected population size of tigers in Nepal and ",
+    "predicted": "animal_population.get_history",
+    "gt": [
+      "animal_population.get_history",
+      "animal_population.get_history",
+      "animal_population.get_projection",
+      "animal_population.get_projection"
+    ],
+    "correct": true,
+    "elapsed": 0.321,
+    "llm_used": true,
+    "tokens": 177
+  },
+  "parallel_multiple__15": {
+    "query": "Find a Chinese restaurant near me in New York and suggest a high-rated of 4 Italian restaurant in Los Angeles. Then find a cheapest flight for round-t",
+    "predicted": "restaurant.search",
+    "gt": [
+      "restaurant.search",
+      "restaurant.search",
+      "flight.search"
+    ],
+    "correct": true,
+    "elapsed": 0.527,
+    "llm_used": true,
+    "tokens": 175
+  },
+  "parallel_multiple__16": {
+    "query": "Calculate the factorial of 8 and generate the prime numbers from 1 to 50.",
+    "predicted": "calculate_factorial",
+    "gt": [
+      "calculate_factorial",
+      "generate_prime"
+    ],
+    "correct": true,
+    "elapsed": 0.287,
+    "llm_used": true,
+    "tokens": 131
+  },
+  "parallel_multiple__17": {
+    "query": "How many steps do I need to walk in order to lose 500 calories and how much water do I need to intake today if I exercise for 2 hours?",
+    "predicted": "hydration_calculator",
+    "gt": [
+      "steps_calorie_calculation",
+      "hydration_calculator"
+    ],
+    "correct": true,
+    "elapsed": 0.479,
+    "llm_used": true,
+    "tokens": 166
+  },
+  "parallel_multiple__18": {
+    "query": "I need to convert 10 dollars to Euros and make a 10 dollar deposit in my local bank account with account number - 987654.",
+    "predicted": "banking_service",
+    "gt": [
+      "currency_conversion",
+      "banking_service"
+    ],
+    "correct": true,
+    "elapsed": 0.36,
+    "llm_used": true,
+    "tokens": 150
+  },
+  "parallel_multiple__19": {
+    "query": "Perform Gaussian integral of the function exp(-x^2) from -2 to 2. Also calculate the definite integral from 0 to 3.1416 of sin(x).",
+    "predicted": "math.definite_integral",
+    "gt": [
+      "math.gaussian_integral",
+      "math.definite_integral"
+    ],
+    "correct": true,
+    "elapsed": 0.392,
+    "llm_used": true,
+    "tokens": 167
+  },
+  "irrelevance__0": {
+    "query": "Calculate the area of a triangle given the base is 10 meters and height is 5 meters.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.171,
+    "llm_used": true,
+    "tokens": 91
+  },
+  "irrelevance__1": {
+    "query": "Solve the quadratic equation with coefficients a = 1, b = 2, and c = 3.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.172,
+    "llm_used": true,
+    "tokens": 93
+  },
+  "irrelevance__2": {
+    "query": "Solve for the roots of the equation 3x^2 - 2x - 5.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.419,
+    "llm_used": true,
+    "tokens": 95
+  },
+  "irrelevance__3": {
+    "query": "What is the slope of the line which is perpendicular to the line with the equation y = 3x + 2?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.18,
+    "llm_used": true,
+    "tokens": 95
+  },
+  "irrelevance__4": {
+    "query": "What is the roots of linear equation bx + c = 0?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.141,
+    "llm_used": true,
+    "tokens": 94
+  },
+  "irrelevance__5": {
+    "query": "What is the perimeter of a rectangle with length 5 meters and width 4 meters?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.249,
+    "llm_used": true,
+    "tokens": 94
+  },
+  "irrelevance__6": {
+    "query": "What's the area of a rectangle that has width of 5m and length of 7m?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.14,
+    "llm_used": true,
+    "tokens": 89
+  },
+  "irrelevance__7": {
+    "query": "What is the area under the curve of the function f(x) = 3x^2 from x = 1 to x = 5?",
+    "predicted": "math.integral_calculator",
+    "gt": [],
+    "correct": false,
+    "elapsed": 0.291,
+    "llm_used": true,
+    "tokens": 121
+  },
+  "irrelevance__8": {
+    "query": "Find the integral of x^3 from 1 to 5",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.124,
+    "llm_used": true,
+    "tokens": 77
+  },
+  "irrelevance__9": {
+    "query": "Find the definite integral of f(x)=x^2 from x=1 to x=3.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.163,
+    "llm_used": true,
+    "tokens": 99
+  },
+  "irrelevance__10": {
+    "query": "Compute the derivative of the function '2x' within the at 1.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.134,
+    "llm_used": true,
+    "tokens": 93
+  },
+  "irrelevance__11": {
+    "query": "What is the closest integer to 30?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.21,
+    "llm_used": true,
+    "tokens": 82
+  },
+  "irrelevance__12": {
+    "query": "Find the fastest route from New York to Boston.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.136,
+    "llm_used": true,
+    "tokens": 85
+  },
+  "irrelevance__13": {
+    "query": "Calculate the prime factors of 100.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.147,
+    "llm_used": true,
+    "tokens": 92
+  },
+  "irrelevance__14": {
+    "query": "What is the acceleration a ball will reach if it's thrown straight upwards with a velocity of 5 m/s?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.144,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "irrelevance__15": {
+    "query": "What are the latest movie releases?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.147,
+    "llm_used": true,
+    "tokens": 80
+  },
+  "irrelevance__16": {
+    "query": "How far will a car travel in time 't' when launched with velocity 'v' at an angle 'theta'?",
+    "predicted": "calculate_projectile_range",
+    "gt": [],
+    "correct": false,
+    "elapsed": 0.328,
+    "llm_used": true,
+    "tokens": 109
+  },
+  "irrelevance__17": {
+    "query": "What's the time right now?",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.169,
+    "llm_used": true,
+    "tokens": 84
+  },
+  "irrelevance__18": {
+    "query": "How do I find the angle of the force for a given momentum?",
+    "predicted": "calculate_vector_angle",
+    "gt": [],
+    "correct": false,
+    "elapsed": 0.155,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "irrelevance__19": {
+    "query": "Find the volume of a cone with base radius 3 cm and height 5 cm.",
+    "predicted": null,
+    "gt": [],
+    "correct": true,
+    "elapsed": 0.17,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "live_simple__0": {
+    "query": "Can you retrieve the details for the user with the ID 7890, who has black as their special request?",
+    "predicted": "get_user_info",
+    "gt": [
+      "get_user_info"
+    ],
+    "correct": true,
+    "elapsed": 0.231,
+    "llm_used": true,
+    "tokens": 108
+  },
+  "live_simple__1": {
+    "query": "I want to see the star history of ShishirPatil/gorilla and gorilla-llm/gorilla-cli, with the timelines aligned, so that I can more clearly observe the",
+    "predicted": "github_star",
+    "gt": [
+      "github_star"
+    ],
+    "correct": true,
+    "elapsed": 0.412,
+    "llm_used": true,
+    "tokens": 146
+  },
+  "live_simple__2": {
+    "query": "I need a Comfort Uber ride from 2020 Addison Street, Berkeley, CA, USA, and I can wait up to 600 seconds for it.",
+    "predicted": "uber.ride",
+    "gt": [
+      "uber.ride"
+    ],
+    "correct": true,
+    "elapsed": 0.347,
+    "llm_used": true,
+    "tokens": 133
+  },
+  "live_simple__3": {
+    "query": "I need a 'Plus' type Uber from 221B Baker Street, Berkeley, CA, USA, and I can wait up to 600 seconds for it. ",
+    "predicted": "uber.ride",
+    "gt": [
+      "uber.ride"
+    ],
+    "correct": true,
+    "elapsed": 0.344,
+    "llm_used": true,
+    "tokens": 136
+  },
+  "live_simple__4": {
+    "query": "What are the current weather conditions in Tel Aviv, and could you provide that in Fahrenheit, please?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.227,
+    "llm_used": true,
+    "tokens": 101
+  },
+  "live_simple__5": {
+    "query": "Qual a temperatura atual em Divinópolis, MG? fahrenheit",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.283,
+    "llm_used": true,
+    "tokens": 101
+  },
+  "live_simple__6": {
+    "query": "Can you tell me the weather in fahrenheit so that I decide if I need to wear a jacket today? San Francisco",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.213,
+    "llm_used": true,
+    "tokens": 105
+  },
+  "live_simple__7": {
+    "query": "Im at Riga, Latvia, Can you tell me the current temperature?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.268,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "live_simple__8": {
+    "query": "I want to know weather conditions? I'm at London, UK in fahr",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.212,
+    "llm_used": true,
+    "tokens": 96
+  },
+  "live_simple__9": {
+    "query": "What's weather in Hyderabad in Fahrenheit",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.228,
+    "llm_used": true,
+    "tokens": 88
+  },
+  "live_simple__10": {
+    "query": "Could you tell me the current weather in Yosemite National Park which locates at Mariposa, CA, and make sure to give me the temperature in Celsius?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.229,
+    "llm_used": true,
+    "tokens": 115
+  },
+  "live_simple__11": {
+    "query": "Could you tell me the current weather conditions in Naples, Florida?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.237,
+    "llm_used": true,
+    "tokens": 97
+  },
+  "live_simple__12": {
+    "query": "I'm planning a trip to New York, NY in December and will be staying for 5 days. Could you tell me the current weather conditions, and provide the temp",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.259,
+    "llm_used": true,
+    "tokens": 120
+  },
+  "live_simple__13": {
+    "query": "我想知道上海目前的天气状况，可以帮我查询吗？顺便使用摄氏度来显示温度。",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.26,
+    "llm_used": true,
+    "tokens": 102
+  },
+  "live_simple__14": {
+    "query": "I have a busy day today. Can you tell me what the temperature is going to be in Bangkok, Thailand. I prefer the fahrenheit unit.",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.208,
+    "llm_used": true,
+    "tokens": 111
+  },
+  "live_simple__15": {
+    "query": "I'm at Bengaluru. Tell me the current weather conditions in Chennai, Tamil Nadu in fahrenheit?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.205,
+    "llm_used": true,
+    "tokens": 100
+  },
+  "live_simple__16": {
+    "query": "Could you tell me the current weather in Lang Son in fahrenheit?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.276,
+    "llm_used": true,
+    "tokens": 95
+  },
+  "live_simple__17": {
+    "query": "weather today in Boston in fahrenheit?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.193,
+    "llm_used": true,
+    "tokens": 88
+  },
+  "live_simple__18": {
+    "query": "Can you tell me the current weather in Moscow, specifying the temperature in Celsius?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.219,
+    "llm_used": true,
+    "tokens": 97
+  },
+  "live_simple__19": {
+    "query": "What's the weather in Quintana Roo, Mexico. Please tell me the answer in the superior units of temperature, by that I mean Celsius.",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.398,
+    "llm_used": true,
+    "tokens": 114
+  },
+  "live_multiple__0": {
+    "query": "update my latte to a large size with coconut milk and make it extra sweet? make it served 'boiling hot' as the special request. The drink id is 'latte",
+    "predicted": "ChaDri.change_drink",
+    "gt": [
+      "ChaDri.change_drink"
+    ],
+    "correct": true,
+    "elapsed": 0.197,
+    "llm_used": true,
+    "tokens": 149
+  },
+  "live_multiple__1": {
+    "query": "NO SUGAR in my coffee loll. Can you change my drink with drink id '1234' order to have no sweetness, and also make sure it's served hot?",
+    "predicted": "ChaDri.change_drink",
+    "gt": [
+      "ChaDri.change_drink"
+    ],
+    "correct": true,
+    "elapsed": 0.188,
+    "llm_used": true,
+    "tokens": 150
+  },
+  "live_multiple__2": {
+    "query": "Tôi cần một chuyến xe Uber loại 'Plus' từ địa chỉ '2150 Shattuck Ave, Berkeley, CA' và tôi có thể chờ tối đa 10 phút.",
+    "predicted": "uber.ride",
+    "gt": [
+      "uber.ride"
+    ],
+    "correct": true,
+    "elapsed": 0.36,
+    "llm_used": true,
+    "tokens": 161
+  },
+  "live_multiple__3": {
+    "query": "Get weather of Ha Noi for me",
+    "predicted": "api.weather",
+    "gt": [
+      "api.weather"
+    ],
+    "correct": true,
+    "elapsed": 0.229,
+    "llm_used": true,
+    "tokens": 103
+  },
+  "live_multiple__4": {
+    "query": "Tìm chuyến xe cho tôi từ Hà Nội loại Plus trong 10 phút nữa. Address: 123 Hanoi Street",
+    "predicted": "uber.ride",
+    "gt": [
+      "uber.ride"
+    ],
+    "correct": true,
+    "elapsed": 0.317,
+    "llm_used": true,
+    "tokens": 133
+  },
+  "live_multiple__5": {
+    "query": "Could you tell me the current weather conditions in Shanghai, using the metric system?",
+    "predicted": "get_current_weather",
+    "gt": [
+      "get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.273,
+    "llm_used": true,
+    "tokens": 165
+  },
+  "live_multiple__6": {
+    "query": "我可以创建一个名为'DevelopmentEnv'的workspace，基于'feature-branch'吗？",
+    "predicted": "create_workspace",
+    "gt": [
+      "create_workspace"
+    ],
+    "correct": true,
+    "elapsed": 0.343,
+    "llm_used": true,
+    "tokens": 171
+  },
+  "live_multiple__7": {
+    "query": "我想在 mbox 系统中创建一个新的工作空间，基于 git 仓库的 master 分支。工作空间的名字叫做 'DevelopersHub'。",
+    "predicted": "create_workspace",
+    "gt": [
+      "create_workspace"
+    ],
+    "correct": true,
+    "elapsed": 0.176,
+    "llm_used": true,
+    "tokens": 175
+  },
+  "live_multiple__8": {
+    "query": "how can i cook steak Indian style??",
+    "predicted": "cookbook.search_recipe",
+    "gt": [
+      "cookbook.search_recipe"
+    ],
+    "correct": true,
+    "elapsed": 0.274,
+    "llm_used": true,
+    "tokens": 197
+  },
+  "live_multiple__9": {
+    "query": "what is Imjin war",
+    "predicted": "HNA_WQA.search",
+    "gt": [
+      "HNA_WQA.search"
+    ],
+    "correct": true,
+    "elapsed": 0.57,
+    "llm_used": true,
+    "tokens": 235
+  },
+  "live_multiple__10": {
+    "query": "Could you stop the washing machine in the utility room?",
+    "predicted": "ControlAppliance.execute",
+    "gt": [
+      "ControlAppliance.execute"
+    ],
+    "correct": true,
+    "elapsed": 0.229,
+    "llm_used": true,
+    "tokens": 192
+  },
+  "live_multiple__11": {
+    "query": "who is ji sung park?",
+    "predicted": "HNA_WQA.search",
+    "gt": [
+      "HNA_WQA.search"
+    ],
+    "correct": true,
+    "elapsed": 0.305,
+    "llm_used": true,
+    "tokens": 207
+  },
+  "live_multiple__12": {
+    "query": "who is park ji sung",
+    "predicted": "HNA_WQA.search",
+    "gt": [
+      "HNA_WQA.search"
+    ],
+    "correct": true,
+    "elapsed": 0.339,
+    "llm_used": true,
+    "tokens": 205
+  },
+  "live_multiple__13": {
+    "query": "I'm planning a camping trip to Big Sur, and I need to know the current weather conditions there. Could you provide me with the weather information for",
+    "predicted": "OpenWeatherMap.get_current_weather",
+    "gt": [
+      "OpenWeatherMap.get_current_weather"
+    ],
+    "correct": true,
+    "elapsed": 0.394,
+    "llm_used": true,
+    "tokens": 236
+  },
+  "live_multiple__14": {
+    "query": "다용도실, 통돌이, 중지. Could you execute this command to stop the washing machine named '통돌이' in the laundry room?",
+    "predicted": "ControlAppliance.execute",
+    "gt": [
+      "ControlAppliance.execute"
+    ],
+    "correct": true,
+    "elapsed": 0.218,
+    "llm_used": true,
+    "tokens": 220
+  },
+  "live_multiple__15": {
+    "query": "Can you find me the recent news articles about `Son's latest goal` in the sports category?",
+    "predicted": "HNA_NEWS.search",
+    "gt": [
+      "HNA_NEWS.search"
+    ],
+    "correct": true,
+    "elapsed": 0.42,
+    "llm_used": true,
+    "tokens": 225
+  },
+  "live_multiple__16": {
+    "query": "최근 박지성에 관한 뉴스를 찾아줘.",
+    "predicted": "HNA_NEWS.search",
+    "gt": [
+      "HNA_NEWS.search"
+    ],
+    "correct": true,
+    "elapsed": 0.394,
+    "llm_used": true,
+    "tokens": 223
+  },
+  "live_multiple__17": {
+    "query": "how to cook sikhae",
+    "predicted": "cookbook.search_recipe",
+    "gt": [
+      "cookbook.search_recipe"
+    ],
+    "correct": true,
+    "elapsed": 0.234,
+    "llm_used": true,
+    "tokens": 198
+  },
+  "live_multiple__18": {
+    "query": "what is 'airtificial intelligence', fetch news from 2023.10.1 to 2023.10.7",
+    "predicted": "HNA_NEWS.search",
+    "gt": [
+      "HNA_NEWS.search"
+    ],
+    "correct": true,
+    "elapsed": 0.513,
+    "llm_used": true,
+    "tokens": 256
+  },
+  "live_multiple__19": {
+    "query": "hey do 거실 에어컨 실행",
+    "predicted": "ControlAppliance.execute",
+    "gt": [
+      "ControlAppliance.execute"
+    ],
+    "correct": true,
+    "elapsed": 0.257,
+    "llm_used": true,
+    "tokens": 195
+  }
+}
