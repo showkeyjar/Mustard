@@ -113,6 +113,13 @@ CODE_TOKENS_EN = (
     "scraping",
     "hack",
     "debug",
+    # English code action verbs
+    "write",
+    "implement",
+    "run",
+    "execute",
+    "build",
+    "create",
 )
 CODE_TOKENS_ZH = ("代码", "脚本", "报错", "爬虫", "抓取", "抓数据", "数据采集", "采集")
 CODE_ACTION_TOKENS = (
@@ -736,15 +743,47 @@ def has_calc_signal(text: str) -> bool:
     if any(exclusion in text for exclusion in DATE_EXCLUSIONS):
         return False
     # Pure arithmetic expression (e.g. "1+2+3+4+5", "3*7-2") triggers calc
-    if re.match(r"^[\d\s+\-*/().^]+$", text.strip()):
+    if re.match(r"^[\d\s+\-*/().^=?]+$", text.strip()):
+        return True
+    # Mixed-language arithmetic ("5km=?m", "3+5=?") triggers calc
+    if re.search(r"\d+\s*[+\-*/]\s*\d+", text) and not any(
+        exclusion in text for exclusion in DATE_EXCLUSIONS
+    ):
+        return True
+    # Unit conversion pattern: "5km=?m", "100cm=?m", "2lb+3oz"
+    # Pattern: digit + unit + [=??] + digit? + unit
+    if re.search(r"\d+\s*[a-zA-Z]+\s*[=?]+\s*\d*\s*[a-zA-Z]*", text):
         return True
     # No digits = no calculation possible ("一年有多少天" is knowledge, not calc)
     # BUT: classic Chinese math puzzles (鸡兔同笼) have numbers implied by the puzzle
     # structure — the "10个头" and "26条腿" are implicit operands.  Treat these
     # puzzles as calculation even without explicit digits in the query text itself.
+    # ALSO: Chinese numeral words (三/五/百/千) count as numeric operands.
+    _CHINESE_NUMERALS = (
+        "一",
+        "二",
+        "三",
+        "四",
+        "五",
+        "六",
+        "七",
+        "八",
+        "九",
+        "十",
+        "百",
+        "千",
+        "万",
+        "亿",
+        "零",
+        "两",
+        "半",
+    )
+    has_chinese_numeral = any(n in text for n in _CHINESE_NUMERALS)
     if not re.search(r"\d", text):
         if "鸡兔同笼" in text or ("头" in text and "腿" in text and "鸡" in text):
             pass  # Classic puzzle — treat as calculation
+        elif has_chinese_numeral and any(token in text for token in CALC_TOKENS):
+            pass  # Chinese numeral + calc keyword → calculation ("三加上五")
         else:
             return False
     return any(token in text for token in CALC_TOKENS)
@@ -760,10 +799,31 @@ def has_code_signal(text: str) -> bool:
     However, debug consultative intent ("怎么解决/什么问题") overrides
     code signals — "代码报错了怎么解决" is seeking help, not execution.
     """
-    has_en = any(token in text.lower() for token in CODE_TOKENS_EN)
-    has_zh = any(token in text for token in CODE_TOKENS_ZH)
-    has_action = any(token in text for token in CODE_ACTION_TOKENS)
-    has_consult = any(token in text for token in CONSULT_TOKENS)
+    # Normalize: remove spaces that may split compound words (typo/robustness)
+    # "快速排 序" → "快速排序", "quicksort" already compact
+    _normalized = re.sub(r"(?<=[\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])", "", text)
+
+    has_en = any(token in _normalized.lower() for token in CODE_TOKENS_EN)
+    has_zh = any(token in _normalized for token in CODE_TOKENS_ZH)
+    has_action = any(token in _normalized for token in CODE_ACTION_TOKENS)
+    has_consult = any(token in _normalized for token in CONSULT_TOKENS)
+
+    # Also check for English algorithm names that are strong code signals
+    _EN_ALGO_NAMES = (
+        "quicksort",
+        "mergesort",
+        "bubblesort",
+        "heapsort",
+        "binarysearch",
+        "dfs",
+        "bfs",
+        "dijkstra",
+        "bellman",
+        "floyd",
+        "kruskal",
+        "prim",
+    )
+    has_en_algo = any(token in _normalized.lower() for token in _EN_ALGO_NAMES)
 
     # Writing tokens override code action ("写一篇作文" is writing, not code)
     if any(token in text for token in WRITING_TOKENS) and "写" in text:
@@ -798,12 +858,45 @@ def has_code_signal(text: str) -> bool:
             if not has_action and not has_strong_code_verb:
                 return False
         return True
+    # English algorithm names are strong code signals even without Chinese action verbs
+    # "write一个quicksort" → has_en_algo=True + "write" in CODE_TOKENS_EN
+    if has_en_algo:
+        return True
     # "Python的GIL是什么" — 虽然"Python"是code token，但"是什么"是explain/search信号
     # 没有代码动作动词时，视为知识查询而非代码执行
     if has_zh and not has_action:
         return False
     if has_zh and has_action:
         return True
+    # Algorithm names in CODE_ACTION_TOKENS are strong code signals even without
+    # CODE_TOKENS_ZH — "写一个排序" has action("写"+"排序") but no zh("代码" etc.)
+    if has_action and not has_consult:
+        # Check if any action token is an algorithm name
+        _algo_names = (
+            "排序",
+            "查找",
+            "遍历",
+            "反转",
+            "去重",
+            "合并",
+            "递归",
+            "斐波那契",
+            "二分",
+            "阶乘",
+            "快速排序",
+            "冒泡排序",
+            "归并排序",
+            "爬",
+            "抓",
+            "画图",
+            "绘图",
+            "可视化",
+            "画出来",
+            "跑个",
+            "跑一下",
+        )
+        if any(n in _normalized for n in _algo_names):
+            return True
     if has_action and any(
         kw in text for kw in ("python", "py", "java", "js", "c++", "cpp", "go", "rust")
     ):
@@ -951,6 +1044,8 @@ def has_low_intent_signal(text: str) -> bool:
 
     # Rescue: if ANY strong action verb is present, it's NOT low-intent
     # "算一下" / "搞不定" / "画个图" / "订个" / "查一下" etc.
+    # BUT: bare action verbs without any target/object are still low-intent
+    # "分析" alone → low-intent. "分析一下方案" → NOT low-intent (has target).
     _strong_action_verbs = (
         "算",
         "计算",
@@ -992,7 +1087,15 @@ def has_low_intent_signal(text: str) -> bool:
         "停止",
         "重启",
     )
-    if any(v in stripped for v in _strong_action_verbs):
+    # Bare action verbs: just the verb + optional "一下/了/啊" = still too vague
+    _bare_action_pattern = re.compile(
+        r"^(分析|看看|弄|搞|做|查|找|问|想|要|帮我)(一下|了|啊|呢|吧)?$",
+    )
+    if _bare_action_pattern.match(stripped):
+        return True
+    if any(
+        v in stripped for v in _strong_action_verbs
+    ) and not _bare_action_pattern.match(stripped):
         return False
 
     # Rescue: if any tech metric keyword is present, it's NOT low-intent
@@ -1001,6 +1104,37 @@ def has_low_intent_signal(text: str) -> bool:
 
     # Rescue: if any CODE_TOKENS are present, it's NOT low-intent
     if any(t in stripped.lower() for t in CODE_TOKENS_EN):
+        return False
+
+    # Rescue: pure arithmetic expressions are NOT low-intent
+    # "3+5", "5km=?m", "2*3-1" — these are meaningful calculation queries
+    if re.search(r"\d+\s*[+\-*/=?]\s*\d+", stripped):
+        return False
+    # Mixed language with digits: "5km=?m" has digits + operators
+    if re.search(r"\d", stripped) and any(
+        op in stripped for op in ("+", "-", "*", "/", "=", "?")
+    ):
+        return False
+
+    # Rescue: English code action verbs ("write", "run", "implement")
+    if any(
+        t in stripped.lower()
+        for t in ("write", "run", "implement", "execute", "build", "create")
+    ):
+        return False
+
+    # Rescue: English algorithm names ("quicksort", "mergesort")
+    _EN_ALGO_NAMES_RESCUE = (
+        "quicksort",
+        "mergesort",
+        "bubblesort",
+        "heapsort",
+        "binarysearch",
+        "dfs",
+        "bfs",
+        "dijkstra",
+    )
+    if any(t in stripped.lower() for t in _EN_ALGO_NAMES_RESCUE):
         return False
 
     # Rule 1: Very short + no strong signal

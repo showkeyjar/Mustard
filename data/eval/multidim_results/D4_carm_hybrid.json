@@ -3,16 +3,16 @@
     "turn_correct": 2,
     "turn_total": 2,
     "conv_correct": true,
-    "elapsed": 0.004,
+    "elapsed": 0.009,
     "anaphora_correct": 2,
     "anaphora_total": 2,
     "tokens": 0
   },
   "carm_mt__mt_code_then_calc": {
-    "turn_correct": 2,
+    "turn_correct": 1,
     "turn_total": 2,
-    "conv_correct": true,
-    "elapsed": 0.008,
+    "conv_correct": false,
+    "elapsed": 0.007,
     "anaphora_correct": 0,
     "anaphora_total": 0,
     "tokens": 0
@@ -21,7 +21,7 @@
     "turn_correct": 2,
     "turn_total": 2,
     "conv_correct": true,
-    "elapsed": 0.007,
+    "elapsed": 0.005,
     "anaphora_correct": 0,
     "anaphora_total": 0,
     "tokens": 0
@@ -39,7 +39,7 @@
     "turn_correct": 2,
     "turn_total": 2,
     "conv_correct": true,
-    "elapsed": 0.004,
+    "elapsed": 0.007,
     "anaphora_correct": 0,
     "anaphora_total": 0,
     "tokens": 0
@@ -48,7 +48,7 @@
     "turn_correct": 2,
     "turn_total": 2,
     "conv_correct": true,
-    "elapsed": 0.004,
+    "elapsed": 0.008,
     "anaphora_correct": 0,
     "anaphora_total": 0,
     "tokens": 0
@@ -57,7 +57,7 @@
     "turn_correct": 1,
     "turn_total": 2,
     "conv_correct": false,
-    "elapsed": 0.003,
+    "elapsed": 0.005,
     "anaphora_correct": 0,
     "anaphora_total": 0,
     "tokens": 0
@@ -66,7 +66,7 @@
     "turn_correct": 2,
     "turn_total": 3,
     "conv_correct": false,
-    "elapsed": 0.004,
+    "elapsed": 0.007,
     "anaphora_correct": 2,
     "anaphora_total": 3,
     "tokens": 0

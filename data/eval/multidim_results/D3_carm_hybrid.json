@@ -8,7 +8,7 @@
     "result_ok": true,
     "result_text": "计算结果: 3 + 5 = 8",
     "confidence": 0.95,
-    "elapsed": 0.024,
+    "elapsed": 0.019,
     "category": "calc_basic"
   },
   "case__1": {
@@ -20,7 +20,7 @@
     "result_ok": true,
     "result_text": "计算结果: 123 * 456 = 56088",
     "confidence": 0.95,
-    "elapsed": 0.001,
+    "elapsed": 0.002,
     "category": "calc_basic"
   },
   "case__2": {
@@ -32,7 +32,7 @@
     "result_ok": true,
     "result_text": "计算结果: 2 ** 10 = 1024",
     "confidence": 0.95,
-    "elapsed": 0.002,
+    "elapsed": 0.001,
     "category": "calc_basic"
   },
   "case__3": {
@@ -56,7 +56,7 @@
     "result_ok": true,
     "result_text": "计算结果: 200 * 8 / 10 = 160",
     "confidence": 0.95,
-    "elapsed": 0.001,
+    "elapsed": 0.002,
     "category": "calc_nl"
   },
   "case__5": {
@@ -68,7 +68,7 @@
     "result_ok": true,
     "result_text": "计算结果: 3.14159265 * 5 ** 2 = 78.53981625",
     "confidence": 0.95,
-    "elapsed": 0.004,
+    "elapsed": 0.003,
     "category": "calc_nl"
   },
   "case__6": {
@@ -92,7 +92,7 @@
     "result_ok": true,
     "result_text": "计算结果: (35 * 4 - 94) / 2 = 23",
     "confidence": 0.95,
-    "elapsed": 0.006,
+    "elapsed": 0.005,
     "category": "calc_nl"
   },
   "case__8": {
@@ -128,7 +128,7 @@
     "result_ok": true,
     "result_text": "代码执行成功。\n[1, 1, 2, 3, 6, 8, 10]",
     "confidence": 0.88,
-    "elapsed": 0.108,
+    "elapsed": 0.067,
     "category": "code"
   },
   "case__11": {
@@ -140,7 +140,7 @@
     "result_ok": true,
     "result_text": "代码执行成功。\n[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]",
     "confidence": 0.88,
-    "elapsed": 0.101,
+    "elapsed": 0.076,
     "category": "code"
   },
   "case__12": {
@@ -152,7 +152,7 @@
     "result_ok": true,
     "result_text": "无可用大模型后端。请设置 GEMINI_API_KEY 环境变量连接 Gemini，或启动 Ollama（ollama serve）连接本地模型。原问题: 请详细分析一下人工智能在医疗领域的应用前景",
     "confidence": 0.15,
-    "elapsed": 8.233,
+    "elapsed": 8.185,
     "category": "consult"
   },
   "case__13": {
@@ -164,7 +164,7 @@
     "result_ok": true,
     "result_text": "检索受限: 未能连接搜索服务（可安装 duckduckgo-search 包获得真实检索能力）。\n分析建议: 无法检索外部信息。关键词: 哪个更适合初学者, Python, JavaScript",
     "confidence": 0.35,
-    "elapsed": 30.395,
+    "elapsed": 10.12,
     "category": "consult"
   },
   "case__14": {
@@ -188,7 +188,7 @@
     "result_ok": true,
     "result_text": "检索受限: 未能连接搜索服务（可安装 duckduckgo-search 包获得真实检索能力）。\n分析建议: 无法检索外部信息。关键词: 最新的, 技术趋势是什么, AI",
     "confidence": 0.35,
-    "elapsed": 37.464,
+    "elapsed": 16.222,
     "category": "search"
   },
   "case__16": {
@@ -200,7 +200,7 @@
     "result_ok": true,
     "result_text": "Low/no-intent query — no tool can meaningfully handle this. Prompting user to clarify.",
     "confidence": 0.3,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "category": "reject"
   },
   "case__17": {
@@ -212,7 +212,7 @@
     "result_ok": true,
     "result_text": "Low/no-intent query — no tool can meaningfully handle this. Prompting user to clarify.",
     "confidence": 0.3,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "category": "reject"
   }
 }

@@ -9,19 +9,19 @@
     "pert_ok": true,
     "consistent": true,
     "robustness_type": "typo",
-    "elapsed": 0.001
+    "elapsed": 0.002
   },
   "case__1": {
     "original": "帮我写一个快速排序",
     "perturbed": "帮我写一个快速排 序",
     "expected_tool": "code_executor",
     "orig_pred": "code_executor",
-    "pert_pred": "bigmodel_proxy",
+    "pert_pred": "code_executor",
     "orig_ok": true,
-    "pert_ok": false,
-    "consistent": false,
+    "pert_ok": true,
+    "consistent": true,
     "robustness_type": "typo",
-    "elapsed": 0.002
+    "elapsed": 0.001
   },
   "case__2": {
     "original": "搜索最新的AI新闻",
@@ -33,7 +33,7 @@
     "pert_ok": true,
     "consistent": true,
     "robustness_type": "typo",
-    "elapsed": 0.001
+    "elapsed": 0.002
   },
   "case__3": {
     "original": "3加5等于多少",
@@ -76,12 +76,12 @@
     "perturbed": "我想知道三加上五的结果是什么呀",
     "expected_tool": "calculator",
     "orig_pred": "calculator",
-    "pert_pred": "search",
+    "pert_pred": "calculator",
     "orig_ok": true,
-    "pert_ok": false,
-    "consistent": false,
+    "pert_ok": true,
+    "consistent": true,
     "robustness_type": "rephrase",
-    "elapsed": 0.001
+    "elapsed": 0.002
   },
   "case__7": {
     "original": "帮我写一个快速排序",
@@ -112,10 +112,10 @@
     "perturbed": "3+5",
     "expected_tool": "calculator",
     "orig_pred": "calculator",
-    "pert_pred": "none",
+    "pert_pred": "calculator",
     "orig_ok": true,
-    "pert_ok": false,
-    "consistent": false,
+    "pert_ok": true,
+    "consistent": true,
     "robustness_type": "boundary_minimal",
     "elapsed": 0.001
   },
@@ -136,10 +136,10 @@
     "perturbed": "5km=?m",
     "expected_tool": "calculator",
     "orig_pred": "calculator",
-    "pert_pred": "none",
+    "pert_pred": "calculator",
     "orig_ok": true,
-    "pert_ok": false,
-    "consistent": false,
+    "pert_ok": true,
+    "consistent": true,
     "robustness_type": "boundary_mixed",
     "elapsed": 0.001
   },
@@ -147,10 +147,10 @@
     "original": "分析一下",
     "perturbed": "分析",
     "expected_tool": "none",
-    "orig_pred": "search",
-    "pert_pred": "search",
-    "orig_ok": false,
-    "pert_ok": false,
+    "orig_pred": "none",
+    "pert_pred": "none",
+    "orig_ok": true,
+    "pert_ok": true,
     "consistent": true,
     "robustness_type": "boundary_vague",
     "elapsed": 0.001
@@ -172,10 +172,10 @@
     "perturbed": "write一个quicksort",
     "expected_tool": "code_executor",
     "orig_pred": "code_executor",
-    "pert_pred": "none",
+    "pert_pred": "code_executor",
     "orig_ok": true,
-    "pert_ok": false,
-    "consistent": false,
+    "pert_ok": true,
+    "consistent": true,
     "robustness_type": "mixed_lang",
     "elapsed": 0.001
   }

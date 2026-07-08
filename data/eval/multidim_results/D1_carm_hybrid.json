@@ -6,7 +6,7 @@
       "calculate_triangle_area"
     ],
     "correct": true,
-    "elapsed": 0.001,
+    "elapsed": 0.004,
     "llm_used": false,
     "tokens": 0
   },
@@ -28,7 +28,7 @@
       "math.hypot"
     ],
     "correct": false,
-    "elapsed": 4.109,
+    "elapsed": 4.145,
     "llm_used": false,
     "tokens": 0
   },
@@ -116,7 +116,7 @@
       "calculate_area"
     ],
     "correct": true,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "llm_used": false,
     "tokens": 0
   },
@@ -171,7 +171,7 @@
       "integrate"
     ],
     "correct": false,
-    "elapsed": 4.101,
+    "elapsed": 4.099,
     "llm_used": false,
     "tokens": 0
   },
@@ -215,7 +215,7 @@
       "math.gcd"
     ],
     "correct": false,
-    "elapsed": 4.105,
+    "elapsed": 4.11,
     "llm_used": false,
     "tokens": 0
   },
@@ -237,7 +237,7 @@
       "math.triangle_area_heron"
     ],
     "correct": true,
-    "elapsed": 4.119,
+    "elapsed": 4.093,
     "llm_used": false,
     "tokens": 0
   },
@@ -248,7 +248,7 @@
       "country_info.capital"
     ],
     "correct": true,
-    "elapsed": 4.076,
+    "elapsed": 4.113,
     "llm_used": false,
     "tokens": 0
   },
@@ -259,7 +259,7 @@
       "EuclideanDistance.calculate"
     ],
     "correct": false,
-    "elapsed": 4.108,
+    "elapsed": 4.093,
     "llm_used": false,
     "tokens": 0
   },
@@ -281,7 +281,7 @@
       "weather.get_by_coordinates_date"
     ],
     "correct": false,
-    "elapsed": 4.093,
+    "elapsed": 4.122,
     "llm_used": false,
     "tokens": 0
   },
@@ -292,7 +292,7 @@
       "capacitance_calculator.calculate"
     ],
     "correct": true,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "llm_used": false,
     "tokens": 0
   },
@@ -314,7 +314,7 @@
       "realestate.find_properties"
     ],
     "correct": true,
-    "elapsed": 4.088,
+    "elapsed": 4.087,
     "llm_used": false,
     "tokens": 0
   },
@@ -336,7 +336,7 @@
       "database.modify_columns"
     ],
     "correct": true,
-    "elapsed": 4.091,
+    "elapsed": 4.098,
     "llm_used": false,
     "tokens": 0
   },
@@ -358,7 +358,7 @@
       "corporate_finance.calculate_YOY_growth_rate"
     ],
     "correct": true,
-    "elapsed": 4.092,
+    "elapsed": 4.119,
     "llm_used": false,
     "tokens": 0
   },
@@ -369,7 +369,7 @@
       "corporate_finance.revenue_forecast"
     ],
     "correct": false,
-    "elapsed": 4.096,
+    "elapsed": 4.081,
     "llm_used": false,
     "tokens": 0
   },
@@ -391,7 +391,7 @@
       "solarFarm.potential"
     ],
     "correct": true,
-    "elapsed": 4.092,
+    "elapsed": 4.07,
     "llm_used": false,
     "tokens": 0
   },
@@ -402,7 +402,7 @@
       "population_genetics.calculate_ne"
     ],
     "correct": true,
-    "elapsed": 4.079,
+    "elapsed": 4.085,
     "llm_used": false,
     "tokens": 0
   },
@@ -424,7 +424,7 @@
       "european_history.battle_details"
     ],
     "correct": false,
-    "elapsed": 4.077,
+    "elapsed": 4.107,
     "llm_used": false,
     "tokens": 0
   },
@@ -435,7 +435,7 @@
       "religion_history.get_schisms"
     ],
     "correct": false,
-    "elapsed": 4.102,
+    "elapsed": 4.075,
     "llm_used": false,
     "tokens": 0
   },
@@ -572,7 +572,7 @@
       "math.pythagoras"
     ],
     "correct": false,
-    "elapsed": 4.082,
+    "elapsed": 4.101,
     "llm_used": false,
     "tokens": 0
   },
@@ -696,7 +696,7 @@
       "math_toolkit.product_of_primes"
     ],
     "correct": true,
-    "elapsed": 4.1,
+    "elapsed": 4.092,
     "llm_used": false,
     "tokens": 0
   },
@@ -756,7 +756,7 @@
       "lcm"
     ],
     "correct": true,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "llm_used": false,
     "tokens": 0
   },
@@ -866,7 +866,7 @@
       "animal_population.get_projection"
     ],
     "correct": false,
-    "elapsed": 4.109,
+    "elapsed": 4.088,
     "llm_used": false,
     "tokens": 0
   },
@@ -879,7 +879,7 @@
       "flight.search"
     ],
     "correct": true,
-    "elapsed": 4.078,
+    "elapsed": 4.059,
     "llm_used": false,
     "tokens": 0
   },
@@ -903,7 +903,7 @@
       "hydration_calculator"
     ],
     "correct": true,
-    "elapsed": 4.095,
+    "elapsed": 4.072,
     "llm_used": false,
     "tokens": 0
   },
@@ -915,7 +915,7 @@
       "banking_service"
     ],
     "correct": false,
-    "elapsed": 4.095,
+    "elapsed": 4.113,
     "llm_used": false,
     "tokens": 0
   },
@@ -936,7 +936,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.093,
+    "elapsed": 4.078,
     "llm_used": false,
     "tokens": 0
   },
@@ -945,7 +945,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.079,
+    "elapsed": 4.099,
     "llm_used": false,
     "tokens": 0
   },
@@ -954,7 +954,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.101,
+    "elapsed": 4.093,
     "llm_used": false,
     "tokens": 0
   },
@@ -963,7 +963,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.091,
+    "elapsed": 4.079,
     "llm_used": false,
     "tokens": 0
   },
@@ -981,7 +981,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.086,
+    "elapsed": 4.071,
     "llm_used": false,
     "tokens": 0
   },
@@ -990,7 +990,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.088,
+    "elapsed": 4.045,
     "llm_used": false,
     "tokens": 0
   },
@@ -999,7 +999,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.091,
+    "elapsed": 4.122,
     "llm_used": false,
     "tokens": 0
   },
@@ -1008,7 +1008,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.086,
+    "elapsed": 4.075,
     "llm_used": false,
     "tokens": 0
   },
@@ -1017,7 +1017,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.071,
+    "elapsed": 4.1,
     "llm_used": false,
     "tokens": 0
   },
@@ -1044,7 +1044,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.093,
+    "elapsed": 4.069,
     "llm_used": false,
     "tokens": 0
   },
@@ -1053,7 +1053,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.09,
+    "elapsed": 4.096,
     "llm_used": false,
     "tokens": 0
   },
@@ -1062,7 +1062,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.088,
+    "elapsed": 4.096,
     "llm_used": false,
     "tokens": 0
   },
@@ -1071,7 +1071,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.111,
+    "elapsed": 4.097,
     "llm_used": false,
     "tokens": 0
   },
@@ -1080,7 +1080,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.073,
+    "elapsed": 4.064,
     "llm_used": false,
     "tokens": 0
   },
@@ -1107,7 +1107,7 @@
     "predicted": null,
     "gt": [],
     "correct": true,
-    "elapsed": 4.085,
+    "elapsed": 4.117,
     "llm_used": false,
     "tokens": 0
   },
@@ -1173,7 +1173,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.099,
+    "elapsed": 4.091,
     "llm_used": false,
     "tokens": 0
   },
@@ -1184,7 +1184,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.095,
+    "elapsed": 4.102,
     "llm_used": false,
     "tokens": 0
   },
@@ -1195,7 +1195,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.098,
+    "elapsed": 4.092,
     "llm_used": false,
     "tokens": 0
   },
@@ -1206,7 +1206,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.115,
+    "elapsed": 4.097,
     "llm_used": false,
     "tokens": 0
   },
@@ -1217,7 +1217,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.095,
+    "elapsed": 4.087,
     "llm_used": false,
     "tokens": 0
   },
@@ -1228,7 +1228,7 @@
       "get_current_weather"
     ],
     "correct": true,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "llm_used": false,
     "tokens": 0
   },
@@ -1239,7 +1239,7 @@
       "get_current_weather"
     ],
     "correct": true,
-    "elapsed": 0.0,
+    "elapsed": 0.001,
     "llm_used": false,
     "tokens": 0
   },
@@ -1261,7 +1261,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.081,
+    "elapsed": 4.098,
     "llm_used": false,
     "tokens": 0
   },
@@ -1272,7 +1272,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.127,
+    "elapsed": 4.073,
     "llm_used": false,
     "tokens": 0
   },
@@ -1305,7 +1305,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.08,
+    "elapsed": 4.125,
     "llm_used": false,
     "tokens": 0
   },
@@ -1327,7 +1327,7 @@
       "get_current_weather"
     ],
     "correct": false,
-    "elapsed": 4.085,
+    "elapsed": 4.115,
     "llm_used": false,
     "tokens": 0
   },
@@ -1338,7 +1338,7 @@
       "ChaDri.change_drink"
     ],
     "correct": true,
-    "elapsed": 4.098,
+    "elapsed": 4.09,
     "llm_used": false,
     "tokens": 0
   },
@@ -1349,7 +1349,7 @@
       "ChaDri.change_drink"
     ],
     "correct": true,
-    "elapsed": 4.081,
+    "elapsed": 4.082,
     "llm_used": false,
     "tokens": 0
   },
@@ -1360,7 +1360,7 @@
       "uber.ride"
     ],
     "correct": true,
-    "elapsed": 4.086,
+    "elapsed": 4.094,
     "llm_used": false,
     "tokens": 0
   },
@@ -1371,7 +1371,7 @@
       "api.weather"
     ],
     "correct": true,
-    "elapsed": 4.096,
+    "elapsed": 4.115,
     "llm_used": false,
     "tokens": 0
   },
@@ -1382,7 +1382,7 @@
       "uber.ride"
     ],
     "correct": false,
-    "elapsed": 4.073,
+    "elapsed": 4.077,
     "llm_used": false,
     "tokens": 0
   },
@@ -1393,7 +1393,7 @@
       "get_current_weather"
     ],
     "correct": true,
-    "elapsed": 4.093,
+    "elapsed": 4.08,
     "llm_used": false,
     "tokens": 0
   },
@@ -1404,7 +1404,7 @@
       "create_workspace"
     ],
     "correct": true,
-    "elapsed": 4.087,
+    "elapsed": 4.097,
     "llm_used": false,
     "tokens": 0
   },
@@ -1415,7 +1415,7 @@
       "create_workspace"
     ],
     "correct": false,
-    "elapsed": 4.104,
+    "elapsed": 4.094,
     "llm_used": false,
     "tokens": 0
   },
@@ -1426,7 +1426,7 @@
       "cookbook.search_recipe"
     ],
     "correct": false,
-    "elapsed": 4.094,
+    "elapsed": 4.103,
     "llm_used": false,
     "tokens": 0
   },
@@ -1437,7 +1437,7 @@
       "HNA_WQA.search"
     ],
     "correct": false,
-    "elapsed": 4.079,
+    "elapsed": 4.121,
     "llm_used": false,
     "tokens": 0
   },
@@ -1448,7 +1448,7 @@
       "ControlAppliance.execute"
     ],
     "correct": false,
-    "elapsed": 4.106,
+    "elapsed": 4.102,
     "llm_used": false,
     "tokens": 0
   },
@@ -1459,7 +1459,7 @@
       "HNA_WQA.search"
     ],
     "correct": false,
-    "elapsed": 4.081,
+    "elapsed": 4.049,
     "llm_used": false,
     "tokens": 0
   },
@@ -1470,7 +1470,7 @@
       "HNA_WQA.search"
     ],
     "correct": false,
-    "elapsed": 4.105,
+    "elapsed": 4.054,
     "llm_used": false,
     "tokens": 0
   },
@@ -1481,7 +1481,7 @@
       "OpenWeatherMap.get_current_weather"
     ],
     "correct": true,
-    "elapsed": 4.113,
+    "elapsed": 4.088,
     "llm_used": false,
     "tokens": 0
   },
@@ -1492,7 +1492,7 @@
       "ControlAppliance.execute"
     ],
     "correct": true,
-    "elapsed": 4.113,
+    "elapsed": 4.1,
     "llm_used": false,
     "tokens": 0
   },
@@ -1503,7 +1503,7 @@
       "HNA_NEWS.search"
     ],
     "correct": true,
-    "elapsed": 4.087,
+    "elapsed": 4.065,
     "llm_used": false,
     "tokens": 0
   },
@@ -1514,7 +1514,7 @@
       "HNA_NEWS.search"
     ],
     "correct": false,
-    "elapsed": 4.085,
+    "elapsed": 4.093,
     "llm_used": false,
     "tokens": 0
   },
@@ -1525,7 +1525,7 @@
       "cookbook.search_recipe"
     ],
     "correct": false,
-    "elapsed": 4.062,
+    "elapsed": 4.107,
     "llm_used": false,
     "tokens": 0
   },
@@ -1536,7 +1536,7 @@
       "HNA_NEWS.search"
     ],
     "correct": false,
-    "elapsed": 4.115,
+    "elapsed": 4.08,
     "llm_used": false,
     "tokens": 0
   },
@@ -1547,7 +1547,7 @@
       "ControlAppliance.execute"
     ],
     "correct": false,
-    "elapsed": 4.087,
+    "elapsed": 4.059,
     "llm_used": false,
     "tokens": 0
   }

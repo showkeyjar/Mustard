@@ -1,70 +1,143 @@
 [
   {
     "dimension": "D1_Function_Selection",
-    "framework": "autogen",
-    "accuracy": 96.4,
-    "correct": 135,
+    "framework": "carm_hybrid",
+    "accuracy": 74.3,
+    "correct": 104,
     "total": 140,
-    "latency_ms": 309,
-    "tokens_per_call": 138,
-    "llm_call_rate": 100,
+    "latency_ms": 1958,
+    "tokens_per_call": 0,
+    "llm_call_rate": 0,
     "per_subset": {
       "simple": {
-        "accuracy": 100.0,
-        "correct": 20,
-        "total": 20
-      },
-      "multiple": {
-        "accuracy": 90.0,
-        "correct": 18,
-        "total": 20
-      },
-      "parallel": {
-        "accuracy": 100.0,
-        "correct": 20,
-        "total": 20
-      },
-      "parallel_multiple": {
-        "accuracy": 100.0,
-        "correct": 20,
-        "total": 20
-      },
-      "irrelevance": {
         "accuracy": 85.0,
         "correct": 17,
         "total": 20
       },
+      "multiple": {
+        "accuracy": 75.0,
+        "correct": 15,
+        "total": 20
+      },
+      "parallel": {
+        "accuracy": 95.0,
+        "correct": 19,
+        "total": 20
+      },
+      "parallel_multiple": {
+        "accuracy": 90.0,
+        "correct": 18,
+        "total": 20
+      },
+      "irrelevance": {
+        "accuracy": 75.0,
+        "correct": 15,
+        "total": 20
+      },
       "live_simple": {
-        "accuracy": 100.0,
-        "correct": 20,
+        "accuracy": 55.0,
+        "correct": 11,
         "total": 20
       },
       "live_multiple": {
-        "accuracy": 100.0,
-        "correct": 20,
+        "accuracy": 45.0,
+        "correct": 9,
         "total": 20
       }
     }
   },
   {
     "dimension": "D2_Parameter_Extraction",
-    "framework": "autogen",
+    "framework": "carm_hybrid",
     "name_recall": 81.5,
     "value_match": 74.3,
     "overall": 77.9,
     "total": 60,
-    "latency_ms": 499,
+    "latency_ms": 476,
     "tokens_per_call": 164
   },
   {
+    "dimension": "D3_End_to_End",
+    "framework": "carm_hybrid",
+    "tool_selection": 94.4,
+    "execution_ok": 77.8,
+    "result_quality": 94.4,
+    "overall": 88.9,
+    "total": 18,
+    "latency_ms": 1928,
+    "per_category": {
+      "calc_basic": {
+        "tool_sel": 100,
+        "exec_ok": 100,
+        "result_ok": 100,
+        "total": 3
+      },
+      "calc_nl": {
+        "tool_sel": 100,
+        "exec_ok": 100,
+        "result_ok": 100,
+        "total": 6
+      },
+      "calc_equation": {
+        "tool_sel": 100,
+        "exec_ok": 100,
+        "result_ok": 100,
+        "total": 1
+      },
+      "code": {
+        "tool_sel": 100,
+        "exec_ok": 100,
+        "result_ok": 100,
+        "total": 2
+      },
+      "consult": {
+        "tool_sel": 100,
+        "exec_ok": 0,
+        "result_ok": 100,
+        "total": 2
+      },
+      "multi_intent": {
+        "tool_sel": 0,
+        "exec_ok": 0,
+        "result_ok": 0,
+        "total": 1
+      },
+      "search": {
+        "tool_sel": 100,
+        "exec_ok": 0,
+        "result_ok": 100,
+        "total": 1
+      },
+      "reject": {
+        "tool_sel": 100,
+        "exec_ok": 100,
+        "result_ok": 100,
+        "total": 2
+      }
+    }
+  },
+  {
+    "dimension": "D4_Multi_Turn",
+    "framework": "carm_hybrid",
+    "turn_accuracy": 82.4,
+    "conversation_accuracy": 62.5,
+    "anaphora_accuracy": 85.7,
+    "turn_correct": 14,
+    "turn_total": 17,
+    "conv_correct": 5,
+    "conv_total": 8,
+    "latency_ms": 7,
+    "tokens_per_conv": 0
+  },
+  {
     "dimension": "D5_Robustness",
-    "framework": "autogen",
-    "original_accuracy": 80.0,
-    "perturbed_accuracy": 80.0,
+    "framework": "carm_hybrid",
+    "original_accuracy": 100.0,
+    "perturbed_accuracy": 100.0,
     "robustness_ratio": 1.0,
     "consistency": 100.0,
     "total": 15,
-    "latency_ms": 336,
+    "latency_ms": 1,
     "per_type": {
       "typo": {
         "orig_acc": 100,
@@ -72,8 +145,8 @@
         "total": 3
       },
       "noise_prefix": {
-        "orig_acc": 50,
-        "pert_acc": 50,
+        "orig_acc": 100,
+        "pert_acc": 100,
         "total": 2
       },
       "noise_suffix": {
@@ -92,8 +165,8 @@
         "total": 1
       },
       "boundary_greeting": {
-        "orig_acc": 0,
-        "pert_acc": 0,
+        "orig_acc": 100,
+        "pert_acc": 100,
         "total": 1
       },
       "boundary_mixed": {
@@ -102,8 +175,8 @@
         "total": 1
       },
       "boundary_vague": {
-        "orig_acc": 0,
-        "pert_acc": 0,
+        "orig_acc": 100,
+        "pert_acc": 100,
         "total": 1
       },
       "mixed_lang": {
