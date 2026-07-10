@@ -1,0 +1,98 @@
+{
+  "simple_python": {
+    "dimension": "BFCL simple_python",
+    "correct": 386,
+    "total": 400,
+    "point_estimate": "96.50%",
+    "ci_95": "[94.2%, 97.9%]",
+    "formatted": "96.5% [94.2%, 97.9%]"
+  },
+  "multiple": {
+    "dimension": "BFCL multiple",
+    "correct": 190,
+    "total": 200,
+    "point_estimate": "95.00%",
+    "ci_95": "[91.0%, 97.3%]",
+    "formatted": "95.0% [91.0%, 97.3%]"
+  },
+  "parallel": {
+    "dimension": "BFCL parallel",
+    "correct": 27,
+    "total": 200,
+    "point_estimate": "13.50%",
+    "ci_95": "[9.4%, 18.9%]",
+    "formatted": "13.5% [9.4%, 18.9%]"
+  },
+  "parallel_multiple": {
+    "dimension": "BFCL parallel_multiple",
+    "correct": 7,
+    "total": 200,
+    "point_estimate": "3.50%",
+    "ci_95": "[1.7%, 7.0%]",
+    "formatted": "3.5% [1.7%, 7.0%]"
+  },
+  "irrelevance": {
+    "dimension": "BFCL irrelevance",
+    "correct": 159,
+    "total": 240,
+    "point_estimate": "66.25%",
+    "ci_95": "[60.1%, 71.9%]",
+    "formatted": "66.2% [60.1%, 71.9%]"
+  },
+  "live_simple": {
+    "dimension": "BFCL live_simple",
+    "correct": 222,
+    "total": 258,
+    "point_estimate": "86.05%",
+    "ci_95": "[81.3%, 89.7%]",
+    "formatted": "86.0% [81.3%, 89.7%]"
+  },
+  "live_multiple": {
+    "dimension": "BFCL live_multiple",
+    "correct": 821,
+    "total": 1053,
+    "point_estimate": "77.97%",
+    "ci_95": "[75.4%, 80.4%]",
+    "formatted": "78.0% [75.4%, 80.4%]"
+  },
+  "live_parallel": {
+    "dimension": "BFCL live_parallel",
+    "correct": 0,
+    "total": 16,
+    "point_estimate": "0.00%",
+    "ci_95": "[0.0%, 19.4%]",
+    "formatted": "0.0% [0.0%, 19.4%]"
+  },
+  "live_parallel_multiple": {
+    "dimension": "BFCL live_parallel_multiple",
+    "correct": 1,
+    "total": 24,
+    "point_estimate": "4.17%",
+    "ci_95": "[0.7%, 20.2%]",
+    "formatted": "4.2% [0.7%, 20.2%]"
+  },
+  "live_irrelevance": {
+    "dimension": "BFCL live_irrelevance",
+    "correct": 337,
+    "total": 882,
+    "point_estimate": "38.24%",
+    "ci_95": "[35.1%, 41.5%]",
+    "formatted": "38.2% [35.1%, 41.5%]"
+  },
+  "live_relevance": {
+    "dimension": "BFCL live_relevance",
+    "correct": 16,
+    "total": 18,
+    "point_estimate": "93.75%",
+    "ci_95": "[67.2%, 96.9%]",
+    "formatted": "88.9% [67.2%, 96.9%]"
+  },
+  "multi_turn_base": {
+    "dimension": "BFCL multi_turn_base",
+    "correct": 0,
+    "total": 200,
+    "point_estimate": "0.00%",
+    "ci_95": "[0.0%, 1.9%]",
+    "formatted": "0.0% [0.0%, 1.9%]"
+  }
+}
