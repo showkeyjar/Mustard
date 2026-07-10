@@ -241,8 +241,9 @@ class CalculatorTool:
         # Chain arithmetic: "5加3乘2" → 5 + 3 * 2
         # Matches sequences like: N op M op N op M ...
         # Also supports negative numbers: "-3加5" → -3 + 5
+        # Also supports "再" prefix for multi-turn: "8 再加上 10"
         (
-            r"((?:-?\d+(?:\.\d+)?\s*(?:加上?|减去?|乘以?|乘|除以?|除|×|÷)\s*)+-?\d+(?:\.\d+)?)",
+            r"((?:-?\d+(?:\.\d+)?\s*(?:再加上?|减去?|乘以?|乘|除以?|除|×|÷)\s*)+-?\d+(?:\.\d+)?)",
             lambda m: _convert_chain(m.group(1)),
         ),
         # Chinese large numbers: "1万亿除以14亿" → 100000000000 / 1400000000
@@ -268,10 +269,25 @@ class CalculatorTool:
             r"(\d+(?:\.\d+)?)\s*(?:除以|除|÷)\s*(\d+(?:\.\d+)?)",
             lambda m: f"{m.group(1)} / {m.group(2)}",
         ),
-        # "N加M" → N + M
+        # "N加M" → N + M (supports optional "再" prefix for multi-turn: "8 再加上 10")
         (
-            r"(\d+(?:\.\d+)?)\s*(?:加上|加|加以)\s*(\d+(?:\.\d+)?)",
+            r"(\d+(?:\.\d+)?)\s*(?:再加上|加上|加|加以)\s*(\d+(?:\.\d+)?)",
             lambda m: f"{m.group(1)} + {m.group(2)}",
+        ),
+        # "N减M" → N - M
+        (
+            r"(\d+(?:\.\d+)?)\s*(?:再减去|减去|减)\s*(\d+(?:\.\d+)?)",
+            lambda m: f"{m.group(1)} - {m.group(2)}",
+        ),
+        # "N乘以/乘M" → N * M
+        (
+            r"(\d+(?:\.\d+)?)\s*(?:再乘以|乘以|乘|×)\s*(\d+(?:\.\d+)?)",
+            lambda m: f"{m.group(1)} * {m.group(2)}",
+        ),
+        # "N除以/除M" → N / M
+        (
+            r"(\d+(?:\.\d+)?)\s*(?:再除以|除以|除|÷)\s*(\d+(?:\.\d+)?)",
+            lambda m: f"{m.group(1)} / {m.group(2)}",
         ),
         # "N减M" → N - M
         (
@@ -646,12 +662,16 @@ class _Parser:
 def _convert_chain(text: str) -> str:
     """Convert a Chinese arithmetic chain like '5加3乘2' into '5 + 3 * 2'."""
     mapping = {
+        "再加上": "+",
         "加上": "+",
         "加": "+",
+        "再减去": "-",
         "减去": "-",
         "减": "-",
+        "再乘以": "*",
         "乘以": "*",
         "乘": "*",
+        "再除以": "/",
         "除以": "/",
         "除": "/",
         "×": "*",

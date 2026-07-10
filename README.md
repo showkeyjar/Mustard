@@ -27,6 +27,11 @@ Compact Agentic Reasoning Model（CARM）的在线学习原型。
   - **代码执行**（CodeExecutorTool）：subprocess 沙箱执行，超时保护，6种常见算法模板（快速排序/冒泡排序/二分查找/斐波那契/归并排序/链表），print 输出正确捕获
   - **大模型代理**（BigModelProxyTool）：直连 Gemini API 或内置代理回退，CARM 信号注入
 - **动态工具注册**：用户可注册任意工具（带 capability_tags 声明意图类别），CARM 自动路由到匹配工具，无需修改核心代码
+- **并行函数调用**：`router.route_parallel("3+5, 7*8")` 支持一条消息中多个独立意图的并行执行，返回 `sub_results` 列表
+- **多轮隐式指代消解**：计算器场景下支持"3加5 → 再加上10 → 再乘以3"链式对话，自动从上一轮结果提取数值注入当前查询
+- **REST API 服务**（`scripts/carm_server.py`）：OpenAI 兼容的 `/v1/chat/completions` + 原生 `/v1/route` + `/v1/route/parallel` + `/v1/tools` + 会话管理端点，可作为微服务部署
+- **交互式 CLI**（`scripts/interactive_cli.py`）：支持并行调用、多轮对话、会话管理、`/serve` 内嵌启动 API 服务
+- **BFCL 评测集成**（`scripts/carm_bfcl_server.py` v2）：CARM 信号路由 + LLM 参数提取 + 确定性格式化输出，替代 v1 纯 Ollama 透传
 - **意图类别解耦**（IntentCategory）：信号检测返回意图类别（CALC/CODE/SEARCH/CONSULT），不绑定具体工具名；Policy 通过 ToolManager.find_by_capability() 动态解析
 - **语义意图编码器**（SemanticEncoder）：零依赖 Tier 1 同义词模式 + 可选 Tier 2 sentence-transformers 嵌入，覆盖搜索/计算/代码/大模型四类意图，带 LRU 缓存
 - **统一信号模块**（signals.py）：冲突检测、搜索/计算/代码/正式/比较 6 类意图信号，跨模块复用无重复
@@ -102,6 +107,43 @@ print(router.route("今天天气").tool_name)  # "weather_api"
 ```python
 r1 = router.route("帮我查GPU性能参数", session_id="s1")
 r2 = router.route("它的性能怎么样", session_id="s1")  # "它"→GPU
+```
+
+**多轮计算**：隐式指代消解支持链式计算对话。
+
+```python
+r1 = router.route("3加5", session_id="calc")        # → 8
+r2 = router.route("再加上10", session_id="calc")     # → 18 (自动注入上一轮结果)
+r3 = router.route("再乘以3", session_id="calc")      # → 54
+```
+
+**并行调用**：一条消息中包含多个独立意图时自动拆分并行执行。
+
+```python
+result = router.route_parallel("3+5, 7*8")
+print(result.sub_results)  # [RouteResult(result="8"), RouteResult(result="56")]
+```
+
+**REST API**：启动微服务后通过 HTTP 调用。
+
+```powershell
+python scripts/carm_server.py --port 8000
+```
+
+```python
+# OpenAI 兼容接口
+import httpx
+resp = httpx.post("http://localhost:8000/v1/chat/completions", json={
+    "messages": [{"role": "user", "content": "3加5等于多少"}]
+})
+print(resp.json()["choices"][0]["message"]["content"])  # "计算结果: 3 + 5 = 8"
+```
+
+**交互式 CLI**：
+
+```powershell
+python scripts/interactive_cli.py
+# 支持: 多轮对话 / 并行调用(逗号分隔) / /serve 启动API / /session 管理
 ```
 
 如果网络受限（sentence-transformers 无法下载模型），设置环境变量跳过语义嵌入层：
@@ -500,12 +542,17 @@ CARM 已进入实用阶段。核心推理 + 工具路由 + 评测闭环均已验
 **已验证能力**：
 
 - **一行 API**：`from carm import CARMRouter; router.route("3加5等于多少")` 即可使用，支持自定义工具注册、多轮指代消解、动态工具路由
+- **并行函数调用**：`route_parallel()` 支持一条消息中多个独立意图的并行执行
+- **多轮隐式指代**：计算器场景"3加5 → 再加上10 → 再乘以3"链式对话自动消解
+- **REST API 微服务**：OpenAI 兼容接口 + 原生路由 API + 会话管理
+- **交互式 CLI**：多轮对话 + 并行调用 + 内嵌 API 服务
 - 4 种真实工具（搜索/计算器/代码执行/大模型代理）端到端可用
 - 语义意图编码器驱动工具路由，中文自然语言算式自动提取并路由到计算器
 - 统一信号模块消除跨模块重复，17 类意图信号 + 冲突检测 + 多意图拆分 + 多步路由 + 指代消解
 - 自然语言 Decoder 输出，分段展示结论/依据/可信度/风险
 - 增量训练支持（`reset_artifacts=False`），5 维质量评测（tool_match / completeness / confidence / support_items / conflict_risk）
 - 离线预训练 + 在线进化双环闭环，teacher distillation 可选接入真实大模型
+- **BFCL V4 评测**：CARM 信号路由 + LLM 参数提取 + 确定性格式化输出，覆盖 single_turn 11 子集
 
 **工具路由示例**：
 
@@ -541,6 +588,9 @@ CARM 已进入实用阶段。核心推理 + 工具路由 + 评测闭环均已验
 
 > CARM 路由延迟 ~2ms，同等任务 LLM 路由 ~411ms（216x 加速）。
 
-下一步的重点仍然是两条：
+下一步的重点：
+
+- **BFCL 评测完善**：跑通 multi_turn 子集（并行化评测），扩展 D2-D5 测试集到 500+ 条，构建 Docker 复现环境
+- **BFCL server v2 验证**：用 CARM 路由 + LLM 参数提取架构重新跑 BFCL single_turn 全量评测，对比 v1 纯透传结果
 - 用真正的递归核或状态空间模块替换当前轻量推理核
 - 把当前离线回放式预训练升级成可重复的数据集导出 + 批训练流程

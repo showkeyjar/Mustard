@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -61,8 +62,15 @@ class RouteResult:
     ok: bool = True
     intent_category: IntentCategory | None = None
     session_id: str = ""
+    # For parallel routing: sub-results when multiple tools are called
+    sub_results: list["RouteResult"] = field(default_factory=list)
 
     def __str__(self) -> str:
+        if self.sub_results:
+            parts = []
+            for sr in self.sub_results:
+                parts.append(f"[{sr.tool_name}] {sr.result}")
+            return "\n\n".join(parts)
         return self.result
 
 
@@ -174,6 +182,39 @@ class CARMRouter:
             ctx = session_mgr.get_or_create(session_id)
             if ctx.turns:
                 _, resolved_query = session_mgr.resolve_query(session_id, query)
+                # Implicit anaphora: "再加上10" / "再算一下" / "除以3"
+                # when previous turn was calculator — inject the result
+                _implicit_markers = (
+                    "再加上",
+                    "再减去",
+                    "再乘以",
+                    "再除以",
+                    "再算",
+                    "再计算",
+                    "然后加",
+                    "然后减",
+                    "加上",
+                    "减去",
+                    "乘以",
+                    "除以",
+                    "除以",
+                    "乘",
+                )
+                last = ctx.last_turn()
+                if (
+                    last
+                    and last.tool_name == "calculator"
+                    and last.tool_result
+                    and any(m in query for m in _implicit_markers)
+                    and "它" not in query
+                ):
+                    # Extract number from previous result
+                    import re as _re
+
+                    nums = _re.findall(r"[-+]?\d+\.?\d*", last.tool_result)
+                    if nums:
+                        prev_num = nums[-1]
+                        resolved_query = f"{prev_num} {query}"
 
         # 2. Policy decision
         state = AgentState(step_idx=0, uncertainty=0.6, answer_ready=0.1)
@@ -293,3 +334,136 @@ class CARMRouter:
     def find_tool_for(self, category: IntentCategory) -> str | None:
         """Find which tool handles a given intent category."""
         return self._tool_manager.find_by_capability(category)
+
+    # ── Parallel function call ──────────────────────────────────────────
+
+    _PARALLEL_DELIMITERS = (",", "，", ";", "；")
+
+    def _split_parallel_queries(self, query: str) -> list[str]:
+        """Split a query into parallel sub-queries if applicable.
+
+        Returns [query] (single-element) if the query should NOT be split.
+        Returns [q1, q2, ...] if the query contains multiple independent
+        actionable sub-queries separated by commas/semicolons.
+
+        Rules:
+          - Each sub-query must have at least one actionable signal
+          - Sub-queries must be independent (not anaphora like "然后再算")
+          - Multi-intent connectors ("顺便", "然后") are handled by
+            policy.py's multi_intent router, NOT here
+          - Only split on bare delimiters (comma/semicolon) without
+            sequential connectors
+        """
+        from carm.signals import (
+            has_calc_signal,
+            has_code_signal,
+            has_search_action_signal,
+            has_consult_signal,
+            has_low_intent_signal,
+            has_multi_intent_signal,
+        )
+
+        # Don't split if multi-intent connectors are present —
+        # those are sequential, not parallel
+        if has_multi_intent_signal(query):
+            return [query]
+
+        # Try splitting on delimiters
+        for delim in self._PARALLEL_DELIMITERS:
+            if delim not in query:
+                continue
+            parts = [p.strip() for p in query.split(delim) if p.strip()]
+            if len(parts) < 2:
+                continue
+
+            # Each part must have an actionable signal
+            actionable = []
+            for part in parts:
+                if has_low_intent_signal(part):
+                    actionable.append(False)
+                elif any(
+                    f(part)
+                    for f in (
+                        has_calc_signal,
+                        has_code_signal,
+                        has_search_action_signal,
+                        has_consult_signal,
+                    )
+                ):
+                    actionable.append(True)
+                else:
+                    actionable.append(False)
+
+            # All parts must be actionable to qualify as parallel
+            if all(actionable) and len(parts) >= 2:
+                return parts
+
+        return [query]
+
+    def route_parallel(
+        self,
+        query: str,
+        session_id: str | None = None,
+        dry_run: bool = False,
+        timeout: float | None = None,
+        max_workers: int = 4,
+    ) -> RouteResult:
+        """Route a query, supporting parallel function calls.
+
+        If the query contains multiple independent sub-queries separated
+        by commas/semicolons (e.g., "3+5, 7*8"), each sub-query is routed
+        and executed in parallel, with results combined into a single
+        RouteResult.
+
+        If the query is a single intent, behaves identically to route().
+        """
+        sub_queries = self._split_parallel_queries(query)
+
+        if len(sub_queries) == 1:
+            return self.route(query, session_id, dry_run, timeout)
+
+        # Parallel execution
+        sub_results: list[RouteResult] = [None] * len(sub_queries)  # type: ignore
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            future_to_idx = {
+                pool.submit(
+                    self.route,
+                    sq,
+                    session_id,
+                    dry_run,
+                    timeout,
+                ): idx
+                for idx, sq in enumerate(sub_queries)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    sub_results[idx] = future.result()
+                except Exception as e:
+                    sub_results[idx] = RouteResult(
+                        query=sub_queries[idx],
+                        tool_name="none",
+                        result=f"执行失败: {e}",
+                        confidence=0.0,
+                        source="carm/router:parallel_error",
+                        ok=False,
+                    )
+
+        # Build combined result
+        all_ok = all(r.ok for r in sub_results)
+        avg_conf = sum(r.confidence for r in sub_results) / len(sub_results)
+        tools_used = ", ".join(r.tool_name for r in sub_results)
+
+        combined_text = "\n\n".join(f"[{r.tool_name}] {r.result}" for r in sub_results)
+
+        return RouteResult(
+            query=query,
+            tool_name=tools_used,
+            result=combined_text,
+            confidence=avg_conf,
+            source="carm/router:parallel",
+            ok=all_ok,
+            sub_results=sub_results,
+            session_id=session_id or "",
+        )
