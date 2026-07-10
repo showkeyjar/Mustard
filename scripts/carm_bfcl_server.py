@@ -1,13 +1,18 @@
 """CARM OpenAI-Compatible API Server for BFCL Evaluation.
 
-Architecture (v2 — CARM-routed):
+Architecture (v3 — CARM-routed + parallel + semantic verification):
   1. Parse BFCL system prompt → extract function definitions (JSON)
   2. CARM signal-based routing → select best matching function(s)
-  3. LLM (Ollama) → parameter extraction only (focused prompt)
-  4. Deterministic formatting → [func_name(param=value, ...)]
+  3. Semantic verification (LLM yes/no) for borderline relevance scores
+  4. LLM (Ollama) → unified parameter extraction (returns list of param sets,
+     naturally handling parallel calls — same function with different params)
+  5. Deterministic formatting → [func_name(param=value, ...)]
 
-This replaces the v1 pure-Ollama passthrough that scored 0% on parallel
-and multi_turn because qwen3-coder couldn't reliably produce [func()] format.
+v3 changes from v2:
+  - extract_all_params_via_llm: returns list[dict] instead of dict,
+    so "Play Taylor Swift 20min and Maroon 5 15min" → [{artist:...}, {artist:...}]
+  - verify_relevance_via_llm: LLM yes/no check for borderline scores (0.2-0.6)
+  - Parallel detection no longer relies on separator heuristics
 
 Usage:
     python scripts/carm_bfcl_server.py --port 11400
@@ -343,19 +348,87 @@ def select_functions(functions: list[dict], query: str) -> list[tuple[dict, floa
 
 
 # ---------------------------------------------------------------------------
-# Parameter extraction (LLM)
+# Semantic relevance verification (v3)
 # ---------------------------------------------------------------------------
 
+# Borderline range: scores in [0.2, 0.6] get LLM verification
+BORDERLINE_LOW = 0.2
+BORDERLINE_HIGH = 0.6
 
-def extract_params_via_llm(
+
+def verify_relevance_via_llm(
     func: dict,
     query: str,
     ollama_url: str,
     ollama_model: str,
-) -> dict:
+) -> bool:
+    """Use LLM to verify if a function is truly relevant to the query.
+
+    This handles cases where token overlap gives false positives:
+    - "Calculate triangle area" with function "determine_body_mass_index"
+      (both have "calculate" but semantically unrelated)
+    - "Write a Python script" with function "requests.get"
+      (both mention programming but function can't do what's asked)
+    """
+    func_name = func.get("name", "")
+    func_desc = func.get("description", "")
+
+    prompt = f"""Does the function "{func_name}" directly answer or help with the user's request?
+
+Function: {func_name}
+Description: {func_desc}
+
+User request: {query}
+
+Answer with ONLY "yes" or "no". A function is relevant ONLY if it can directly perform what the user is asking for. If the user wants something the function cannot do, answer "no".
+
+Answer:"""
+
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "options": {"temperature": 0.001, "num_predict": 10},
+                    "format": "json",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data.get("message", {}).get("content", "").strip().lower()
+            # Check for "yes" or "no" in the response
+            if content.startswith("yes") or '"yes"' in content:
+                return True
+            return False
+    except Exception as e:
+        logger.warning(f"Relevance verification failed: {e}, defaulting to True")
+        return True  # On error, keep the function (don't lose it)
+
+
+# ---------------------------------------------------------------------------
+# Parameter extraction (LLM) — v3 unified
+# ---------------------------------------------------------------------------
+
+
+def extract_all_params_via_llm(
+    func: dict,
+    query: str,
+    ollama_url: str,
+    ollama_model: str,
+) -> list[dict]:
     """Use LLM to extract parameter values from the query for the given function.
 
-    Returns a dict of param_name → value.
+    v3: Returns a LIST of param dicts, naturally handling parallel calls.
+    If the query asks for the same function with different params
+    (e.g. "calculate BMI for 6ft/80kg and 5.6ft/60kg"), returns
+    [{"height": 6.0, "weight": 80}, {"height": 5.6, "weight": 60}].
+
+    Returns:
+        List of param dicts. Each dict maps param_name → value.
+        Empty list means no params could be extracted.
     """
     func_name = func.get("name", "")
     params = func.get("parameters", {})
@@ -382,17 +455,21 @@ Parameters:
 
 User query: {query}
 
-Rules:
-1. Return ONLY a JSON object with parameter names as keys and extracted values as values.
-2. Use the correct Python type (int, float, string, list, etc.).
-3. If a parameter is not mentioned in the query, omit it (don't set it to null).
-4. For optional parameters with defaults, only include if explicitly mentioned.
-5. For array/list type parameters, use JSON array syntax.
-6. Do NOT include any explanation, just the JSON object.
+CRITICAL RULES:
+1. If the user asks for MULTIPLE independent calls to the same function (e.g. "calculate X for A and B" or "play A for 20 min and B for 15 min"), return a JSON ARRAY with one object per call.
+2. If there is only ONE call, return a JSON ARRAY with a single object.
+3. Each object should have parameter names as keys and extracted values as values.
+4. Use the correct type (int, float, string, bool, array, etc.).
+5. If a parameter is not mentioned in the query, omit it from that object.
+6. For optional parameters with defaults, only include if explicitly mentioned.
+7. Return ONLY the JSON array, no explanation.
 
-Example output: {{"base": 10, "height": 5}}
+Examples:
+- "calculate BMI for 6ft/80kg and 5.6ft/60kg" → [{{"height": 6.0, "weight": 80}}, {{"height": 5.6, "weight": 60}}]
+- "play Taylor Swift for 20 min" → [{{"artist": "Taylor Swift", "duration": 20}}]
+- "find factorial of 5" → [{{"n": 5}}]
 
-JSON:"""
+JSON array:"""
 
     messages = [{"role": "user", "content": prompt}]
 
@@ -416,30 +493,56 @@ JSON:"""
             content = data.get("message", {}).get("content", "")
 
         # Parse JSON from response
-        # Try direct parse first (Ollama format=json should give clean JSON)
-        try:
-            params_dict = json.loads(content)
-            if isinstance(params_dict, dict):
-                return params_dict
-        except json.JSONDecodeError:
-            pass
-
-        # Fallback: extract JSON from text
-        json_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
-        if json_match:
-            try:
-                params_dict = json.loads(json_match.group())
-                if isinstance(params_dict, dict):
-                    return params_dict
-            except json.JSONDecodeError:
-                pass
+        result = _parse_param_list(content)
+        if result is not None:
+            return result
 
         logger.warning(f"Failed to parse LLM param extraction: {content[:200]}")
-        return {}
+        return [{}]  # Return single empty dict as fallback
 
     except Exception as e:
         logger.error(f"LLM param extraction failed: {e}")
-        return {}
+        return [{}]
+
+
+def _parse_param_list(content: str) -> list[dict] | None:
+    """Parse LLM response into list of param dicts.
+
+    Handles both array responses and single-object responses.
+    """
+    content = content.strip()
+
+    # Try direct parse first (Ollama format=json should give clean JSON)
+    try:
+        parsed = json.loads(content)
+        if isinstance(parsed, list):
+            return [d for d in parsed if isinstance(d, dict)]
+        if isinstance(parsed, dict):
+            return [parsed]
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: try to find JSON array in text
+    arr_match = re.search(r"\[.*\]", content, re.DOTALL)
+    if arr_match:
+        try:
+            parsed = json.loads(arr_match.group())
+            if isinstance(parsed, list):
+                return [d for d in parsed if isinstance(d, dict)]
+        except json.JSONDecodeError:
+            pass
+
+    # Fallback: try to find a single JSON object
+    obj_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
+    if obj_match:
+        try:
+            parsed = json.loads(obj_match.group())
+            if isinstance(parsed, dict):
+                return [parsed]
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -499,13 +602,14 @@ def carm_route_bfcl(
     ollama_url: str,
     ollama_model: str,
 ) -> str:
-    """Main CARM routing pipeline for BFCL.
+    """Main CARM routing pipeline for BFCL (v3).
 
     1. Extract functions from system prompt
     2. Extract user query
     3. Select best function(s) via signal matching
-    4. Extract params via LLM
-    5. Format as [func(param=value)]
+    4. Semantic verification (LLM) for borderline scores
+    5. Extract params via LLM (unified — handles parallel naturally)
+    6. Format as [func(param=value)]
     """
     # Step 1: Extract functions
     functions = extract_functions_from_system_prompt(messages)
@@ -523,24 +627,53 @@ def carm_route_bfcl(
     logger.info(f"Query: {query[:100]}...")
     logger.info(f"Functions: {[f['name'] for f in functions]}")
 
-    # Step 3: Select functions
-    selected = select_functions(functions, query)
+    # Step 3: Select functions via signal matching
+    scored = [(f, score_function_relevance(f, query)) for f in functions]
+    scored.sort(key=lambda x: x[1], reverse=True)
 
-    if not selected:
-        # Irrelevance: no function matches
-        logger.info("No relevant function found → returning []")
+    # Filter by threshold
+    relevant = [(f, s) for f, s in scored if s >= RELEVANCE_THRESHOLD]
+
+    if not relevant:
+        logger.info("No relevant function found (signal) → returning []")
         return "[]"
 
-    logger.info(f"Selected: {[(f['name'], f'{s:.2f}') for f, s in selected]}")
+    # Step 4: Semantic verification for borderline scores
+    # High-confidence (>0.6): keep directly
+    # Borderline (0.2-0.6): verify with LLM
+    # Below threshold: already filtered out
+    verified = []
+    for func, score in relevant:
+        if score >= BORDERLINE_HIGH:
+            verified.append((func, score))
+        elif BORDERLINE_LOW <= score < BORDERLINE_HIGH:
+            # LLM verification
+            is_relevant = verify_relevance_via_llm(
+                func, query, ollama_url, ollama_model
+            )
+            logger.info(
+                f"  LLM verify {func['name']} (score={score:.2f}): {is_relevant}"
+            )
+            if is_relevant:
+                verified.append((func, score))
+            else:
+                logger.info(f"  Rejected {func['name']} by LLM verification")
 
-    # Step 4: Extract params for each selected function
+    if not verified:
+        logger.info("All candidates rejected by semantic verification → returning []")
+        return "[]"
+
+    logger.info(f"Verified: {[(f['name'], f'{s:.2f}') for f, s in verified]}")
+
+    # Step 5: Extract params for each verified function (unified — handles parallel)
     calls = []
-    for func, score in selected:
-        params = extract_params_via_llm(func, query, ollama_url, ollama_model)
-        calls.append((func["name"], params))
-        logger.info(f"  {func['name']} params: {params}")
+    for func, score in verified:
+        param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
+        for params in param_sets:
+            calls.append((func["name"], params))
+            logger.info(f"  {func['name']} params: {params}")
 
-    # Step 5: Format output
+    # Step 6: Format output
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
     return output
@@ -714,7 +847,7 @@ def main():
     global OLLAMA_BASE_URL, OLLAMA_MODEL, RELEVANCE_THRESHOLD
 
     parser = argparse.ArgumentParser(
-        description="CARM BFCL API Server (v2 — CARM-routed)"
+        description="CARM BFCL API Server (v3 — CARM routing + parallel + semantic verification)"
     )
     parser.add_argument("--port", type=int, default=11400, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")
@@ -746,10 +879,12 @@ def main():
     )
 
     server = HTTPServer((args.host, args.port), CARMServerHandler)
-    logger.info(f"CARM BFCL Server v2 starting on {args.host}:{args.port}")
+    logger.info(f"CARM BFCL Server v3 starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
     logger.info(f"  Relevance threshold: {RELEVANCE_THRESHOLD}")
-    logger.info(f"  Architecture: CARM routing + LLM param extraction")
+    logger.info(
+        f"  Architecture: CARM routing + LLM semantic verification + unified param extraction"
+    )
     logger.info(f"  Endpoints: GET /v1/models, POST /v1/chat/completions")
 
     try:
