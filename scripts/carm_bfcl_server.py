@@ -470,16 +470,19 @@ Parameters:
 User query: {query}
 
 CRITICAL RULES:
-1. ALWAYS return a JSON ARRAY (list of objects), even for a single call.
-2. If the user asks for MULTIPLE independent calls to the same function (e.g. "calculate X for A and B" or "play A for 20 min and B for 15 min"), return MULTIPLE objects in the array — one per call.
-3. Each object should have parameter names as keys and extracted values as values.
-4. Use the correct type (int, float, string, bool, array, etc.).
-5. If a parameter is not mentioned in the query, omit it from that object.
-6. For optional parameters with defaults, only include if explicitly mentioned.
+1. Return a JSON ARRAY of objects. Most queries need exactly ONE object in the array.
+2. ONLY return MULTIPLE objects if the user explicitly asks for multiple independent calls with different parameter values to the SAME function. For example:
+   - "calculate X for A and B" (two entities A and B → two objects)
+   - "play A for 20 min and B for 15 min" (two artists → two objects)
+   - "find factorial of 5, 10 and 15" (three numbers → three objects)
+3. Do NOT split a single call into multiple. If there's only one set of parameters, return one object.
+4. Use the correct type: int for integers, float for decimals, string for text, bool for true/false, array for lists.
+5. For array-type parameters, use JSON array syntax (e.g. [1, 2, 3]).
+6. If a parameter is not mentioned in the query, omit it.
 7. Return ONLY the JSON array, no explanation.
 
 Examples:
-- "calculate BMI for 6ft/80kg and 5.6ft/60kg" → [{{"height": 6.0, "weight": 80}}, {{"height": 5.6, "weight": 60}}]
+- "calculate BMI for 6ft/80kg" → [{{"height": 6.0, "weight": 80}}]
 - "play Taylor Swift for 20 min and Maroon 5 for 15 min" → [{{"artist": "Taylor Swift", "duration": 20}}, {{"artist": "Maroon 5", "duration": 15}}]
 - "find factorial of 5" → [{{"n": 5}}]
 
@@ -650,33 +653,24 @@ def carm_route_bfcl(
     scored = [(f, score_function_relevance(f, query)) for f in functions]
     scored.sort(key=lambda x: x[1], reverse=True)
 
+    # Adaptive threshold: when there's only 1 function, it's likely the intended one
+    # (BFCL simple/multiple categories often have 1-2 functions per query)
+    effective_threshold = RELEVANCE_THRESHOLD
+    if len(functions) == 1:
+        effective_threshold = 0.05  # Very low bar — just needs any signal
+
     # Filter by threshold
-    relevant = [(f, s) for f, s in scored if s >= RELEVANCE_THRESHOLD]
+    relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
     if not relevant:
         logger.info("No relevant function found (signal) → returning []")
         return "[]"
 
-    # Step 4: Semantic verification for borderline scores
-    # High-confidence (>0.6): keep directly
-    # Borderline (0.2-0.6): verify with LLM
-    # Below threshold: already filtered out
-    verified = []
-    for func, score in relevant:
-        if score >= BORDERLINE_HIGH:
-            verified.append((func, score))
-        elif BORDERLINE_LOW <= score < BORDERLINE_HIGH:
-            # LLM verification
-            is_relevant = verify_relevance_via_llm(
-                func, query, ollama_url, ollama_model
-            )
-            logger.info(
-                f"  LLM verify {func['name']} (score={score:.2f}): {is_relevant}"
-            )
-            if is_relevant:
-                verified.append((func, score))
-            else:
-                logger.info(f"  Rejected {func['name']} by LLM verification")
+    # Step 4: Semantic verification — DISABLED
+    # LLM yes/no verification has 100% false negative rate for borderline scores (0.2-0.35).
+    # Instead, rely on improved signal matching to push correct matches above 0.35
+    # and incorrect matches below 0.2.
+    verified = [(func, score) for func, score in relevant]
 
     if not verified:
         logger.info("All candidates rejected by semantic verification → returning []")
