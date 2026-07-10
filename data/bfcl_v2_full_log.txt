@@ -1,0 +1,283 @@
+BFCL v2 Full Evaluation
+Model: carm-router
+Started: 2026-07-10 16:33:47
+Categories: ['simple_python', 'multiple', 'live_simple', 'live_multiple', 'live_relevance', 'live_irrelevance', 'irrelevance', 'parallel', 'parallel_multiple', 'live_parallel', 'live_parallel_multiple']
+================================================================================
+
+
+============================================================
+Category: simple_python
+============================================================
+
+--- GENERATE (4s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['simple_python'].
+✅ All selected test cases have been previously generated for carm-router. No new test cases to generate.
+
+--- EVALUATE (5s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: simple_python
+✅ Test completed: simple_python. 🎯 Accuracy: 97.00%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00, 19.27it/s]
+
+
+Accuracy: 97.0%
+
+============================================================
+Category: multiple
+============================================================
+
+--- GENERATE (253s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['multiple'].
+
+STDERR: ts for carm-router:  98%|█████████▊| 196/200 [04:05<00:04,  1.08s/it]
+Generating results for carm-router:  98%|█████████▊| 197/200 [04:06<00:03,  1.07s/it]
+Generating results for carm-router:  99%|█████████▉| 198/200 [04:07<00:02,  1.06s/it]
+Generating results for carm-router: 100%|█████████▉| 199/200 [04:08<00:01,  1.05s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:09<00:00,  1.05s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:09<00:00,  1.25s/it]
+
+
+--- EVALUATE (6s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: multiple
+✅ Test completed: multiple. 🎯 Accuracy: 96.00%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00, 23.80it/s]
+
+
+Accuracy: 96.0%
+
+============================================================
+Category: live_simple
+============================================================
+
+--- GENERATE (269s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['live_simple'].
+
+STDERR: ts for carm-router:  98%|█████████▊| 254/258 [04:20<00:03,  1.02it/s]
+Generating results for carm-router:  99%|█████████▉| 255/258 [04:21<00:02,  1.01it/s]
+Generating results for carm-router:  99%|█████████▉| 256/258 [04:22<00:01,  1.02it/s]
+Generating results for carm-router: 100%|█████████▉| 257/258 [04:23<00:00,  1.01it/s]
+Generating results for carm-router: 100%|██████████| 258/258 [04:24<00:00,  1.02it/s]
+Generating results for carm-router: 100%|██████████| 258/258 [04:24<00:00,  1.03s/it]
+
+
+--- EVALUATE (9s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: live_simple
+✅ Test completed: live_simple. 🎯 Accuracy: 85.66%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  7.94it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  7.90it/s]
+
+
+Accuracy: 85.66%
+
+============================================================
+Category: live_multiple
+============================================================
+
+--- GENERATE (1184s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['live_multiple'].
+
+STDERR: router: 100%|█████████▉| 1049/1053 [19:32<00:04,  1.20s/it]
+Generating results for carm-router: 100%|█████████▉| 1050/1053 [19:34<00:03,  1.27s/it]
+Generating results for carm-router: 100%|█████████▉| 1051/1053 [19:35<00:02,  1.27s/it]
+Generating results for carm-router: 100%|█████████▉| 1052/1053 [19:36<00:01,  1.26s/it]
+Generating results for carm-router: 100%|██████████| 1053/1053 [19:37<00:00,  1.24s/it]
+Generating results for carm-router: 100%|██████████| 1053/1053 [19:37<00:00,  1.12s/it]
+
+
+--- EVALUATE (8s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: live_multiple
+✅ Test completed: live_multiple. 🎯 Accuracy: 77.78%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  2.32it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  2.32it/s]
+
+
+Accuracy: 77.78%
+
+============================================================
+Category: live_relevance
+============================================================
+
+--- GENERATE (32s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['live_relevance'].
+
+STDERR: rating results for carm-router:  75%|███████▌  | 12/16 [00:18<00:05,  1.47s/it]
+Generating results for carm-router:  81%|████████▏ | 13/16 [00:20<00:04,  1.48s/it]
+Generating results for carm-router:  88%|████████▊ | 14/16 [00:22<00:03,  1.52s/it]
+Generating results for carm-router:  94%|█████████▍| 15/16 [00:23<00:01,  1.53s/it]
+Generating results for carm-router: 100%|██████████| 16/16 [00:27<00:00,  1.75s/it]
+Generating results for carm-router: 100%|██████████| 16/16 [00:27<00:00,  1.70s/it]
+
+
+--- EVALUATE (9s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: live_relevance
+✅ Test completed: live_relevance. 🎯 Accuracy: 100.00%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00, 13.51it/s]
+
+
+Accuracy: 100.0%
+
+============================================================
+Category: live_irrelevance
+============================================================
+
+--- GENERATE (984s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['live_irrelevance'].
+
+STDERR: ts for carm-router: 100%|█████████▉| 880/884 [16:13<00:04,  1.22s/it]
+Generating results for carm-router: 100%|█████████▉| 881/884 [16:15<00:03,  1.27s/it]
+Generating results for carm-router: 100%|█████████▉| 882/884 [16:16<00:02,  1.28s/it]
+Generating results for carm-router: 100%|█████████▉| 883/884 [16:17<00:01,  1.26s/it]
+Generating results for carm-router: 100%|██████████| 884/884 [16:19<00:00,  1.30s/it]
+Generating results for carm-router: 100%|██████████| 884/884 [16:19<00:00,  1.11s/it]
+
+
+--- EVALUATE (6s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: live_irrelevance
+✅ Test completed: live_irrelevance. 🎯 Accuracy: 38.24%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  4.18it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  4.17it/s]
+
+
+Accuracy: 38.24%
+
+============================================================
+Category: irrelevance
+============================================================
+
+--- GENERATE (263s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['irrelevance'].
+
+STDERR: ts for carm-router:  98%|█████████▊| 236/240 [04:14<00:04,  1.01s/it]
+Generating results for carm-router:  99%|█████████▉| 237/240 [04:15<00:02,  1.00it/s]
+Generating results for carm-router:  99%|█████████▉| 238/240 [04:16<00:01,  1.03it/s]
+Generating results for carm-router: 100%|█████████▉| 239/240 [04:17<00:00,  1.03it/s]
+Generating results for carm-router: 100%|██████████| 240/240 [04:18<00:00,  1.02it/s]
+Generating results for carm-router: 100%|██████████| 240/240 [04:18<00:00,  1.08s/it]
+
+
+--- EVALUATE (6s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: irrelevance
+✅ Test completed: irrelevance. 🎯 Accuracy: 64.58%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00, 18.39it/s]
+
+
+Accuracy: 64.58%
+
+============================================================
+Category: parallel
+============================================================
+
+--- GENERATE (249s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['parallel'].
+
+STDERR: ts for carm-router:  98%|█████████▊| 196/200 [04:00<00:05,  1.28s/it]
+Generating results for carm-router:  98%|█████████▊| 197/200 [04:01<00:03,  1.28s/it]
+Generating results for carm-router:  99%|█████████▉| 198/200 [04:02<00:02,  1.25s/it]
+Generating results for carm-router: 100%|█████████▉| 199/200 [04:03<00:01,  1.22s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:04<00:00,  1.22s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:04<00:00,  1.22s/it]
+
+
+--- EVALUATE (10s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: parallel
+✅ Test completed: parallel. 🎯 Accuracy: 13.50%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  4.94it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  4.94it/s]
+
+
+Accuracy: 13.5%
+
+============================================================
+Category: parallel_multiple
+============================================================
+
+--- GENERATE (271s, rc=0) ---
+Generating results for ['carm-router']
+Running full test cases for categories: ['parallel_multiple'].
+
+STDERR: ts for carm-router:  98%|█████████▊| 196/200 [04:20<00:06,  1.66s/it]
+Generating results for carm-router:  98%|█████████▊| 197/200 [04:21<00:04,  1.62s/it]
+Generating results for carm-router:  99%|█████████▉| 198/200 [04:23<00:03,  1.63s/it]
+Generating results for carm-router: 100%|█████████▉| 199/200 [04:24<00:01,  1.61s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:25<00:00,  1.56s/it]
+Generating results for carm-router: 100%|██████████| 200/200 [04:25<00:00,  1.33s/it]
+
+
+--- EVALUATE (12s, rc=0) ---
+🦍 Model: carm-router
+🔍 Running test: parallel_multiple
+✅ Test completed: parallel_multiple. 🎯 Accuracy: 2.50%
+📈 Aggregating data to generate leaderboard score table...
+🏁 Evaluation completed. See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_overall.csv for overall evaluation results on BFCL V4.
+See D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_non_live.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_multi_turn.csv, D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_agentic.csv and D:\tools\miniconda3\envs\BFCL\Lib\site-packages\score\data_format_sensitivity.csv for detailed evaluation results on each sub-section categories respectively.
+
+STDERR: 
+Number of models evaluated:   0%|          | 0/1 [00:00<?, ?it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  3.88it/s]
+Number of models evaluated: 100%|██████████| 1/1 [00:00<00:00,  3.88it/s]
+
+
+Accuracy: 2.5%
