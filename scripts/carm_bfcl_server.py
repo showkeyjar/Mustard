@@ -351,9 +351,10 @@ def select_functions(functions: list[dict], query: str) -> list[tuple[dict, floa
 # Semantic relevance verification (v3)
 # ---------------------------------------------------------------------------
 
-# Borderline range: scores in [0.2, 0.6] get LLM verification
+# Borderline range: only very low scores (0.2-0.35) get LLM verification
+# Above 0.35 is kept directly (high enough signal to trust)
 BORDERLINE_LOW = 0.2
-BORDERLINE_HIGH = 0.6
+BORDERLINE_HIGH = 0.35
 
 
 def verify_relevance_via_llm(
@@ -373,14 +374,27 @@ def verify_relevance_via_llm(
     func_name = func.get("name", "")
     func_desc = func.get("description", "")
 
-    prompt = f"""Does the function "{func_name}" directly answer or help with the user's request?
+    prompt = f"""A user wants to use a function. Decide if the function's PURPOSE matches the user's intent.
 
 Function: {func_name}
 Description: {func_desc}
 
 User request: {query}
 
-Answer with ONLY "yes" or "no". A function is relevant ONLY if it can directly perform what the user is asking for. If the user wants something the function cannot do, answer "no".
+A function matches if the user's request is asking to USE that function's capability.
+A function does NOT match if the user is asking for something the function cannot do, even if some words overlap.
+
+Examples of MATCH:
+- Function "calculate_bmi" (calculates BMI) + "Calculate BMI for 6ft/80kg" → yes
+- Function "calculate_sales_tax" + "What is the sales tax for $30 in Chicago?" → yes
+- Function "get_weather" + "What's the weather in Boston?" → yes
+
+Examples of NO MATCH:
+- Function "determine_body_mass_index" + "Calculate the area of a triangle" → no (different calculation)
+- Function "requests.get" + "Write a Python script to rename files" → no (not a GET request)
+- Function "find_roots" + "What is the perimeter of a rectangle?" → no (different math)
+
+Answer with ONLY "yes" or "no":
 
 Answer:"""
 
@@ -456,8 +470,8 @@ Parameters:
 User query: {query}
 
 CRITICAL RULES:
-1. If the user asks for MULTIPLE independent calls to the same function (e.g. "calculate X for A and B" or "play A for 20 min and B for 15 min"), return a JSON ARRAY with one object per call.
-2. If there is only ONE call, return a JSON ARRAY with a single object.
+1. ALWAYS return a JSON ARRAY (list of objects), even for a single call.
+2. If the user asks for MULTIPLE independent calls to the same function (e.g. "calculate X for A and B" or "play A for 20 min and B for 15 min"), return MULTIPLE objects in the array — one per call.
 3. Each object should have parameter names as keys and extracted values as values.
 4. Use the correct type (int, float, string, bool, array, etc.).
 5. If a parameter is not mentioned in the query, omit it from that object.
@@ -466,12 +480,18 @@ CRITICAL RULES:
 
 Examples:
 - "calculate BMI for 6ft/80kg and 5.6ft/60kg" → [{{"height": 6.0, "weight": 80}}, {{"height": 5.6, "weight": 60}}]
-- "play Taylor Swift for 20 min" → [{{"artist": "Taylor Swift", "duration": 20}}]
+- "play Taylor Swift for 20 min and Maroon 5 for 15 min" → [{{"artist": "Taylor Swift", "duration": 20}}, {{"artist": "Maroon 5", "duration": 15}}]
 - "find factorial of 5" → [{{"n": 5}}]
 
 JSON array:"""
 
-    messages = [{"role": "user", "content": prompt}]
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a parameter extraction assistant. You ALWAYS output a JSON array of objects, never a single object. Even for one call, wrap it in an array.",
+        },
+        {"role": "user", "content": prompt},
+    ]
 
     try:
         with httpx.Client(timeout=120.0) as client:
@@ -485,7 +505,6 @@ JSON array:"""
                         "temperature": 0.001,
                         "num_predict": 512,
                     },
-                    "format": "json",
                 },
             )
             resp.raise_for_status()
@@ -774,10 +793,43 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             return
 
         messages = req.get("messages", [])
+        # Also check for OpenAI-style "tools" parameter
+        tools = req.get("tools", [])
+        if tools:
+            # Convert OpenAI tools format to function defs and inject into system prompt
+            func_defs = []
+            for tool in tools:
+                if tool.get("type") == "function":
+                    func = tool.get("function", {})
+                    if func:
+                        func_defs.append(func)
+            if func_defs:
+                # Prepend function JSON to system message
+                func_json = json.dumps(func_defs)
+                system_msg = next(
+                    (m for m in messages if m.get("role") == "system"), None
+                )
+                if system_msg:
+                    system_msg["content"] = (
+                        system_msg.get("content", "") + "\n" + func_json
+                    )
+                else:
+                    messages.insert(0, {"role": "system", "content": func_json})
+                logger.info(
+                    f"Injected {len(func_defs)} tools from 'tools' param into system prompt"
+                )
+
+        # Debug: log what we received
+        sys_msg = next((m for m in messages if m.get("role") == "system"), None)
+        if sys_msg:
+            logger.info(f"System msg length: {len(sys_msg.get('content', ''))}")
+            logger.info(f"System msg preview: {sys_msg.get('content', '')[:200]}")
 
         start = time.time()
         content = carm_route_bfcl(messages, self.ollama_url, self.ollama_model)
         latency = time.time() - start
+
+        logger.info(f"Response content preview: {content[:200]}")
 
         response = {
             "id": f"chatcmpl-{int(time.time())}",
