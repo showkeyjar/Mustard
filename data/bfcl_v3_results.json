@@ -1,0 +1,35 @@
+{
+  "simple_python": {
+    "accuracy": 85.0
+  },
+  "multiple": {
+    "accuracy": 76.0
+  },
+  "parallel": {
+    "accuracy": 82.5
+  },
+  "parallel_multiple": {
+    "accuracy": 40.0
+  },
+  "live_simple": {
+    "accuracy": 58.53
+  },
+  "live_multiple": {
+    "accuracy": 35.61
+  },
+  "live_parallel": {
+    "accuracy": 62.5
+  },
+  "live_parallel_multiple": {
+    "accuracy": 20.83
+  },
+  "irrelevance": {
+    "accuracy": 60.0
+  },
+  "live_irrelevance": {
+    "accuracy": 68.1
+  },
+  "live_relevance": {
+    "accuracy": 68.75
+  }
+}
