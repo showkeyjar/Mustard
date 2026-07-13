@@ -527,6 +527,98 @@ JSON array:"""
         return [{}]
 
 
+def extract_params_via_llm_v2(
+    func: dict,
+    query: str,
+    ollama_url: str,
+    ollama_model: str,
+) -> dict:
+    """Use LLM to extract parameter values (v2-style: single dict, format=json).
+
+    More reliable than array extraction for non-parallel calls because
+    Ollama's format=json produces clean JSON objects.
+    """
+    func_name = func.get("name", "")
+    params = func.get("parameters", {})
+    param_props = params.get("properties", {})
+    required = params.get("required", [])
+
+    param_lines = []
+    for pname, pinfo in param_props.items():
+        ptype = pinfo.get("type", "any")
+        pdesc = pinfo.get("description", "")
+        req = "required" if pname in required else "optional"
+        default = pinfo.get("default", None)
+        default_str = f", default={default!r}" if default is not None else ""
+        param_lines.append(f"  - {pname} ({ptype}, {req}): {pdesc}{default_str}")
+    param_desc = "\n".join(param_lines) if param_lines else "  (no parameters)"
+
+    prompt = f"""Extract parameter values from the user query for the function "{func_name}".
+
+Function description: {func.get("description", "")}
+
+Parameters:
+{param_desc}
+
+User query: {query}
+
+Rules:
+1. Return ONLY a JSON object with parameter names as keys and extracted values as values.
+2. Use the correct Python type (int, float, string, list, etc.).
+3. If a parameter is not mentioned in the query, omit it (don't set it to null).
+4. For optional parameters with defaults, only include if explicitly mentioned.
+5. For array/list type parameters, use JSON array syntax.
+6. Do NOT include any explanation, just the JSON object.
+
+Example output: {{"base": 10, "height": 5}}
+
+JSON:"""
+
+    messages = [{"role": "user", "content": prompt}]
+
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": messages,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.001,
+                        "num_predict": 512,
+                    },
+                    "format": "json",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data.get("message", {}).get("content", "")
+
+        try:
+            params_dict = json.loads(content)
+            if isinstance(params_dict, dict):
+                return params_dict
+        except json.JSONDecodeError:
+            pass
+
+        json_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
+        if json_match:
+            try:
+                params_dict = json.loads(json_match.group())
+                if isinstance(params_dict, dict):
+                    return params_dict
+            except json.JSONDecodeError:
+                pass
+
+        logger.warning(f"Failed to parse LLM param extraction: {content[:200]}")
+        return {}
+
+    except Exception as e:
+        logger.error(f"LLM param extraction failed: {e}")
+        return {}
+
+
 def _parse_param_list(content: str) -> list[dict] | None:
     """Parse LLM response into list of param dicts.
 
@@ -670,7 +762,30 @@ def carm_route_bfcl(
     # LLM yes/no verification has 100% false negative rate for borderline scores (0.2-0.35).
     # Instead, rely on improved signal matching to push correct matches above 0.35
     # and incorrect matches below 0.2.
-    verified = [(func, score) for func, score in relevant]
+
+    # Function selection strategy:
+    # - Single function (len==1): use it (already filtered by adaptive threshold)
+    # - Multiple functions: select top-1 by default; select multiple only if
+    #   the query has parallel separators AND multiple functions have high scores
+    if len(relevant) <= 1:
+        verified = relevant
+    else:
+        # Check for parallel indicators in the query
+        parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
+        has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
+
+        if has_parallel_hint and len(relevant) >= 2:
+            # Parallel: select top functions with scores close to the best
+            best_score = relevant[0][1]
+            verified = [relevant[0]]
+            for f, s in relevant[1:]:
+                if best_score - s < 0.2 and s >= RELEVANCE_THRESHOLD:
+                    verified.append((f, s))
+                else:
+                    break
+        else:
+            # Non-parallel: only select the best function
+            verified = [relevant[0]]
 
     if not verified:
         logger.info("All candidates rejected by semantic verification → returning []")
@@ -678,13 +793,31 @@ def carm_route_bfcl(
 
     logger.info(f"Verified: {[(f['name'], f'{s:.2f}') for f, s in verified]}")
 
-    # Step 5: Extract params for each verified function (unified — handles parallel)
+    # Step 5: Extract params
+    # For single-function non-parallel: use v2's format=json single-dict extraction (more reliable)
+    # For parallel: use array extraction (handles multiple param sets)
     calls = []
-    for func, score in verified:
-        param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
-        for params in param_sets:
+
+    # Detect if this is a parallel call (same function might be called multiple times)
+    parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
+    has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
+    is_parallel = len(verified) > 1 or (has_parallel_hint and len(verified) == 1)
+
+    if not is_parallel:
+        # Single call: use format=json for reliable single-dict extraction
+        for func, score in verified:
+            params = extract_params_via_llm_v2(func, query, ollama_url, ollama_model)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params: {params}")
+    else:
+        # Parallel: use array extraction
+        for func, score in verified:
+            param_sets = extract_all_params_via_llm(
+                func, query, ollama_url, ollama_model
+            )
+            for params in param_sets:
+                calls.append((func["name"], params))
+                logger.info(f"  {func['name']} params: {params}")
 
     # Step 6: Format output
     output = format_parallel_output(calls)
