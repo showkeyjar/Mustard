@@ -823,14 +823,15 @@ def carm_route_bfcl(
     ollama_url: str,
     ollama_model: str,
 ) -> str:
-    """Main CARM routing pipeline for BFCL (v3).
+    """Main CARM routing pipeline for BFCL (v4).
 
     1. Extract functions from system prompt
     2. Extract user query
-    3. Select best function(s) via signal matching
-    4. Semantic verification (LLM) for borderline scores
-    5. Extract params via LLM (unified — handles parallel naturally)
-    6. Format as [func(param=value)]
+    3. Signal-based function scoring
+    4. If best score < threshold → LLM function selection fallback
+    5. If top-2 scores close → LLM disambiguation
+    6. Extract params via LLM (single dict or array for parallel)
+    7. Format as [func(param=value)]
     """
     # Step 1: Extract functions
     functions = extract_functions_from_system_prompt(messages)
@@ -848,64 +849,94 @@ def carm_route_bfcl(
     logger.info(f"Query: {query[:100]}...")
     logger.info(f"Functions: {[f['name'] for f in functions]}")
 
-    # Step 3: Select functions via signal matching
+    # Step 3: Signal-based scoring
     scored = [(f, score_function_relevance(f, query)) for f in functions]
     scored.sort(key=lambda x: x[1], reverse=True)
 
-    # Adaptive threshold: when there's only 1 function, it's likely the intended one
-    # (BFCL simple/multiple categories often have 1-2 functions per query)
+    best_score = scored[0][1] if scored else 0.0
+    logger.info(f"Signal scores: {[(f['name'], f'{s:.2f}') for f, s in scored[:5]]}")
+
+    # Adaptive threshold: single function → low bar
     effective_threshold = RELEVANCE_THRESHOLD
     if len(functions) == 1:
-        effective_threshold = 0.05  # Very low bar — just needs any signal
+        effective_threshold = 0.05
 
-    # Filter by threshold
-    relevant = [(f, s) for f, s in scored if s >= effective_threshold]
+    # Step 4: LLM fallback when signal matching fails
+    if best_score < effective_threshold:
+        logger.info(
+            f"Best signal score {best_score:.2f} < {effective_threshold} → LLM fallback"
+        )
+        selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
+        if not selected:
+            logger.info("LLM fallback also found no match → returning []")
+            return "[]"
+        verified = [(f, 0.0) for f in selected]  # score unknown, mark as 0
+        logger.info(f"LLM selected: {[f['name'] for f in selected]}")
+    elif len(functions) > 1 and best_score < 0.4:
+        # Step 5: Signal score is above threshold but not high — disambiguate
+        # Check if top-2 are close
+        relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
-    if not relevant:
-        logger.info("No relevant function found (signal) → returning []")
-        return "[]"
-
-    # Step 4: Semantic verification — DISABLED
-    # LLM yes/no verification has 100% false negative rate for borderline scores (0.2-0.35).
-    # Instead, rely on improved signal matching to push correct matches above 0.35
-    # and incorrect matches below 0.2.
-
-    # Function selection strategy:
-    # - Single function (len==1): use it (already filtered by adaptive threshold)
-    # - Multiple functions: select top-1 by default; select multiple only if
-    #   the query has parallel separators AND multiple functions have high scores
-    if len(relevant) <= 1:
-        verified = relevant
-    else:
-        # Check for parallel indicators in the query
+        # Check for parallel call
         parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
         has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
 
         if has_parallel_hint and len(relevant) >= 2:
-            # Parallel: select top functions with scores close to the best
-            best_score = relevant[0][1]
+            # Parallel: keep all close-scored functions
+            best = relevant[0][1]
             verified = [relevant[0]]
             for f, s in relevant[1:]:
-                if best_score - s < 0.2 and s >= RELEVANCE_THRESHOLD:
+                if best - s < 0.2 and s >= effective_threshold:
+                    verified.append((f, s))
+                else:
+                    break
+        elif (
+            len(relevant) >= 2
+            and (relevant[0][1] - relevant[1][1]) < DISAMBIGUATION_MARGIN
+        ):
+            # Top-2 are close → LLM disambiguation
+            logger.info(
+                f"Top-2 close ({relevant[0][1]:.2f} vs {relevant[1][1]:.2f}) → LLM disambiguation"
+            )
+            # Pass top-3 candidates for disambiguation
+            candidates = relevant[:3] if len(relevant) >= 3 else relevant
+            selected = disambiguate_via_llm(candidates, query, ollama_url, ollama_model)
+            verified = [(f, 0.0) for f in selected]
+            logger.info(f"LLM disambiguated to: {[f['name'] for f in selected]}")
+        else:
+            # Clear winner
+            verified = [relevant[0]]
+    else:
+        # High confidence signal match
+        relevant = [(f, s) for f, s in scored if s >= effective_threshold]
+
+        # Check for parallel
+        parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
+        has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
+
+        if has_parallel_hint and len(relevant) >= 2:
+            best = relevant[0][1]
+            verified = [relevant[0]]
+            for f, s in relevant[1:]:
+                if best - s < 0.2 and s >= effective_threshold:
                     verified.append((f, s))
                 else:
                     break
         else:
-            # Non-parallel: only select the best function
-            verified = [relevant[0]]
+            verified = [relevant[0]] if relevant else []
 
     if not verified:
-        logger.info("All candidates rejected by semantic verification → returning []")
+        logger.info("No function selected → returning []")
         return "[]"
 
     logger.info(f"Verified: {[(f['name'], f'{s:.2f}') for f, s in verified]}")
 
-    # Step 5: Extract params
+    # Step 6: Extract params
     # For single-function non-parallel: use v2's format=json single-dict extraction (more reliable)
     # For parallel: use array extraction (handles multiple param sets)
     calls = []
 
-    # Detect if this is a parallel call (same function might be called multiple times)
+    # Detect if this is a parallel call
     parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
     has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
     is_parallel = len(verified) > 1 or (has_parallel_hint and len(verified) == 1)
@@ -1133,7 +1164,7 @@ def main():
     global OLLAMA_BASE_URL, OLLAMA_MODEL, RELEVANCE_THRESHOLD
 
     parser = argparse.ArgumentParser(
-        description="CARM BFCL API Server (v3 — CARM routing + parallel + semantic verification)"
+        description="CARM BFCL API Server (v4 — CARM signal + LLM fallback + disambiguation)"
     )
     parser.add_argument("--port", type=int, default=11400, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")
@@ -1165,12 +1196,10 @@ def main():
     )
 
     server = HTTPServer((args.host, args.port), CARMServerHandler)
-    logger.info(f"CARM BFCL Server v3 starting on {args.host}:{args.port}")
+    logger.info(f"CARM BFCL Server v4 starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
     logger.info(f"  Relevance threshold: {RELEVANCE_THRESHOLD}")
-    logger.info(
-        f"  Architecture: CARM routing + LLM semantic verification + unified param extraction"
-    )
+    logger.info(f"  Architecture: CARM signal routing + LLM fallback + disambiguation")
     logger.info(f"  Endpoints: GET /v1/models, POST /v1/chat/completions")
 
     try:
