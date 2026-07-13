@@ -1,18 +1,23 @@
 """CARM OpenAI-Compatible API Server for BFCL Evaluation.
 
-Architecture (v3 — CARM-routed + parallel + semantic verification):
+Architecture (v4 — CARM signal routing + LLM fallback + disambiguation):
   1. Parse BFCL system prompt → extract function definitions (JSON)
   2. CARM signal-based routing → select best matching function(s)
-  3. Semantic verification (LLM yes/no) for borderline relevance scores
-  4. LLM (Ollama) → unified parameter extraction (returns list of param sets,
-     naturally handling parallel calls — same function with different params)
-  5. Deterministic formatting → [func_name(param=value, ...)]
+  3. If signal score < threshold → LLM function selection fallback
+  4. If top-2 scores are close → LLM disambiguation to pick correct one
+  5. LLM (Ollama) → parameter extraction
+     - Non-parallel: format=json single dict (stable)
+     - Parallel: array extraction (handles multiple param sets)
+  6. Deterministic formatting → [func_name(param=value, ...)]
 
-v3 changes from v2:
-  - extract_all_params_via_llm: returns list[dict] instead of dict,
-    so "Play Taylor Swift 20min and Maroon 5 15min" → [{artist:...}, {artist:...}]
-  - verify_relevance_via_llm: LLM yes/no check for borderline scores (0.2-0.6)
-  - Parallel detection no longer relies on separator heuristics
+v4 changes from v3:
+  - LLM fallback for function selection when signal matching fails
+    (fixes live_multiple 273 empty [] responses where NL queries have
+     zero token overlap with function names)
+  - LLM disambiguation for close-scored functions
+    (fixes wrong_func_name errors like archival_memory vs recall_memory)
+  - Restored adaptive threshold: 0.05 for single-function, 0.2 for multi
+  - Removed semantic verification (proven ineffective in v3)
 
 Usage:
     python scripts/carm_bfcl_server.py --port 11400
@@ -348,55 +353,148 @@ def select_functions(functions: list[dict], query: str) -> list[tuple[dict, floa
 
 
 # ---------------------------------------------------------------------------
-# Semantic relevance verification (v3)
+# LLM function selection fallback (v4)
 # ---------------------------------------------------------------------------
 
-# Borderline range: only very low scores (0.2-0.35) get LLM verification
-# Above 0.35 is kept directly (high enough signal to trust)
-BORDERLINE_LOW = 0.2
-BORDERLINE_HIGH = 0.35
+# When signal matching gives a best score below this, use LLM to select
+LLM_FALLBACK_THRESHOLD = 0.2
+
+# When top-2 signal scores are within this margin, use LLM to disambiguate
+DISAMBIGUATION_MARGIN = 0.15
 
 
-def verify_relevance_via_llm(
-    func: dict,
+def select_function_via_llm(
+    functions: list[dict],
     query: str,
     ollama_url: str,
     ollama_model: str,
-) -> bool:
-    """Use LLM to verify if a function is truly relevant to the query.
+) -> list[dict]:
+    """Use LLM to select the correct function(s) when signal matching fails.
 
-    This handles cases where token overlap gives false positives:
-    - "Calculate triangle area" with function "determine_body_mass_index"
-      (both have "calculate" but semantically unrelated)
-    - "Write a Python script" with function "requests.get"
-      (both mention programming but function can't do what's asked)
+    This handles natural language queries where token overlap is low:
+    - "how can i cook steak Indian style" → cookbook.search_recipe
+    - "what is Imjin war" → HNA_WQA.search
+    - "Could you stop the washing machine" → ControlAppliance.execute
+
+    Returns a list of selected function dicts (usually 1, but can be
+    multiple for parallel calls).
     """
-    func_name = func.get("name", "")
-    func_desc = func.get("description", "")
+    # Build compact function list
+    func_lines = []
+    for i, f in enumerate(functions):
+        name = f.get("name", "")
+        desc = f.get("description", "")[:120]
+        func_lines.append(f"  {i}: {name} — {desc}")
+    func_list_str = "\n".join(func_lines)
 
-    prompt = f"""A user wants to use a function. Decide if the function's PURPOSE matches the user's intent.
+    prompt = f"""You are a function router. Given a user query and a list of available functions, select the function(s) the user wants to call.
 
-Function: {func_name}
-Description: {func_desc}
+Available functions:
+{func_list_str}
 
-User request: {query}
+User query: {query}
 
-A function matches if the user's request is asking to USE that function's capability.
-A function does NOT match if the user is asking for something the function cannot do, even if some words overlap.
+Rules:
+1. Return a JSON array of function indices (integers). Example: [0] or [0, 2]
+2. Select multiple functions ONLY if the query explicitly asks for multiple independent operations (e.g. "do X and Y" where X and Y map to different functions).
+3. If NO function matches the user's intent, return an empty array: []
+4. Choose based on the function's PURPOSE and CAPABILITY, not word overlap.
 
-Examples of MATCH:
-- Function "calculate_bmi" (calculates BMI) + "Calculate BMI for 6ft/80kg" → yes
-- Function "calculate_sales_tax" + "What is the sales tax for $30 in Chicago?" → yes
-- Function "get_weather" + "What's the weather in Boston?" → yes
+Function indices:"""
 
-Examples of NO MATCH:
-- Function "determine_body_mass_index" + "Calculate the area of a triangle" → no (different calculation)
-- Function "requests.get" + "Write a Python script to rename files" → no (not a GET request)
-- Function "find_roots" + "What is the perimeter of a rectangle?" → no (different math)
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "options": {"temperature": 0.001, "num_predict": 100},
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data.get("message", {}).get("content", "").strip()
 
-Answer with ONLY "yes" or "no":
+        # Parse the response — expect an array of indices
+        # Try direct parse
+        try:
+            indices = json.loads(content)
+            if isinstance(indices, list):
+                return [
+                    functions[i]
+                    for i in indices
+                    if isinstance(i, int) and 0 <= i < len(functions)
+                ]
+        except json.JSONDecodeError:
+            pass
 
-Answer:"""
+        # Fallback: find array in text
+        arr_match = re.search(r"\[[\d\s,]+\]", content)
+        if arr_match:
+            try:
+                indices = json.loads(arr_match.group())
+                if isinstance(indices, list):
+                    return [
+                        functions[i]
+                        for i in indices
+                        if isinstance(i, int) and 0 <= i < len(functions)
+                    ]
+            except (json.JSONDecodeError, IndexError):
+                pass
+
+        # Fallback: find single integer
+        num_match = re.search(r"\b(\d+)\b", content)
+        if num_match:
+            idx = int(num_match.group(1))
+            if 0 <= idx < len(functions):
+                return [functions[idx]]
+
+        logger.warning(f"LLM function selection parse failed: {content[:200]}")
+        return []
+
+    except Exception as e:
+        logger.error(f"LLM function selection failed: {e}")
+        return []
+
+
+def disambiguate_via_llm(
+    candidates: list[tuple[dict, float]],
+    query: str,
+    ollama_url: str,
+    ollama_model: str,
+) -> list[dict]:
+    """Use LLM to pick the correct function when signal scores are close.
+
+    Handles cases like:
+    - archival_memory_search vs recall_memory_search
+    - todo_add vs todo_delete
+    - order_status_check vs inventory_management
+
+    Returns selected function(s) — usually just 1.
+    """
+    func_lines = []
+    for i, (f, s) in enumerate(candidates):
+        name = f.get("name", "")
+        desc = f.get("description", "")[:150]
+        func_lines.append(f"  {i}: {name} (score={s:.2f}) — {desc}")
+    func_list_str = "\n".join(func_lines)
+
+    prompt = f"""You are a function router. The user query might match multiple functions, but only ONE is correct. Pick the right one.
+
+Candidate functions:
+{func_list_str}
+
+User query: {query}
+
+Rules:
+1. Return ONLY the index (integer) of the correct function. Example: 0
+2. Choose the function whose PURPOSE best matches what the user is asking for.
+3. Pay attention to action verbs: "create" → add/create function, "delete" → delete function, "check status" → status function, "search availability" → inventory function.
+4. If the user asks a question (what/who/when/where), choose search/query functions, not CRUD functions.
+
+Function index:"""
 
     try:
         with httpx.Client(timeout=60.0) as client:
@@ -407,19 +505,28 @@ Answer:"""
                     "messages": [{"role": "user", "content": prompt}],
                     "stream": False,
                     "options": {"temperature": 0.001, "num_predict": 10},
-                    "format": "json",
                 },
             )
             resp.raise_for_status()
             data = resp.json()
-            content = data.get("message", {}).get("content", "").strip().lower()
-            # Check for "yes" or "no" in the response
-            if content.startswith("yes") or '"yes"' in content:
-                return True
-            return False
+            content = data.get("message", {}).get("content", "").strip()
+
+        # Extract the first integer from the response
+        num_match = re.search(r"\b(\d+)\b", content)
+        if num_match:
+            idx = int(num_match.group(1))
+            if 0 <= idx < len(candidates):
+                return [candidates[idx][0]]
+
+        # Fallback: return the top candidate
+        logger.warning(
+            f"LLM disambiguation parse failed: {content[:100]}, using top candidate"
+        )
+        return [candidates[0][0]]
+
     except Exception as e:
-        logger.warning(f"Relevance verification failed: {e}, defaulting to True")
-        return True  # On error, keep the function (don't lose it)
+        logger.error(f"LLM disambiguation failed: {e}")
+        return [candidates[0][0]]
 
 
 # ---------------------------------------------------------------------------
