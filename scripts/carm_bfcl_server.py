@@ -564,7 +564,14 @@ def extract_all_params_via_llm(
         req = "required" if pname in required else "optional"
         default = pinfo.get("default", None)
         default_str = f", default={default!r}" if default is not None else ""
-        param_lines.append(f"  - {pname} ({ptype}, {req}): {pdesc}{default_str}")
+        # Include enum constraints if available
+        enum_vals = pinfo.get("enum", None)
+        enum_str = f", enum={enum_vals}" if enum_vals else ""
+        pattern = pinfo.get("pattern", None)
+        pattern_str = f", pattern={pattern}" if pattern else ""
+        param_lines.append(
+            f"  - {pname} ({ptype}, {req}{enum_str}{pattern_str}): {pdesc}{default_str}"
+        )
     param_desc = "\n".join(param_lines) if param_lines else "  (no parameters)"
 
     prompt = f"""Extract parameter values from the user query for the function "{func_name}".
@@ -583,10 +590,12 @@ CRITICAL RULES:
    - "play A for 20 min and B for 15 min" (two artists → two objects)
    - "find factorial of 5, 10 and 15" (three numbers → three objects)
 3. Do NOT split a single call into multiple. If there's only one set of parameters, return one object.
-4. Use the correct type: int for integers, float for decimals, string for text, bool for true/false, array for lists.
-5. For array-type parameters, use JSON array syntax (e.g. [1, 2, 3]).
-6. If a parameter is not mentioned in the query, omit it.
-7. Return ONLY the JSON array, no explanation.
+4. If a parameter has an enum constraint, you MUST choose a value from the enum list.
+5. Use the correct type: int for integers, float for decimals, string for text, bool for true/false, array for lists.
+6. For array-type parameters, use JSON array syntax (e.g. [1, 2, 3]).
+7. Extract values EXACTLY as they appear in the query — do not rephrase or translate.
+8. If a parameter is not mentioned in the query, omit it.
+9. Return ONLY the JSON array, no explanation.
 
 Examples:
 - "calculate BMI for 6ft/80kg" → [{{"height": 6.0, "weight": 80}}]
@@ -657,7 +666,15 @@ def extract_params_via_llm_v2(
         req = "required" if pname in required else "optional"
         default = pinfo.get("default", None)
         default_str = f", default={default!r}" if default is not None else ""
-        param_lines.append(f"  - {pname} ({ptype}, {req}): {pdesc}{default_str}")
+        # Include enum constraints if available
+        enum_vals = pinfo.get("enum", None)
+        enum_str = f", enum={enum_vals}" if enum_vals else ""
+        # Include pattern constraints
+        pattern = pinfo.get("pattern", None)
+        pattern_str = f", pattern={pattern}" if pattern else ""
+        param_lines.append(
+            f"  - {pname} ({ptype}, {req}{enum_str}{pattern_str}): {pdesc}{default_str}"
+        )
     param_desc = "\n".join(param_lines) if param_lines else "  (no parameters)"
 
     prompt = f"""Extract parameter values from the user query for the function "{func_name}".
@@ -672,10 +689,12 @@ User query: {query}
 Rules:
 1. Return ONLY a JSON object with parameter names as keys and extracted values as values.
 2. Use the correct Python type (int, float, string, list, etc.).
-3. If a parameter is not mentioned in the query, omit it (don't set it to null).
-4. For optional parameters with defaults, only include if explicitly mentioned.
-5. For array/list type parameters, use JSON array syntax.
-6. Do NOT include any explanation, just the JSON object.
+3. If a parameter has an enum constraint, you MUST choose a value from the enum list. Do NOT use any value outside the enum.
+4. If a parameter is not mentioned in the query, omit it (don't set it to null).
+5. For optional parameters with defaults, only include if explicitly mentioned.
+6. For array/list type parameters, use JSON array syntax.
+7. Extract values EXACTLY as they appear in the query — do not rephrase, translate, or reformat.
+8. Do NOT include any explanation, just the JSON object.
 
 Example output: {{"base": 10, "height": 5}}
 
