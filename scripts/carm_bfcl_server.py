@@ -399,6 +399,9 @@ Rules:
 2. Select multiple functions ONLY if the query explicitly asks for multiple independent operations (e.g. "do X and Y" where X and Y map to different functions).
 3. If NO function matches the user's intent, return an empty array: []
 4. Choose based on the function's PURPOSE and CAPABILITY, not word overlap.
+5. If the user is asking a general knowledge question (e.g. "what is X", "who is Y", "how does Z work") and no function can answer it, return [].
+6. If the user is making casual conversation (e.g. "hello", "how are you", "thank you"), return [].
+7. Only select a function if the user's query clearly maps to calling that function's capability.
 
 Function indices:"""
 
@@ -889,7 +892,78 @@ def carm_route_bfcl(
         if not selected:
             logger.info("LLM fallback also found no match → returning []")
             return "[]"
-        verified = [(f, 0.0) for f in selected]  # score unknown, mark as 0
+
+        # Secondary validation: LLM may return false positives for irrelevance.
+        # Re-check: if the signal score of the LLM-selected function is 0.0,
+        # it means zero token overlap — likely a false positive.
+        # Only accept if the query contains action-oriented language.
+        action_words = [
+            "call",
+            "get",
+            "set",
+            "find",
+            "search",
+            "check",
+            "update",
+            "delete",
+            "create",
+            "add",
+            "remove",
+            "send",
+            "book",
+            "order",
+            "calculate",
+            "convert",
+            "play",
+            "stop",
+            "start",
+            "change",
+            "schedule",
+            "reserve",
+            "buy",
+            "cancel",
+            "track",
+            "download",
+            "upload",
+            "translate",
+            "analyze",
+            "compute",
+            "measure",
+            "cook",
+            "make",
+            "show",
+            "tell",
+            "give",
+            "find",
+            "look",
+            "control",
+            "execute",
+            "run",
+            "turn",
+            "put",
+            "take",
+            "see",
+            "list",
+            "open",
+            "close",
+            "enable",
+            "disable",
+            "reset",
+        ]
+        query_lower = query.lower()
+        has_action = any(aw in query_lower for aw in action_words)
+
+        # Check if LLM-selected function has any signal
+        llm_scores = [score_function_relevance(f, query) for f in selected]
+        max_llm_score = max(llm_scores) if llm_scores else 0.0
+
+        if max_llm_score == 0.0 and not has_action:
+            logger.info(
+                f"LLM selected {[f['name'] for f in selected]} but signal=0.0 and no action words → rejecting as irrelevance"
+            )
+            return "[]"
+
+        verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
     elif len(functions) > 1 and best_score < 0.4:
         # Step 5: Signal score is above threshold but not high — disambiguate
