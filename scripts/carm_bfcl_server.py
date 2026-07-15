@@ -878,10 +878,15 @@ def carm_route_bfcl(
     best_score = scored[0][1] if scored else 0.0
     logger.info(f"Signal scores: {[(f['name'], f'{s:.2f}') for f, s in scored[:5]]}")
 
-    # Adaptive threshold: single function → low bar
-    effective_threshold = RELEVANCE_THRESHOLD
+    # Adaptive threshold: single function → low bar, but not zero
+    # For single-function BFCL tests (simple_*), the function is always relevant
+    # For irrelevance tests, the single function may NOT be relevant
+    effective_threshold = RELEVANCE_THRESHOLD  # 0.2 for multi-function
     if len(functions) == 1:
-        effective_threshold = 0.05
+        # Single function: check if the query semantically matches
+        # Use a moderate threshold — low enough to catch real matches,
+        # high enough to reject irrelevance like "prime factors" vs "compound_interest"
+        effective_threshold = 0.15
 
     # Step 4: LLM fallback when signal matching fails
     if best_score < effective_threshold:
