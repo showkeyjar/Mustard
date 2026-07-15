@@ -970,6 +970,18 @@ def carm_route_bfcl(
 
         verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
+    elif len(functions) == 1 and best_score < 0.4:
+        # Single function with medium signal score — could be irrelevance
+        # Use LLM to verify if the function truly matches the query intent
+        logger.info(
+            f"Single func, score {best_score:.2f} in [0.15, 0.4) → LLM verification"
+        )
+        selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
+        if not selected:
+            logger.info("LLM verification rejected the function → returning []")
+            return "[]"
+        verified = [(f, 0.0) for f in selected]
+        logger.info(f"LLM verified: {[f['name'] for f in selected]}")
     elif len(functions) > 1 and best_score < 0.4:
         # Step 5: Signal score is above threshold but not high — disambiguate
         # Check if top-2 are close
