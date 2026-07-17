@@ -1234,6 +1234,8 @@ def carm_route_bfcl(
         if is_parallel:
             logger.info("LLM detected parallel intent for single function")
 
+    calls = []
+
     if not is_parallel:
         # Single call: use format=json for reliable single-dict extraction
         for func, score in verified:
