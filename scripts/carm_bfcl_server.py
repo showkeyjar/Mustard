@@ -1461,7 +1461,7 @@ def main():
     global OLLAMA_BASE_URL, OLLAMA_MODEL, RELEVANCE_THRESHOLD
 
     parser = argparse.ArgumentParser(
-        description="CARM BFCL API Server (v4 — CARM signal + LLM fallback + disambiguation)"
+        description="CARM BFCL API Server (v5 — CARM signal + LLM fallback + disambiguation + LLM irrelevance verification + LLM parallel detection)"
     )
     parser.add_argument("--port", type=int, default=11400, help="Server port")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")
@@ -1493,10 +1493,12 @@ def main():
     )
 
     server = HTTPServer((args.host, args.port), CARMServerHandler)
-    logger.info(f"CARM BFCL Server v4 starting on {args.host}:{args.port}")
+    logger.info(f"CARM BFCL Server v5 starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
     logger.info(f"  Relevance threshold: {RELEVANCE_THRESHOLD}")
-    logger.info(f"  Architecture: CARM signal routing + LLM fallback + disambiguation")
+    logger.info(
+        f"  Architecture: CARM signal routing + LLM fallback + disambiguation + LLM irrelevance verification + LLM parallel detection"
+    )
     logger.info(f"  Endpoints: GET /v1/models, POST /v1/chat/completions")
 
     try:
