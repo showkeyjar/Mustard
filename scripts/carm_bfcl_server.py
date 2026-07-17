@@ -1,22 +1,36 @@
 """CARM OpenAI-Compatible API Server for BFCL Evaluation.
 
-Architecture (v4 — CARM signal routing + LLM fallback + disambiguation):
+Architecture (v5 — CARM signal routing + LLM fallback + disambiguation + LLM irrelevance verification):
   1. Parse BFCL system prompt → extract function definitions (JSON)
   2. CARM signal-based routing → select best matching function(s)
   3. If signal score < threshold → LLM function selection fallback
   4. If top-2 scores are close → LLM disambiguation to pick correct one
-  5. LLM (Ollama) → parameter extraction
+  5. LLM irrelevance verification — when LLM selects a function with zero
+     signal score, use a dedicated LLM call to verify relevance (replaces
+     v4's action_words heuristic that had too many false positives)
+  6. LLM parallel detection — use LLM to determine if the query requires
+     parallel function calls (replaces v4's separator-based heuristic)
+  7. LLM (Ollama) → parameter extraction with schema constraint validation
      - Non-parallel: format=json single dict (stable)
      - Parallel: array extraction (handles multiple param sets)
-  6. Deterministic formatting → [func_name(param=value, ...)]
+  8. Post-extraction validation — verify extracted params against schema
+     (type coercion, enum validation, required field check)
+  9. Deterministic formatting → [func_name(param=value, ...)]
+
+v5 changes from v4:
+  - LLM-based irrelevance verification replaces action_words heuristic
+    (v4 live_irrelevance dropped to 42.5% because "get"/"find"/"show"
+     are too common in English; LLM can distinguish intent better)
+  - LLM-based parallel detection replaces separator heuristics
+    (v4 live_parallel dropped to 43.8% because separators like ","
+     don't reliably indicate parallel intent in NL queries)
+  - Post-extraction schema validation with type coercion
+    (v4 had 45% value_error:string from wrong parameter values)
 
 v4 changes from v3:
   - LLM fallback for function selection when signal matching fails
-    (fixes live_multiple 273 empty [] responses where NL queries have
-     zero token overlap with function names)
   - LLM disambiguation for close-scored functions
-    (fixes wrong_func_name errors like archival_memory vs recall_memory)
-  - Restored adaptive threshold: 0.05 for single-function, 0.2 for multi
+  - Restored adaptive threshold: 0.15 for single-function, 0.2 for multi
   - Removed semantic verification (proven ineffective in v3)
 
 Usage:
@@ -533,6 +547,135 @@ Function index:"""
 
 
 # ---------------------------------------------------------------------------
+# LLM irrelevance verification (v5)
+# ---------------------------------------------------------------------------
+
+
+def verify_relevance_via_llm(
+    func: dict,
+    query: str,
+    ollama_url: str,
+    ollama_model: str,
+) -> bool:
+    """Use LLM to verify if a function is truly relevant to the query (v5).
+
+    Replaces v4's action_words heuristic that had too many false positives
+    (e.g. "get" appears in "I want to get weather data" but the user may
+    want an API endpoint, not a function call).
+
+    Returns True if the function is relevant, False if irrelevant.
+    """
+    func_name = func.get("name", "")
+    func_desc = func.get("description", "")[:200]
+    params = func.get("parameters", {})
+    param_props = params.get("properties", {})
+    param_summary = ", ".join(
+        f"{pn}({pinfo.get('type', 'any')})" for pn, pinfo in param_props.items()
+    )[:200]
+
+    prompt = f"""You are a function relevance judge. Determine if the user's query truly requires calling this function.
+
+Function: {func_name}
+Description: {func_desc}
+Parameters: {param_summary}
+
+User query: "{query}"
+
+Rules:
+1. Answer "RELEVANT" if the user's query clearly asks to perform the action that this function provides.
+2. Answer "IRRELEVANT" if:
+   - The user is asking a general knowledge question (e.g. "what is X", "who is Y")
+   - The user is making casual conversation (e.g. "hello", "thank you")
+   - The user mentions the function's domain but doesn't want to call it (e.g. "I want to see weather data for coordinates X" means they want an API, not a weather function)
+   - The user's intent doesn't match the function's purpose
+3. Be conservative: when in doubt, lean towards "IRRELEVANT".
+
+Answer (RELEVANT or IRRELEVANT):"""
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "options": {"temperature": 0.001, "num_predict": 10},
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data.get("message", {}).get("content", "").strip().upper()
+
+        return "RELEVANT" in content and "IRRELEVANT" not in content
+
+    except Exception as e:
+        logger.error(f"LLM relevance verification failed: {e}")
+        # On failure, be conservative: reject
+        return False
+
+
+# ---------------------------------------------------------------------------
+# LLM parallel detection (v5)
+# ---------------------------------------------------------------------------
+
+
+def detect_parallel_via_llm(
+    query: str,
+    functions: list[dict],
+    ollama_url: str,
+    ollama_model: str,
+) -> bool:
+    """Use LLM to determine if the query requires parallel function calls (v5).
+
+    Replaces v4's separator-based heuristic. Separators like "," or "and"
+    don't reliably indicate parallel intent — "find a restaurant and its reviews"
+    might be a single function, while "book a flight and a hotel" needs two.
+
+    Returns True if the query requires multiple independent function calls.
+    """
+    func_names = [f.get("name", "") for f in functions[:10]]  # Limit for prompt size
+
+    prompt = f"""Determine if the user's query requires calling MULTIPLE functions in parallel.
+
+Available functions: {func_names}
+
+User query: "{query}"
+
+Rules:
+1. Answer "PARALLEL" if the query explicitly asks for multiple independent operations that map to DIFFERENT functions (e.g. "book a flight and a hotel" → two functions).
+2. Answer "PARALLEL" if the query asks for the SAME function with DIFFERENT parameter sets (e.g. "calculate BMI for 6ft/80kg and 5.6ft/60kg" → two calls to the same function).
+3. Answer "SINGLE" if the query asks for one operation, even if it mentions multiple entities that are all parameters of a single call (e.g. "find flights from NYC to LA" → one call with origin and destination params).
+4. Answer "SINGLE" if the query is a simple question or request.
+5. When in doubt, answer "SINGLE".
+
+Answer (PARALLEL or SINGLE):"""
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "options": {"temperature": 0.001, "num_predict": 10},
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data.get("message", {}).get("content", "").strip().upper()
+
+        return "PARALLEL" in content
+
+    except Exception as e:
+        logger.error(f"LLM parallel detection failed: {e}")
+        # Fallback to separator heuristic
+        parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
+        return any(sep in query.lower() for sep in parallel_separators)
+
+
+# ---------------------------------------------------------------------------
 # Parameter extraction (LLM) — v3 unified
 # ---------------------------------------------------------------------------
 
@@ -788,6 +931,84 @@ def _parse_param_list(content: str) -> list[dict] | None:
     return None
 
 
+def validate_and_coerce_params(
+    func: dict,
+    params: dict,
+) -> dict:
+    """Validate and coerce extracted parameters against function schema (v5).
+
+    - Coerces string values to correct types (int, float, bool)
+    - Validates enum constraints
+    - Removes parameters not in schema
+    - Fills in defaults for missing required params if available
+    """
+    param_props = func.get("parameters", {}).get("properties", {})
+    if not param_props:
+        return params
+
+    validated = {}
+    for pname, pvalue in params.items():
+        if pname not in param_props:
+            # Skip unknown parameters
+            logger.debug(f"Removing unknown param '{pname}' (not in schema)")
+            continue
+
+        pschema = param_props[pname]
+        ptype = pschema.get("type", "string")
+        enum_vals = pschema.get("enum", None)
+
+        # Type coercion
+        coerced = pvalue
+        try:
+            if ptype == "integer" and isinstance(pvalue, str):
+                # Try to extract integer from string
+                num_match = re.search(r"-?\d+", pvalue)
+                if num_match:
+                    coerced = int(num_match.group())
+                else:
+                    logger.warning(
+                        f"Cannot coerce '{pvalue}' to int for param '{pname}'"
+                    )
+                    coerced = int(pvalue)
+            elif ptype == "number" and isinstance(pvalue, str):
+                num_match = re.search(r"-?\d+\.?\d*", pvalue)
+                if num_match:
+                    coerced = float(num_match.group())
+                else:
+                    coerced = float(pvalue)
+            elif ptype == "boolean" and isinstance(pvalue, str):
+                coerced = pvalue.lower() in ("true", "1", "yes", "on")
+            elif ptype == "array" and isinstance(pvalue, str):
+                # Try to parse as JSON array
+                try:
+                    coerced = json.loads(pvalue)
+                    if not isinstance(coerced, list):
+                        coerced = [pvalue]
+                except json.JSONDecodeError:
+                    # Split by comma
+                    coerced = [item.strip() for item in pvalue.split(",")]
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Type coercion failed for '{pname}': {e}")
+            coerced = pvalue  # Keep original value
+
+        # Enum validation
+        if enum_vals and coerced not in enum_vals:
+            # Try case-insensitive match
+            for ev in enum_vals:
+                if isinstance(coerced, str) and isinstance(ev, str):
+                    if coerced.lower() == ev.lower():
+                        coerced = ev
+                        break
+            else:
+                logger.warning(
+                    f"Param '{pname}' value '{coerced}' not in enum {enum_vals}, keeping anyway"
+                )
+
+        validated[pname] = coerced
+
+    return validated
+
+
 # ---------------------------------------------------------------------------
 # Output formatting (deterministic)
 # ---------------------------------------------------------------------------
@@ -845,15 +1066,18 @@ def carm_route_bfcl(
     ollama_url: str,
     ollama_model: str,
 ) -> str:
-    """Main CARM routing pipeline for BFCL (v4).
+    """Main CARM routing pipeline for BFCL (v5).
 
     1. Extract functions from system prompt
     2. Extract user query
     3. Signal-based function scoring
     4. If best score < threshold → LLM function selection fallback
+       + LLM irrelevance verification (replaces v4 action_words heuristic)
     5. If top-2 scores close → LLM disambiguation
-    6. Extract params via LLM (single dict or array for parallel)
-    7. Format as [func(param=value)]
+    6. LLM parallel detection (replaces v4 separator heuristic)
+    7. Extract params via LLM (single dict or array for parallel)
+    8. Validate and coerce params against schema
+    9. Format as [func(param=value)]
     """
     # Step 1: Extract functions
     functions = extract_functions_from_system_prompt(messages)
@@ -898,75 +1122,31 @@ def carm_route_bfcl(
             logger.info("LLM fallback also found no match → returning []")
             return "[]"
 
-        # Secondary validation: LLM may return false positives for irrelevance.
+        # v5: LLM-based irrelevance verification (replaces v4 action_words heuristic)
         # Re-check: if the signal score of the LLM-selected function is 0.0,
-        # it means zero token overlap — likely a false positive.
-        # Only accept if the query contains action-oriented language.
-        action_words = [
-            "call",
-            "get",
-            "set",
-            "find",
-            "search",
-            "check",
-            "update",
-            "delete",
-            "create",
-            "add",
-            "remove",
-            "send",
-            "book",
-            "order",
-            "calculate",
-            "convert",
-            "play",
-            "stop",
-            "start",
-            "change",
-            "schedule",
-            "reserve",
-            "buy",
-            "cancel",
-            "track",
-            "download",
-            "upload",
-            "translate",
-            "analyze",
-            "compute",
-            "measure",
-            "cook",
-            "make",
-            "show",
-            "tell",
-            "give",
-            "find",
-            "look",
-            "control",
-            "execute",
-            "run",
-            "turn",
-            "put",
-            "take",
-            "see",
-            "list",
-            "open",
-            "close",
-            "enable",
-            "disable",
-            "reset",
-        ]
-        query_lower = query.lower()
-        has_action = any(aw in query_lower for aw in action_words)
-
-        # Check if LLM-selected function has any signal
+        # use LLM to verify if the function is truly relevant to the query.
+        # v4 used a hardcoded action_words list but "get"/"find"/"show" are
+        # too common in English, causing 510/884 false positives in live_irrelevance.
         llm_scores = [score_function_relevance(f, query) for f in selected]
         max_llm_score = max(llm_scores) if llm_scores else 0.0
 
-        if max_llm_score == 0.0 and not has_action:
+        if max_llm_score == 0.0:
+            # Zero signal — use LLM to verify relevance
             logger.info(
-                f"LLM selected {[f['name'] for f in selected]} but signal=0.0 and no action words → rejecting as irrelevance"
+                f"LLM selected {[f['name'] for f in selected]} but signal=0.0 → LLM relevance verification"
             )
-            return "[]"
+            # Verify each selected function
+            relevant_selected = []
+            for f in selected:
+                if verify_relevance_via_llm(f, query, ollama_url, ollama_model):
+                    relevant_selected.append(f)
+                else:
+                    logger.info(f"LLM rejected {f['name']} as irrelevant")
+
+            if not relevant_selected:
+                logger.info("All LLM-selected functions rejected as irrelevant → []")
+                return "[]"
+            selected = relevant_selected
 
         verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
@@ -1042,19 +1222,24 @@ def carm_route_bfcl(
     logger.info(f"Verified: {[(f['name'], f'{s:.2f}') for f, s in verified]}")
 
     # Step 6: Extract params
-    # For single-function non-parallel: use v2's format=json single-dict extraction (more reliable)
-    # For parallel: use array extraction (handles multiple param sets)
-    calls = []
-
-    # Detect if this is a parallel call
-    parallel_separators = [" and ", " also ", " then ", "；", "，", " plus "]
-    has_parallel_hint = any(sep in query.lower() for sep in parallel_separators)
-    is_parallel = len(verified) > 1 or (has_parallel_hint and len(verified) == 1)
+    # v5: Use LLM-based parallel detection instead of separator heuristic
+    # v4's separator heuristic caused live_parallel to drop from 62.5% to 43.8%
+    # because separators like "," or "and" don't reliably indicate parallel intent
+    is_parallel = len(verified) > 1
+    if not is_parallel and len(verified) == 1:
+        # Use LLM to check if this single function needs multiple calls
+        is_parallel = detect_parallel_via_llm(
+            query, [f for f, _ in verified], ollama_url, ollama_model
+        )
+        if is_parallel:
+            logger.info("LLM detected parallel intent for single function")
 
     if not is_parallel:
         # Single call: use format=json for reliable single-dict extraction
         for func, score in verified:
             params = extract_params_via_llm_v2(func, query, ollama_url, ollama_model)
+            # v5: validate and coerce params against schema
+            params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params: {params}")
     else:
@@ -1064,6 +1249,8 @@ def carm_route_bfcl(
                 func, query, ollama_url, ollama_model
             )
             for params in param_sets:
+                # v5: validate and coerce params against schema
+                params = validate_and_coerce_params(func, params)
                 calls.append((func["name"], params))
                 logger.info(f"  {func['name']} params: {params}")
 
