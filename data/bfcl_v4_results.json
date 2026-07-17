@@ -1,0 +1,15 @@
+{
+  "simple_python": 86.0,
+  "simple_java": 53.0,
+  "simple_javascript": 66.0,
+  "multiple": 81.5,
+  "parallel": 83.5,
+  "parallel_multiple": 40.0,
+  "irrelevance": 71.67,
+  "live_simple": 75.97,
+  "live_multiple": 52.61,
+  "live_parallel": 43.75,
+  "live_parallel_multiple": 29.17,
+  "live_relevance": 100.0,
+  "live_irrelevance": 42.53
+}
