@@ -58,8 +58,8 @@ logger = logging.getLogger("carm_bfcl_server")
 # Config
 # ---------------------------------------------------------------------------
 
-OLLAMA_BASE_URL = "http://192.168.31.8:11434"
-OLLAMA_MODEL = "qwen3-coder:latest"
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_MODEL = "gemma3:12b"
 
 # Relevance threshold: if best score < this, treat as irrelevance → return []
 RELEVANCE_THRESHOLD = 0.2
