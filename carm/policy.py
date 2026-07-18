@@ -596,14 +596,30 @@ class OnlinePolicy:
                     "Hard rule: calc intent signal detected (no code intent)."
                 )
                 hard_rule_hit = True
-            # Override 2c: Code + calc → code
+            # Override 2c: Code + calc → 不再无条件选 code，需有强代码动作动词
+            # 强代码动作动词严格限定为：运行/写/实现/编写/脚本/执行/跑
+            # （注意："代码" 仅是名词，不应作为强动作动词，否则 "Python 代码 + 数值计算"
+            #  这类混合任务会被误判为 code_executor；纯数值部分应走 calculator）
             elif (
                 has_calc_signal(user_input)
                 and has_code_signal(user_input)
                 and not hard_explain
             ):
-                chosen_intent = IntentCategory.CODE
-                chosen_reason = "Hard rule: code+calc co-occurrence, code action wins."
+                _strong_code_action_verbs = (
+                    "运行",
+                    "写",
+                    "实现",
+                    "编写",
+                    "脚本",
+                    "执行",
+                    "跑",
+                )
+                if any(v in user_input for v in _strong_code_action_verbs):
+                    chosen_intent = IntentCategory.CODE
+                    chosen_reason = "Hard rule: code+calc co-occurrence with strong code action verb — code executor wins."
+                else:
+                    chosen_intent = IntentCategory.CALC
+                    chosen_reason = "Hard rule: code+calc co-occurrence but no strong code action verb — calculator preferred for numeric tasks."
                 hard_rule_hit = True
             # Override 3: Clear code action → code
             elif (
@@ -841,6 +857,25 @@ class OnlinePolicy:
                     query=context.user_input,
                     arguments={"top_k": 3},
                     reason="Comparison/evidence tasks need source grounding before generation.",
+                ),
+                feature_snapshot=dict(decision.feature_snapshot),
+            )
+
+        # New unconditional guard: compare task should never route to bigmodel
+        if (
+            has_compare_signal(context.user_input)
+            and not has_formal_signal(context.user_input)
+            and decision.action == Action.CALL_BIGMODEL
+        ):
+            return ActionDecision(
+                action=Action.CALL_TOOL,
+                score=decision.score,
+                reason="Unconditional guard: compare task detected — forcing search over bigmodel.",
+                tool_call=ToolCall(
+                    tool_name=self._resolve_tool_name(IntentCategory.SEARCH),
+                    query=context.user_input,
+                    arguments={"top_k": 3},
+                    reason="Comparison tasks must gather evidence before any synthesis.",
                 ),
                 feature_snapshot=dict(decision.feature_snapshot),
             )

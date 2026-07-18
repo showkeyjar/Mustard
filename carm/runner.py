@@ -742,7 +742,7 @@ class AgentRunner:
             try:
                 result = self.tool_manager.execute(real_tool, sub_text, {})
                 combined_results.append(
-                    f"[{sub_tool}] {sub_text} → {result.result[:200]}"
+                    f"[{real_tool}] {sub_text} → {result.result[:200]}"
                 )
                 memory.store_result(result.result, result.confidence, result.source)
                 session_mgr.append_turn(
@@ -753,7 +753,7 @@ class AgentRunner:
                     confidence=result.confidence,
                 )
             except Exception as exc:
-                combined_results.append(f"[{sub_tool}] {sub_text} → ERROR: {exc}")
+                combined_results.append(f"[{real_tool}] {sub_text} → ERROR: {exc}")
         trace.notes.append(f"Multi-intent: executed {len(splits)} sub-intents.")
         # Store combined result
         combined_text = "\n".join(combined_results)
