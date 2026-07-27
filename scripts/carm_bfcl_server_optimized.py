@@ -45,6 +45,7 @@ logger = logging.getLogger("carm_bfcl_server_optimized")
 
 OLLAMA_BASE_URL = "http://192.168.31.20:11434"
 OLLAMA_MODEL = "qwen3-coder"
+OLLAMA_TIMEOUT_S = 300  # 5 minutes - warmup for large model
 
 # Relevance threshold: if best score < this, treat as irrelevance → return []
 RELEVANCE_THRESHOLD = 0.2
