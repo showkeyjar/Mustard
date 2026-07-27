@@ -19,6 +19,7 @@ from carm.signals import (
     has_code_signal,
     has_formal_signal,
     has_comparison_evidence_signal,
+    has_evidence_judgment_signal,
     has_explain_signal,
     has_writing_signal,
     has_search_action_signal,
@@ -579,17 +580,30 @@ class OnlinePolicy:
                 )
                 hard_rule_hit = True
             # Override 2: Explicit arithmetic → calc
-            elif hard_arithmetic and not hard_code_action:
+            elif (
+                hard_arithmetic
+                and not hard_code_action
+                and not has_evidence_judgment_signal(user_input)
+            ):
                 chosen_intent = IntentCategory.CALC
                 chosen_reason = (
                     "Hard rule: explicit arithmetic expression requires calculator."
                 )
+                hard_rule_hit = True
+            # Override 2a: Evidence judgment → search (v5 fix for learning_focus 004/005/006)
+            # When the query asks to verify/judge/assess reliability of information,
+            # it needs search — not calculator — even if it contains numbers.
+            # e.g. "判断 2024 年公告是否被 2026 文档推翻" has calc signal but needs search.
+            elif has_evidence_judgment_signal(user_input) and not hard_code_action:
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = "Hard rule: evidence judgment signal detected — search for verification, not calculation."
                 hard_rule_hit = True
             # Override 2b: Calc signal → calc
             elif (
                 has_calc_signal(user_input)
                 and not has_code_signal(user_input)
                 and not hard_explain
+                and not has_evidence_judgment_signal(user_input)
             ):
                 chosen_intent = IntentCategory.CALC
                 chosen_reason = (
@@ -600,10 +614,16 @@ class OnlinePolicy:
             # 强代码动作动词严格限定为：运行/写/实现/编写/脚本/执行/跑
             # （注意："代码" 仅是名词，不应作为强动作动词，否则 "Python 代码 + 数值计算"
             #  这类混合任务会被误判为 code_executor；纯数值部分应走 calculator）
+            # v5 fix: evidence_judgment 优先于 code+calc 规则
+            elif has_evidence_judgment_signal(user_input) and not hard_code_action:
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = "Hard rule: evidence judgment overrides code+calc — needs search for verification."
+                hard_rule_hit = True
             elif (
                 has_calc_signal(user_input)
                 and has_code_signal(user_input)
                 and not hard_explain
+                and not has_evidence_judgment_signal(user_input)
             ):
                 _strong_code_action_verbs = (
                     "运行",

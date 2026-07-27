@@ -682,6 +682,41 @@ class AgentRunner:
             return True
         if memory.latest("CONFLICT") is not None:
             return True
+
+        # v5 fix: attention_verification_handoff_gap — check for risky residuals
+        # even when draft is verified. The attention flow may detect
+        # conflict_unresolved or missing_evidence that the verifier missed.
+        if draft is not None and state.hidden.get("verified") == "1":
+            # Even if verified, check if attention flow would still flag residuals
+            from carm.signals import is_conflict_task, has_compare_signal
+
+            # If this is a conflict task and we haven't explicitly resolved it,
+            # block the answer even if verified — the conflict may have been
+            # resolved by verification but new conflict signals could have emerged
+            if is_conflict_task(user_input) and not memory.latest("RESULT"):
+                trace.notes.append(
+                    "Attention gate: conflict task without external result — blocking."
+                )
+                return True
+
+            # Check for draft_not_verified residual: if the draft has open_risks
+            # but was verified with medium confidence, require external evidence
+            draft_payload = memory.parse_content(draft)
+            confidence_band = str(draft_payload.get("confidence_band", ""))
+            open_risks = draft_payload.get("open_risks", [])
+            if not isinstance(open_risks, list):
+                open_risks = []
+            meaningful_risks = [
+                r
+                for r in open_risks
+                if isinstance(r, str) and r.strip() and not r.startswith("先")
+            ]
+            if meaningful_risks and confidence_band == "medium":
+                trace.notes.append(
+                    "Attention gate: medium-confidence draft with open risks — blocking for re-verification."
+                )
+                return True
+
         if draft is not None and state.hidden.get("verified") != "1":
             draft_payload = memory.parse_content(draft)
             confidence_band = str(draft_payload.get("confidence_band", ""))

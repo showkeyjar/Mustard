@@ -949,6 +949,44 @@ def has_comparison_evidence_signal(text: str) -> bool:
     return any(token in text for token in COMPARISON_EVIDENCE_TOKENS)
 
 
+# Tokens that indicate evidence-judgment intent — the user needs to verify
+# or assess the reliability/validity of information, not perform calculation.
+EVIDENCE_JUDGMENT_TOKENS = (
+    "判断",
+    "确认",
+    "验证",
+    "求证",
+    "证据",
+    "出处",
+    "可靠",
+    "可信",
+    "是否还在",
+    "是否仍然",
+    "是否还能",
+    "是否已被",
+    "推翻",
+    "失效",
+    "过时",
+    "最新",
+    "官方文档",
+    "changelog",
+    "版本号",
+    "版本跨度",
+    "到底该信",
+    "该信哪份",
+)
+
+
+def has_evidence_judgment_signal(text: str) -> bool:
+    """Return True if the text contains evidence-judgment signals.
+
+    These queries ask the system to verify, assess, or judge the reliability
+    of information — they need search/lookup, not calculation, even when they
+    contain numbers (e.g. "判断 2024 年公告是否被 2026 文档推翻").
+    """
+    return any(token in text for token in EVIDENCE_JUDGMENT_TOKENS)
+
+
 def has_writing_signal(text: str) -> bool:
     """Return True if the text contains writing/synthesis intent signals.
 
@@ -1233,9 +1271,11 @@ MULTI_INTENT_CONNECTORS = (
     "再",
     "接着",
     "之后",
-    "先",
     "先搜索",
     "先查",
+    # Note: bare "先" removed — it appears too often in normal Chinese text
+    # (e.g. "先检索什么证据" is a single-intent request, not multi-intent).
+    # Only compound forms "先搜索" / "先查" are reliable multi-intent connectors.
 )
 
 MULTI_INTENT_DELIMITERS = (",", "，", ";", "；", "|")
