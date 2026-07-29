@@ -33,7 +33,7 @@ import json
 import logging
 import re
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 import httpx
 
@@ -1053,45 +1053,9 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             self._send_json(500, {"error": f"Internal error: {str(e)}"})
             return
 
-        # Check if content looks like a function call output [func(...)]
-        # If so, parse it and return as tool_calls for BFCL compatibility
-        tool_calls = None
-        if content.startswith("["):
-            import re
-            # Parse potential function calls: [func_name(param="value")] or [[...]]
-            inner = content.strip("[]")
-            func_pattern = r'(\w+)\((.*)\)'
-            match = re.match(func_pattern, inner)
-            if match:
-                func_name = match.group(1)
-                args_str = match.group(2)
-                # Simple arg parsing: key="value" or key=value
-                args = {}
-                if args_str.strip():
-                    for pair in args_str.split(","):
-                        pair = pair.strip()
-                        if "=" in pair:
-                            k, v = pair.split("=", 1)
-                            # Remove quotes from value
-                            v = v.strip().strip('"').strip("'")
-                            args[k] = v
-                if func_name and args is not None:
-                    tool_calls = [{
-                        "id": "call_001",
-                        "type": "function",
-                        "function": {
-                            "name": func_name,
-                            "arguments": json.dumps(args),
-                        }
-                    }]
-
-        message_content = {"role": "assistant", "content": None}
-        if tool_calls:
-            message_content["tool_calls"] = tool_calls
-            finish_reason = "tool_calls"
-        else:
-            message_content["content"] = content
-            finish_reason = "stop"
+        # BFCL uses prompting mode (is_fc_model=False) and expects plain text content
+        message_content = {"role": "assistant", "content": content}
+        finish_reason = "stop"
 
         response = {
             "id": f"chatcmpl-{int(time.time())}",
@@ -1167,10 +1131,10 @@ def main():
         ]
     )
 
-    server = HTTPServer((args.host, args.port), CARMServerHandler)
+    server = ThreadingHTTPServer((args.host, args.port), CARMServerHandler)
     logger.info(f"CARM BFCL Server (optimized) starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
-    logger.info(f"  Optimizations: v4 parallel heuristic, shorter LLM prompts, num_predict 192")
+    logger.info(f"  Optimizations: multi-threaded, v4 parallel heuristic, shorter LLM prompts, num_predict 192")
     logger.info(f"  Preserved: CARM signal routing + LLM irrelevance verification + LLM disambiguation")
 
     try:
