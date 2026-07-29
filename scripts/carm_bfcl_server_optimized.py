@@ -48,7 +48,7 @@ OLLAMA_MODEL = "qwen3-coder"
 OLLAMA_TIMEOUT_S = 300  # 5 minutes - warmup for large model
 
 # Relevance threshold: if best score < this, treat as irrelevance → return []
-RELEVANCE_THRESHOLD = 0.2
+RELEVANCE_THRESHOLD = 0.1
 
 
 # ---------------------------------------------------------------------------
@@ -173,24 +173,79 @@ def score_function_relevance(func: dict, query: str) -> float:
 
     # 5. Semantic action hints
     action_hints = {
-        "calculate": ["calculate", "compute", "求", "计算"],
-        "convert": ["convert", "transform", "转换"],
-        "search": ["search", "lookup", "query", "查找", "搜索"],
-        "check": ["check", "verify", "validate", "检查", "验证"],
-        "create": ["create", "generate", "build", "创建", "生成"],
-        "delete": ["delete", "remove", "drop", "删除"],
-        "update": ["update", "modify", "更新", "修改"],
-        "schedule": ["schedule", "book", "arrange", "预约", "安排"],
-        "send": ["send", "email", "notify", "发送", "邮件"],
+        "calculate": ["calculate", "compute", "求", "计算", "area", "sum", "total", "average", "mean", "distance", "perimeter", "volume"],
+        "convert": ["convert", "transform", "转换", "exchange", "rate", "currency", "to", "from", "兑换", "汇率"],
+        "search": ["search", "lookup", "query", "find", "查找", "搜索", "检索", "locate", "get", "retrieve", "fetch", "list", "show", "display"],
+        "check": ["check", "verify", "validate", "检查", "验证", "confirm", "test", "inspect"],
+        "create": ["create", "generate", "build", "创建", "生成", "add", "insert", "new", "make", "construct", "produce"],
+        "delete": ["delete", "remove", "drop", "删除", "clear", "erase"],
+        "update": ["update", "modify", "更改", "修改", "edit", "change", "set", "adjust", "correct"],
+        "schedule": ["schedule", "book", "arrange", "预约", "安排", "plan", "reserve"],
+        "send": ["send", "email", "notify", "发送", "邮件", "submit", "forward", "transfer"],
         "translate": ["translate", "translation", "翻译"],
+        "classify": ["classify", "classification", "categorize", "category", "type", "detect", "identify", "recognize", "diagnose", "predict"],
+        "filter": ["filter", "筛选", "select", "choose", "pick", "find"],
+        "sort": ["sort", "order", "rank", "排序", "arrange"],
+        "analyze": ["analyze", "analysis", "analyze", "evaluate", "assess", "measure", "study", "review", "examine", "inspect"],
+        "plot": ["plot", "chart", "graph", "draw", "visualize", "display", "render", "paint", "画"],
     }
     desc_lower = func_desc.lower()
-    for action, triggers in action_hints.items():
-        if action in desc_lower:
-            for trigger in triggers:
-                if trigger in query_lower:
-                    score += 0.1
-                    break
+    # Only apply action hints if desc is non-empty
+    if desc_lower.strip():
+        for action, triggers in action_hints.items():
+            if action in desc_lower:
+                for trigger in triggers:
+                    if trigger in query_lower:
+                        score += 0.1
+                        break
+
+    # 6. Synonym/domain expansion for common abbreviations and technical terms
+    synonym_map = {
+        "gcd": "greatest common divisor",
+        "lcm": "least common multiple",
+        "bmi": "body mass index",
+        "svm": "support vector machine",
+        "knn": "k nearest neighbors",
+        "pca": "principal component analysis",
+        "api": "application programming interface",
+        "db": "database",
+        "csv": "comma separated values",
+        "json": "javascript object notation",
+        "html": "hypertext markup language",
+        "http": "hypertext transfer protocol",
+        "url": "uniform resource locator",
+        "uuid": "universally unique identifier",
+        "id": "identifier",
+        "info": "information",
+        "config": "configuration",
+        "temp": "temperature",
+        "calc": "calculate",
+        "num": "number",
+        "diff": "difference",
+        "avg": "average",
+        "min": "minimum",
+        "max": "maximum",
+        "len": "length",
+        "param": "parameter",
+        "desc": "description",
+        "dest": "destination",
+        "src": "source",
+        "addr": "address",
+        "amt": "amount",
+        "qty": "quantity",
+        "dept": "department",
+    }
+    for abbr, expanded in synonym_map.items():
+        if abbr in func_name_lower and expanded in query_lower:
+            score += 0.25
+        if expanded in func_name_lower and abbr in query_lower:
+            score += 0.25
+
+    # 7. Query contains function domain hint
+    domain_hints = ["math", "geometry", "algebra", "calculus", "physics", "chemistry", "biology", "finance", "stat", "sport", "music", "history", "law", "movie", "weather", "ecology", "employee", "database", "restaurant", "flight", "hotel"]
+    for hint in domain_hints:
+        if hint in func_name_lower and hint in query_lower:
+            score += 0.15
 
     return min(score, 1.0)
 
@@ -242,12 +297,14 @@ def select_function_via_llm(
     ollama_model: str,
 ) -> list[dict]:
     """Use LLM to select the correct function(s) when signal matching fails."""
-    # Build compact function list
+    # Build compact function list with params
     func_lines = []
     for i, f in enumerate(functions):
         name = f.get("name", "")
-        desc = f.get("description", "")[:100]  # Shorter: 120→100
-        func_lines.append(f"  {i}: {name} — {desc}")
+        desc = f.get("description", "")[:150]
+        params = f.get("parameters", {}).get("properties", {})
+        param_str = "(" + ", ".join(params.keys()) + ")" if params else "()"
+        func_lines.append(f"  {i}: {name}{param_str} — {desc}")
     func_list_str = "\n".join(func_lines)
 
     prompt = f"""Select function(s) for: {query}
@@ -255,7 +312,7 @@ def select_function_via_llm(
 Functions:
 {func_list_str}
 
-Return JSON array of indices. [] if none matches. Pick by purpose, not word overlap."""
+Return JSON array of indices. [] if none matches. Match by purpose and function name meaning, not just word overlap."""
 
     try:
         with httpx.Client(timeout=60.0) as client:
@@ -378,7 +435,7 @@ def verify_relevance_via_llm(
     Kept from v5 — critical for live_irrelevance (v4 got 42.5%).
     Only called when signal score == 0.0 (rare).
     """
-    prompt = f"Function: {func['name']}\nDescription: {func.get('description','')[:150]}\nQuery: \"{query}\"\n\nIs this function relevant to the query? Answer RELEVANT or IRRELEVANT. Be conservative: lean IRRELEVANT."
+    prompt = f"Function: {func['name']}\nDescription: {func.get('description','')[:200]}\nQuery: \"{query}\"\n\nIs this function relevant to the query? Answer RELEVANT or IRRELEVANT. If the function can answer any part of the query, answer RELEVANT."
 
     try:
         with httpx.Client(timeout=30.0) as client:
@@ -408,38 +465,45 @@ def verify_relevance_via_llm(
 
 
 def detect_parallel(query: str) -> bool:
-    """Detect parallel intent using v4's separator heuristic (NO LLM call).
-
-    v5 used an LLM-based detection that cost ~1 call per query but was only
-    needed for parallel categories. v4's heuristic covers > 90% of cases.
+    """Detect parallel intent using separator heuristic.
 
     Returns True if the query likely requires multiple function calls.
     """
     query_lower = query.lower()
 
-    # Separators that strongly indicate parallel intent
-    strong_separators = [
-        " and also ",
-        " and then ",
-        " plus ",
+    # Strong indicators of parallel intent
+    strong_patterns = [
+        r"\band also\b",
+        r"\band\s+then\b",
+        r"\bplus\b",
+        r"\bcombined\s+with\b",
+        r"\bboth\b.*\band\b",
+        r"\bcompare\b",
+        r"\bversus\b",
+        r"\bvs\b",
+        r"\bas well as\b",
     ]
-    if any(sep in query_lower for sep in strong_separators):
+    for pat in strong_patterns:
+        if re.search(pat, query_lower):
+            return True
+
+    # "and" separator with meaningful parts on both sides
+    parts = re.split(r"\band\b", query_lower)
+    if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
         return True
 
-    # Medium-strength separators (check that both sides are meaningful)
-    medium_separators = [" and "]
-    for sep in medium_separators:
-        parts = query_lower.split(sep)
-        if len(parts) >= 2:
-            # Check each part has at least 4 chars (meaningful query parts)
-            if all(len(p.strip()) >= 4 for p in parts):
-                return True
-
-    # Native Chinese separators
-    if "；" in query or "，" in query:
-        parts = re.split(r"[；，]", query)
+    # Comma/Chinese separators
+    if any(sep in query for sep in ["；", "，", ", "]):
+        parts = re.split(r"[；，,]", query)
         if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
             return True
+
+    # Enumeration pattern: number+items
+    enum_pattern = r"(?:calculate|find|get|list|show|give)\s+(?:\w+\s+){0,3}(?:and\s+)?(?:\w+\s+){0,3}(?:and\s+)?\w+"
+    # If query asks for multiple things, check for enumeration words
+    multi_request_words = ["both", "several", "multiple", "various", "different", "each", "all", "two", "three", "both", "both of"]
+    if any(w in query_lower for w in multi_request_words):
+        return True
 
     return False
 
@@ -472,18 +536,21 @@ def extract_all_params_via_llm(
         enum_vals = pinfo.get("enum", None)
         enum_str = f" enum={enum_vals}" if enum_vals else ""
         param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
-    param_desc = "\n".join(param_lines) if param_lines else "  (none)"
+        param_desc = "\n".join(param_lines) if param_lines else "  (none)"
 
-    prompt = f"""Extract params for: {func_name}
+    prompt = f"""Extract all params for: {func_name}
 
-Params:
+Schema:
 {param_desc}
 
 Query: {query}
 
-Return JSON array of objects. One object per call. Use correct types. Omit missing params.
+Return JSON array of objects, one per call. Use correct types (int/float/str/bool). Omit missing optional params. Use enum values exactly.
 
-Examples: [{{"height":6.0,"weight":80}}] or [{{"a":1,"b":2}},{{"a":3,"b":4}}]"""
+Examples:
+Simple: [{{"a":1,"b":2}}]
+Multiple: [{{"a":1,"b":2}},{{"a":3,"b":4}}]
+Nested: [{{"users":[{{"name":"Alice","age":30}},{{"name":"Bob","age":25}}]}}]"""
 
     try:
         with httpx.Client(timeout=120.0) as client:
@@ -491,11 +558,11 @@ Examples: [{{"height":6.0,"weight":80}}] or [{{"a":1,"b":2}},{{"a":3,"b":4}}]"""
                 f"{ollama_url}/api/chat",
                 json={
                     "model": ollama_model,
-                    "messages": [{"role": "system", "content": "Output a JSON array of objects."}, {"role": "user", "content": prompt}],
+                    "messages": [{"role": "system", "content": "Output only a JSON array of objects."}, {"role": "user", "content": prompt}],
                     "stream": False,
                     "options": {
                         "temperature": 0.001,
-                        "num_predict": 192,  # 512→192
+                        "num_predict": 300,  # 192→300
                     },
                 },
             )
@@ -542,12 +609,14 @@ def extract_params_via_llm_v2(
 
     prompt = f"""Extract params for "{func_name}".
 
-Params:
+Schema:
 {param_desc}
 
 Query: {query}
 
-Return JSON object with param names as keys. Use correct types (int/float/string/array/bool). Omit missing params. Use enum values exactly. Example: {{"x":10,"y":5}}"""
+Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values exactly.
+
+Example for math.factorial: {{"number":5}}"""
 
     try:
         with httpx.Client(timeout=120.0) as client:
@@ -555,11 +624,11 @@ Return JSON object with param names as keys. Use correct types (int/float/string
                 f"{ollama_url}/api/chat",
                 json={
                     "model": ollama_model,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": [{"role": "system", "content": "Output only a JSON object."}, {"role": "user", "content": prompt}],
                     "stream": False,
                     "options": {
                         "temperature": 0.001,
-                        "num_predict": 192,  # 512→192
+                        "num_predict": 300,  # 192→300
                     },
                     "format": "json",
                 },
@@ -751,8 +820,6 @@ def carm_route_bfcl(
     logger.info(f"Signal scores: {[(f['name'], f'{s:.2f}') for f, s in scored[:5]]}")
 
     effective_threshold = RELEVANCE_THRESHOLD
-    if len(functions) == 1:
-        effective_threshold = 0.15
 
     if best_score < effective_threshold:
         logger.info(f"Best score {best_score:.2f} < {effective_threshold} → LLM fallback")
@@ -780,14 +847,10 @@ def carm_route_bfcl(
 
         verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
-    elif len(functions) == 1 and best_score < 0.4:
-        logger.info(f"Single func, score {best_score:.2f} in [0.15, 0.4) → LLM verification")
-        selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
-        if not selected:
-            logger.info("LLM verification rejected → []")
-            return "[]"
-        verified = [(f, 0.0) for f in selected]
-        logger.info(f"LLM verified: {[f['name'] for f in selected]}")
+    elif len(functions) == 1:
+        # Single function - use it directly regardless of score
+        verified = [(scored[0][0], scored[0][1])]
+        logger.info(f"Single func '{scored[0][0]['name']}' → use directly")
     elif len(functions) > 1 and best_score < 0.4:
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
@@ -948,10 +1011,13 @@ class CARMServerHandler(BaseHTTPRequestHandler):
 
     def _handle_chat_completions(self):
         content_length = int(self.headers.get("Content-Length", 0))
+        logger.info(f"Received request: path={self.path}, content_length={content_length}")
         body = self.rfile.read(content_length).decode("utf-8")
+        logger.info(f"Request body (first 500 chars): {body[:500]}")
         try:
             req = json.loads(body)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON: {e}")
             self._send_json(400, {"error": "invalid JSON"})
             return
 
@@ -1090,9 +1156,15 @@ def main():
     CARMServerHandler.ollama_model = OLLAMA_MODEL
     RELEVANCE_THRESHOLD = args.threshold
 
+    import os
+    log_file = os.path.join(os.path.dirname(__file__), 'carm_server.log')
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
     )
 
     server = HTTPServer((args.host, args.port), CARMServerHandler)
