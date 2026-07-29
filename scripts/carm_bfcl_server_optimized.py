@@ -482,14 +482,34 @@ def detect_parallel(query: str) -> bool:
         r"\bversus\b",
         r"\bvs\b",
         r"\bas well as\b",
+        r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
     ]
     for pat in strong_patterns:
         if re.search(pat, query_lower):
             return True
 
+    # Sentence-level transition words (period + transition)
+    transitions = [
+        r"[.?!]\s*also\b",
+        r"[.?!]\s*additionally\b",
+        r"[.?!]\s*moreover\b",
+        r"[.?!]\s*furthermore\b",
+        r"[.?!]\s*then\b",
+        r"[.?!]\s*next\b",
+        r"[.?!]\s*finally\b",
+        r"[.?!]\s*meanwhile\b",
+        r"[.?!]\s*in addition\b",
+        r"[.?!]\s*apart from that\b",
+    ]
+    for pat in transitions:
+        if re.search(pat, query_lower):
+            return True
+
     # "and" separator with meaningful parts on both sides
     parts = re.split(r"\band\b", query_lower)
-    if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
+    if len(parts) >= 3 and all(len(p.strip()) >= 4 for p in parts):
+        return True
+    if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
         return True
 
     # Comma/Chinese separators
@@ -498,14 +518,55 @@ def detect_parallel(query: str) -> bool:
         if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
             return True
 
-    # Enumeration pattern: number+items
-    enum_pattern = r"(?:calculate|find|get|list|show|give)\s+(?:\w+\s+){0,3}(?:and\s+)?(?:\w+\s+){0,3}(?:and\s+)?\w+"
-    # If query asks for multiple things, check for enumeration words
-    multi_request_words = ["both", "several", "multiple", "various", "different", "each", "all", "two", "three", "both", "both of"]
+    # Multi-request keywords
+    multi_request_words = ["both", "several", "multiple", "various", "different", "each", "all", "two", "three", "both of"]
     if any(w in query_lower for w in multi_request_words):
         return True
 
     return False
+
+
+# ---------------------------------------------------------------------------
+# Query splitting for parallel processing
+# ---------------------------------------------------------------------------
+
+
+def split_parallel_query(query: str) -> list[str]:
+    """Split query into independent sub-queries for parallel processing.
+
+    Returns [query] if no split is possible, or a list of segment strings.
+    """
+    query_lower = query.lower()
+
+    # Sentence-level transitions: period + transition word
+    transition_patterns = [
+        r"[.?!]\s*(Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile)\b",
+        r"[.?!]\s*In addition\b",
+        r"[.?!]\s*Apart from that\b",
+        r"[.?!]\s*On top of that\b",
+        r"[.?!]\s*Other than that\b",
+        r"[.?!]\s*Besides\b",
+    ]
+    for pat in transition_patterns:
+        parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
+        if len(parts) >= 2:
+            cleaned = [p.strip().rstrip(".,;!?") for p in parts]
+            if all(len(p) > 5 for p in cleaned):
+                return cleaned
+
+    # "and also" / "and for" connectors
+    connector_pats = [
+        r"\band\s+also\b",
+        r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
+    ]
+    for pat in connector_pats:
+        parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
+        if len(parts) >= 2:
+            cleaned = [p.strip().rstrip(".,;!?") for p in parts]
+            if all(len(p) > 5 for p in cleaned):
+                return cleaned
+
+    return [query]
 
 
 # ---------------------------------------------------------------------------
@@ -536,8 +597,8 @@ def extract_all_params_via_llm(
         enum_vals = pinfo.get("enum", None)
         enum_str = f" enum={enum_vals}" if enum_vals else ""
         param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
-        param_desc = "\n".join(param_lines) if param_lines else "  (none)"
-
+    param_desc = "\n".join(param_lines) if param_lines else "  (none)"
+ 
     prompt = f"""Extract all params for: {func_name}
 
 Schema:
@@ -792,12 +853,13 @@ def carm_route_bfcl(
     ollama_url: str,
     ollama_model: str,
 ) -> str:
-    """Main CARM routing pipeline — OPTIMIZED version.
+    """Main CARM routing pipeline — OPTIMIZED v6.
 
-    Differences from v5:
-      - Parallel detection uses v4 separator heuristic (no LLM call)
-      - Shorter prompts for all LLM calls
-      - Reduced num_predict for param extraction
+    Changes from v5:
+      - Parallel detection: segment-based + enhanced separator heuristic
+      - Parallel multiple: collect ALL relevant functions (no close-score filter)
+      - Irrelevance guard: LLM verification when best_score < 0.3
+      - Shorter prompts, reduced num_predict
     """
     functions = extract_functions_from_system_prompt(messages)
     if not functions:
@@ -821,7 +883,27 @@ def carm_route_bfcl(
 
     effective_threshold = RELEVANCE_THRESHOLD
 
-    if best_score < effective_threshold:
+    # Try segment-based parallel detection first
+    segments = split_parallel_query(query)
+    has_parallel_segments = len(segments) > 1
+
+    if has_parallel_segments:
+        logger.info(f"Parallel segments: {segments}")
+        selected_names = set()
+        for seg in segments:
+            seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
+            seg_scores.sort(key=lambda x: x[1], reverse=True)
+            if seg_scores and seg_scores[0][1] >= effective_threshold:
+                selected_names.add(seg_scores[0][0]["name"])
+
+        if selected_names:
+            verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
+        else:
+            selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
+            if not selected:
+                return "[]"
+            verified = [(f, 0.0) for f in selected]
+    elif best_score < effective_threshold:
         logger.info(f"Best score {best_score:.2f} < {effective_threshold} → LLM fallback")
         selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
         if not selected:
@@ -848,50 +930,50 @@ def carm_route_bfcl(
         verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
     elif len(functions) == 1:
-        # Single function - use it directly regardless of score
         verified = [(scored[0][0], scored[0][1])]
         logger.info(f"Single func '{scored[0][0]['name']}' → use directly")
-    elif len(functions) > 1 and best_score < 0.4:
-        relevant = [(f, s) for f, s in scored if s >= effective_threshold]
-
-        # [OPTIMIZED] Parallel detection: use v4 separator heuristic (no LLM)
-        has_parallel_hint = detect_parallel(query)
-
-        if has_parallel_hint and len(relevant) >= 2:
-            best = relevant[0][1]
-            verified = [relevant[0]]
-            for f, s in relevant[1:]:
-                if best - s < 0.2 and s >= effective_threshold:
-                    verified.append((f, s))
-                else:
-                    break
-        elif (
-            len(relevant) >= 2
-            and (relevant[0][1] - relevant[1][1]) < DISAMBIGUATION_MARGIN
-        ):
-            logger.info(f"Top-2 close ({relevant[0][1]:.2f} vs {relevant[1][1]:.2f}) → LLM disambiguation")
-            candidates = relevant[:3] if len(relevant) >= 3 else relevant
-            selected = disambiguate_via_llm(candidates, query, ollama_url, ollama_model)
-            verified = [(f, 0.0) for f in selected]
-            logger.info(f"LLM disambiguated to: {[f['name'] for f in selected]}")
-        else:
-            verified = [relevant[0]]
     else:
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
-        # [OPTIMIZED] Parallel detection: use v4 separator heuristic (no LLM)
-        has_parallel_hint = detect_parallel(query)
+        if not relevant:
+            logger.info("No function above threshold → []")
+            return "[]"
 
-        if has_parallel_hint and len(relevant) >= 2:
-            best = relevant[0][1]
-            verified = [relevant[0]]
-            for f, s in relevant[1:]:
-                if best - s < 0.2 and s >= effective_threshold:
-                    verified.append((f, s))
-                else:
-                    break
+        # Irrelevance guard: very low best_score → verify top function
+        if best_score < 0.18:
+            logger.info(f"Best score {best_score:.2f} < 0.18 → verify relevance via LLM")
+            top_func = relevant[0][0]
+            if verify_relevance_via_llm(top_func, query, ollama_url, ollama_model):
+                verified = [relevant[0]]
+                logger.info(f"LLM confirmed relevance: {top_func['name']}")
+            else:
+                logger.info(f"LLM rejected {top_func['name']} as irrelevant → []")
+                return "[]"
         else:
-            verified = [relevant[0]] if relevant else []
+            has_parallel_hint = detect_parallel(query)
+
+            if has_parallel_hint and len(relevant) >= 2:
+                # Close-score filter: only include functions within 0.2 of best
+                # (segment-based split above already handles widely-different scores)
+                best = relevant[0][1]
+                verified = [relevant[0]]
+                for f, s in relevant[1:]:
+                    if best - s < 0.2 and s >= effective_threshold:
+                        verified.append((f, s))
+                    else:
+                        break
+                logger.info(f"Parallel hint: {len(verified)} functions")
+            elif (
+                len(relevant) >= 2
+                and (relevant[0][1] - relevant[1][1]) < DISAMBIGUATION_MARGIN
+            ):
+                logger.info(f"Top-2 close ({relevant[0][1]:.2f} vs {relevant[1][1]:.2f}) → LLM disambiguation")
+                candidates = relevant[:3] if len(relevant) >= 3 else relevant
+                selected = disambiguate_via_llm(candidates, query, ollama_url, ollama_model)
+                verified = [(f, 0.0) for f in selected]
+                logger.info(f"LLM disambiguated to: {[f['name'] for f in selected]}")
+            else:
+                verified = [relevant[0]]
 
     if not verified:
         logger.info("No function selected → []")
