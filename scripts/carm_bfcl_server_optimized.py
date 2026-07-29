@@ -33,7 +33,7 @@ import json
 import logging
 import re
 import time
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import httpx
 
@@ -1131,10 +1131,10 @@ def main():
         ]
     )
 
-    server = ThreadingHTTPServer((args.host, args.port), CARMServerHandler)
+    server = HTTPServer((args.host, args.port), CARMServerHandler)
     logger.info(f"CARM BFCL Server (optimized) starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
-    logger.info(f"  Optimizations: multi-threaded, v4 parallel heuristic, shorter LLM prompts, num_predict 192")
+    logger.info(f"  Optimizations: v4 parallel heuristic, shorter LLM prompts, num_predict 192")
     logger.info(f"  Preserved: CARM signal routing + LLM irrelevance verification + LLM disambiguation")
 
     try:
