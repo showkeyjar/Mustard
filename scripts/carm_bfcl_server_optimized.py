@@ -877,7 +877,9 @@ def call_ollama(
     """Call Ollama Chat API and return response."""
     base = ollama_url or OLLAMA_BASE_URL
     model = ollama_model or OLLAMA_MODEL
+    logger.info(f"call_ollama called with ollama_url={base}, model={model}")
     try:
+        logger.info(f"Connecting to Ollama API: {base}/api/chat")
         with httpx.Client(timeout=300.0) as client:
             resp = client.post(
                 f"{base}/api/chat",
@@ -891,13 +893,19 @@ def call_ollama(
                     },
                 },
             )
+            logger.info(f"Ollama API response status: {resp.status_code}")
             resp.raise_for_status()
             data = resp.json()
+            content = data.get("message", {}).get("content", "")
+            logger.info(f"Ollama API call successful, content length={len(content)}")
         return {
-            "content": data.get("message", {}).get("content", ""),
+            "content": content,
             "prompt_tokens": data.get("prompt_eval_count", 0),
             "completion_tokens": data.get("eval_count", 0),
         }
+    except httpx.TimeoutException as e:
+        logger.error(f"Ollama API timeout: {e}")
+        return {"content": f"Error: Ollama API timeout: {str(e)}", "prompt_tokens": 0, "completion_tokens": 0}
     except Exception as e:
         logger.error(f"Ollama call failed: {e}")
         return {"content": f"Error: {e}", "prompt_tokens": 0, "completion_tokens": 0}
@@ -947,6 +955,8 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "invalid JSON"})
             return
 
+        logger.info(f"_handle_chat_completions called with {len(req.get('messages', []))} messages, {len(req.get('tools', []))} tools")
+
         messages = req.get("messages", [])
         tools = req.get("tools", [])
         if tools:
@@ -965,9 +975,17 @@ class CARMServerHandler(BaseHTTPRequestHandler):
                     messages.insert(0, {"role": "system", "content": func_json})
                 logger.info(f"Injected {len(func_defs)} tools")
 
+        logger.info(f"Calling carm_route_bfcl with self.ollama_url={self.ollama_url}, self.ollama_model={self.ollama_model}")
         start = time.time()
-        content = carm_route_bfcl(messages, self.ollama_url, self.ollama_model)
-        latency = time.time() - start
+        try:
+            content = carm_route_bfcl(messages, self.ollama_url, self.ollama_model)
+            latency = time.time() - start
+            logger.info(f"carm_route_bfcl completed in {latency:.2f}s, result length={len(content)}")
+        except Exception as e:
+            latency = time.time() - start
+            logger.error(f"carm_route_bfcl failed after {latency:.2f}s: {e}")
+            self._send_json(500, {"error": f"Internal error: {str(e)}"})
+            return
 
         # Check if content looks like a function call output [func(...)]
         # If so, parse it and return as tool_calls for BFCL compatibility
