@@ -1400,6 +1400,8 @@ def carm_route_bfcl(
 
     if has_parallel_segments:
         logger.info(f"Parallel segments: {segments}")
+        # Build segment→function mapping using LLM
+        seg_func_list = []  # list of (segment, function) pairs
         selected_names = set()
         for seg in segments:
             # Always use LLM for segment function selection
@@ -1410,16 +1412,22 @@ def carm_route_bfcl(
             )
             if seg_selected:
                 for f in seg_selected:
+                    seg_func_list.append((seg, f))
                     selected_names.add(f["name"])
             else:
                 # Fallback to signal scoring if LLM fails
                 seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
                 seg_scores.sort(key=lambda x: x[1], reverse=True)
                 if seg_scores and seg_scores[0][1] >= effective_threshold:
+                    seg_func_list.append((seg, seg_scores[0][0]))
                     selected_names.add(seg_scores[0][0]["name"])
 
         if selected_names:
             verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
+            # Store the segment→function mapping for later use
+            _seg_func_map = {}
+            for seg, func in seg_func_list:
+                _seg_func_map[seg] = func
         else:
             selected = select_function_via_llm(
                 functions, query, ollama_url, ollama_model
@@ -1427,10 +1435,12 @@ def carm_route_bfcl(
             if not selected:
                 return "[]"
             verified = [(f, 0.0) for f in selected]
+            _seg_func_map = None
     elif best_score < effective_threshold:
         logger.info(
             f"Best score {best_score:.2f} < {effective_threshold} → LLM fallback"
         )
+        _seg_func_map = None
         selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
         if not selected:
             logger.info("LLM fallback found no match → []")
@@ -1444,6 +1454,7 @@ def carm_route_bfcl(
     elif len(functions) == 1:
         # Single function available — must verify relevance to avoid false positives
         # (irrelevance test cases have exactly 1 function that should NOT be called)
+        _seg_func_map = None
         if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
             logger.info(
                 f"Single func '{scored[0][0]['name']}' score={best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance"
@@ -1462,6 +1473,7 @@ def carm_route_bfcl(
                 f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → use directly"
             )
     else:
+        _seg_func_map = None
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
         if not relevant:
@@ -1565,7 +1577,23 @@ def carm_route_bfcl(
     verified_func_names = set(f["name"] for f, _ in verified)
     is_same_func_parallel = len(verified) == 1 and is_parallel
 
-    if not is_parallel:
+    if (
+        not is_parallel
+        and has_parallel_segments
+        and len(segments) > 1
+        and _seg_func_map
+    ):
+        # Segments detected but not parallel (detect_parallel=False)
+        # This happens for same-func-parallel in non-English queries
+        # Each segment → one function call with per-segment params
+        for seg, func in _seg_func_map.items():
+            params = extract_params_via_llm_v2(func, seg, ollama_url, ollama_model)
+            params = validate_and_coerce_params(func, params)
+            calls.append((func["name"], params))
+            logger.info(
+                f"  {func['name']} params (from segment, non-parallel): {params}"
+            )
+    elif not is_parallel:
         for func, score in verified:
             params = extract_params_via_llm_v2(func, query, ollama_url, ollama_model)
             params = validate_and_coerce_params(func, params)
@@ -1595,23 +1623,10 @@ def carm_route_bfcl(
                 params = validate_and_coerce_params(func, params)
                 calls.append((func["name"], params))
                 logger.info(f"  {func['name']} params: {params}")
-    elif has_parallel_segments and len(segments) > 1:
+    elif has_parallel_segments and len(segments) > 1 and _seg_func_map:
         # Different functions, one per segment (parallel_multiple/live_parallel_multiple)
-        # Per-segment parameter extraction avoids duplicate calls
-        seg_func_map = {}  # segment → function
-        for seg in segments:
-            seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
-            seg_scores.sort(key=lambda x: x[1], reverse=True)
-            if seg_scores and seg_scores[0][1] >= effective_threshold:
-                seg_func_map[seg] = seg_scores[0][0]
-            else:
-                # Try matching to verified functions
-                for func, _ in verified:
-                    if func not in seg_func_map.values():
-                        seg_func_map[seg] = func
-                        break
-
-        for seg, func in seg_func_map.items():
+        # Use the LLM-built segment→function mapping
+        for seg, func in _seg_func_map.items():
             params = extract_params_via_llm_v2(func, seg, ollama_url, ollama_model)
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
