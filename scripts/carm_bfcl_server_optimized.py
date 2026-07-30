@@ -1394,24 +1394,10 @@ def carm_route_bfcl(
             return "[]"
 
         # Trust LLM selection — it already made a semantic judgment
-        # Only do relevance verification for irrelevance-like cases (single function, score=0)
-        # to avoid false positives
-        if len(selected) == 1 and len(functions) == 1 and best_score == 0.0:
-            # Single function, single selection, score=0 → verify to avoid false positive
-            # But only verify if the function name has NO semantic connection to query
-            # (otherwise trust LLM — it's a live_relevance case)
-            logger.info(
-                f"LLM selected {selected[0]['name']} but signal=0 → relevance verification"
-            )
-            if verify_relevance_via_llm(selected[0], query, ollama_url, ollama_model):
-                verified = [(selected[0], 0.0)]
-                logger.info(f"LLM confirmed relevance: {selected[0]['name']}")
-            else:
-                logger.info(f"LLM rejected {selected[0]['name']} as irrelevant → []")
-                return "[]"
-        else:
-            verified = [(f, 0.0) for f in selected]
-            logger.info(f"LLM selected: {[f['name'] for f in selected]}")
+        # The select_function_via_llm prompt includes instructions to return [] for irrelevant
+        # For single-function cases, the LLM can distinguish irrelevance from live_relevance
+        verified = [(f, 0.0) for f in selected]
+        logger.info(f"LLM selected: {[f['name'] for f in selected]}")
     elif len(functions) == 1:
         # Single function available — must verify relevance to avoid false positives
         # (irrelevance test cases have exactly 1 function that should NOT be called)
@@ -1655,12 +1641,12 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "invalid JSON"})
             return
 
+        tools = req.get("tools") or []
         logger.info(
-            f"_handle_chat_completions called with {len(req.get('messages', []))} messages, {len(req.get('tools', []))} tools"
+            f"_handle_chat_completions called with {len(req.get('messages', []))} messages, {len(tools)} tools"
         )
 
         messages = req.get("messages", [])
-        tools = req.get("tools", [])
         if tools:
             func_defs = []
             for tool in tools:
