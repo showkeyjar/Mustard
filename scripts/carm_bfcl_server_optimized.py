@@ -1227,10 +1227,14 @@ CRITICAL RULES:
    Example: "weather in Boston, San Francisco, and Chicago" → 3 objects
 3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
-5. Use enum values EXACTLY as listed.
-6. For location params, include city + country/region if mentioned (e.g., "Shanghai, China").
+5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
+6. For location params, include city + country/region if mentioned (e.g., "Shanghai, China"). Do NOT add country if not in the query.
 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
+9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
+10. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about".
+11. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
+12. Do NOT return duplicate objects with the same params.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1305,7 +1309,15 @@ Schema:
 
 Query: {query}
 
-Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values. For location params, include city + country/region if mentioned in the query (e.g., "Shanghai, China", "Tel Aviv, Israel"). For boolean params, use JSON true/false.
+Return JSON object with param names as keys. Rules:
+1. Use correct types (int/float/str/bool/array).
+2. Fill ALL required params from the query. Omit missing optional params.
+3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
+4. For location params, include city + country/region if mentioned in the query (e.g., "Shanghai, China", "Tel Aviv, Israel"). Do NOT add country if not in the query.
+5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
+6. For boolean params, use JSON true/false.
+7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
+8. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1458,6 +1470,21 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
                                 break
                         if matched:
                             break
+
+        # Clean keyword/search params: strip question prefixes
+        if isinstance(coerced, str) and pname.lower() in (
+            "keyword",
+            "search_string",
+            "query",
+            "q",
+            "search_term",
+        ):
+            coerced = re.sub(
+                r"^(who\s+is\s+|what\s+is\s+|tell\s+me\s+about\s+|search\s+for\s+|find\s+info\s+on\s+|look\s+up\s+)",
+                "",
+                coerced,
+                flags=re.IGNORECASE,
+            ).strip()
 
         validated[pname] = coerced
 
@@ -1757,6 +1784,21 @@ def carm_route_bfcl(
                 params = validate_and_coerce_params(func, params)
                 calls.append((func["name"], params))
                 logger.info(f"  {func['name']} params: {params}")
+
+    # Deduplicate calls: remove exact duplicate (same function name + same params)
+    seen = set()
+    deduped_calls = []
+    for name, params in calls:
+        param_key = json.dumps(params, sort_keys=True, ensure_ascii=False)
+        key = (name, param_key)
+        if key not in seen:
+            seen.add(key)
+            deduped_calls.append((name, params))
+        else:
+            logger.info(f"  Deduped: {name} with params {params}")
+    if len(deduped_calls) < len(calls):
+        logger.info(f"Deduped {len(calls) - len(deduped_calls)} duplicate calls")
+    calls = deduped_calls
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
