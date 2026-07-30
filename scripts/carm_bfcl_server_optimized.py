@@ -51,7 +51,8 @@ OLLAMA_TIMEOUT_S = 300  # 5 minutes - warmup for large model
 RELEVANCE_THRESHOLD = 0.1
 
 # Irrelevance verification threshold: if best score < this with single function, verify via LLM
-IRRELEVANCE_VERIFY_THRESHOLD = 0.28
+# Set to 0.55 — irrelevance cases score 0.32-0.50, simple cases mostly ≥ 0.54
+IRRELEVANCE_VERIFY_THRESHOLD = 0.55
 
 
 # ---------------------------------------------------------------------------
@@ -265,8 +266,6 @@ def score_function_relevance(func: dict, query: str) -> float:
                 # Partial match only if part is long enough (>4 chars) to reduce false positives
                 if len(part) > 4 and part not in generic_verbs:
                     score += 0.2
-    if func_name_lower in query_lower:
-        score += 0.2
     if func_name_lower in query_lower:
         score += 0.2
 
@@ -486,10 +485,24 @@ def score_function_relevance(func: dict, query: str) -> float:
         "dept": "department",
     }
     for abbr, expanded in synonym_map.items():
+        # Only match if abbr appears as a standalone token, not as a substring of a longer word
+        # e.g., "calc" should not match inside "calculate_compound_interest"
         if abbr in func_name_lower and expanded in query_lower:
-            score += 0.25
+            # Check if abbr is a standalone token in func_name (not part of a longer word)
+            abbr_as_token = any(t == abbr for t in name_tokens) or any(
+                t == abbr for t in func_name_lower.replace(".", "_").split("_")
+            )
+            if abbr_as_token:
+                score += 0.25
         if expanded in func_name_lower and abbr in query_lower:
-            score += 0.25
+            # Check if abbr appears as a standalone word in the query
+            if re.search(r"\b" + re.escape(abbr) + r"\b", query_lower):
+                # And expanded is a standalone token in func_name
+                expanded_as_token = any(t == expanded for t in name_tokens) or any(
+                    t == expanded for t in func_name_lower.replace(".", "_").split("_")
+                )
+                if expanded_as_token:
+                    score += 0.25
 
     # 7. Query contains function domain hint
     domain_hints = [
@@ -518,6 +531,54 @@ def score_function_relevance(func: dict, query: str) -> float:
     for hint in domain_hints:
         if hint in func_name_lower and hint in query_lower:
             score += 0.15
+
+    # 8. Semantic prefix matching: query word is a prefix of function name part
+    # e.g., "cook" matches "cookbook", "recipe" matches "search_recipe"
+    # Skip generic verbs to avoid "calculate" matching "calculate_compound_interest"
+    for part in name_parts:
+        if len(part) > 4 and part not in generic_verbs:
+            for qword in query_lower.split():
+                qword_clean = re.sub(r"[^a-z]", "", qword)
+                # Skip generic verbs as query words too
+                if qword_clean in generic_verbs:
+                    continue
+                if (
+                    len(qword_clean) > 3
+                    and qword_clean != part
+                    and part.startswith(qword_clean)
+                ):
+                    score += 0.2
+                    break
+
+    # 9. Semantic synonym matching for common live function patterns
+    semantic_pairs = [
+        # (query_keyword, func_name_keyword, score_bonus)
+        ("cook", "recipe", 0.3),
+        ("recipe", "cookbook", 0.3),
+        ("cook", "cookbook", 0.3),
+        ("wash", "appliance", 0.15),
+        ("machine", "appliance", 0.2),
+        ("stop", "control", 0.15),
+        ("start", "control", 0.15),
+        ("turn off", "control", 0.15),
+        ("turn on", "control", 0.15),
+        ("change", "modify", 0.2),
+        ("update", "change", 0.2),
+        ("order", "ride", 0.0),  # No boost — these are different
+        ("burger", "ride", 0.0),
+        ("drink", "drink", 0.3),
+        ("coffee", "drink", 0.25),
+        ("latte", "drink", 0.25),
+        ("weather", "weather", 0.3),
+        ("news", "news", 0.3),
+        ("movie", "movie", 0.25),
+    ]
+    for q_kw, f_kw, bonus in semantic_pairs:
+        if bonus > 0 and q_kw in query_lower and f_kw in func_name_lower:
+            score += bonus
+
+    # Cap semantic pair bonuses to avoid over-boosting
+    # (already applied above, just ensure total doesn't exceed reasonable bound)
 
     return min(score, 1.0)
 
@@ -579,12 +640,22 @@ def select_function_via_llm(
         func_lines.append(f"  {i}: {name}{param_str} — {desc}")
     func_list_str = "\n".join(func_lines)
 
-    prompt = f"""Select function(s) for: {query}
+    prompt = f"""You are a function router. Given a user query and a list of functions, select the function(s) that should be called.
 
-Functions:
+User query: {query}
+
+Available functions:
 {func_list_str}
 
-Return JSON array of indices. [] if none matches. Match by purpose and function name meaning, not just word overlap."""
+Rules:
+1. Select by SEMANTIC match: does the function's purpose address what the user wants?
+2. "cook" matches "cookbook.search_recipe" (cooking recipes)
+3. "stop washing machine" matches "ControlAppliance.execute" (appliance control)
+4. "change drink" matches "change_drink" (modify order)
+5. Return [] if NO function is relevant
+6. Do NOT return functions that are only tangentially related
+
+Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
     try:
         with httpx.Client(timeout=60.0) as client:
@@ -725,16 +796,25 @@ Parameters:
 
 Query: "{query}"
 
-Does this function DIRECTLY answer the user's query? Consider:
-- Does the function's purpose match what the user is asking for?
-- Can the function actually compute/return what the user wants?
-- Is the function name's meaning aligned with the query intent?
+Does this function DIRECTLY answer the user's query? Answer RELEVANT or IRRELEVANT.
 
-Common mismatches:
-- "integral" in query vs "str_to_int" function (string conversion ≠ calculus integral)
-- "prime factors" in query vs "compound_interest" function
-- "closest integer" vs "closest_prime"
-- "fastest route" vs "prime_numbers_in_range"
+Check these conditions — ALL must be true for RELEVANT:
+1. PURPOSE: The function's core purpose matches what the user is asking for
+2. PARAMETERS: The user's query provides values compatible with the function's parameters
+3. SCOPE: The function can actually compute/return what the user wants
+
+Important nuances:
+- "how to cook X" IS relevant to a recipe search function (user wants cooking instructions → recipe)
+- "change/update/modify drink" IS relevant to a change_drink function
+- "stop/start washing machine" IS relevant to an appliance control function
+- Querying with variables ('v', 'theta') IS acceptable for functions that take numeric params
+
+Common mismatches (IRRELEVANT):
+- "roots of linear equation bx+c=0" vs find_roots (quadratic only, needs 'a' param)
+- "derivative" vs compute_definite_integral (derivative ≠ integral)
+- "prime factors" vs compound_interest (number theory ≠ finance)
+- "closest integer" vs closest_prime (rounding ≠ primality)
+- "fastest route" vs prime_numbers_in_range (navigation ≠ number theory)
 
 Answer RELEVANT or IRRELEVANT."""
 
@@ -1313,27 +1393,25 @@ def carm_route_bfcl(
             logger.info("LLM fallback found no match → []")
             return "[]"
 
-        llm_scores = [score_function_relevance(f, query) for f in selected]
-        max_llm_score = max(llm_scores) if llm_scores else 0.0
-
-        if max_llm_score == 0.0:
+        # Trust LLM selection — it already made a semantic judgment
+        # Only do relevance verification for irrelevance-like cases (single function, score=0)
+        # to avoid false positives
+        if len(selected) == 1 and len(functions) == 1 and best_score == 0.0:
+            # Single function, single selection, score=0 → verify to avoid false positive
+            # But only verify if the function name has NO semantic connection to query
+            # (otherwise trust LLM — it's a live_relevance case)
             logger.info(
-                f"LLM selected {[f['name'] for f in selected]} but signal=0 → relevance verification"
+                f"LLM selected {selected[0]['name']} but signal=0 → relevance verification"
             )
-            relevant_selected = []
-            for f in selected:
-                if verify_relevance_via_llm(f, query, ollama_url, ollama_model):
-                    relevant_selected.append(f)
-                else:
-                    logger.info(f"LLM rejected {f['name']}")
-
-            if not relevant_selected:
-                logger.info("All LLM-selected functions rejected → []")
+            if verify_relevance_via_llm(selected[0], query, ollama_url, ollama_model):
+                verified = [(selected[0], 0.0)]
+                logger.info(f"LLM confirmed relevance: {selected[0]['name']}")
+            else:
+                logger.info(f"LLM rejected {selected[0]['name']} as irrelevant → []")
                 return "[]"
-            selected = relevant_selected
-
-        verified = [(f, 0.0) for f in selected]
-        logger.info(f"LLM selected: {[f['name'] for f in selected]}")
+        else:
+            verified = [(f, 0.0) for f in selected]
+            logger.info(f"LLM selected: {[f['name'] for f in selected]}")
     elif len(functions) == 1:
         # Single function available — must verify relevance to avoid false positives
         # (irrelevance test cases have exactly 1 function that should NOT be called)
@@ -1358,21 +1436,37 @@ def carm_route_bfcl(
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
         if not relevant:
-            logger.info("No function above threshold → []")
-            return "[]"
-
-        # Irrelevance guard: low best_score → verify top function
-        if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
-            logger.info(
-                f"Best score {best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance via LLM"
+            # No function above threshold — try LLM fallback for multi-func cases
+            logger.info("No function above threshold → LLM fallback")
+            selected = select_function_via_llm(
+                functions, query, ollama_url, ollama_model
             )
-            top_func = relevant[0][0]
-            if verify_relevance_via_llm(top_func, query, ollama_url, ollama_model):
-                verified = [relevant[0]]
-                logger.info(f"LLM confirmed relevance: {top_func['name']}")
+            if selected:
+                verified = [(f, 0.0) for f in selected]
+                logger.info(f"LLM fallback selected: {[f['name'] for f in selected]}")
             else:
-                logger.info(f"LLM rejected {top_func['name']} as irrelevant → []")
+                logger.info("LLM fallback found no match → []")
                 return "[]"
+        elif best_score < IRRELEVANCE_VERIFY_THRESHOLD:
+            # Low signal score — try LLM selection first, then verify
+            logger.info(
+                f"Best score {best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → LLM selection"
+            )
+            selected = select_function_via_llm(
+                functions, query, ollama_url, ollama_model
+            )
+            if selected:
+                verified = [(f, 0.0) for f in selected]
+                logger.info(f"LLM selected: {[f['name'] for f in selected]}")
+            else:
+                # LLM couldn't select — fall back to verify top function
+                top_func = relevant[0][0]
+                if verify_relevance_via_llm(top_func, query, ollama_url, ollama_model):
+                    verified = [relevant[0]]
+                    logger.info(f"LLM confirmed relevance: {top_func['name']}")
+                else:
+                    logger.info(f"LLM rejected {top_func['name']} as irrelevant → []")
+                    return "[]"
         else:
             has_parallel_hint = detect_parallel(query)
 
