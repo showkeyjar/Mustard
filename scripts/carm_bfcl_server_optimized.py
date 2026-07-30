@@ -1005,20 +1005,6 @@ def split_parallel_query(query: str) -> list[str]:
         if len(part1) > 8 and len(part2) > 8:
             return [part1, part2]
 
-    # "X and Y" where both parts look like location names (for weather/snow queries)
-    # Pattern: "two cities of Boston and San Francisco" or "Boston, MA and San Francisco"
-    # Only split if the query is about weather-like functions
-    weather_keywords = ["weather", "temperature", "snow", "climate", "forecast", "rain"]
-    if any(kw in query_lower for kw in weather_keywords):
-        # Try splitting on " and " between known patterns
-        and_split = re.split(r"\s+and\s+", query, maxsplit=1, flags=re.IGNORECASE)
-        if len(and_split) == 2:
-            part1, part2 = and_split
-            # Both parts should contain capitalized words (location names)
-            if len(part1.strip()) > 3 and len(part2.strip()) > 3:
-                cleaned = [part1.strip().rstrip(".,;!?"), part2.strip().rstrip(".,;!?")]
-                return cleaned
-
     # Comma-separated independent clauses with action verbs
     comma_parts = re.split(r",\s*", query)
     if len(comma_parts) >= 2 and all(len(p.strip()) > 8 for p in comma_parts):
@@ -1416,21 +1402,20 @@ def carm_route_bfcl(
         logger.info(f"Parallel segments: {segments}")
         selected_names = set()
         for seg in segments:
-            seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
-            seg_scores.sort(key=lambda x: x[1], reverse=True)
-            if seg_scores and seg_scores[0][1] >= effective_threshold:
-                # If top score is low or top-2 are very close, use LLM to pick
-                top_score = seg_scores[0][1]
-                second_score = seg_scores[1][1] if len(seg_scores) > 1 else 0.0
-                if top_score < 0.3 or (top_score - second_score) < 0.08:
-                    # Low confidence — use LLM for this segment
-                    seg_selected = select_function_via_llm(
-                        functions, seg, ollama_url, ollama_model
-                    )
-                    if seg_selected:
-                        for f in seg_selected:
-                            selected_names.add(f["name"])
-                else:
+            # Always use LLM for segment function selection
+            # Signal scoring is unreliable for segments (truncated context,
+            # abbreviated function names like "ChaFod" won't match "food")
+            seg_selected = select_function_via_llm(
+                functions, seg, ollama_url, ollama_model
+            )
+            if seg_selected:
+                for f in seg_selected:
+                    selected_names.add(f["name"])
+            else:
+                # Fallback to signal scoring if LLM fails
+                seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
+                seg_scores.sort(key=lambda x: x[1], reverse=True)
+                if seg_scores and seg_scores[0][1] >= effective_threshold:
                     selected_names.add(seg_scores[0][0]["name"])
 
         if selected_names:
@@ -1586,11 +1571,33 @@ def carm_route_bfcl(
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params: {params}")
+    elif is_same_func_parallel:
+        # Same function called multiple times — use extract_all_params with FULL query
+        # The LLM sees the entire query and can identify all entities (cities, items, etc.)
+        # This is better than per-segment extraction which loses context
+        func = verified[0][0]
+        param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
+        # If LLM only returned 1 set but we detected parallel intent,
+        # try per-segment extraction as fallback
+        if len(param_sets) < 2 and has_parallel_segments and len(segments) > 1:
+            logger.info(
+                f"LLM returned {len(param_sets)} set(s), trying per-segment fallback"
+            )
+            for seg in segments:
+                seg_params = extract_params_via_llm_v2(
+                    func, seg, ollama_url, ollama_model
+                )
+                seg_params = validate_and_coerce_params(func, seg_params)
+                calls.append((func["name"], seg_params))
+                logger.info(f"  {func['name']} params (segment fallback): {seg_params}")
+        else:
+            for params in param_sets:
+                params = validate_and_coerce_params(func, params)
+                calls.append((func["name"], params))
+                logger.info(f"  {func['name']} params: {params}")
     elif has_parallel_segments and len(segments) > 1:
-        # Per-segment parameter extraction: each segment → one function call
-        # This handles BOTH same-func-parallel (weather in 2 cities) AND
-        # different-func-parallel (weather + news). Each segment gets its own
-        # param extraction, naturally producing multiple calls.
+        # Different functions, one per segment (parallel_multiple/live_parallel_multiple)
+        # Per-segment parameter extraction avoids duplicate calls
         seg_func_map = {}  # segment → function
         for seg in segments:
             seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
@@ -1609,15 +1616,6 @@ def carm_route_bfcl(
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params (from segment): {params}")
-    elif is_same_func_parallel:
-        # Same function called multiple times but no segments detected
-        # Use extract_all_params with full query to get all parameter sets
-        func = verified[0][0]
-        param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
-        for params in param_sets:
-            params = validate_and_coerce_params(func, params)
-            calls.append((func["name"], params))
-            logger.info(f"  {func['name']} params: {params}")
     else:
         for func, score in verified:
             param_sets = extract_all_params_via_llm(
