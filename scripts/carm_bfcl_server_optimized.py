@@ -864,6 +864,16 @@ def detect_parallel(query: str) -> bool:
         r"\bvs\b",
         r"\bas well as\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
+        # "two cities of X and Y" pattern
+        r"\b(?:two|three)\s+(?:cities|locations|places)\s+of\b",
+        # Chinese parallel indicators
+        r"还有",
+        r"以及",
+        r"另外",
+        r"同时",
+        # Korean parallel indicators
+        r"그리고",
+        r"하고",
     ]
     for pat in strong_patterns:
         if re.search(pat, query_lower):
@@ -886,34 +896,244 @@ def detect_parallel(query: str) -> bool:
         if re.search(pat, query_lower):
             return True
 
-    # "and" separator with meaningful parts on both sides
+    # "and" separator — only if BOTH parts look like independent requests
+    # (each has an action verb or starts with a request phrase)
     parts = re.split(r"\band\b", query_lower)
     if len(parts) >= 3 and all(len(p.strip()) >= 4 for p in parts):
-        return True
-    if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
-        return True
-
-    # Comma/Chinese separators
-    if any(sep in query for sep in ["；", "，", ", "]):
-        parts = re.split(r"[；，,]", query)
-        if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
+        # Check each part has an action verb
+        action_words = {
+            "calculate",
+            "find",
+            "compute",
+            "get",
+            "buy",
+            "book",
+            "search",
+            "convert",
+            "check",
+            "create",
+            "turn",
+            "change",
+            "update",
+            "play",
+            "tell",
+            "provide",
+            "fetch",
+            "call",
+            "send",
+            "delete",
+            "add",
+            "show",
+            "list",
+            "generate",
+            "analyze",
+            "extract",
+            "sort",
+            "filter",
+            "start",
+            "stop",
+            "set",
+            "open",
+            "close",
+            "launch",
+            "run",
+            "build",
+        }
+        if all(any(aw in p for aw in action_words) for p in parts):
+            return True
+    if len(parts) >= 2 and all(len(p.strip()) >= 15 for p in parts):
+        # Very long parts — check for action verbs
+        action_words = {
+            "calculate",
+            "find",
+            "compute",
+            "get",
+            "buy",
+            "book",
+            "search",
+            "convert",
+            "check",
+            "create",
+            "turn",
+            "change",
+            "update",
+            "play",
+            "tell",
+            "provide",
+            "fetch",
+            "call",
+            "send",
+            "delete",
+            "add",
+            "show",
+            "list",
+            "generate",
+            "analyze",
+            "extract",
+            "sort",
+            "filter",
+            "start",
+            "stop",
+            "set",
+            "open",
+            "close",
+            "launch",
+            "run",
+            "build",
+        }
+        if all(any(aw in p for aw in action_words) for p in parts):
             return True
 
-    # Multi-request keywords
+    # Weather/temperature queries with "and" connecting locations
+    # "weather in X and Y" or "temperature in X and Y"
+    weather_context_words = {
+        "weather",
+        "temperature",
+        "snow",
+        "climate",
+        "forecast",
+        "rain",
+        "气候",
+        "天气",
+        "温度",
+    }
+    if any(wc in query_lower for wc in weather_context_words) and len(parts) >= 2:
+        # At least one part has a weather word, and the other looks like a location
+        if all(len(p.strip()) >= 3 for p in parts):
+            return True
+    if len(parts) >= 2 and all(len(p.strip()) >= 15 for p in parts):
+        # Very long parts — check for action verbs
+        action_words = {
+            "calculate",
+            "find",
+            "compute",
+            "get",
+            "buy",
+            "book",
+            "search",
+            "convert",
+            "check",
+            "create",
+            "turn",
+            "change",
+            "update",
+            "play",
+            "tell",
+            "provide",
+            "fetch",
+            "call",
+            "send",
+            "delete",
+            "add",
+            "show",
+            "list",
+            "generate",
+            "analyze",
+            "extract",
+            "sort",
+            "filter",
+            "start",
+            "stop",
+            "set",
+            "open",
+            "close",
+            "launch",
+            "run",
+            "build",
+        }
+        if all(any(aw in p for aw in action_words) for p in parts):
+            return True
+
+    # Comma/Chinese separators — only for independent clauses with action verbs
+    if any(sep in query for sep in ["；", "，", ", "]):
+        parts = re.split(r"[；，,]", query)
+        if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
+            action_words = {
+                "calculate",
+                "find",
+                "compute",
+                "get",
+                "buy",
+                "book",
+                "search",
+                "convert",
+                "check",
+                "create",
+                "turn",
+                "change",
+                "update",
+                "play",
+                "tell",
+                "provide",
+                "fetch",
+                "call",
+                "send",
+                "delete",
+                "add",
+                "show",
+                "list",
+                "generate",
+                "analyze",
+                "extract",
+                "sort",
+                "filter",
+                "start",
+                "stop",
+                "set",
+                "open",
+                "close",
+                "launch",
+                "run",
+                "build",
+                "查询",
+                "获取",
+                "计算",
+                "创建",
+                "修改",
+                "删除",
+                "添加",
+                "发送",
+                "打开",
+                "关闭",
+            }
+            if all(any(aw in p.lower() for aw in action_words) for p in parts):
+                return True
+
+    # Multi-request keywords — strong indicators only
     multi_request_words = [
-        "both",
+        "both of",
         "several",
         "multiple",
         "various",
-        "different",
-        "each",
-        "all",
-        "two",
-        "three",
-        "both of",
     ]
     if any(w in query_lower for w in multi_request_words):
         return True
+
+    # "X and Y" where both are short noun phrases (no action verbs)
+    # This handles "interviewers list for Python and Java"
+    # Only if "and" connects two short capitalized words or known item types
+    parts = re.split(r"\band\b", query_lower)
+    if len(parts) == 2:
+        p1, p2 = parts[0].strip(), parts[1].strip()
+        # Both parts end with a short word (likely a noun/identifier)
+        if len(p1) >= 3 and len(p2) >= 2 and len(p2) <= 30:
+            # Check if part 2 is just a short noun (skill name, city, etc.)
+            last_word_p1 = p1.split()[-1] if p1.split() else ""
+            if len(p2.split()) <= 3 and len(p2) <= 20:
+                # Likely "X for A and B" pattern
+                # Only if the query has listing/fetching intent
+                list_words = {
+                    "list",
+                    "find",
+                    "get",
+                    "show",
+                    "search",
+                    "fetch",
+                    "查",
+                    "找",
+                }
+                if any(lw in p1 for lw in list_words):
+                    return True
 
     return False
 
