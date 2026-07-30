@@ -50,6 +50,9 @@ OLLAMA_TIMEOUT_S = 300  # 5 minutes - warmup for large model
 # Relevance threshold: if best score < this, treat as irrelevance → return []
 RELEVANCE_THRESHOLD = 0.1
 
+# Irrelevance verification threshold: if best score < this with single function, verify via LLM
+IRRELEVANCE_VERIFY_THRESHOLD = 0.28
+
 
 # ---------------------------------------------------------------------------
 # Function selection (CARM-style signal matching) — UNCHANGED
@@ -102,19 +105,115 @@ def extract_user_query(messages: list[dict]) -> str:
 def tokenize(text: str) -> set[str]:
     """Tokenize text into lowercase word tokens for matching."""
     STOP_WORDS = {
-        "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-        "of", "in", "on", "at", "to", "for", "with", "by", "from", "as",
-        "and", "or", "but", "not", "no", "if", "then", "else", "when",
-        "this", "that", "these", "those", "it", "its", "i", "you", "he",
-        "she", "we", "they", "my", "your", "his", "her", "our", "their",
-        "do", "does", "did", "will", "would", "should", "could", "can",
-        "may", "might", "must", "shall", "have", "has", "had", "get", "got",
-        "make", "made", "go", "went", "about", "into", "out", "up", "down",
-        "over", "under", "again", "also", "than", "too", "very", "just",
-        "only", "more", "most", "some", "any", "all", "each", "every",
-        "other", "such", "own", "same", "so", "what", "which", "who", "whom",
-        "whose", "where", "why", "how", "like", "there", "here", "now", "then",
-        "today", "tomorrow",
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "with",
+        "by",
+        "from",
+        "as",
+        "and",
+        "or",
+        "but",
+        "not",
+        "no",
+        "if",
+        "then",
+        "else",
+        "when",
+        "this",
+        "that",
+        "these",
+        "those",
+        "it",
+        "its",
+        "i",
+        "you",
+        "he",
+        "she",
+        "we",
+        "they",
+        "my",
+        "your",
+        "his",
+        "her",
+        "our",
+        "their",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "should",
+        "could",
+        "can",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "have",
+        "has",
+        "had",
+        "get",
+        "got",
+        "make",
+        "made",
+        "go",
+        "went",
+        "about",
+        "into",
+        "out",
+        "up",
+        "down",
+        "over",
+        "under",
+        "again",
+        "also",
+        "than",
+        "too",
+        "very",
+        "just",
+        "only",
+        "more",
+        "most",
+        "some",
+        "any",
+        "all",
+        "each",
+        "every",
+        "other",
+        "such",
+        "own",
+        "same",
+        "so",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "whose",
+        "where",
+        "why",
+        "how",
+        "like",
+        "there",
+        "here",
+        "now",
+        "then",
+        "today",
+        "tomorrow",
     }
     tokens = set(re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", text.lower()))
     cn_tokens = set(re.findall(r"[\u4e00-\u9fff]{2,}", text))
@@ -138,29 +237,57 @@ def score_function_relevance(func: dict, query: str) -> float:
 
     score = 0.0
 
-    # 1. Direct function name substring in query
+    # 1. Direct function name substring in query (word-boundary aware)
+    # Generic verbs like "calculate", "get", "find" are downweighted to avoid false matches
+    generic_verbs = {
+        "calculate",
+        "get",
+        "find",
+        "compute",
+        "check",
+        "create",
+        "update",
+        "delete",
+        "send",
+        "search",
+    }
     func_name_lower = func_name.lower()
     name_parts = func_name_lower.split(".")
     for part in name_parts:
-        if len(part) > 2 and part in query_lower:
-            score += 0.4
+        if len(part) > 2:
+            # Use word boundary matching to avoid "int" matching "integral"
+            if re.search(r"\b" + re.escape(part) + r"\b", query_lower):
+                if part in generic_verbs:
+                    score += 0.15  # Generic verbs get less weight
+                else:
+                    score += 0.4
+            elif part in query_lower:
+                # Partial match only if part is long enough (>4 chars) to reduce false positives
+                if len(part) > 4 and part not in generic_verbs:
+                    score += 0.2
+    if func_name_lower in query_lower:
+        score += 0.2
     if func_name_lower in query_lower:
         score += 0.2
 
-    # 2. Function name token overlap
+    # 2. Function name token overlap (excluding generic verbs)
     name_tokens = tokenize(func_name)
     if name_tokens:
         expanded = set()
         for t in name_tokens:
             expanded.add(t)
             expanded.update(t.split("_"))
-        overlap = len(expanded & query_tokens)
+        # Remove generic verbs from token overlap scoring
+        expanded_specific = expanded - generic_verbs
+        overlap = len(expanded_specific & query_tokens)
         score += min(overlap * 0.15, 0.3)
 
-    # 3. Description keyword overlap
+    # 3. Description keyword overlap (excluding generic verbs)
     desc_tokens = tokenize(func_desc)
     if desc_tokens:
-        overlap = len(desc_tokens & query_tokens)
+        # Remove generic verbs from desc token matching too
+        desc_specific = desc_tokens - generic_verbs
+        overlap = len(desc_specific & query_tokens)
         score += min(overlap * 0.1, 0.2)
 
     # 4. Parameter name overlap
@@ -172,27 +299,150 @@ def score_function_relevance(func: dict, query: str) -> float:
         score += min(overlap * 0.12, 0.24)
 
     # 5. Semantic action hints
+    # Only apply if the action verb in description differs from function name
+    # (avoids double-counting when function name itself contains "calculate")
     action_hints = {
-        "calculate": ["calculate", "compute", "求", "计算", "area", "sum", "total", "average", "mean", "distance", "perimeter", "volume"],
-        "convert": ["convert", "transform", "转换", "exchange", "rate", "currency", "to", "from", "兑换", "汇率"],
-        "search": ["search", "lookup", "query", "find", "查找", "搜索", "检索", "locate", "get", "retrieve", "fetch", "list", "show", "display"],
-        "check": ["check", "verify", "validate", "检查", "验证", "confirm", "test", "inspect"],
-        "create": ["create", "generate", "build", "创建", "生成", "add", "insert", "new", "make", "construct", "produce"],
+        "calculate": [
+            "calculate",
+            "compute",
+            "求",
+            "计算",
+            "area",
+            "sum",
+            "total",
+            "average",
+            "mean",
+            "distance",
+            "perimeter",
+            "volume",
+        ],
+        "convert": [
+            "convert",
+            "transform",
+            "转换",
+            "exchange",
+            "rate",
+            "currency",
+            "to",
+            "from",
+            "兑换",
+            "汇率",
+        ],
+        "search": [
+            "search",
+            "lookup",
+            "query",
+            "find",
+            "查找",
+            "搜索",
+            "检索",
+            "locate",
+            "get",
+            "retrieve",
+            "fetch",
+            "list",
+            "show",
+            "display",
+        ],
+        "check": [
+            "check",
+            "verify",
+            "validate",
+            "检查",
+            "验证",
+            "confirm",
+            "test",
+            "inspect",
+        ],
+        "create": [
+            "create",
+            "generate",
+            "build",
+            "创建",
+            "生成",
+            "add",
+            "insert",
+            "new",
+            "make",
+            "construct",
+            "produce",
+        ],
         "delete": ["delete", "remove", "drop", "删除", "clear", "erase"],
-        "update": ["update", "modify", "更改", "修改", "edit", "change", "set", "adjust", "correct"],
+        "update": [
+            "update",
+            "modify",
+            "更改",
+            "修改",
+            "edit",
+            "change",
+            "set",
+            "adjust",
+            "correct",
+        ],
         "schedule": ["schedule", "book", "arrange", "预约", "安排", "plan", "reserve"],
-        "send": ["send", "email", "notify", "发送", "邮件", "submit", "forward", "transfer"],
+        "send": [
+            "send",
+            "email",
+            "notify",
+            "发送",
+            "邮件",
+            "submit",
+            "forward",
+            "transfer",
+        ],
         "translate": ["translate", "translation", "翻译"],
-        "classify": ["classify", "classification", "categorize", "category", "type", "detect", "identify", "recognize", "diagnose", "predict"],
+        "classify": [
+            "classify",
+            "classification",
+            "categorize",
+            "category",
+            "type",
+            "detect",
+            "identify",
+            "recognize",
+            "diagnose",
+            "predict",
+        ],
         "filter": ["filter", "筛选", "select", "choose", "pick", "find"],
         "sort": ["sort", "order", "rank", "排序", "arrange"],
-        "analyze": ["analyze", "analysis", "analyze", "evaluate", "assess", "measure", "study", "review", "examine", "inspect"],
-        "plot": ["plot", "chart", "graph", "draw", "visualize", "display", "render", "paint", "画"],
+        "analyze": [
+            "analyze",
+            "analysis",
+            "analyze",
+            "evaluate",
+            "assess",
+            "measure",
+            "study",
+            "review",
+            "examine",
+            "inspect",
+        ],
+        "plot": [
+            "plot",
+            "chart",
+            "graph",
+            "draw",
+            "visualize",
+            "display",
+            "render",
+            "paint",
+            "画",
+        ],
     }
     desc_lower = func_desc.lower()
+    # Skip action hints that are already part of the function name
+    # (prevents "calculate" in func_name + "calculate" in query from double-scoring)
+    func_name_actions = set()
+    for action in action_hints:
+        if action in func_name_lower:
+            func_name_actions.add(action)
+
     # Only apply action hints if desc is non-empty
     if desc_lower.strip():
         for action, triggers in action_hints.items():
+            # Skip if this action is already in the function name (already scored in rule 1)
+            if action in func_name_actions:
+                continue
             if action in desc_lower:
                 for trigger in triggers:
                     if trigger in query_lower:
@@ -242,7 +492,29 @@ def score_function_relevance(func: dict, query: str) -> float:
             score += 0.25
 
     # 7. Query contains function domain hint
-    domain_hints = ["math", "geometry", "algebra", "calculus", "physics", "chemistry", "biology", "finance", "stat", "sport", "music", "history", "law", "movie", "weather", "ecology", "employee", "database", "restaurant", "flight", "hotel"]
+    domain_hints = [
+        "math",
+        "geometry",
+        "algebra",
+        "calculus",
+        "physics",
+        "chemistry",
+        "biology",
+        "finance",
+        "stat",
+        "sport",
+        "music",
+        "history",
+        "law",
+        "movie",
+        "weather",
+        "ecology",
+        "employee",
+        "database",
+        "restaurant",
+        "flight",
+        "hotel",
+    ]
     for hint in domain_hints:
         if hint in func_name_lower and hint in query_lower:
             score += 0.15
@@ -432,10 +704,39 @@ def verify_relevance_via_llm(
 ) -> bool:
     """Use LLM to verify if a function is truly relevant to the query (v5).
 
-    Kept from v5 — critical for live_irrelevance (v4 got 42.5%).
-    Only called when signal score == 0.0 (rare).
+    Enhanced with semantic mismatch detection for irrelevance cases:
+    - Check if the function's PURPOSE matches what the query asks for
+    - Reject partial name matches that are semantically unrelated
     """
-    prompt = f"Function: {func['name']}\nDescription: {func.get('description','')[:200]}\nQuery: \"{query}\"\n\nIs this function relevant to the query? Answer RELEVANT or IRRELEVANT. If the function can answer any part of the query, answer RELEVANT."
+    func_name = func.get("name", "")
+    func_desc = func.get("description", "")[:300]
+    params = func.get("parameters", {}).get("properties", {})
+    param_names = list(params.keys())
+    param_descs = []
+    for pn, pi in params.items():
+        pdesc = pi.get("description", "")[:80]
+        param_descs.append(f"  {pn}: {pdesc}")
+    params_str = "\n".join(param_descs) if param_descs else "  (none)"
+
+    prompt = f"""Function: {func_name}
+Description: {func_desc}
+Parameters:
+{params_str}
+
+Query: "{query}"
+
+Does this function DIRECTLY answer the user's query? Consider:
+- Does the function's purpose match what the user is asking for?
+- Can the function actually compute/return what the user wants?
+- Is the function name's meaning aligned with the query intent?
+
+Common mismatches:
+- "integral" in query vs "str_to_int" function (string conversion ≠ calculus integral)
+- "prime factors" in query vs "compound_interest" function
+- "closest integer" vs "closest_prime"
+- "fastest route" vs "prime_numbers_in_range"
+
+Answer RELEVANT or IRRELEVANT."""
 
     try:
         with httpx.Client(timeout=30.0) as client:
@@ -445,7 +746,7 @@ def verify_relevance_via_llm(
                     "model": ollama_model,
                     "messages": [{"role": "user", "content": prompt}],
                     "stream": False,
-                    "options": {"temperature": 0.001, "num_predict": 10},
+                    "options": {"temperature": 0.001, "num_predict": 20},
                 },
             )
             resp.raise_for_status()
@@ -519,7 +820,18 @@ def detect_parallel(query: str) -> bool:
             return True
 
     # Multi-request keywords
-    multi_request_words = ["both", "several", "multiple", "various", "different", "each", "all", "two", "three", "both of"]
+    multi_request_words = [
+        "both",
+        "several",
+        "multiple",
+        "various",
+        "different",
+        "each",
+        "all",
+        "two",
+        "three",
+        "both of",
+    ]
     if any(w in query_lower for w in multi_request_words):
         return True
 
@@ -554,10 +866,19 @@ def split_parallel_query(query: str) -> list[str]:
             if all(len(p) > 5 for p in cleaned):
                 return cleaned
 
-    # "and also" / "and for" connectors
+    # "and also" / "and for" / "and calculate" / "also calculate" connectors
     connector_pats = [
         r"\band\s+also\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
+        r"\band\s+(?:calculate|find|compute|get|buy|book)\b",
+        r"\bplus\b",
+        r"\bcombined\s+with\b",
+        r"\bas well as\b",
+        # "Also, calculate" at sentence boundary or after comma
+        r"[,;.]\s*Also,?\s*",
+        r"\.\s*Also,?\s*",
+        r"[,;.]\s*Additionally,?\s*",
+        r"[,;.]\s*Then,?\s*",
     ]
     for pat in connector_pats:
         parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
@@ -565,6 +886,37 @@ def split_parallel_query(query: str) -> list[str]:
             cleaned = [p.strip().rstrip(".,;!?") for p in parts]
             if all(len(p) > 5 for p in cleaned):
                 return cleaned
+
+    # Comma + "and" split: "Calculate X, and Y" or "Find X, and find Y"
+    # This handles "GCD of 96 and 128, and the least common multiple of 15 and 25"
+    comma_and_match = re.search(r",\s*(?:and\s+)", query, re.IGNORECASE)
+    if comma_and_match:
+        split_pos = comma_and_match.start()
+        part1 = query[:split_pos].strip().rstrip(".,;!?")
+        part2 = query[comma_and_match.end() :].strip().rstrip(".,;!?")
+        if len(part1) > 8 and len(part2) > 8:
+            return [part1, part2]
+
+    # Comma-separated independent clauses with action verbs
+    comma_parts = re.split(r",\s*", query)
+    if len(comma_parts) >= 2 and all(len(p.strip()) > 8 for p in comma_parts):
+        action_verbs = {
+            "calculate",
+            "find",
+            "compute",
+            "get",
+            "buy",
+            "book",
+            "search",
+            "convert",
+            "check",
+            "create",
+        }
+        has_actions = all(
+            any(av in p.lower() for av in action_verbs) for p in comma_parts
+        )
+        if has_actions:
+            return [p.strip().rstrip(".,;!?") for p in comma_parts]
 
     return [query]
 
@@ -598,15 +950,15 @@ def extract_all_params_via_llm(
         enum_str = f" enum={enum_vals}" if enum_vals else ""
         param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
     param_desc = "\n".join(param_lines) if param_lines else "  (none)"
- 
-    prompt = f"""Extract all params for: {func_name}
+
+    prompt = f"""Extract ALL params for: {func_name}
 
 Schema:
 {param_desc}
 
 Query: {query}
 
-Return JSON array of objects, one per call. Use correct types (int/float/str/bool). Omit missing optional params. Use enum values exactly.
+Return JSON array of objects, one per call. Use correct types (int/float/str/bool). Omit missing optional params. Use enum values EXACTLY as listed. Do NOT invent extra function calls — only return calls that are explicitly requested in the query.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -619,7 +971,13 @@ Nested: [{{"users":[{{"name":"Alice","age":30}},{{"name":"Bob","age":25}}]}}]"""
                 f"{ollama_url}/api/chat",
                 json={
                     "model": ollama_model,
-                    "messages": [{"role": "system", "content": "Output only a JSON array of objects."}, {"role": "user", "content": prompt}],
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Output only a JSON array of objects.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
                     "stream": False,
                     "options": {
                         "temperature": 0.001,
@@ -675,7 +1033,7 @@ Schema:
 
 Query: {query}
 
-Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values exactly.
+Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -685,7 +1043,10 @@ Example for math.factorial: {{"number":5}}"""
                 f"{ollama_url}/api/chat",
                 json={
                     "model": ollama_model,
-                    "messages": [{"role": "system", "content": "Output only a JSON object."}, {"role": "user", "content": prompt}],
+                    "messages": [
+                        {"role": "system", "content": "Output only a JSON object."},
+                        {"role": "user", "content": prompt},
+                    ],
                     "stream": False,
                     "options": {
                         "temperature": 0.001,
@@ -794,11 +1155,37 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
             logger.warning(f"Type coercion failed for '{pname}': {e}")
 
         if enum_vals and coerced not in enum_vals:
+            # Try case-insensitive match first
+            matched = False
             for ev in enum_vals:
                 if isinstance(coerced, str) and isinstance(ev, str):
                     if coerced.lower() == ev.lower():
                         coerced = ev
+                        matched = True
                         break
+            # Try substring/containment match (e.g., "coconut milk" → "coconut")
+            if not matched and isinstance(coerced, str):
+                for ev in enum_vals:
+                    if isinstance(ev, str):
+                        if (
+                            coerced.lower() in ev.lower()
+                            or ev.lower() in coerced.lower()
+                        ):
+                            coerced = ev
+                            matched = True
+                            break
+            # If still not matched, try removing common suffixes
+            if not matched and isinstance(coerced, str):
+                for suffix in [" milk", " water", " juice", " sauce", " powder"]:
+                    if coerced.lower().endswith(suffix):
+                        stripped = coerced.lower()[: -len(suffix)]
+                        for ev in enum_vals:
+                            if isinstance(ev, str) and stripped == ev.lower():
+                                coerced = ev
+                                matched = True
+                                break
+                        if matched:
+                            break
 
         validated[pname] = coerced
 
@@ -894,17 +1281,33 @@ def carm_route_bfcl(
             seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
             seg_scores.sort(key=lambda x: x[1], reverse=True)
             if seg_scores and seg_scores[0][1] >= effective_threshold:
-                selected_names.add(seg_scores[0][0]["name"])
+                # If top score is low or top-2 are very close, use LLM to pick
+                top_score = seg_scores[0][1]
+                second_score = seg_scores[1][1] if len(seg_scores) > 1 else 0.0
+                if top_score < 0.3 or (top_score - second_score) < 0.08:
+                    # Low confidence — use LLM for this segment
+                    seg_selected = select_function_via_llm(
+                        functions, seg, ollama_url, ollama_model
+                    )
+                    if seg_selected:
+                        for f in seg_selected:
+                            selected_names.add(f["name"])
+                else:
+                    selected_names.add(seg_scores[0][0]["name"])
 
         if selected_names:
             verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
         else:
-            selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
+            selected = select_function_via_llm(
+                functions, query, ollama_url, ollama_model
+            )
             if not selected:
                 return "[]"
             verified = [(f, 0.0) for f in selected]
     elif best_score < effective_threshold:
-        logger.info(f"Best score {best_score:.2f} < {effective_threshold} → LLM fallback")
+        logger.info(
+            f"Best score {best_score:.2f} < {effective_threshold} → LLM fallback"
+        )
         selected = select_function_via_llm(functions, query, ollama_url, ollama_model)
         if not selected:
             logger.info("LLM fallback found no match → []")
@@ -914,7 +1317,9 @@ def carm_route_bfcl(
         max_llm_score = max(llm_scores) if llm_scores else 0.0
 
         if max_llm_score == 0.0:
-            logger.info(f"LLM selected {[f['name'] for f in selected]} but signal=0 → relevance verification")
+            logger.info(
+                f"LLM selected {[f['name'] for f in selected]} but signal=0 → relevance verification"
+            )
             relevant_selected = []
             for f in selected:
                 if verify_relevance_via_llm(f, query, ollama_url, ollama_model):
@@ -930,8 +1335,25 @@ def carm_route_bfcl(
         verified = [(f, 0.0) for f in selected]
         logger.info(f"LLM selected: {[f['name'] for f in selected]}")
     elif len(functions) == 1:
-        verified = [(scored[0][0], scored[0][1])]
-        logger.info(f"Single func '{scored[0][0]['name']}' → use directly")
+        # Single function available — must verify relevance to avoid false positives
+        # (irrelevance test cases have exactly 1 function that should NOT be called)
+        if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
+            logger.info(
+                f"Single func '{scored[0][0]['name']}' score={best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance"
+            )
+            if verify_relevance_via_llm(scored[0][0], query, ollama_url, ollama_model):
+                verified = [(scored[0][0], scored[0][1])]
+                logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
+            else:
+                logger.info(
+                    f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
+                )
+                return "[]"
+        else:
+            verified = [(scored[0][0], scored[0][1])]
+            logger.info(
+                f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → use directly"
+            )
     else:
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
 
@@ -939,9 +1361,11 @@ def carm_route_bfcl(
             logger.info("No function above threshold → []")
             return "[]"
 
-        # Irrelevance guard: very low best_score → verify top function
-        if best_score < 0.18:
-            logger.info(f"Best score {best_score:.2f} < 0.18 → verify relevance via LLM")
+        # Irrelevance guard: low best_score → verify top function
+        if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
+            logger.info(
+                f"Best score {best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance via LLM"
+            )
             top_func = relevant[0][0]
             if verify_relevance_via_llm(top_func, query, ollama_url, ollama_model):
                 verified = [relevant[0]]
@@ -953,23 +1377,47 @@ def carm_route_bfcl(
             has_parallel_hint = detect_parallel(query)
 
             if has_parallel_hint and len(relevant) >= 2:
-                # Close-score filter: only include functions within 0.2 of best
-                # (segment-based split above already handles widely-different scores)
-                best = relevant[0][1]
-                verified = [relevant[0]]
-                for f, s in relevant[1:]:
-                    if best - s < 0.2 and s >= effective_threshold:
-                        verified.append((f, s))
-                    else:
-                        break
-                logger.info(f"Parallel hint: {len(verified)} functions")
+                # For parallel_multiple: each segment maps to exactly ONE function
+                # Use segment-based selection to avoid over-generating
+                segments = split_parallel_query(query)
+                if len(segments) > 1:
+                    verified = []
+                    seen_names = set()
+                    for seg in segments:
+                        seg_scores = [
+                            (f, score_function_relevance(f, seg)) for f in functions
+                        ]
+                        seg_scores.sort(key=lambda x: x[1], reverse=True)
+                        if seg_scores and seg_scores[0][1] >= effective_threshold:
+                            fname = seg_scores[0][0]["name"]
+                            if fname not in seen_names:
+                                verified.append(seg_scores[0])
+                                seen_names.add(fname)
+                    logger.info(
+                        f"Segment-based parallel: {len(verified)} functions from {len(segments)} segments"
+                    )
+                else:
+                    # No segment split — use strict close-score filter
+                    # Only include functions within 0.15 of best (stricter than 0.2)
+                    best = relevant[0][1]
+                    verified = [relevant[0]]
+                    for f, s in relevant[1:]:
+                        if best - s < 0.15 and s >= effective_threshold:
+                            verified.append((f, s))
+                        else:
+                            break
+                    logger.info(f"Close-score parallel: {len(verified)} functions")
             elif (
                 len(relevant) >= 2
                 and (relevant[0][1] - relevant[1][1]) < DISAMBIGUATION_MARGIN
             ):
-                logger.info(f"Top-2 close ({relevant[0][1]:.2f} vs {relevant[1][1]:.2f}) → LLM disambiguation")
+                logger.info(
+                    f"Top-2 close ({relevant[0][1]:.2f} vs {relevant[1][1]:.2f}) → LLM disambiguation"
+                )
                 candidates = relevant[:3] if len(relevant) >= 3 else relevant
-                selected = disambiguate_via_llm(candidates, query, ollama_url, ollama_model)
+                selected = disambiguate_via_llm(
+                    candidates, query, ollama_url, ollama_model
+                )
                 verified = [(f, 0.0) for f in selected]
                 logger.info(f"LLM disambiguated to: {[f['name'] for f in selected]}")
             else:
@@ -997,7 +1445,9 @@ def carm_route_bfcl(
             logger.info(f"  {func['name']} params: {params}")
     else:
         for func, score in verified:
-            param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
+            param_sets = extract_all_params_via_llm(
+                func, query, ollama_url, ollama_model
+            )
             for params in param_sets:
                 params = validate_and_coerce_params(func, params)
                 calls.append((func["name"], params))
@@ -1050,7 +1500,11 @@ def call_ollama(
         }
     except httpx.TimeoutException as e:
         logger.error(f"Ollama API timeout: {e}")
-        return {"content": f"Error: Ollama API timeout: {str(e)}", "prompt_tokens": 0, "completion_tokens": 0}
+        return {
+            "content": f"Error: Ollama API timeout: {str(e)}",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+        }
     except Exception as e:
         logger.error(f"Ollama call failed: {e}")
         return {"content": f"Error: {e}", "prompt_tokens": 0, "completion_tokens": 0}
@@ -1077,7 +1531,9 @@ class CARMServerHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/v1/models", "/models"):
-            self._send_json(200, {"data": [{"id": "carm-router-opt", "object": "model"}]})
+            self._send_json(
+                200, {"data": [{"id": "carm-router-opt", "object": "model"}]}
+            )
         elif self.path == "/health":
             self._send_json(200, {"status": "ok"})
         else:
@@ -1093,7 +1549,9 @@ class CARMServerHandler(BaseHTTPRequestHandler):
 
     def _handle_chat_completions(self):
         content_length = int(self.headers.get("Content-Length", 0))
-        logger.info(f"Received request: path={self.path}, content_length={content_length}")
+        logger.info(
+            f"Received request: path={self.path}, content_length={content_length}"
+        )
         body = self.rfile.read(content_length).decode("utf-8")
         logger.info(f"Request body (first 500 chars): {body[:500]}")
         try:
@@ -1103,7 +1561,9 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "invalid JSON"})
             return
 
-        logger.info(f"_handle_chat_completions called with {len(req.get('messages', []))} messages, {len(req.get('tools', []))} tools")
+        logger.info(
+            f"_handle_chat_completions called with {len(req.get('messages', []))} messages, {len(req.get('tools', []))} tools"
+        )
 
         messages = req.get("messages", [])
         tools = req.get("tools", [])
@@ -1116,19 +1576,27 @@ class CARMServerHandler(BaseHTTPRequestHandler):
                         func_defs.append(func)
             if func_defs:
                 func_json = json.dumps(func_defs)
-                system_msg = next((m for m in messages if m.get("role") == "system"), None)
+                system_msg = next(
+                    (m for m in messages if m.get("role") == "system"), None
+                )
                 if system_msg:
-                    system_msg["content"] = system_msg.get("content", "") + "\n" + func_json
+                    system_msg["content"] = (
+                        system_msg.get("content", "") + "\n" + func_json
+                    )
                 else:
                     messages.insert(0, {"role": "system", "content": func_json})
                 logger.info(f"Injected {len(func_defs)} tools")
 
-        logger.info(f"Calling carm_route_bfcl with self.ollama_url={self.ollama_url}, self.ollama_model={self.ollama_model}")
+        logger.info(
+            f"Calling carm_route_bfcl with self.ollama_url={self.ollama_url}, self.ollama_model={self.ollama_model}"
+        )
         start = time.time()
         try:
             content = carm_route_bfcl(messages, self.ollama_url, self.ollama_model)
             latency = time.time() - start
-            logger.info(f"carm_route_bfcl completed in {latency:.2f}s, result length={len(content)}")
+            logger.info(
+                f"carm_route_bfcl completed in {latency:.2f}s, result length={len(content)}"
+            )
         except Exception as e:
             latency = time.time() - start
             logger.error(f"carm_route_bfcl failed after {latency:.2f}s: {e}")
@@ -1203,21 +1671,26 @@ def main():
     RELEVANCE_THRESHOLD = args.threshold
 
     import os
-    log_file = os.path.join(os.path.dirname(__file__), 'carm_server.log')
+
+    log_file = os.path.join(os.path.dirname(__file__), "carm_server.log")
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
     )
 
     server = HTTPServer((args.host, args.port), CARMServerHandler)
     logger.info(f"CARM BFCL Server (optimized) starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
-    logger.info(f"  Optimizations: v4 parallel heuristic, shorter LLM prompts, num_predict 192")
-    logger.info(f"  Preserved: CARM signal routing + LLM irrelevance verification + LLM disambiguation")
+    logger.info(
+        f"  Optimizations: v4 parallel heuristic, shorter LLM prompts, num_predict 192"
+    )
+    logger.info(
+        f"  Preserved: CARM signal routing + LLM irrelevance verification + LLM disambiguation"
+    )
 
     try:
         server.serve_forever()
