@@ -789,38 +789,15 @@ def verify_relevance_via_llm(
         param_descs.append(f"  {pn}: {pdesc}")
     params_str = "\n".join(param_descs) if param_descs else "  (none)"
 
-    prompt = f"""Function: {func_name}
-Description: {func_desc}
-Parameters:
-{params_str}
+    prompt = f"""Does this function help answer this query?
 
+Function: {func_name} - {func_desc}
+Parameters: {", ".join(param_names)}
 Query: "{query}"
 
-Does this function DIRECTLY answer the user's query? Answer RELEVANT or IRRELEVANT.
+Note: "temperature" is a weather concept. "Can you tell me" is a polite request, not irrelevance.
 
-Check these conditions — ALL must be true for RELEVANT:
-1. PURPOSE: The function's core purpose matches what the user is asking for
-2. PARAMETERS: The user's query provides values compatible with the function's parameters
-3. SCOPE: The function can actually compute/return what the user wants
-
-Important nuances:
-- "how to cook X" IS relevant to a recipe search function (user wants cooking instructions → recipe)
-- "change/update/modify drink" IS relevant to a change_drink function
-- "stop/start washing machine" IS relevant to an appliance control function
-- Querying with variables ('v', 'theta') IS acceptable for functions that take numeric params
-- "current temperature" / "what's the weather" IS relevant to a get_current_weather function
-- "Can you tell me" is just a polite request form — it does NOT make the query irrelevant
-- "what is the temperature in X" IS relevant to a weather function even though it asks for "temperature" not "weather"
-- "how to get to X" IS relevant to a directions/route function
-
-Common mismatches (IRRELEVANT):
-- "roots of linear equation bx+c=0" vs find_roots (quadratic only, needs 'a' param)
-- "derivative" vs compute_definite_integral (derivative ≠ integral)
-- "prime factors" vs compound_interest (number theory ≠ finance)
-- "closest integer" vs closest_prime (rounding ≠ primality)
-- "fastest route" vs prime_numbers_in_range (navigation ≠ number theory)
-
-Answer RELEVANT or IRRELEVANT."""
+Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
     try:
         with httpx.Client(timeout=30.0) as client:
