@@ -1005,6 +1005,20 @@ def split_parallel_query(query: str) -> list[str]:
         if len(part1) > 8 and len(part2) > 8:
             return [part1, part2]
 
+    # "X and Y" where both parts look like location names (for weather/snow queries)
+    # Pattern: "two cities of Boston and San Francisco" or "Boston, MA and San Francisco"
+    # Only split if the query is about weather-like functions
+    weather_keywords = ["weather", "temperature", "snow", "climate", "forecast", "rain"]
+    if any(kw in query_lower for kw in weather_keywords):
+        # Try splitting on " and " between known patterns
+        and_split = re.split(r"\s+and\s+", query, maxsplit=1, flags=re.IGNORECASE)
+        if len(and_split) == 2:
+            part1, part2 = and_split
+            # Both parts should contain capitalized words (location names)
+            if len(part1.strip()) > 3 and len(part2.strip()) > 3:
+                cleaned = [part1.strip().rstrip(".,;!?"), part2.strip().rstrip(".,;!?")]
+                return cleaned
+
     # Comma-separated independent clauses with action verbs
     comma_parts = re.split(r",\s*", query)
     if len(comma_parts) >= 2 and all(len(p.strip()) > 8 for p in comma_parts):
@@ -1074,12 +1088,15 @@ Query: {query}
 
 CRITICAL RULES:
 1. Return JSON array of objects, one per call.
-2. Only create MULTIPLE calls if the query explicitly asks for the SAME function multiple times with DIFFERENT parameters.
-3. Do NOT invent extra calls — if the query mentions this function once, return exactly ONE object.
+2. If the query mentions MULTIPLE entities (cities, people, items, dates) that each need this function, create one object PER entity.
+   Example: "weather in Boston and San Francisco" → [{{"location":"Boston, MA"}}, {{"location":"San Francisco, CA"}}]
+   Example: "weather in Boston, San Francisco, and Chicago" → 3 objects
+3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
 5. Use enum values EXACTLY as listed.
 6. For location params, include city + country/region if mentioned (e.g., "Shanghai, China").
 7. For boolean params, use JSON true/false (not Python True/False).
+8. If the query asks for the same thing only once, return exactly ONE object.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1558,6 +1575,11 @@ def carm_route_bfcl(
 
     calls = []
 
+    # Determine if this is a "same function multiple times" parallel (parallel/live_parallel)
+    # vs "different functions" parallel (parallel_multiple/live_parallel_multiple)
+    verified_func_names = set(f["name"] for f, _ in verified)
+    is_same_func_parallel = len(verified) == 1 and is_parallel
+
     if not is_parallel:
         for func, score in verified:
             params = extract_params_via_llm_v2(func, query, ollama_url, ollama_model)
@@ -1566,7 +1588,9 @@ def carm_route_bfcl(
             logger.info(f"  {func['name']} params: {params}")
     elif has_parallel_segments and len(segments) > 1:
         # Per-segment parameter extraction: each segment → one function call
-        # This avoids duplicate calls from extract_all_params_via_llm
+        # This handles BOTH same-func-parallel (weather in 2 cities) AND
+        # different-func-parallel (weather + news). Each segment gets its own
+        # param extraction, naturally producing multiple calls.
         seg_func_map = {}  # segment → function
         for seg in segments:
             seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
@@ -1585,6 +1609,15 @@ def carm_route_bfcl(
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params (from segment): {params}")
+    elif is_same_func_parallel:
+        # Same function called multiple times but no segments detected
+        # Use extract_all_params with full query to get all parameter sets
+        func = verified[0][0]
+        param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
+        for params in param_sets:
+            params = validate_and_coerce_params(func, params)
+            calls.append((func["name"], params))
+            logger.info(f"  {func['name']} params: {params}")
     else:
         for func, score in verified:
             param_sets = extract_all_params_via_llm(
