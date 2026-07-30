@@ -927,6 +927,7 @@ def split_parallel_query(query: str) -> list[str]:
     """Split query into independent sub-queries for parallel processing.
 
     Returns [query] if no split is possible, or a list of segment strings.
+    Supports multi-way splitting (>2 segments).
     """
     query_lower = query.lower()
 
@@ -942,7 +943,7 @@ def split_parallel_query(query: str) -> list[str]:
     for pat in transition_patterns:
         parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
         if len(parts) >= 2:
-            cleaned = [p.strip().rstrip(".,;!?") for p in parts]
+            cleaned = [p.strip().rstrip(".,;!?") for p in parts if p.strip()]
             if all(len(p) > 5 for p in cleaned):
                 return cleaned
 
@@ -950,7 +951,7 @@ def split_parallel_query(query: str) -> list[str]:
     connector_pats = [
         r"\band\s+also\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
-        r"\band\s+(?:calculate|find|compute|get|buy|book)\b",
+        r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide)\b",
         r"\bplus\b",
         r"\bcombined\s+with\b",
         r"\bas well as\b",
@@ -963,8 +964,35 @@ def split_parallel_query(query: str) -> list[str]:
     for pat in connector_pats:
         parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
         if len(parts) >= 2:
-            cleaned = [p.strip().rstrip(".,;!?") for p in parts]
+            cleaned = [p.strip().rstrip(".,;!?") for p in parts if p.strip()]
             if all(len(p) > 5 for p in cleaned):
+                return cleaned
+
+    # Chinese connectors: 和、以及、另外、同时
+    cn_connectors = ["以及", "另外", "同时", "还有", "接着", "然后"]
+    for conn in cn_connectors:
+        if conn in query:
+            parts = query.split(conn)
+            cleaned = [p.strip().rstrip("。，；！？") for p in parts if p.strip()]
+            if len(cleaned) >= 2 and all(len(p) > 3 for p in cleaned):
+                return cleaned
+
+    # Chinese 和 as separator (only between city/location names, not in compound words)
+    # Pattern: "X市和Y市" or "X和Y的天气"
+    if "和" in query and ("天气" in query or "天气" in query_lower):
+        parts = query.split("和")
+        if len(parts) >= 2:
+            cleaned = [p.strip().rstrip("。，；！？") for p in parts if p.strip()]
+            if all(len(p) > 3 for p in cleaned):
+                return cleaned
+
+    # Korean connectors: 하고, 그리고
+    kr_connectors = ["하고", "그리고"]
+    for conn in kr_connectors:
+        if conn in query:
+            parts = query.split(conn)
+            cleaned = [p.strip().rstrip(".") for p in parts if p.strip()]
+            if len(cleaned) >= 2 and all(len(p) > 3 for p in cleaned):
                 return cleaned
 
     # Comma + "and" split: "Calculate X, and Y" or "Find X, and find Y"
@@ -991,6 +1019,12 @@ def split_parallel_query(query: str) -> list[str]:
             "convert",
             "check",
             "create",
+            "turn",
+            "change",
+            "update",
+            "play",
+            "tell",
+            "provide",
         }
         has_actions = all(
             any(av in p.lower() for av in action_verbs) for p in comma_parts
@@ -1038,11 +1072,18 @@ Schema:
 
 Query: {query}
 
-Return JSON array of objects, one per call. Use correct types (int/float/str/bool). Omit missing optional params. Use enum values EXACTLY as listed. Do NOT invent extra function calls — only return calls that are explicitly requested in the query.
+CRITICAL RULES:
+1. Return JSON array of objects, one per call.
+2. Only create MULTIPLE calls if the query explicitly asks for the SAME function multiple times with DIFFERENT parameters.
+3. Do NOT invent extra calls — if the query mentions this function once, return exactly ONE object.
+4. Use correct types (int/float/str/bool). Omit missing optional params.
+5. Use enum values EXACTLY as listed.
+6. For location params, include city + country/region if mentioned (e.g., "Shanghai, China").
+7. For boolean params, use JSON true/false (not Python True/False).
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
-Multiple: [{{"a":1,"b":2}},{{"a":3,"b":4}}]
+Multiple (explicit): [{{"a":1,"b":2}},{{"a":3,"b":4}}]
 Nested: [{{"users":[{{"name":"Alice","age":30}},{{"name":"Bob","age":25}}]}}]"""
 
     try:
@@ -1113,7 +1154,7 @@ Schema:
 
 Query: {query}
 
-Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
+Return JSON object with param names as keys. Use correct types (int/float/str/bool/array). Fill ALL required params from the query. Omit missing optional params. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values. For location params, include city + country/region if mentioned in the query (e.g., "Shanghai, China", "Tel Aviv, Israel"). For boolean params, use JSON true/false.
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1523,6 +1564,27 @@ def carm_route_bfcl(
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
             logger.info(f"  {func['name']} params: {params}")
+    elif has_parallel_segments and len(segments) > 1:
+        # Per-segment parameter extraction: each segment → one function call
+        # This avoids duplicate calls from extract_all_params_via_llm
+        seg_func_map = {}  # segment → function
+        for seg in segments:
+            seg_scores = [(f, score_function_relevance(f, seg)) for f in functions]
+            seg_scores.sort(key=lambda x: x[1], reverse=True)
+            if seg_scores and seg_scores[0][1] >= effective_threshold:
+                seg_func_map[seg] = seg_scores[0][0]
+            else:
+                # Try matching to verified functions
+                for func, _ in verified:
+                    if func not in seg_func_map.values():
+                        seg_func_map[seg] = func
+                        break
+
+        for seg, func in seg_func_map.items():
+            params = extract_params_via_llm_v2(func, seg, ollama_url, ollama_model)
+            params = validate_and_coerce_params(func, params)
+            calls.append((func["name"], params))
+            logger.info(f"  {func['name']} params (from segment): {params}")
     else:
         for func, score in verified:
             param_sets = extract_all_params_via_llm(
