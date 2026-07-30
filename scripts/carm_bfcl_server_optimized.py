@@ -896,51 +896,12 @@ def detect_parallel(query: str) -> bool:
         if re.search(pat, query_lower):
             return True
 
-    # "and" separator — only if BOTH parts look like independent requests
-    # (each has an action verb or starts with a request phrase)
+    # "and" separator with meaningful parts on both sides
     parts = re.split(r"\band\b", query_lower)
     if len(parts) >= 3 and all(len(p.strip()) >= 4 for p in parts):
-        # Check each part has an action verb
-        action_words = {
-            "calculate",
-            "find",
-            "compute",
-            "get",
-            "buy",
-            "book",
-            "search",
-            "convert",
-            "check",
-            "create",
-            "turn",
-            "change",
-            "update",
-            "play",
-            "tell",
-            "provide",
-            "fetch",
-            "call",
-            "send",
-            "delete",
-            "add",
-            "show",
-            "list",
-            "generate",
-            "analyze",
-            "extract",
-            "sort",
-            "filter",
-            "start",
-            "stop",
-            "set",
-            "open",
-            "close",
-            "launch",
-            "run",
-            "build",
-        }
-        if all(any(aw in p for aw in action_words) for p in parts):
-            return True
+        return True
+    if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
+        return True
     if len(parts) >= 2 and all(len(p.strip()) >= 15 for p in parts):
         # Very long parts — check for action verbs
         action_words = {
@@ -1044,60 +1005,27 @@ def detect_parallel(query: str) -> bool:
         if all(any(aw in p for aw in action_words) for p in parts):
             return True
 
-    # Comma/Chinese separators — only for independent clauses with action verbs
+    # Comma/Chinese separators
     if any(sep in query for sep in ["；", "，", ", "]):
         parts = re.split(r"[；，,]", query)
-        if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
-            action_words = {
-                "calculate",
-                "find",
-                "compute",
-                "get",
-                "buy",
-                "book",
-                "search",
-                "convert",
-                "check",
-                "create",
-                "turn",
-                "change",
-                "update",
-                "play",
-                "tell",
-                "provide",
-                "fetch",
-                "call",
-                "send",
-                "delete",
-                "add",
-                "show",
-                "list",
-                "generate",
-                "analyze",
-                "extract",
-                "sort",
-                "filter",
-                "start",
-                "stop",
-                "set",
-                "open",
-                "close",
-                "launch",
-                "run",
-                "build",
-                "查询",
-                "获取",
-                "计算",
-                "创建",
-                "修改",
-                "删除",
-                "添加",
-                "发送",
-                "打开",
-                "关闭",
-            }
-            if all(any(aw in p.lower() for aw in action_words) for p in parts):
-                return True
+        if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
+            return True
+
+    # Multi-request keywords
+    multi_request_words = [
+        "both",
+        "several",
+        "multiple",
+        "various",
+        "different",
+        "each",
+        "all",
+        "two",
+        "three",
+        "both of",
+    ]
+    if any(w in query_lower for w in multi_request_words):
+        return True
 
     # Multi-request keywords — strong indicators only
     multi_request_words = [
@@ -1797,23 +1725,7 @@ def carm_route_bfcl(
     verified_func_names = set(f["name"] for f, _ in verified)
     is_same_func_parallel = len(verified) == 1 and is_parallel
 
-    if (
-        not is_parallel
-        and has_parallel_segments
-        and len(segments) > 1
-        and _seg_func_map
-    ):
-        # Segments detected but not parallel (detect_parallel=False)
-        # This happens for same-func-parallel in non-English queries
-        # Each segment → one function call with per-segment params
-        for seg, func in _seg_func_map.items():
-            params = extract_params_via_llm_v2(func, seg, ollama_url, ollama_model)
-            params = validate_and_coerce_params(func, params)
-            calls.append((func["name"], params))
-            logger.info(
-                f"  {func['name']} params (from segment, non-parallel): {params}"
-            )
-    elif not is_parallel:
+    if not is_parallel:
         for func, score in verified:
             params = extract_params_via_llm_v2(func, query, ollama_url, ollama_model)
             params = validate_and_coerce_params(func, params)
@@ -1822,27 +1734,12 @@ def carm_route_bfcl(
     elif is_same_func_parallel:
         # Same function called multiple times — use extract_all_params with FULL query
         # The LLM sees the entire query and can identify all entities (cities, items, etc.)
-        # This is better than per-segment extraction which loses context
         func = verified[0][0]
         param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
-        # If LLM only returned 1 set but we detected parallel intent,
-        # try per-segment extraction as fallback
-        if len(param_sets) < 2 and has_parallel_segments and len(segments) > 1:
-            logger.info(
-                f"LLM returned {len(param_sets)} set(s), trying per-segment fallback"
-            )
-            for seg in segments:
-                seg_params = extract_params_via_llm_v2(
-                    func, seg, ollama_url, ollama_model
-                )
-                seg_params = validate_and_coerce_params(func, seg_params)
-                calls.append((func["name"], seg_params))
-                logger.info(f"  {func['name']} params (segment fallback): {seg_params}")
-        else:
-            for params in param_sets:
-                params = validate_and_coerce_params(func, params)
-                calls.append((func["name"], params))
-                logger.info(f"  {func['name']} params: {params}")
+        for params in param_sets:
+            params = validate_and_coerce_params(func, params)
+            calls.append((func["name"], params))
+            logger.info(f"  {func['name']} params: {params}")
     elif has_parallel_segments and len(segments) > 1 and _seg_func_map:
         # Different functions, one per segment (parallel_multiple/live_parallel_multiple)
         # Use the LLM-built segment→function mapping
