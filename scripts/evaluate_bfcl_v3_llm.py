@@ -54,6 +54,55 @@ def tokenize(text: str) -> set[str]:
     return {w for w in re.split(r"[^a-zA-Z0-9]", text.lower()) if len(w) > 2}
 
 
+# Stop words filtered from description matching to reduce false positives
+# on irrelevance queries (e.g. "the", "and", "for" inflating desc_overlap).
+_STOP_WORDS = frozenset(
+    {
+        "the",
+        "and",
+        "for",
+        "from",
+        "are",
+        "been",
+        "was",
+        "were",
+        "will",
+        "can",
+        "you",
+        "your",
+        "this",
+        "that",
+        "with",
+        "given",
+        "not",
+        "but",
+        "all",
+        "any",
+        "has",
+        "have",
+        "had",
+        "would",
+        "could",
+        "should",
+        "about",
+        "into",
+        "than",
+        "then",
+        "them",
+        "these",
+        "those",
+        "which",
+        "who",
+        "whom",
+        "whose",
+        "when",
+        "where",
+        "why",
+        "how",
+    }
+)
+
+
 # ── Lightweight keyword matching ─────────────────────────────────────
 
 
@@ -62,13 +111,20 @@ def _match_score(query: str, func_name: str, desc: str) -> float:
     if not query_tokens:
         return 0.0
     name_tokens = tokenize(func_name.replace("_", " ").replace(".", " "))
+
+    # Filter stop words from description tokens to prevent common words
+    # ("the", "and", "calculate") from inflating scores on irrelevance queries.
+    query_filtered = {t for t in query_tokens if t not in _STOP_WORDS}
     desc_tokens = tokenize(desc)
+    desc_filtered = {t for t in desc_tokens if t not in _STOP_WORDS}
 
     name_overlap = (
         len(query_tokens & name_tokens) / max(len(name_tokens), 1) if name_tokens else 0
     )
     desc_overlap = (
-        len(query_tokens & desc_tokens) / max(len(desc_tokens), 1) if desc_tokens else 0
+        len(query_filtered & desc_filtered) / max(len(desc_filtered), 1)
+        if desc_filtered
+        else 0
     )
     name_parts = [
         p for p in func_name.replace("_", " ").replace(".", " ").split() if len(p) > 2
@@ -76,8 +132,27 @@ def _match_score(query: str, func_name: str, desc: str) -> float:
     substr_hits = sum(1 for p in name_parts if p.lower() in query.lower())
     substr_score = substr_hits / max(len(name_parts), 1) if name_parts else 0
 
-    score = name_overlap * 2.0 + desc_overlap * 1.0 + substr_score * 1.5
-    return min(score / 4.5, 1.0)
+    # Reverse substring: query tokens that are substrings of function name parts.
+    # Catches "cook" → "cookbook", "weather" → "OpenWeatherMap".
+    reverse_substr_hits = 0
+    for qt in query_filtered:
+        if len(qt) < 3:
+            continue
+        for np in name_parts:
+            if qt in np.lower() and qt != np:
+                reverse_substr_hits += 1
+                break
+    reverse_substr_score = (
+        reverse_substr_hits / max(len(query_filtered), 1) if query_filtered else 0
+    )
+
+    score = (
+        name_overlap * 2.0
+        + desc_overlap * 0.8
+        + substr_score * 1.5
+        + reverse_substr_score * 1.2
+    )
+    return min(score / 5.5, 1.0)
 
 
 def route_keyword(query: str, available_funcs: list[dict]) -> tuple[str | None, float]:
@@ -222,11 +297,19 @@ def route_hybrid(
         if llm_result:
             return llm_result
 
-    # No LLM available or LLM failed: return best keyword match if above threshold
-    if best_score >= 0.3:
+    # No LLM available or LLM failed: return best keyword match.
+    # Key insight: when no LLM fallback is available, always return the best
+    # keyword match (even if score < 0.3). Returning None causes false
+    # negatives on live_simple/live_multiple where natural-language queries
+    # have low token overlap with function names but the top match is correct.
+    # EXCEPTION: if best_score is 0.0 (zero token overlap with ALL functions),
+    # the query is likely irrelevant — return None.
+    if best_score == 0.0:
+        return None
+    if best_name:
         return best_name
 
-    # Very low confidence: treat as irrelevant
+    # Very low confidence and no match at all: treat as irrelevant
     return None
 
 
