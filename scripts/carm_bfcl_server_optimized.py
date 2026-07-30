@@ -808,6 +808,10 @@ Important nuances:
 - "change/update/modify drink" IS relevant to a change_drink function
 - "stop/start washing machine" IS relevant to an appliance control function
 - Querying with variables ('v', 'theta') IS acceptable for functions that take numeric params
+- "current temperature" / "what's the weather" IS relevant to a get_current_weather function
+- "Can you tell me" is just a polite request form — it does NOT make the query irrelevant
+- "what is the temperature in X" IS relevant to a weather function even though it asks for "temperature" not "weather"
+- "how to get to X" IS relevant to a directions/route function
 
 Common mismatches (IRRELEVANT):
 - "roots of linear equation bx+c=0" vs find_roots (quadratic only, needs 'a' param)
@@ -1009,6 +1013,20 @@ def detect_parallel(query: str) -> bool:
     if any(sep in query for sep in ["；", "，", ", "]):
         parts = re.split(r"[；，,]", query)
         if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
+            return True
+
+    # Chinese "和" / "跟" as parallel separator
+    # "广州市和北京市" → parallel
+    for sep in ["和", "跟"]:
+        if sep in query:
+            parts = query.split(sep)
+            if len(parts) >= 2 and all(len(p.strip()) >= 2 for p in parts):
+                return True
+
+    # Chinese enumeration comma "、" as parallel separator
+    if "、" in query:
+        parts = query.split("、")
+        if len(parts) >= 2 and all(len(p.strip()) >= 2 for p in parts):
             return True
 
     # Multi-request keywords
@@ -1228,7 +1246,7 @@ CRITICAL RULES:
 3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
 5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
-6. For location params, include city + country/region if mentioned (e.g., "Shanghai, China"). Do NOT add country if not in the query.
+6. For location params, include city + country/region/state when the city is well-known internationally (e.g., "Shanghai, China", "Tel Aviv, Israel", "Boston, MA", "San Francisco, CA"). Use common abbreviations for US states.
 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
@@ -1313,7 +1331,7 @@ Return JSON object with param names as keys. Rules:
 1. Use correct types (int/float/str/bool/array).
 2. Fill ALL required params from the query. Omit missing optional params.
 3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
-4. For location params, include city + country/region if mentioned in the query (e.g., "Shanghai, China", "Tel Aviv, Israel"). Do NOT add country if not in the query.
+4. For location params, include city + country/region/state when the city is well-known internationally (e.g., "Shanghai, China", "Tel Aviv, Israel", "Boston, MA", "San Francisco, CA"). Use common abbreviations for US states.
 5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
 6. For boolean params, use JSON true/false.
 7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
@@ -1744,6 +1762,9 @@ def carm_route_bfcl(
     if not is_parallel and len(verified) == 1:
         # Use v4 separator heuristic instead of LLM
         is_parallel = detect_parallel(query)
+        # If we had parallel segments, the query IS parallel even if detect_parallel missed it
+        if not is_parallel and has_parallel_segments:
+            is_parallel = True
 
     calls = []
 
