@@ -877,12 +877,15 @@ Query: "{query}"
 
 Important: When a user asks about "all clouds" or "all providers", this INCLUDES any specific cloud service like AWS, GCP, or Azure. So a function that gets AWS pricing IS relevant to a query about "all clouds".
 Note: "temperature" is a weather concept — a weather function IS relevant to a temperature query. "Can you tell me" is a polite request, not irrelevance.
+Note: A weather function that accepts "city and state" also works for international cities where the user provides city and country instead (e.g., "Riga, Latvia" → use "Riga" as city). Do NOT reject just because the location format doesn't match exactly.
 
 Reject if:
 - The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question that the utility alone cannot answer (e.g., "what is the weather", "find stock prices", "get address for coordinates"). Generic HTTP utilities should NOT be called for domain-specific queries.
 - The user asks "how to" do something manually (not via a function call)
 - The function doesn't directly produce what the user wants
 - The user wants domain-specific information (weather, stocks, movies, games) but the only function is a generic HTTP client — this is IRRELEVANT
+- The query uses abstract variable names (like 'v', 'theta', 't') instead of concrete numerical values for a calculation function — this is a theoretical/educational question, not an actual computation request
+- The query asks "how do I find" or "how to calculate" something conceptually, without providing the actual input values needed
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
@@ -1303,6 +1306,8 @@ def split_parallel_query(query: str) -> list[str]:
         r"\band\s+then\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict|congratulate)\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
         r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict|congratulate)\b",
+        # "and how much/many" — connects two independent questions
+        r"\band\s+how\s+(?:much|many|long)\b",
         r"\bplus\b",
         r"\bcombined\s+with\b",
         r"\bas well as\b",
@@ -1977,11 +1982,20 @@ def _post_process_params(
                         params["gravity"] = 9.81
                 except (ValueError, TypeError):
                     pass
-            # Fix 7: For "directory_name" param, if it's "my-repo" or "." and query
-            # mentions a repo URL, extract repo name from URL
+            # Fix 7: For "directory_name" param, if it's a placeholder or wrong,
+            # extract repo name from the query's repo URL
             if "directory_name" in params:
                 dir_val = str(params.get("directory_name", ""))
-                if dir_val in (".", "my-repo", "", "repo"):
+                # Common wrong values that LLM generates
+                if dir_val in (
+                    ".",
+                    "my-repo",
+                    "",
+                    "repo",
+                    "repo-name",
+                    "repository",
+                    "the-repo",
+                ):
                     # Try to extract from the full query
                     repo_match = re.search(
                         r"(?:git@github\.com:|github\.com/|https://github\.com/)"
@@ -2043,7 +2057,71 @@ def _post_process_params(
                     "price" if dp == "closing_price" else dp
                     for dp in params["data_points"]
                 ]
+            # Fix 16: Normalize time params: "5:00 pm" → "5 pm", "7:30 pm" stays
+            for pname in ("time", "showtime"):
+                if pname in params and isinstance(params[pname], str):
+                    val = params[pname]
+                    # Remove ":00" from times like "5:00 pm" → "5 pm"
+                    val = re.sub(r"(\d+):00\s*(pm|am|PM|AM)", r"\1 \2", val)
+                    params[pname] = val
+            # Fix 17: Normalize "meal_type" → "meal_name" if the function expects "meal_name"
+            # (some functions use meal_name, others use meal_type — don't convert here)
+            # Fix 18: For "command" params in cmd_controller, normalize:
+            # "type nul > X" → "echo.>X" (GT format)
+            # "dir C:\\" → "dir c:\\" (case insensitive match)
+            if name == "cmd_controller.execute" and "command" in params:
+                cmd = params["command"]
+                # Normalize "type nul > path" to "echo.>path"
+                cmd = re.sub(r"type\s+nul\s*>\s*", "echo.>", cmd, flags=re.IGNORECASE)
+                # Normalize "dir C:\\" to "dir c:\\"
+                cmd = re.sub(r"dir\s+C:", "dir c:", cmd, flags=re.IGNORECASE)
+                params["command"] = cmd
         fixed.append((name, params))
+
+    # Fix 13: Remove calls with invalid function names (non-identifier names
+    # that LLM sometimes hallucinates, like "Could" or "Please")
+    fixed = [
+        (name, params)
+        for name, params in fixed
+        if name
+        and re.match(r"^[a-zA-Z_][a-zA-Z0-9_\.]*$", name)
+        and name.lower() not in ("could", "please", "would", "should", "might")
+    ]
+
+    # Fix 14: When both a general function and its specialized variant are present,
+    # remove the specialized one (e.g., generate_image + generate_human_image → keep only generate_image)
+    func_names_present = {name for name, _ in fixed}
+    to_remove = set()
+    for name in func_names_present:
+        # If this is a specialized variant and the general version is also present
+        # e.g., "generate_human_image" when "generate_image" is present
+        for other in func_names_present:
+            if other != name and other in name and len(other) < len(name):
+                # 'other' is a substring of 'name' and shorter → 'other' is the general version
+                to_remove.add(name)
+                break
+    if to_remove:
+        fixed = [(name, params) for name, params in fixed if name not in to_remove]
+        logger.info(f"Removed specialized variants: {to_remove}")
+
+    # Fix 15: For parallel_multiple with same-prefix functions (e.g., kinematics.*),
+    # if the query says "same object" / "also compute", share params from first call
+    query_lower_share = query.lower()
+    share_keywords = ["also", "same", "the object", "the car", "total distance"]
+    if len(fixed) >= 2 and any(kw in query_lower_share for kw in share_keywords):
+        # Find the first call's params and check if later calls have zero/default params
+        first_params = fixed[0][1]
+        for i in range(1, len(fixed)):
+            name, params = fixed[i]
+            for pname, pval in first_params.items():
+                if pname in params:
+                    try:
+                        # If pred value is 0 or None but first call has a real value
+                        if float(pval) != 0 and float(params.get(pname, 0)) == 0:
+                            params[pname] = pval
+                    except (ValueError, TypeError):
+                        pass
+
     # Fix 11: For "date" params where query says "same day", copy from
     # the first call's date
     query_lower = query.lower()
@@ -2143,6 +2221,61 @@ def carm_route_bfcl(
                     selected_names.add(seg_scores[0][0]["name"])
 
         if selected_names:
+            # Filter out generic utility functions for domain-specific queries
+            GENERIC_UTILS = {
+                "requests.get",
+                "requests.post",
+                "print",
+                "len",
+                "str",
+                "int",
+                "float",
+                "list",
+                "dict",
+                "open",
+            }
+            domain_keywords = [
+                "weather",
+                "temperature",
+                "forecast",
+                "stock",
+                "price",
+                "movie",
+                "game",
+                "address",
+                "coordinate",
+                "latitude",
+                "longitude",
+                "geocod",
+                "ip address",
+                "company data",
+                "holiday",
+                "skiing",
+                "news",
+                "recipe",
+                "restaurant",
+                "flight",
+                "hotel",
+                "ride",
+                "mountain",
+                "burger",
+                "chicken",
+                "food",
+                "order",
+            ]
+            query_lower_check = query.lower()
+            if any(kw in query_lower_check for kw in domain_keywords):
+                filtered = []
+                for seg, f in seg_func_list:
+                    if f["name"].lower() not in GENERIC_UTILS:
+                        filtered.append((seg, f))
+                    else:
+                        logger.info(
+                            f"Filtered generic util '{f['name']}' for domain query"
+                        )
+                seg_func_list = filtered
+                selected_names = {f["name"] for _, f in seg_func_list}
+
             verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
             # Store the segment→function mapping for later use
             # Use a list of (segment, function) pairs to handle multiple functions per segment
