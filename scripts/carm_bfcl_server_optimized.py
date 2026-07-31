@@ -1531,6 +1531,8 @@ CRITICAL RULES:
 19. For keyword/search params, extract only the core subject (e.g., "steak Indian style" → keyword="steak"). Do NOT include modifiers in the keyword.
 20. For location params that are already a full address, use as-is. Do NOT append city/country to a street address.
 21. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name as the directory name.
+22. For math "function" params, do NOT add "math." prefix. Use "exp(-x**2)" not "math.exp(-x**2)", "sin(x)" not "math.sin(x)".
+23. When a query asks to compute multiple things about the SAME object, use the SAME parameter values for both functions.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1643,6 +1645,8 @@ Return JSON object with param names as keys. Rules:
 20. For keyword/search params, extract only the core subject (e.g., "steak Indian style" → keyword="steak", "how to cook steak" → keyword="steak"). Do NOT include modifiers like cuisine style, cooking method, or question words in the keyword.
 21. For location params that are already a full address (e.g., "123 Hanoi Street"), use the address as-is. Do NOT append city/country to a street address.
 22. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name (e.g., "repo-name") as the directory name, not "." or the current directory.
+23. For math "function" params, do NOT add "math." prefix. Use "exp(-x**2)" not "math.exp(-x**2)", "sin(x)" not "math.sin(x)".
+24. When a query asks to compute multiple things about the SAME object (e.g., "final velocity AND distance covered by the object"), use the SAME parameter values (initial_velocity, acceleration, time) for both functions.
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1843,6 +1847,45 @@ def format_function_call(func_name: str, params: dict) -> str:
         else:
             parts.append(f"{k}={v!r}")
     return f"[{func_name}({', '.join(parts)})]"
+
+
+def _post_process_params(
+    calls: list[tuple[str, dict]], functions: list[dict]
+) -> list[tuple[str, dict]]:
+    """Fix common LLM param extraction issues that prompts alone can't reliably fix."""
+    func_map = {f["name"]: f for f in functions}
+    fixed = []
+    for name, params in calls:
+        func = func_map.get(name)
+        if func:
+            param_props = func.get("parameters", {}).get("properties", {})
+            # Fix 1: For "any" type required params that are None, replace with param name string
+            required = func.get("parameters", {}).get("required", [])
+            for pname, pinfo in param_props.items():
+                if pname in required and pinfo.get("type") == "any":
+                    if params.get(pname) is None:
+                        params[pname] = pname
+            # Fix 2: For integer params where description says "first and larger",
+            # swap a/b if a < b
+            for pname, pinfo in param_props.items():
+                pdesc = pinfo.get("description", "").lower()
+                if "first and larger" in pdesc and pname in params:
+                    # Find the "second" param
+                    for pname2, pinfo2 in param_props.items():
+                        if (
+                            "second" in pinfo2.get("description", "").lower()
+                            and pname2 in params
+                        ):
+                            try:
+                                a_val = int(params[pname])
+                                b_val = int(params[pname2])
+                                if a_val < b_val:
+                                    params[pname], params[pname2] = b_val, a_val
+                            except (ValueError, TypeError):
+                                pass
+                            break
+        fixed.append((name, params))
+    return fixed
 
 
 def format_parallel_output(calls: list[tuple[str, dict]]) -> str:
@@ -2200,6 +2243,9 @@ def carm_route_bfcl(
     if len(deduped_calls) < len(calls):
         logger.info(f"Deduped {len(calls) - len(deduped_calls)} duplicate calls")
     calls = deduped_calls
+
+    # Post-processing: fix common LLM param extraction issues
+    calls = _post_process_params(calls, functions)
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
