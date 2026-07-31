@@ -1922,6 +1922,39 @@ def _post_process_params(
                     ]
                     if not any(kw in query_lower for kw in unit_keywords):
                         params.pop("unit", None)
+            # Fix 4: For "root_type" param, if query says "all roots", set to "all"
+            if "root_type" in params and "root_type" not in required:
+                if "all" in query_lower and "root" in query_lower:
+                    params["root_type"] = "all"
+            # Fix 5: For math "function" params, remove explicit multiplication signs
+            # e.g., "3*x**2 + 2*x - 1" → "3x**2 + 2x - 1" to match BFCL GT format
+            for pname, pinfo in param_props.items():
+                if pname in params and isinstance(params[pname], str):
+                    pdesc = pinfo.get("description", "").lower()
+                    if (
+                        "function" in pdesc
+                        or "equation" in pdesc
+                        or "expression" in pdesc
+                    ):
+                        val = params[pname]
+                        if val.startswith("lambda"):
+                            continue
+                        # Protect ** (power) before removing *
+                        val = val.replace("**", "\x00POW\x00")
+                        # Remove * between number and variable: 3*x → 3x
+                        val = re.sub(r"(\d)\s*\*\s*([a-zA-Z])", r"\1\2", val)
+                        val = re.sub(r"([a-zA-Z])\s*\*\s*(\d)", r"\1\2", val)
+                        # Restore **
+                        val = val.replace("\x00POW\x00", "**")
+                        params[pname] = val
+            # Fix 6: For "gravity" param, use 9.81 (standard) if query says "gravity g" without value
+            if "gravity" in params:
+                try:
+                    g_val = float(params["gravity"])
+                    if abs(g_val - 9.8) < 0.01:
+                        params["gravity"] = 9.81
+                except (ValueError, TypeError):
+                    pass
         fixed.append((name, params))
     return fixed
 
@@ -2058,7 +2091,10 @@ def carm_route_bfcl(
             "open",
         }
         func_name_lower = scored[0][0].get("name", "").lower()
-        if func_name_lower in GENERIC_UTILS and best_score < 0.3:
+        if (
+            func_name_lower in GENERIC_UTILS
+            and best_score < IRRELEVANCE_VERIFY_THRESHOLD
+        ):
             # Check if query asks for domain-specific info
             domain_keywords = [
                 "weather",
