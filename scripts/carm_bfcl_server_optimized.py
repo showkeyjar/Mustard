@@ -801,6 +801,11 @@ Query: "{query}"
 
 Note: "temperature" is a weather concept. "Can you tell me" is a polite request, not irrelevance.
 
+Reject if:
+- The function is a generic utility (requests.get, print, etc.) and the user is asking a domain question
+- The user asks "how to" do something manually (not via a function call)
+- The function doesn't directly produce what the user wants
+
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
     try:
@@ -998,11 +1003,61 @@ def detect_parallel(query: str) -> bool:
         if all(any(aw in p for aw in action_words) for p in parts):
             return True
 
-    # Comma/Chinese separators
-    if any(sep in query for sep in ["；", "，", ", "]):
-        parts = re.split(r"[；，,]", query)
+    # Comma/Chinese separators — only for truly independent clauses
+    if any(sep in query for sep in ["；", "，"]):
+        parts = re.split(r"[；，]", query)
         if len(parts) >= 2 and all(len(p.strip()) >= 4 for p in parts):
             return True
+    # English comma separator — require action verbs in each part
+    if ", " in query:
+        parts = re.split(r",\s+", query)
+        if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
+            action_verbs = {
+                "calculate",
+                "find",
+                "compute",
+                "get",
+                "buy",
+                "book",
+                "search",
+                "convert",
+                "check",
+                "create",
+                "turn",
+                "change",
+                "update",
+                "play",
+                "tell",
+                "provide",
+                "fetch",
+                "call",
+                "send",
+                "delete",
+                "add",
+                "show",
+                "list",
+                "generate",
+                "analyze",
+                "extract",
+                "sort",
+                "filter",
+                "start",
+                "stop",
+                "set",
+                "open",
+                "close",
+                "launch",
+                "run",
+                "build",
+                "clone",
+                "commit",
+                "push",
+                "make",
+                "estimate",
+                "predict",
+            }
+            if all(any(av in p.lower() for av in action_verbs) for p in parts):
+                return True
 
     # Chinese "和" / "跟" as parallel separator
     # "广州市和北京市" → parallel
@@ -1096,6 +1151,19 @@ def split_parallel_query(query: str) -> list[str]:
     """
     query_lower = query.lower()
 
+    # Numbered steps: "1. clone the repo\n2. analyse\n3. commit"
+    # Check this FIRST — numbered lists are unambiguous parallel indicators
+    if re.search(r"\n\s*\d+\.\s+", query):
+        parts = re.split(r"\n\s*(?=\d+\.\s)", query)
+        if len(parts) >= 2:
+            cleaned = []
+            for p in parts:
+                p = p.strip().rstrip(".,;!?")
+                if len(p) > 3:
+                    cleaned.append(p)
+            if len(cleaned) >= 2:
+                return cleaned
+
     # Sentence-level transitions: period + transition word
     transition_patterns = [
         r"[.?!]\s*(Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile)\b",
@@ -1116,7 +1184,7 @@ def split_parallel_query(query: str) -> list[str]:
     connector_pats = [
         r"\band\s+also\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
-        r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide)\b",
+        r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict)\b",
         r"\bplus\b",
         r"\bcombined\s+with\b",
         r"\bas well as\b",
@@ -1202,24 +1270,26 @@ def split_parallel_query(query: str) -> list[str]:
         if len(part1) > 8 and len(part2) > 8:
             return [part1, part2]
 
-    # Numbered steps: "1. clone the repo  2. analyse  3. commit"
-    # Split on numbered list items
-    numbered_parts = re.split(r"\n\s*\d+\.\s+", query)
-    if len(numbered_parts) >= 2:
-        # First part is preamble before step 1
-        # Rest are step bodies
-        cleaned = []
-        for i, p in enumerate(numbered_parts):
-            p = p.strip().rstrip(".,;!?")
-            if len(p) > 3:
-                cleaned.append(p)
-        if len(cleaned) >= 2:
-            return cleaned
+    # Numbered steps: "1. clone the repo\n2. analyse\n3. commit"
+    # Split on top-level numbered list items (not sub-steps like 2.1, 2.2)
+    # Use lookahead to split before each numbered item
+    # Match: newline + spaces + digit + "." + space (but NOT digit.digit)
+    if re.search(r"\n\s*\d+\.\s+", query):
+        # Split on top-level numbered steps
+        parts = re.split(r"\n\s*(?=\d+\.\s)", query)
+        if len(parts) >= 2:
+            cleaned = []
+            for p in parts:
+                p = p.strip().rstrip(".,;!?")
+                if len(p) > 3:
+                    cleaned.append(p)
+            if len(cleaned) >= 2:
+                return cleaned
 
     # Multi-line "Steps:" format with sub-steps (2.1, 2.2, etc.)
     if re.search(r"\d+\.\d+\s+", query):
-        # Split on top-level numbered steps (1. 2. 3.) ignoring sub-steps
-        steps = re.split(r"\n\s*(?=\d+\.\s)", query)
+        # Already tried top-level split above; if we get here, try splitting on all numbered items
+        steps = re.split(r"\n\s*(?=\d+\.?\d*\s)", query)
         if len(steps) >= 2:
             cleaned = [s.strip().rstrip(".,;!?") for s in steps if len(s.strip()) > 5]
             if len(cleaned) >= 2:
@@ -1676,9 +1746,8 @@ def carm_route_bfcl(
         if selected_names:
             verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
             # Store the segment→function mapping for later use
-            _seg_func_map = {}
-            for seg, func in seg_func_list:
-                _seg_func_map[seg] = func
+            # Use a list of (segment, function) pairs to handle multiple functions per segment
+            _seg_func_map = seg_func_list  # list of (seg, func) pairs
         else:
             selected = select_function_via_llm(
                 functions, query, ollama_url, ollama_model
@@ -1848,12 +1917,30 @@ def carm_route_bfcl(
             logger.info(f"  {func['name']} params: {params}")
     elif has_parallel_segments and len(segments) > 1 and _seg_func_map:
         # Different functions, one per segment (parallel_multiple/live_parallel_multiple)
-        # Use the LLM-built segment→function mapping
-        for seg, func in _seg_func_map.items():
-            params = extract_params_via_llm_v2(func, seg, ollama_url, ollama_model)
-            params = validate_and_coerce_params(func, params)
-            calls.append((func["name"], params))
-            logger.info(f"  {func['name']} params (from segment): {params}")
+        # _seg_func_map is a list of (segment, function) pairs
+        # Use extract_all_params_via_llm for each segment to handle multi-entity segments
+        # (e.g., "tigers in Bangladesh and India" → 2 param sets for same function)
+        seg_func_pairs = {}  # func_name → (func, list of segments)
+        for seg, func in _seg_func_map:
+            if func["name"] not in seg_func_pairs:
+                seg_func_pairs[func["name"]] = (func, [])
+            seg_func_pairs[func["name"]][1].append(seg)
+
+        for fname, (func, segs) in seg_func_pairs.items():
+            if len(segs) == 1:
+                # Single segment for this function — may still have multiple entities
+                combined_seg = segs[0]
+            else:
+                # Multiple segments map to same function — combine them
+                combined_seg = " ".join(segs)
+
+            param_sets = extract_all_params_via_llm(
+                func, combined_seg, ollama_url, ollama_model
+            )
+            for params in param_sets:
+                params = validate_and_coerce_params(func, params)
+                calls.append((func["name"], params))
+                logger.info(f"  {func['name']} params (from segment): {params}")
     else:
         for func, score in verified:
             param_sets = extract_all_params_via_llm(
