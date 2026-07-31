@@ -2453,6 +2453,64 @@ def carm_route_bfcl(
         # Dedup similar functions
         selected = dedup_similar_functions(selected, query, ollama_url, ollama_model)
 
+        # Guard: filter out generic utility functions for domain-specific queries
+        # even when LLM selected them (LLM sometimes selects requests.get for weather)
+        GENERIC_UTILS_LLM = {
+            "requests.get",
+            "requests.post",
+            "print",
+            "len",
+            "str",
+            "int",
+            "float",
+            "list",
+            "dict",
+            "open",
+        }
+        domain_keywords_llm = [
+            "weather",
+            "temperature",
+            "forecast",
+            "stock",
+            "price",
+            "movie",
+            "game",
+            "address",
+            "coordinate",
+            "latitude",
+            "longitude",
+            "geocod",
+            "ip address",
+            "company data",
+            "holiday",
+            "skiing",
+            "news",
+            "recipe",
+            "restaurant",
+            "flight",
+            "hotel",
+            "ride",
+            "mountain",
+            "burger",
+            "chicken",
+            "food",
+            "order",
+            "snow",
+        ]
+        query_lower_llm = query.lower()
+        if any(kw in query_lower_llm for kw in domain_keywords_llm):
+            filtered_selected = [
+                f for f in selected if f["name"].lower() not in GENERIC_UTILS_LLM
+            ]
+            if len(filtered_selected) < len(selected):
+                logger.info(
+                    f"Filtered {len(selected) - len(filtered_selected)} generic utils from LLM selection"
+                )
+            selected = filtered_selected
+            if not selected:
+                logger.info("All LLM-selected functions were generic utils → []")
+                return "[]"
+
         # Trust LLM selection — it already made a semantic judgment
         # The select_function_via_llm prompt includes instructions to return [] for irrelevant
         # For single-function cases, the LLM can distinguish irrelevance from live_relevance
