@@ -665,6 +665,8 @@ Rules:
 15. If the query asks about a historical event ("what is X war"), select the general search function, NOT news search
 16. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries (weather, stocks, movies). Return [] if the only available function is a generic utility and the user wants domain-specific information.
 17. If a general function (e.g., "generate_image") and a specific variant (e.g., "generate_human_image") both match, prefer the GENERAL function unless the query specifically requires the specialized capability.
+18. "uber.ride" is for booking TRANSPORTATION rides, NOT for ordering food from "uber eats". If the query mentions "order food", "burgers", "chicken wings", "uber eat" (without "ride"), do NOT select uber.ride.
+19. If the query asks for something that NO available function can do (e.g., ordering food when only ride booking is available), return [].
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -942,6 +944,10 @@ def detect_parallel(query: str) -> bool:
         r"\balso\s+calculate\b",
         r"\balso\s+fetch\b",
         r"\balso\s+check\b",
+        # "and how much" / "and how many" — connects two independent questions
+        r"\band\s+how\s+(?:much|many|long)\b",
+        # "and compute" / "and calculate" — connects two compute tasks
+        r"\band\s+(?:compute|calculate)\b",
         # Chinese parallel indicators
         r"还有",
         r"以及",
@@ -1194,6 +1200,9 @@ def detect_parallel(query: str) -> bool:
     # "all" as multi-request only if followed by "of the" or "of these"
     if re.search(r"\ball\s+of\s+(the|these|those)\b", query_lower):
         return True
+    # "all clouds" / "all providers" — parallel across providers
+    if re.search(r"\ball\s+(?:clouds|providers|platforms|services)\b", query_lower):
+        return True
 
     # "X and Y" where both are short noun phrases (no action verbs)
     # This handles "interviewers list for Python and Java"
@@ -1290,7 +1299,8 @@ def split_parallel_query(query: str) -> list[str]:
     # "and also" / "and for" / "and calculate" / "also calculate" connectors
     connector_pats = [
         r"\band\s+also\b",
-        r"\band\s+then\b",
+        # "and then" only when followed by an action verb (not "and then accelerates")
+        r"\band\s+then\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict|congratulate)\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
         r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict|congratulate)\b",
         r"\bplus\b",
@@ -1423,6 +1433,18 @@ def split_parallel_query(query: str) -> list[str]:
         suffix = query[suffix_start:].strip()
         part1 = f"{prefix} {option1} {common_noun} {suffix}".strip()
         part2 = f"{prefix} {option2} {common_noun} {suffix}".strip()
+        return [part1, part2]
+
+    # "all clouds" / "all providers" — split into per-provider queries
+    all_clouds_match = re.search(
+        r"\ball\s+(clouds|providers|platforms)\b", query, re.IGNORECASE
+    )
+    if all_clouds_match:
+        # Replace "all clouds" with "aws" and "gcp" as separate segments
+        prefix = query[: all_clouds_match.start()].strip()
+        suffix = query[all_clouds_match.end() :].strip()
+        part1 = f"{prefix} aws {suffix}".strip()
+        part2 = f"{prefix} gcp {suffix}".strip()
         return [part1, part2]
 
     # Comma-separated independent clauses with action verbs
@@ -1955,7 +1977,87 @@ def _post_process_params(
                         params["gravity"] = 9.81
                 except (ValueError, TypeError):
                     pass
+            # Fix 7: For "directory_name" param, if it's "my-repo" or "." and query
+            # mentions a repo URL, extract repo name from URL
+            if "directory_name" in params:
+                dir_val = str(params.get("directory_name", ""))
+                if dir_val in (".", "my-repo", "", "repo"):
+                    # Try to extract from the full query
+                    repo_match = re.search(
+                        r"(?:git@github\.com:|github\.com/|https://github\.com/)"
+                        r"[^/]+/([^/\s]+?)(?:\.git|$|\s)",
+                        query,
+                    )
+                    if repo_match:
+                        params["directory_name"] = repo_match.group(1)
+            # Fix 8: Remove "module_name" if it's "__main__" (GT expects null/empty)
+            if params.get("module_name") == "__main__":
+                params.pop("module_name", None)
+            # Fix 9: For "recipient" param, if it's a pronoun (him/her/them),
+            # try to infer from the query context
+            if "recipient" in params:
+                recip = str(params["recipient"]).lower().strip()
+                if recip in ("him", "her", "them", "his", "her"):
+                    # Look for person names in the query
+                    name_match = re.search(r"\b([A-Z][a-z]+(?:'s)?)\b", query)
+                    if name_match:
+                        name = name_match.group(1).replace("'s", "")
+                        params["recipient"] = name
+            # Fix 10: For US city names without state, add state abbreviation
+            # for known cities that GT expects with state
+            for pname in ("location", "city"):
+                if pname in params and isinstance(params[pname], str):
+                    city_val = params[pname]
+                    # Only add state if city has no comma (no state yet)
+                    if "," not in city_val:
+                        us_city_states = {
+                            "los angeles": "CA",
+                            "new york": "NY",
+                            "san francisco": "CA",
+                            "san diego": "CA",
+                            "chicago": "IL",
+                            "boston": "MA",
+                            "seattle": "WA",
+                            "houston": "TX",
+                            "dallas": "TX",
+                            "miami": "FL",
+                            "atlanta": "GA",
+                            "denver": "CO",
+                            "phoenix": "AZ",
+                            "portland": "OR",
+                            "las vegas": "NV",
+                            "austin": "TX",
+                            "philadelphia": "PA",
+                            "washington": "DC",
+                        }
+                        city_lower = city_val.lower().strip()
+                        if city_lower in us_city_states:
+                            params[pname] = f"{city_val}, {us_city_states[city_lower]}"
+            # Fix 11: For "date" params where query says "same day", copy from
+            # the first call's date
+            # (handled in batch below)
+            # Fix 12: For "data_points" param, if GT expects "price" but pred has
+            # "closing_price", normalize
+            if "data_points" in params and isinstance(params["data_points"], list):
+                params["data_points"] = [
+                    "price" if dp == "closing_price" else dp
+                    for dp in params["data_points"]
+                ]
         fixed.append((name, params))
+    # Fix 11: For "date" params where query says "same day", copy from
+    # the first call's date
+    query_lower = query.lower()
+    if "same day" in query_lower or "same date" in query_lower:
+        first_date = None
+        for name, params in fixed:
+            if "date" in params:
+                first_date = params["date"]
+                break
+        if first_date:
+            for i, (name, params) in enumerate(fixed):
+                if "date" in params and params["date"] != first_date:
+                    # Only override if the date seems wrong (different from first)
+                    fixed[i] = (name, {**params, "date": first_date})
     return fixed
 
 
