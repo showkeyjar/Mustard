@@ -2126,18 +2126,58 @@ def _post_process_params(
             # Detect quoted variable names in query and use them directly.
             # Pattern: 'variableName' in the query
             quoted_vars = re.findall(r"'([a-zA-Z_][a-zA-Z0-9_]*)'", query)
+            # Also detect bare camelCase variable names that appear after "items" or "list"
+            bare_var_match = re.search(
+                r"\bitems\s+([a-z][a-zA-Z0-9]*)\b", query, re.IGNORECASE
+            )
+            if bare_var_match:
+                bare_var = bare_var_match.group(1)
+                # Only add if it looks like a variable name (camelCase, not a common word)
+                if bare_var[0].islower() and any(c.isupper() for c in bare_var[1:]):
+                    if bare_var not in quoted_vars:
+                        quoted_vars.append(bare_var)
             if quoted_vars:
                 for pname, pval in list(params.items()):
                     if isinstance(pval, dict):
-                        # If a quoted var name matches a key in the dict,
-                        # replace the dict with the variable name string
-                        for qv in quoted_vars:
-                            if qv in pval:
-                                params[pname] = qv
-                                logger.info(
-                                    f"Fix 23: replaced dict param '{pname}' with quoted var '{qv}'"
-                                )
-                                break
+                        # Only replace if ALL values in the dict are strings
+                        # (meaning the dict is just a placeholder, not real data)
+                        # If any value is a number, the dict contains actual data
+                        all_str_values = (
+                            all(isinstance(v, str) for v in pval.values())
+                            if pval
+                            else False
+                        )
+                        if all_str_values:
+                            # If a quoted var name matches a key in the dict,
+                            # replace the dict with the variable name string
+                            for qv in quoted_vars:
+                                if qv in pval:
+                                    params[pname] = qv
+                                    logger.info(
+                                        f"Fix 23: replaced dict param '{pname}' with quoted var '{qv}'"
+                                    )
+                                    break
+                    elif isinstance(pval, list) and len(pval) >= 1:
+                        # If the list is a literal list of objects/dicts that
+                        # the LLM generated, but a bare camelCase variable name
+                        # was detected after "items", use the variable name instead
+                        is_literal_list = (
+                            all(isinstance(v, dict) for v in pval) if pval else False
+                        )
+                        if (
+                            is_literal_list
+                            and bare_var
+                            and bare_var not in ("items", "list")
+                        ):
+                            params[pname] = bare_var
+                            logger.info(
+                                f"Fix 23: replaced list param '{pname}' with bare var '{bare_var}'"
+                            )
+                        if is_literal_list and len(quoted_vars) == 1:
+                            params[pname] = quoted_vars[0]
+                            logger.info(
+                                f"Fix 23: replaced list param '{pname}' with var '{quoted_vars[0]}'"
+                            )
                     elif (
                         isinstance(pval, list)
                         and len(pval) == 1
@@ -2163,6 +2203,19 @@ def _post_process_params(
                         col_corrections.get(c.lower(), c) if isinstance(c, str) else c
                         for c in params["columns"]
                     ]
+            # Fix 25: For ChaDri.change_drink, add temperature from query
+            if name == "ChaDri.change_drink" and "new_preferences" in params:
+                prefs = params["new_preferences"]
+                if isinstance(prefs, dict) and "temperature" not in prefs:
+                    query_lower_cdr = query.lower()
+                    if "hot" in query_lower_cdr:
+                        prefs["temperature"] = "hot"
+                    elif "cold" in query_lower_cdr or "iced" in query_lower_cdr:
+                        prefs["temperature"] = "cold"
+                    params["new_preferences"] = prefs
+            # Fix 26: For performDataFetch, default handleErrors=true when not set
+            if name == "performDataFetch" and "handleErrors" not in params:
+                params["handleErrors"] = True
             # Fix 20: For log_food, set default portion_amount=1 and portion_unit
             # when query says "a X" (singular article implies 1 unit)
             if name == "log_food":
@@ -2274,6 +2327,22 @@ def _post_process_params(
             for v in params.values()
         )
     ]
+
+    # Fix 13c: Remove search/query functions when a domain-specific function is
+    # also selected and the query is clearly about that domain
+    # (e.g., weather query should not also trigger HNA_WQA.search)
+    func_names_set = {name for name, _ in fixed}
+    query_lower_dom = query.lower()
+    weather_keywords = ["weather", "temperature", "forecast", "climate", "humidity"]
+    if any(kw in query_lower_dom for kw in weather_keywords):
+        weather_funcs = {n for n in func_names_set if "weather" in n.lower()}
+        search_funcs = {
+            n for n in func_names_set if "search" in n.lower() or "wqa" in n.lower()
+        }
+        if weather_funcs and search_funcs:
+            # Remove search functions — the weather function handles this
+            fixed = [(n, p) for n, p in fixed if n not in search_funcs]
+            logger.info(f"Removed search functions {search_funcs} for weather query")
 
     # Fix 14: When both a general function and its specialized variant are present,
     # remove the specialized one (e.g., generate_image + generate_human_image → keep only generate_image)
