@@ -1646,7 +1646,8 @@ Return JSON object with param names as keys. Rules:
 21. For location params that are already a full address (e.g., "123 Hanoi Street"), use the address as-is. Do NOT append city/country to a street address.
 22. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name (e.g., "repo-name") as the directory name, not "." or the current directory.
 23. For math "function" params, do NOT add "math." prefix. Use "exp(-x**2)" not "math.exp(-x**2)", "sin(x)" not "math.sin(x)".
-24. When a query asks to compute multiple things about the SAME object (e.g., "final velocity AND distance covered by the object"), use the SAME parameter values (initial_velocity, acceleration, time) for both functions.
+23. When a query asks to compute multiple things about the SAME object (e.g., "final velocity AND distance covered by the object"), use the SAME parameter values (initial_velocity, acceleration, time) for both functions.
+25. For "root_type" params, if the query says "all roots" or "find all", use "all" (not the default "real").
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1885,20 +1886,42 @@ def _post_process_params(
                                 pass
                             break
             # Fix 3: Remove optional "unit" param if query doesn't mention any unit keyword
+            # Only remove for weather/temperature unit params (celsius/fahrenheit etc.)
+            # Don't remove measurement units like inches/meters
             if "unit" in params and "unit" not in required:
-                unit_keywords = [
-                    "celsius",
-                    "fahrenheit",
-                    "kelvin",
-                    "imperial",
-                    "metric",
-                    "seconds",
-                    "milliseconds",
-                    "minutes",
-                    "hours",
-                ]
-                if not any(kw in query_lower for kw in unit_keywords):
-                    params.pop("unit", None)
+                # Check param description to see if it's about temperature/time units
+                unit_pinfo = param_props.get("unit", {})
+                unit_desc = unit_pinfo.get("description", "").lower()
+                is_temp_or_time_unit = any(
+                    kw in unit_desc
+                    for kw in [
+                        "temperature",
+                        "celsius",
+                        "fahrenheit",
+                        "kelvin",
+                        "execution time",
+                        "seconds",
+                        "milliseconds",
+                    ]
+                )
+                if is_temp_or_time_unit:
+                    unit_keywords = [
+                        "celsius",
+                        "fahrenheit",
+                        "kelvin",
+                        "imperial",
+                        "metric",
+                        "seconds",
+                        "milliseconds",
+                        "minutes",
+                        "hours",
+                        "公制",
+                        "英制",
+                        "摄氏",
+                        "华氏",
+                    ]
+                    if not any(kw in query_lower for kw in unit_keywords):
+                        params.pop("unit", None)
         fixed.append((name, params))
     return fixed
 
