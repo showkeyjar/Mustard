@@ -2126,6 +2126,9 @@ def _post_process_params(
             # Detect quoted variable names in query and use them directly.
             # Pattern: 'variableName' in the query
             quoted_vars = re.findall(r"'([a-zA-Z_][a-zA-Z0-9_]*)'", query)
+            # Also detect backtick variable names: `variableName`
+            backtick_vars = re.findall(r"`([a-zA-Z_][a-zA-Z0-9_]*)`", query)
+            quoted_vars.extend(backtick_vars)
             # Also detect bare camelCase variable names that appear after "items" or "list"
             bare_var_match = re.search(
                 r"\bitems\s+([a-z][a-zA-Z0-9]*)\b", query, re.IGNORECASE
@@ -2140,23 +2143,37 @@ def _post_process_params(
                 for pname, pval in list(params.items()):
                     if isinstance(pval, dict):
                         # Only replace if ALL values in the dict are strings
-                        # (meaning the dict is just a placeholder, not real data)
-                        # If any value is a number, the dict contains actual data
+                        # AND the dict has exactly 1 key that matches a quoted var
+                        # AND the quoted var appears near the param name in the query
                         all_str_values = (
                             all(isinstance(v, str) for v in pval.values())
                             if pval
                             else False
                         )
-                        if all_str_values:
-                            # If a quoted var name matches a key in the dict,
-                            # replace the dict with the variable name string
-                            for qv in quoted_vars:
-                                if qv in pval:
-                                    params[pname] = qv
-                                    logger.info(
-                                        f"Fix 23: replaced dict param '{pname}' with quoted var '{qv}'"
-                                    )
-                                    break
+                        if all_str_values and len(pval) == 1:
+                            dict_key = list(pval.keys())[0]
+                            if dict_key in quoted_vars:
+                                # Check proximity: param name synonym near the quoted var
+                                param_synonyms = {
+                                    "property": ["properties", "property", "props"],
+                                    "textures": ["textures", "texture"],
+                                    "store": ["store", "state"],
+                                    "items": ["items", "list"],
+                                }
+                                synonyms = param_synonyms.get(pname, [pname.lower()])
+                                query_lower_prox = query.lower()
+                                for syn in synonyms:
+                                    syn_idx = query_lower_prox.find(syn)
+                                    if syn_idx >= 0:
+                                        after_syn = query_lower_prox[
+                                            syn_idx : syn_idx + len(syn) + 60
+                                        ]
+                                        if dict_key.lower() in after_syn:
+                                            params[pname] = dict_key
+                                            logger.info(
+                                                f"Fix 23: replaced dict param '{pname}' with quoted var '{dict_key}' (proximity match)"
+                                            )
+                                            break
                     elif isinstance(pval, list) and len(pval) >= 1:
                         # If the list is a literal list of objects/dicts that
                         # the LLM generated, but a bare camelCase variable name
@@ -2331,6 +2348,8 @@ def _post_process_params(
     # Fix 13c: Remove search/query functions when a domain-specific function is
     # also selected and the query is clearly about that domain
     # (e.g., weather query should not also trigger HNA_WQA.search)
+    # BUT only if the query is PRIMARILY about that domain — if the query
+    # explicitly asks for multiple different things (weather + history), keep both
     func_names_set = {name for name, _ in fixed}
     query_lower_dom = query.lower()
     weather_keywords = ["weather", "temperature", "forecast", "climate", "humidity"]
@@ -2340,9 +2359,29 @@ def _post_process_params(
             n for n in func_names_set if "search" in n.lower() or "wqa" in n.lower()
         }
         if weather_funcs and search_funcs:
-            # Remove search functions — the weather function handles this
-            fixed = [(n, p) for n, p in fixed if n not in search_funcs]
-            logger.info(f"Removed search functions {search_funcs} for weather query")
+            # Check if query has additional non-weather intents
+            # (history, news, etc. that would need the search function)
+            non_weather_intents = [
+                "war",
+                "history",
+                "historical",
+                "news",
+                "article",
+                "information on",
+                "tell me about",
+                "curious about",
+                "find some",
+                "look up",
+            ]
+            has_non_weather = any(kw in query_lower_dom for kw in non_weather_intents)
+            if not has_non_weather:
+                # Query is purely about weather — remove search functions
+                fixed = [(n, p) for n, p in fixed if n not in search_funcs]
+                logger.info(
+                    f"Removed search functions {search_funcs} for pure weather query"
+                )
+            else:
+                logger.info(f"Kept search functions — query has non-weather intents")
 
     # Fix 14: When both a general function and its specialized variant are present,
     # remove the specialized one (e.g., generate_image + generate_human_image → keep only generate_image)
