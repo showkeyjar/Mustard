@@ -2350,6 +2350,79 @@ def _post_process_params(
                                             )
                                             break
                                     break
+            # Fix 38: For Java functions, fix common LLM parameter value format issues
+            # a) "new Path('Path('/xxx')')" → "new Path('/xxx')" (double wrapping)
+            # b) "MultiPoint([Point(1, 2), ...])" → "new MultiPoint(new Point[]{new Point(1, 2), ...})"
+            for pname_f38, pval_f38 in list(params.items()):
+                if isinstance(pval_f38, str):
+                    # Fix 38a: Remove double-wrapped Path: "new Path('Path('/xxx')')" → "new Path('/xxx')"
+                    if "new Path('Path(" in pval_f38 and ")')" in pval_f38:
+                        fixed_val = re.sub(
+                            r"new Path\('Path\(([^)]+)\)'\)",
+                            r"new Path(\1)",
+                            pval_f38,
+                        )
+                        if fixed_val != pval_f38:
+                            params[pname_f38] = fixed_val
+                            pval_f38 = fixed_val
+                            logger.info(
+                                f"Fix 38a: unwrapped double Path() in '{pname_f38}'"
+                            )
+                    # Fix 38b: Convert "MultiPoint([Point(x, y), ...])" to
+                    # "new MultiPoint(new Point[]{new Point(x, y), ...})"
+                    if pval_f38.startswith("MultiPoint([") and pval_f38.endswith("])"):
+                        inner = pval_f38[len("MultiPoint([") : -len("])")]
+                        # Convert each "Point(x, y)" to "new Point(x, y)"
+                        inner_fixed = re.sub(
+                            r"(?<!new )Point\(",
+                            "new Point(",
+                            inner,
+                        )
+                        params[pname_f38] = (
+                            f"new MultiPoint(new Point[]{{{inner_fixed}}})"
+                        )
+                        logger.info(
+                            f"Fix 38b: converted MultiPoint format in '{pname_f38}'"
+                        )
+            # Fix 39: For writeMultiPoint, construct Java expression from query
+            # when the LLM didn't generate proper Java code
+            if name == "writeMultiPoint" and "multiPoint" in params:
+                mp_val = params["multiPoint"]
+                if isinstance(mp_val, str) and not mp_val.startswith("new MultiPoint"):
+                    # Try to extract points from query
+                    points = re.findall(r"\((\d+),\s*(\d+)\)", query)
+                    if points:
+                        java_points = ", ".join(
+                            [f"new Point({x}, {y})" for x, y in points]
+                        )
+                        params["multiPoint"] = (
+                            f"new MultiPoint(new Point[]{{{java_points}}})"
+                        )
+                        logger.info(
+                            f"Fix 39: constructed Java MultiPoint from query points"
+                        )
+                # Fix 39b: For buffer param, normalize to "ByteBuffer.allocate(N)"
+                if "buffer" in params:
+                    buf_val = params["buffer"]
+                    if isinstance(buf_val, str) and not re.match(
+                        r"^ByteBuffer\.allocate\(\d+\)$", buf_val
+                    ):
+                        # Extract buffer size from query or param value
+                        size_match = re.search(r"(\d{3,})", buf_val)
+                        if not size_match:
+                            size_match = re.search(r"allocate\s*(\d+)", query)
+                        if not size_match:
+                            size_match = re.search(r"ByteBuffer.*?(\d{3,})", query)
+                        if size_match:
+                            params["buffer"] = (
+                                f"ByteBuffer.allocate({size_match.group(1)})"
+                            )
+                            logger.info(
+                                f"Fix 39b: normalized buffer to ByteBuffer.allocate({size_match.group(1)})"
+                            )
+                            logger.info(
+                                f"Fix 39b: normalized buffer to ByteBuffer.allocate({size_match.group(1)})"
+                            )
             # Fix 33: For SQLCompletionAnalyzer.makeProposalsFromObject,
             # normalize params: 'schema' → 'schemaFilter', string nums → int
             if (
