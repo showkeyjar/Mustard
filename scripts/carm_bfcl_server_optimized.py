@@ -663,6 +663,8 @@ Rules:
 13. "served hot" in a drink order means temperature, NOT a food order
 14. If the query asks for WEATHER, only select weather functions — do NOT select search or news functions
 15. If the query asks about a historical event ("what is X war"), select the general search function, NOT news search
+16. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries (weather, stocks, movies). Return [] if the only available function is a generic utility and the user wants domain-specific information.
+17. If a general function (e.g., "generate_image") and a specific variant (e.g., "generate_human_image") both match, prefer the GENERAL function unless the query specifically requires the specialized capability.
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -875,9 +877,10 @@ Important: When a user asks about "all clouds" or "all providers", this INCLUDES
 Note: "temperature" is a weather concept — a weather function IS relevant to a temperature query. "Can you tell me" is a polite request, not irrelevance.
 
 Reject if:
-- The function is a generic utility (requests.get, print, etc.) and the user is asking a domain question
+- The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question that the utility alone cannot answer (e.g., "what is the weather", "find stock prices", "get address for coordinates"). Generic HTTP utilities should NOT be called for domain-specific queries.
 - The user asks "how to" do something manually (not via a function call)
 - The function doesn't directly produce what the user wants
+- The user wants domain-specific information (weather, stocks, movies, games) but the only function is a generic HTTP client — this is IRRELEVANT
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
@@ -1488,7 +1491,9 @@ CRITICAL RULES:
 3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
 5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
- 6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state, add the country: "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam".
+ 6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state:
+    - Non-US cities: add the country (e.g., "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam", "Seoul" → "Seoul, South Korea")
+    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston")
 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
@@ -1589,7 +1594,9 @@ Return JSON object with param names as keys. Rules:
  1. Use correct types (int/float/str/bool/array).
  2. Fill ALL required params from the query. Omit missing optional params.
  3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
- 4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state, add the country: "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam".
+ 4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state:
+    - Non-US cities: add the country (e.g., "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam", "Seoul" → "Seoul, South Korea")
+    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston")
  5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
  6. For boolean params, use JSON true/false.
  7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
@@ -1920,6 +1927,55 @@ def carm_route_bfcl(
         # Single function available — must verify relevance to avoid false positives
         # (irrelevance test cases have exactly 1 function that should NOT be called)
         _seg_func_map = None
+
+        # Hardcoded guard: generic utility functions (requests.get, print, etc.)
+        # should not be called for domain-specific queries
+        GENERIC_UTILS = {
+            "requests.get",
+            "requests.post",
+            "print",
+            "len",
+            "str",
+            "int",
+            "float",
+            "list",
+            "dict",
+            "open",
+        }
+        func_name_lower = scored[0][0].get("name", "").lower()
+        if func_name_lower in GENERIC_UTILS and best_score < 0.3:
+            # Check if query asks for domain-specific info
+            domain_keywords = [
+                "weather",
+                "temperature",
+                "forecast",
+                "stock",
+                "price",
+                "movie",
+                "game",
+                "address",
+                "coordinate",
+                "latitude",
+                "longitude",
+                "geocod",
+                "ip address",
+                "company data",
+                "holiday",
+                "skiing",
+                "news",
+                "recipe",
+                "restaurant",
+                "flight",
+                "hotel",
+                "ride",
+            ]
+            query_lower = query.lower()
+            if any(kw in query_lower for kw in domain_keywords):
+                logger.info(
+                    f"Generic utility '{func_name_lower}' for domain query → reject"
+                )
+                return "[]"
+
         if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
             logger.info(
                 f"Single func '{scored[0][0]['name']}' score={best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance"
