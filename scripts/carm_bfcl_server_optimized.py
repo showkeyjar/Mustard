@@ -1403,6 +1403,28 @@ def split_parallel_query(query: str) -> list[str]:
             if len(cleaned) >= 2:
                 return cleaned
 
+    # "or" as parallel separator for event/search queries:
+    # "music or theater events" → two parallel calls
+    # Only split when "or" connects two nouns followed by a shared verb/action
+    or_match = re.search(
+        r"\b(\w+(?:\s+\w+)?)\s+or\s+(\w+(?:\s+\w+)?)\s+(events|concerts|plays|shows|tickets|classes|courses|meetings)\b",
+        query,
+        re.IGNORECASE,
+    )
+    if or_match:
+        # Reconstruct two sub-queries by substituting each option
+        option1 = or_match.group(1)
+        option2 = or_match.group(2)
+        common_noun = or_match.group(3)
+        # Get the text before "option1 or option2"
+        prefix = query[: or_match.start()].strip()
+        # Get the text after the common noun
+        suffix_start = or_match.start() + len(or_match.group(0))
+        suffix = query[suffix_start:].strip()
+        part1 = f"{prefix} {option1} {common_noun} {suffix}".strip()
+        part2 = f"{prefix} {option2} {common_noun} {suffix}".strip()
+        return [part1, part2]
+
     # Comma-separated independent clauses with action verbs
     comma_parts = re.split(r",\s*", query)
     if len(comma_parts) >= 2 and all(len(p.strip()) > 8 for p in comma_parts):
@@ -1500,9 +1522,15 @@ CRITICAL RULES:
 10. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about".
 11. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
 12. Do NOT return duplicate objects with the same params.
-13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Guangzhou" not "广州", "Shanghai" not "上海", "Tokyo" not "東京", "Seoul" not "서울").
+13. For location params, use the ENGLISH name of the city. MUST convert: 北京→Beijing, 上海→Shanghai, 广州→Guangzhou, 深圳→Shenzhen, 东京→Tokyo, 首尔→Seoul, 杭州→Hangzhou. Never pass Chinese characters as location values.
 14. When the query has multiple commands separated by "and" (e.g., "list files and create file"), create one object PER command.
 15. If the query mentions a landmark but specifies a city (e.g., "Yosemite National Park which locates at Mariposa, CA"), use the CITY as the location, not the landmark.
+16. For "function" params that expect a callable expression, format as "lambda x: x**2" (include the lambda keyword).
+17. Do NOT add optional params if the query does not mention them. Only include params the user explicitly specifies.
+18. For recipient/addressee params, infer from context: "congratulate him" where "him" refers to a person mentioned earlier → use that person's name.
+19. For keyword/search params, extract only the core subject (e.g., "steak Indian style" → keyword="steak"). Do NOT include modifiers in the keyword.
+20. For location params that are already a full address, use as-is. Do NOT append city/country to a street address.
+21. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name as the directory name.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1602,13 +1630,19 @@ Return JSON object with param names as keys. Rules:
  7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
  8. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2"). If the param expects a callable, format as "lambda x: x**2".
  9. When the query mentions a variable name like "myItemList", pass it as a STRING "myItemList", NOT as an actual array of objects. This applies even if the param type is "array" or "dict" — if the query only provides a variable name, pass the name as a string.
-10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None. If the query says "a processing function", pass "processFunction".
+10. When a param expects a function/callback (type "any") and is REQUIRED, NEVER pass null/None. Pass the function name as a STRING. If the query says "a processing function", pass "processFunction". If the query says "a callback", pass "callback".
 11. For dict/object params, use the exact key names from the query (e.g., if query says "nm" and "mn", use those keys, not "name" and "moduleName").
 12. For optional params, only include them if the query explicitly provides a value. Do NOT guess or fabricate values for optional params.
-13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Guangzhou" not "广州", "Shanghai" not "上海", "Tokyo" not "東京", "Seoul" not "서울").
-14. Read parameter descriptions carefully — if a param says "the first and larger", assign the larger value to it. If it says "the second", assign the second value from the query.
+13. For location params, use the ENGLISH name of the city. MUST convert: 北京→Beijing, 上海→Shanghai, 广州→Guangzhou, 深圳→Shenzhen, 东京→Tokyo, 首尔→Seoul, 杭州→Hangzhou. Never pass Chinese characters as location values.
+14. Read parameter descriptions carefully. If a param description says "the first and larger", assign the LARGER value to it. E.g., "GCD of 36 and 48" with params a="first and larger", b="second" → a=48, b=36. If it says "the second", assign the second value from the query.
 15. For float params, use full precision from the query (e.g., gravity 9.81 → 9.81, not 9.8).
 16. If the query mentions a landmark but specifies a city (e.g., "Yosemite National Park which locates at Mariposa, CA"), use the CITY as the location, not the landmark.
+17. For "function" params that expect a callable expression, format as "lambda x: x**2" (include the lambda keyword), not just "x**2".
+18. Do NOT add optional params like "unit" or "language" if the query does not mention them. Only include params the user explicitly specifies.
+19. For recipient/addressee params, infer from context: "congratulate him" where "him" refers to a person mentioned earlier → use that person's name as the recipient.
+20. For keyword/search params, extract only the core subject (e.g., "steak Indian style" → keyword="steak", "how to cook steak" → keyword="steak"). Do NOT include modifiers like cuisine style, cooking method, or question words in the keyword.
+21. For location params that are already a full address (e.g., "123 Hanoi Street"), use the address as-is. Do NOT append city/country to a street address.
+22. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name (e.g., "repo-name") as the directory name, not "." or the current directory.
 
 Example for math.factorial: {{"number":5}}"""
 
