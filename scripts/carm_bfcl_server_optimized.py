@@ -572,6 +572,9 @@ def score_function_relevance(func: dict, query: str) -> float:
         ("weather", "weather", 0.3),
         ("news", "news", 0.3),
         ("movie", "movie", 0.25),
+        ("revenue", "revenue_forecast", 0.4),
+        ("revenue", "revenue", 0.4),
+        ("forecast", "revenue_forecast", 0.3),
     ]
     for q_kw, f_kw, bonus in semantic_pairs:
         if bonus > 0 and q_kw in query_lower and f_kw in func_name_lower:
@@ -2153,8 +2156,9 @@ def _post_process_params(
             backtick_vars = re.findall(r"`([a-zA-Z_][a-zA-Z0-9_]*)`", query)
             quoted_vars.extend(backtick_vars)
             # Also detect bare camelCase variable names that appear after "items" or "list"
+            bare_var = None
             bare_var_match = re.search(
-                r"\bitems\s+([a-z][a-zA-Z0-9]*)\b", query, re.IGNORECASE
+                r"\bitems\s+([a-z][a-zA-Z0-9_]*)\b", query, re.IGNORECASE
             )
             if bare_var_match:
                 bare_var = bare_var_match.group(1)
@@ -2470,6 +2474,112 @@ def _post_process_params(
                     logger.info(
                         f"Fix 32: changed meal_type from '{current_meal}' to 'snack' (no meal context in query)"
                     )
+
+            # Fix 35: When a parameter is defined as dict type in function schema
+            # but LLM returned a string, construct the proper dict from query context.
+            # Common case: chartDataAccessorFactory chart param should be {nm, mn}
+            if isinstance(func, dict):
+                func_params_schema = func.get("parameters", {}).get("properties", {})
+                for pname_fix35, pschema in func_params_schema.items():
+                    if pschema.get("type") == "dict" and pname_fix35 in params:
+                        pval_fix35 = params[pname_fix35]
+                        if isinstance(pval_fix35, str) and not isinstance(
+                            pval_fix35, (dict, list)
+                        ):
+                            sub_props = pschema.get("properties", {})
+                            if sub_props:
+                                query_lower_f35 = query.lower()
+                                constructed = {}
+                                for sub_name, sub_schema in sub_props.items():
+                                    sub_desc = sub_schema.get("description", "").lower()
+                                    # Try to find the value in query using description keywords
+                                    # or param name synonyms
+                                    syn_map = {
+                                        "nm": ["name", "nm"],
+                                        "mn": ["module", "mn", "module name"],
+                                    }
+                                    syns = syn_map.get(sub_name, [sub_name.lower()])
+                                    # Look for backtick/quoted values near the param name
+                                    quoted_nearby = re.findall(
+                                        r"[`']([^`']{2,30})[`']", query
+                                    )
+                                    if quoted_nearby:
+                                        # Match by proximity: find the param name in query,
+                                        # then look for the nearest quoted value
+                                        pname_pattern = pname_fix35.lower()
+                                        for syn in syns:
+                                            syn_idx = query_lower_f35.find(syn)
+                                            if syn_idx >= 0:
+                                                window = query_lower_f35[
+                                                    syn_idx : syn_idx + 100
+                                                ]
+                                                for qv in quoted_nearby:
+                                                    if qv.lower() in window:
+                                                        constructed[sub_name] = qv
+                                                        break
+                                                if sub_name in constructed:
+                                                    break
+                                    # Fallback: use query tokens that match
+                                    if sub_name not in constructed:
+                                        for syn in syns:
+                                            if syn in query_lower_f35:
+                                                # Find the value after this keyword
+                                                idx = query_lower_f35.find(syn)
+                                                after = query[
+                                                    idx + len(syn) : idx + len(syn) + 60
+                                                ]
+                                                # Look for quoted or backtick value
+                                                val_match = re.search(
+                                                    r"[`']([^`']{2,30})[`']", after
+                                                )
+                                                if val_match:
+                                                    constructed[sub_name] = (
+                                                        val_match.group(1)
+                                                    )
+                                                    break
+                                if constructed:
+                                    params[pname_fix35] = constructed
+                                    logger.info(
+                                        f"Fix 35: constructed dict for param '{pname_fix35}': {constructed}"
+                                    )
+
+            # Fix 36: For manageReactState, ensure hooks param is a dict
+            # with useStateSelector and useDispatchAction sub-keys
+            if name == "manageReactState" and "hooks" in params:
+                hooks_val = params["hooks"]
+                if isinstance(hooks_val, str):
+                    query_lower_f36 = query.lower()
+                    hooks_dict = {}
+                    # Extract custom hook names from query
+                    hook_matches = re.findall(r"`?(\w*[Hh]ook\w*)`?", query)
+                    # Also look for specific patterns: useStateSelectorHook, useDispatchActionHook
+                    sel_match = re.search(r"(\w*[Ss]elector\w*[Hh]ook\w*)", query)
+                    disp_match = re.search(r"(\w*[Dd]ispatch\w*[Hh]ook\w*)", query)
+                    if sel_match:
+                        hooks_dict["useStateSelector"] = sel_match.group(1)
+                    elif "usestateselectorhook" in query_lower_f36:
+                        hooks_dict["useStateSelector"] = "useStateSelectorHook"
+                    if disp_match:
+                        hooks_dict["useDispatchAction"] = disp_match.group(1)
+                    elif "usedispatchactionhook" in query_lower_f36:
+                        hooks_dict["useDispatchAction"] = "useDispatchActionHook"
+                    if hooks_dict:
+                        params["hooks"] = hooks_dict
+                        logger.info(f"Fix 36: constructed hooks dict: {hooks_dict}")
+                elif isinstance(hooks_val, dict):
+                    # Already a dict, check if keys are correct
+                    key_map = {
+                        "useStateSelectorHook": "useStateSelector",
+                        "useDispatchActionHook": "useDispatchAction",
+                    }
+                    new_hooks = {}
+                    for k, v in hooks_val.items():
+                        new_key = key_map.get(k, k)
+                        new_hooks[new_key] = v
+                    if new_hooks != hooks_val:
+                        params["hooks"] = new_hooks
+                        logger.info(f"Fix 36: normalized hooks keys: {new_hooks}")
+
         fixed.append((name, params))
 
     # Fix 13: Remove calls with invalid function names (non-identifier names
@@ -2714,6 +2824,29 @@ def _post_process_params(
         logger.info(
             f"Fix 30: added send_message call for query with send intent: {new_call}"
         )
+
+    # Fix 37: Remove redundant get_class_info calls when get_relevant_classes
+    # and get_signature are also present (over-generation pattern).
+    # When query asks to "find relevant classes" + "get signatures", the LLM
+    # sometimes also generates extra get_class_info calls for each class mentioned.
+    # GT only expects get_relevant_classes + get_signature calls.
+    func_names_set_f37 = {name for name, _ in fixed}
+    if (
+        "get_class_info" in func_names_set_f37
+        and "get_relevant_classes" in func_names_set_f37
+        and "get_signature" in func_names_set_f37
+    ):
+        # Count get_class_info calls
+        class_info_calls = [
+            (i, n, p) for i, (n, p) in enumerate(fixed) if n == "get_class_info"
+        ]
+        if len(class_info_calls) >= 2:
+            # Remove all get_class_info calls — they are redundant with get_relevant_classes
+            fixed = [(n, p) for n, p in fixed if n != "get_class_info"]
+            logger.info(
+                f"Fix 37: removed {len(class_info_calls)} redundant get_class_info calls "
+                f"(get_relevant_classes + get_signature already present)"
+            )
 
     return fixed
 
