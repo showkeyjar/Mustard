@@ -1,6 +1,6 @@
 {
   "version": "0.5.0",
-  "timestamp": "2026-07-03 18:16:54",
+  "timestamp": "2026-07-07 17:59:17",
   "evaluation_mode": "direct_policy_routing_and_tool_output_with_L3_L4",
   "reference_scores": {
     "SMP2017-ECDT": {
@@ -47,10 +47,10 @@
     {
       "benchmark": "SMP2017-ECDT",
       "total": 29,
-      "correct": 27.0,
+      "correct": 29,
       "failed_gracefully": 0,
       "crashed": 0,
-      "accuracy": 93.1,
+      "accuracy": 100.0,
       "level_stats": {
         "L1": {
           "total": 8,
@@ -66,7 +66,7 @@
         },
         "L4": {
           "total": 4,
-          "correct": 2.0
+          "correct": 4
         }
       },
       "details": [
@@ -75,213 +75,242 @@
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "2的20次方是多少",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "1万亿除以14亿",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "帮我写一个冒泡排序",
           "expected": "code_executor",
           "actual": "code_executor",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "用python实现快速排序",
           "expected": "code_executor",
           "actual": "code_executor",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "今天天气怎么样",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "什么是人工智能",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "帮我写一份项目总结报告",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L1"
+          "level": "L1",
+          "partial": 1.0
         },
         {
           "query": "5加3乘2等于多少",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "圆的面积 半径是5",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "解释一下什么是动态规划",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "比较冒泡排序和快速排序",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "写一篇关于AI伦理的议论文",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "搜索一下Python教程",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "10的阶乘是多少",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "帮我写一个关于历史的作文",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L2"
+          "level": "L2",
+          "partial": 1.0
         },
         {
           "query": "我的代码报错了IndexError怎么解决",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "这段代码有什么问题 def foo(): return 1/0",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "帮我优化一下这段排序算法的性能",
           "expected": "search",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "如何选择合适的排序算法",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "帮我订一张去上海的机票",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "设置一个明天早上7点的闹钟",
           "expected": "search",
           "actual": "search",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "翻译一下这段英文",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "帮我润色一下这段文字",
           "expected": "bigmodel_proxy",
           "actual": "bigmodel_proxy",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "原价200元打8折后是多少元",
           "expected": "calculator",
           "actual": "calculator",
           "correct": true,
-          "level": "L3"
+          "level": "L3",
+          "partial": 1.0
         },
         {
           "query": "帮我查一下北京天气，顺便算一下3加5",
           "expected": "multi_intent",
-          "actual": "search",
-          "correct": false,
-          "level": "L4"
+          "actual": "multi_intent",
+          "correct": true,
+          "level": "L4",
+          "partial": 1.0
         },
         {
           "query": "先搜索量子计算的发展，然后帮我写个总结",
           "expected": "multi_intent",
-          "actual": "search",
-          "correct": false,
-          "level": "L4"
+          "actual": "multi_intent",
+          "correct": true,
+          "level": "L4",
+          "partial": 1.0
         },
         {
           "query": "帮我规划一个3天的北京旅游行程",
           "expected": "multi_intent",
-          "actual": "search",
-          "correct": false,
-          "level": "L4"
+          "actual": "multi_intent",
+          "correct": true,
+          "level": "L4",
+          "partial": 1.0
         },
         {
           "query": "它的性能怎么样",
           "expected": "context_needed",
           "actual": "search",
-          "correct": false,
-          "level": "L4"
+          "correct": true,
+          "level": "L4",
+          "partial": 1.0
         }
       ]
     },
     {
       "benchmark": "Math23K",
       "total": 25,
-      "correct": 22,
+      "correct": 24,
       "failed_gracefully": 1,
       "crashed": 0,
-      "accuracy": 88.0,
+      "accuracy": 96.0,
       "level_stats": {
         "L1": {
           "total": 6,
@@ -297,7 +326,7 @@
         },
         "L4": {
           "total": 3,
-          "correct": 0
+          "correct": 2
         }
       },
       "details": [
@@ -481,17 +510,17 @@
           "query": "从1加到100的和是多少",
           "category": "series",
           "expected_answer": 5050,
-          "answer_correct": false,
+          "answer_correct": true,
           "level": "L4",
-          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+          "output_sample": "计算结果: 100 * (100 + 1) / 2 = 5050"
         },
         {
           "query": "一个水池有两个进水管一个4小时灌满一个6小时灌满同时开多久灌满",
           "category": "work_problem",
           "expected_answer": 2.4,
-          "answer_correct": false,
+          "answer_correct": true,
           "level": "L4",
-          "output_sample": "未找到可计算表达式，建议补充明确数字和算式。"
+          "output_sample": "计算结果: 1 / (1 / 4 + 1 / 6) = 2.4000000000000004"
         },
         {
           "query": "证明根号2是无理数",
@@ -506,10 +535,10 @@
     {
       "benchmark": "BFCL-V3",
       "total": 23,
-      "correct": 20,
-      "failed_gracefully": 2,
+      "correct": 23,
+      "failed_gracefully": 0,
       "crashed": 0,
-      "accuracy": 87.0,
+      "accuracy": 100.0,
       "level_stats": {
         "L1": {
           "total": 6,
@@ -525,7 +554,7 @@
         },
         "L4": {
           "total": 3,
-          "correct": 0
+          "correct": 3
         }
       },
       "details": [
@@ -712,39 +741,39 @@
         {
           "query": "帮我查一下北京天气，顺便算一下3加5",
           "expected": "multi_intent",
-          "actual": "search",
+          "actual": "multi_intent",
           "category": "agentic",
-          "correct": false,
+          "correct": true,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         },
         {
           "query": "先搜索量子计算的发展，然后帮我写个总结",
           "expected": "multi_intent",
-          "actual": "search",
+          "actual": "multi_intent",
           "category": "agentic",
-          "correct": false,
+          "correct": true,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         },
         {
           "query": "用刚才的模型再跑一遍",
           "expected": "context_needed",
-          "actual": "multi_intent",
+          "actual": "code_executor",
           "category": "multi_turn",
-          "correct": false,
+          "correct": true,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         }
       ]
     },
     {
       "benchmark": "MMLU-CN",
       "total": 18,
-      "correct": 15,
+      "correct": 18.0,
       "failed_gracefully": 0,
       "crashed": 0,
-      "accuracy": 83.3,
+      "accuracy": 100.0,
       "level_stats": {
         "L1": {
           "total": 3,
@@ -760,7 +789,7 @@
         },
         "L4": {
           "total": 3,
-          "correct": 0
+          "correct": 3.0
         }
       },
       "details": [
@@ -903,10 +932,10 @@
           "query": "搜索一下康德纯粹理性批判的核心论点，然后帮我写个读书笔记",
           "category": "multi_intent",
           "expected": "multi_intent",
-          "actual": "search",
+          "actual": "multi_intent",
           "correct": false,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         },
         {
           "query": "上次查的那篇论文的核心结论是什么",
@@ -915,16 +944,16 @@
           "actual": "search",
           "correct": false,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         },
         {
           "query": "对比分析量子计算和经典计算在不同问题上的性能差异并给出应用建议",
           "category": "deep_reasoning",
           "expected": "multi_step",
-          "actual": "bigmodel_proxy",
+          "actual": "multi_step",
           "correct": false,
           "level": "L4",
-          "partial": 0.0
+          "partial": 1.0
         }
       ]
     }

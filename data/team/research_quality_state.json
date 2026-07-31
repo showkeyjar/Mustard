@@ -1,34 +1,36 @@
 {
   "degraded": true,
   "reasons": [
-    "no_new_failure_pattern",
     "exploration_without_discovery",
-    "blind_spot_persistence"
+    "coverage_only_top_gap_repetition"
   ],
   "new_failure_pattern_count": 0,
   "new_failure_pattern_ids": [],
-  "failure_pattern_count": 4,
+  "failure_pattern_count": 6,
   "new_recovery_cluster_count": 0,
   "new_recovery_cluster_ids": [],
-  "coverage_only_gap_streak": 0,
+  "coverage_only_gap_streak": 277,
   "zero_bridge_feedback_streak": 0,
   "zero_frontier_observation_streak": 0,
-  "rounds_without_new_failure_pattern": 164,
-  "exploration_without_discovery_rounds": 164,
-  "blind_spot_persistence_rounds": 164,
-  "top_gap": "unknown",
+  "rounds_without_new_failure_pattern": 1,
+  "exploration_without_discovery_rounds": 1,
+  "blind_spot_persistence_rounds": 1,
+  "top_gap": "eval_coverage_too_low",
   "quality_exploration_active": true,
-  "high_signal_count": 1,
-  "recovery_cluster_count": 2,
-  "updated_at_utc": "2026-07-03T01:45:25.475965+00:00",
+  "high_signal_count": 0,
+  "recovery_cluster_count": 3,
+  "updated_at_utc": "2026-07-31T11:08:31.210598+00:00",
   "last_failure_pattern_ids": [
+    "eval_coverage_too_low",
     "attention_verification_handoff_gap",
     "learning_focus_evidence_tool_routing_gap",
+    "repeated_conflict_detection_gap",
     "comparison_under_conflicting_sources",
-    "repeated_conflict_detection_gap"
+    "tool_boundary_sampling_gap"
   ],
   "last_recovery_cluster_ids": [
+    "repeated_conflict_detection_gap",
     "comparison_under_conflicting_sources",
-    "repeated_conflict_detection_gap"
+    "tool_boundary_sampling_gap"
   ]
 }

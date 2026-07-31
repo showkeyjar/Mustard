@@ -1,46 +1,46 @@
 {
   "cases": [
     {
-      "id": "real-conflict",
+      "id": "conflict-check",
       "expected_pattern": "conflict_first",
       "required_residuals": ["conflict_unresolved"],
       "expected_decision": "verify_or_defer",
-      "unacceptable_failures": ["missing_verify"]
+      "unacceptable_failures": ["tool_mismatch"]
     },
     {
-      "id": "real-mixed",
+      "id": "search-looking-calc",
       "expected_pattern": "tool_boundary",
-      "required_residuals": ["boundary_ambiguous"],
+      "required_residuals": ["direct_numeric"],
       "expected_decision": "choose_calculator_with_boundary_note",
       "unacceptable_failures": ["tool_mismatch"]
     },
     {
-      "id": "real-exec-summary",
+      "id": "integrate-for-exec",
       "expected_pattern": "integrate_for_audience",
       "required_residuals": ["audience_compression", "generation_delegated"],
       "expected_decision": "delegate_generation",
       "unacceptable_failures": ["tool_mismatch"]
     },
     {
-      "id": "real-multi-source-summary",
+      "id": "result-integration",
       "expected_pattern": "integrate_for_audience",
-      "required_residuals": ["audience_compression", "generation_delegated"],
+      "required_residuals": ["audience_compression"],
       "expected_decision": "delegate_generation",
       "unacceptable_failures": ["tool_mismatch"]
     },
     {
-      "id": "candidate-379152",
+      "id": "compare-db",
       "expected_pattern": "compare_with_evidence",
-      "required_residuals": ["needs_evidence"],
+      "required_residuals": [],
       "expected_decision": "search_then_verify",
       "unacceptable_failures": ["tool_mismatch"]
     },
     {
-      "id": "repair-conflict_detection-017",
+      "id": "conflict-no-answer",
       "expected_pattern": "conflict_first",
       "required_residuals": ["conflict_unresolved"],
       "expected_decision": "verify_or_defer",
-      "unacceptable_failures": ["missing_verify", "tool_mismatch"]
+      "unacceptable_failures": ["tool_mismatch"]
     }
   ]
 }

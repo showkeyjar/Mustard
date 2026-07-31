@@ -91,12 +91,10 @@ CALC_TOKENS = (
     "半径",
     "直径",
     # Classic Chinese math puzzle keywords
+    # NOTE: single-char "鸡/兔/头/腿/脚" are too broad — "脚本" contains "脚",
+    # "鸡腿" is food, "头脑" is not math. Use "鸡兔同笼" as the only safe trigger;
+    # individual animal/body parts only count when the puzzle pattern co-occurs.
     "鸡兔同笼",
-    "鸡",
-    "兔",
-    "头",
-    "腿",
-    "脚",
     # Unit conversion keywords
     "公里",
     "千米",
@@ -853,8 +851,28 @@ def has_code_signal(text: str) -> bool:
     # OR if we have a strong English code keyword.
     # BUT: "Python的GIL是什么" — "Python" is a code keyword, but "是什么" is
     # a knowledge/explain signal with no code action. Treat as knowledge, not code.
+    # EXCEPTION: "为什么" + code error context ("报空指针错误") indicates debugging —
+    # the user wants to understand why code fails, not general knowledge.
+    # Note: "是什么" never triggers this exception — "报错是什么意思" is knowledge.
+    _CODE_ERROR_PATTERNS = (
+        "错误",
+        "异常",
+        "崩溃",
+        "null",
+        "pointer",
+        "exception",
+        "traceback",
+        "stack",
+        "segfault",
+        "core dump",
+        "段错误",
+    )
+    has_code_error = any(p in _normalized.lower() for p in _CODE_ERROR_PATTERNS)
     if has_en:
         if "是什么" in text or "为什么" in text:
+            if "为什么" in text and has_code_error and (has_zh or has_en):
+                # "Python脚本为什么会报空指针错误" — code debugging, not knowledge
+                return True
             if not has_action and not has_strong_code_verb:
                 return False
         return True

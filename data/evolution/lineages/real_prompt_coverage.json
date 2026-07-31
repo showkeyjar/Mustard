@@ -1,13 +1,13 @@
 {
   "track": "real_prompt_coverage",
-  "current_candidate_id": "real_prompt_coverage_20260703T014525Z",
-  "parent_candidate_id": "real_prompt_coverage_20260703T011159Z",
-  "top_gap": "learning_focus_evidence_tool_routing_gap",
+  "current_candidate_id": "real_prompt_coverage_20260731T110831Z",
+  "parent_candidate_id": "real_prompt_coverage_20260731T103839Z",
+  "top_gap": "coverage_not_quality",
   "target_prompt_count": 20,
-  "current_prompt_count": 20,
-  "current_match_rate": 0.9,
-  "baseline_match_rate": 0.9,
-  "mismatch_case_count": 2,
+  "current_prompt_count": 4,
+  "current_match_rate": 0.0,
+  "baseline_match_rate": 0.0,
+  "mismatch_case_count": 4,
   "allowed_operators": [
     "expand_eval_set",
     "filter_candidate_pool",
@@ -19,307 +19,197 @@
   ],
   "history": [
     {
-      "candidate_id": "real_prompt_coverage_20260702T024821Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T024821Z"
+      "candidate_id": "real_prompt_coverage_20260731T013846Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T013846Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T030931Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T030931Z"
+      "candidate_id": "real_prompt_coverage_20260731T020830Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T020830Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T034327Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T034327Z"
+      "candidate_id": "real_prompt_coverage_20260731T023840Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T023840Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T041505Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T041505Z"
+      "candidate_id": "real_prompt_coverage_20260731T030832Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T030832Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T044736Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T044736Z"
+      "candidate_id": "real_prompt_coverage_20260731T033845Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T033845Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T050928Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T050928Z"
+      "candidate_id": "real_prompt_coverage_20260731T040847Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T040847Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T063102Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T063102Z"
+      "candidate_id": "real_prompt_coverage_20260731T043844Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T043844Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T064322Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T064322Z"
+      "candidate_id": "real_prompt_coverage_20260731T050849Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T050849Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T072213Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T072213Z"
+      "candidate_id": "real_prompt_coverage_20260731T053846Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T053846Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T074823Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T074823Z"
+      "candidate_id": "real_prompt_coverage_20260731T060831Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T060831Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T081357Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T081357Z"
+      "candidate_id": "real_prompt_coverage_20260731T063845Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T063845Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T084914Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T084914Z"
+      "candidate_id": "real_prompt_coverage_20260731T070846Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T070846Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T091428Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T091428Z"
+      "candidate_id": "real_prompt_coverage_20260731T073845Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T073845Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T094251Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T094251Z"
+      "candidate_id": "real_prompt_coverage_20260731T080847Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T080847Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T101209Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T101209Z"
+      "candidate_id": "real_prompt_coverage_20260731T083847Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T083847Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T104025Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T104025Z"
+      "candidate_id": "real_prompt_coverage_20260731T090846Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T090846Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260702T111547Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260702T111547Z"
+      "candidate_id": "real_prompt_coverage_20260731T093833Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T093833Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260703T004331Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260703T004331Z"
+      "candidate_id": "real_prompt_coverage_20260731T100847Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T100847Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260703T011159Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260703T011159Z"
+      "candidate_id": "real_prompt_coverage_20260731T103839Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T103839Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260703T014525Z",
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "prompt_count": 20,
-      "pretrained_match_rate": 0.9,
-      "created_at_utc": "20260703T014525Z"
+      "candidate_id": "real_prompt_coverage_20260731T110831Z",
+      "status": "proposed",
+      "decision": "advance",
+      "prompt_count": 4,
+      "pretrained_match_rate": 0.0,
+      "created_at_utc": "20260731T110831Z"
     }
   ],
   "last_operator_result": {
-    "executed": true,
-    "reason": "learning_focus_evidence_tool_routing_gap",
-    "generated_count": 4,
-    "stress_eval_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval.json",
-    "stress_result_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval_result.json",
-    "result_path": "D:\\codes\\Mustard\\data\\evolution\\learning_focus_evidence_routing_eval_result.json",
-    "repair_operator": "stress_learning_focus_evidence_routing_gap",
-    "repair_hint": "review evidence_judgment routing rows before merging any new prompt into default eval",
-    "stress_eval": {
-      "summary": {
-        "prompt_count": 4,
-        "baseline_match_rate": 1.0,
-        "pretrained_match_rate": 1.0,
-        "baseline_avg_steps": 5.25,
-        "pretrained_avg_steps": 5.25
-      },
-      "rows": [
-        {
-          "id": "stress-learning-focus-evidence-routing-001",
-          "logic_skill": "evidence_judgment",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "stress-learning-focus-evidence-routing-002",
-          "logic_skill": "evidence_judgment",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "stress-learning-focus-evidence-routing-003",
-          "logic_skill": "evidence_judgment",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "stress-learning-focus-evidence-routing-004",
-          "logic_skill": "evidence_judgment",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        }
-      ]
-    },
+    "executed": false,
+    "reason": "target_already_reached",
+    "added_count": 0,
     "track_state": {
       "track": "real_prompt_coverage",
-      "target_gap": "learning_focus_evidence_tool_routing_gap",
-      "current_prompt_count": 20,
+      "target_gap": "coverage_not_quality",
+      "current_prompt_count": 4,
       "target_prompt_count": 20,
-      "current_match_rate": 0.9,
-      "baseline_match_rate": 0.9,
-      "mismatch_case_count": 2,
-      "high_signal_count": 1,
-      "bigmodel_proxy_mismatch_count": 1,
-      "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap",
-      "operator": "stress_learning_focus_evidence_routing_gap",
+      "current_match_rate": 0.0,
+      "baseline_match_rate": 0.0,
+      "mismatch_case_count": 4,
+      "high_signal_count": 0,
+      "bigmodel_proxy_mismatch_count": 0,
+      "primary_failure_pattern": "",
+      "operator": "expand_eval_set",
       "operator_args": {
         "target_prompt_count": 20,
-        "current_prompt_count": 20,
-        "primary_failure_pattern": "learning_focus_evidence_tool_routing_gap"
+        "current_prompt_count": 4,
+        "primary_failure_pattern": ""
       },
-      "hypothesis": "Convert evidence_judgment mismatches into search-first stress prompts until public-idea and attention-derived learning tasks stop misrouting to calculator.",
+      "hypothesis": "Increase real prompt coverage without reducing current match rate.",
       "expected_metric_delta": {
-        "specialized_evidence_routing_prompts": 4,
-        "learning_focus_pretrained_match_rate": 0.17859999999999998
+        "prompt_count": 16,
+        "pretrained_match_rate": 0.0
       },
-      "status": "in_progress",
-      "decision": "stress_learning_focus_evidence_routing_gap",
-      "failure_reason": "learning_focus_evidence_tool_routing_gap_active",
-      "repair_hint": "inject_evidence_judgment_search_first_variants"
+      "status": "proposed",
+      "decision": "advance",
+      "failure_reason": "real_prompt_count_below_target",
+      "repair_hint": "curate_additional_real_prompts_by_logic_skill"
     }
   },
-  "updated_at_utc": "20260703T014525Z"
+  "updated_at_utc": "20260731T110831Z"
 }

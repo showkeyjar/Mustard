@@ -2,7 +2,7 @@
 
 - problem: learning intake 转成的焦点评测已经暴露出 evidence_judgment 误路由，这说明模型还没有把新增公开思想和研究任务稳定映射到 search-first 求证流程。
 - from_failure_pattern: learning_focus_evidence_tool_routing_gap
-- from_top_gap: new_failure_pattern_stalled
+- from_top_gap: eval_coverage_too_low
 - change_type: evaluation_or_dataset
 - proposed_change: 围绕 learning_focus_eval 中 evidence_judgment 失败样本扩展 search-first 专项监督和评测任务，专门压测 search vs calculator 的误路由边界。
 - expected_metric_delta: learning_focus_pretrained_match_rate 提升到 >=0.75，且 evidence_judgment 不再出现 search->calculator 误路由

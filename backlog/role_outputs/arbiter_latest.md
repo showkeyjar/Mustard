@@ -1,8 +1,8 @@
 # Arbiter Output
 
-- verdict: direction_adjust
-- reasons: stagnation_without_new_failure_pattern:55,research_quality_degraded:no_new_failure_pattern,research_quality_degraded:exploration_without_discovery,research_quality_degraded:blind_spot_persistence
+- verdict: uncertain_needs_human
+- reasons: real_prompt_match_below_threshold:0.0000<0.90,stagnation_without_new_failure_pattern:65,research_quality_degraded:exploration_without_discovery,research_quality_degraded:coverage_only_top_gap_repetition,deep_cycle_gate_failed:real_prompt_count_too_low:4<20,deep_cycle_gate_failed:real_prompt_delta_not_positive:0.0000
 - recursive_mode: max_landing
-- stagnation_rounds: 55
-- delta_focus_this_round: close_feedback_loop
-- new_action: close_feedback_loop -> owner=arbiter, deadline=next_cycle
+- stagnation_rounds: 65
+- delta_focus_this_round: frontier_benchmarking
+- new_action: frontier_benchmarking -> owner=arbiter, deadline=next_cycle

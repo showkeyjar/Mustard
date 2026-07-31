@@ -1,10 +1,10 @@
 # Research Artifact (Actionable)
 
 ## 1) Meta
-- round_id: auto-20260703T014059Z
-- date: 2026-07-03
+- round_id: auto-20260731T110804Z
+- date: 2026-07-31
 - owner: researcher
-- from_top_gap: new_failure_pattern_stalled
+- from_top_gap: eval_coverage_too_low
 - from_failure_pattern: sampling_blind_spot
 - relative_to_last_round: upgraded from generic coverage template to current top-gap / failure-pattern aligned research input
 - scenario_fit: 真实复杂任务里隐藏弱点未被触发的场景。
@@ -22,9 +22,9 @@
 - risk: low-information candidates may still crowd out the prompts most likely to reveal hidden weaknesses
 
 ## 4) Evidence chain
-- representative_case_1: pretrained_match_rate=0.9000, baseline_match_rate=0.9000, delta=+0.0000
-- representative_case_2: mismatch_case_count=2
-- representative_case_3: stagnation_rounds=55; frontier_observation_count=3
+- representative_case_1: pretrained_match_rate=0.0000, baseline_match_rate=0.0000, delta=+0.0000
+- representative_case_2: mismatch_case_count=4
+- representative_case_3: stagnation_rounds=65; frontier_observation_count=3
 - evidence_quality_note: 当前已有 mismatch，但还需要更多同类专项样本验证 sampling_blind_spot 是否是稳定簇。
 - blind_spot_if_no_failure_case: none
 - candidate_pipeline_snapshot:
@@ -33,8 +33,10 @@
   - dropped_candidates: 7
 
 ## Concrete mismatch cases
-- real-mixed: expected=calculator actual=code_executor logic_skill=tool_selection
-- repair-comparison-005: expected=search actual=bigmodel_proxy logic_skill=comparison
+- recovery-variant-01: expected=search actual= logic_skill=conflict_detection
+- recovery-variant-02: expected=search actual= logic_skill=conflict_detection
+- recovery-variant-03: expected=search actual= logic_skill=comparison
+- recovery-variant-04: expected=code_executor actual=search logic_skill=tool_selection
 
 ## 5) Minimal next experiment（可执行）
 - command_1: python -m scripts.evaluate_real_prompts

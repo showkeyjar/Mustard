@@ -4,7 +4,7 @@
     "baseline_match_rate": 1.0,
     "pretrained_match_rate": 1.0,
     "baseline_avg_steps": 5.25,
-    "pretrained_avg_steps": 5.25
+    "pretrained_avg_steps": 3.0
   },
   "rows": [
     {
@@ -21,10 +21,8 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -44,10 +42,8 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -68,11 +64,8 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "baseline_match": true,
@@ -92,9 +85,7 @@
         "ANSWER"
       ],
       "pretrained_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],

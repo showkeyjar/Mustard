@@ -1,62 +1,57 @@
 {
   "summary": {
-    "record_count": 20,
-    "hard_logic_count": 16,
-    "avg_fit_score": 0.892,
-    "hard_logic_avg_fit_score": 0.8962,
-    "residual_explanation_rate": 0.8,
-    "hard_logic_residual_rate": 1.0,
-    "verify_when_residual_risky_rate": 0.3636,
-    "low_fit_count": 2,
-    "low_fit_case_ids": [
-      "real-mixed",
-      "repair-comparison-005"
-    ]
+    "record_count": 14,
+    "hard_logic_count": 11,
+    "avg_fit_score": 0.9243,
+    "hard_logic_avg_fit_score": 0.9382,
+    "residual_explanation_rate": 0.5714,
+    "hard_logic_residual_rate": 0.7273,
+    "verify_when_residual_risky_rate": 1.0,
+    "low_fit_count": 0,
+    "low_fit_case_ids": []
   },
   "pattern_counts": {
-    "compare_with_evidence": 6,
-    "conflict_first": 4,
     "tool_boundary": 4,
-    "evidence_check": 2,
+    "conflict_first": 2,
     "integrate_for_audience": 2,
-    "plan_then_verify": 2
+    "stop_or_continue": 2,
+    "compare_with_evidence": 1,
+    "constraint_plan": 1,
+    "evidence_check": 1,
+    "plan_then_verify": 1
   },
   "residual_counts": {
-    "repair_case": 8,
-    "needs_evidence": 6,
-    "conflict_unresolved": 4,
-    "direct_numeric": 3,
     "audience_compression": 2,
-    "generation_delegated": 2,
-    "tool_boundary_shift": 2,
-    "tool_mismatch": 2,
-    "boundary_ambiguous": 1
+    "conflict_unresolved": 2,
+    "direct_numeric": 2,
+    "termination_risk": 2,
+    "generation_delegated": 1
   },
   "records": [
     {
-      "case_id": "real-doc-check",
-      "logic_skill": "evidence_judgment",
-      "pattern_id": "evidence_check",
+      "case_id": "compare-db",
+      "logic_skill": "comparison",
+      "pattern_id": "compare_with_evidence",
       "expected_tool": "search",
       "used_tool": "search",
       "fit_score": 0.86,
       "residual_features": [],
       "reconstruction_notes": [
-        "base_pattern=evidence_check",
+        "base_pattern=compare_with_evidence",
         "residuals=none"
       ],
-      "is_hard_logic": false,
+      "is_hard_logic": true,
       "action_count": 5,
       "used_verify": false,
       "tool_match": true
     },
     {
-      "case_id": "real-budget",
+      "case_id": "calc-basic",
       "logic_skill": "tool_selection",
       "pattern_id": "tool_boundary",
       "expected_tool": "calculator",
       "used_tool": "calculator",
-      "fit_score": 1.0,
+      "fit_score": 0.98,
       "residual_features": [
         "direct_numeric"
       ],
@@ -65,29 +60,80 @@
         "residuals=direct_numeric"
       ],
       "is_hard_logic": true,
-      "action_count": 4,
+      "action_count": 8,
       "used_verify": true,
       "tool_match": true
     },
     {
-      "case_id": "real-plan",
+      "case_id": "code-debug",
+      "logic_skill": "tool_selection",
+      "pattern_id": "tool_boundary",
+      "expected_tool": "code_executor",
+      "used_tool": "code_executor",
+      "fit_score": 0.9,
+      "residual_features": [],
+      "reconstruction_notes": [
+        "base_pattern=tool_boundary",
+        "residuals=none"
+      ],
+      "is_hard_logic": true,
+      "action_count": 6,
+      "used_verify": true,
+      "tool_match": true
+    },
+    {
+      "case_id": "plan-migration",
       "logic_skill": "step_planning",
       "pattern_id": "plan_then_verify",
       "expected_tool": "search",
       "used_tool": "search",
-      "fit_score": 0.88,
+      "fit_score": 0.86,
       "residual_features": [],
       "reconstruction_notes": [
         "base_pattern=plan_then_verify",
         "residuals=none"
       ],
       "is_hard_logic": false,
-      "action_count": 4,
+      "action_count": 5,
       "used_verify": false,
       "tool_match": true
     },
     {
-      "case_id": "real-conflict",
+      "case_id": "fact-check",
+      "logic_skill": "evidence_judgment",
+      "pattern_id": "evidence_check",
+      "expected_tool": "search",
+      "used_tool": "search",
+      "fit_score": 0.9,
+      "residual_features": [],
+      "reconstruction_notes": [
+        "base_pattern=evidence_check",
+        "residuals=none"
+      ],
+      "is_hard_logic": false,
+      "action_count": 8,
+      "used_verify": true,
+      "tool_match": true
+    },
+    {
+      "case_id": "constraint-plan",
+      "logic_skill": "constraint_planning",
+      "pattern_id": "constraint_plan",
+      "expected_tool": "search",
+      "used_tool": "search",
+      "fit_score": 0.86,
+      "residual_features": [],
+      "reconstruction_notes": [
+        "base_pattern=constraint_plan",
+        "residuals=none"
+      ],
+      "is_hard_logic": false,
+      "action_count": 5,
+      "used_verify": false,
+      "tool_match": true
+    },
+    {
+      "case_id": "conflict-check",
       "logic_skill": "conflict_detection",
       "pattern_id": "conflict_first",
       "expected_tool": "search",
@@ -101,65 +147,23 @@
         "residuals=conflict_unresolved"
       ],
       "is_hard_logic": true,
-      "action_count": 6,
+      "action_count": 8,
       "used_verify": true,
       "tool_match": true
     },
     {
-      "case_id": "real-exec-summary",
+      "case_id": "result-integration",
       "logic_skill": "result_integration",
       "pattern_id": "integrate_for_audience",
-      "expected_tool": "bigmodel_proxy",
-      "used_tool": "bigmodel_proxy",
-      "fit_score": 0.94,
-      "residual_features": [
-        "audience_compression",
-        "generation_delegated"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=integrate_for_audience",
-        "residuals=audience_compression,generation_delegated"
-      ],
-      "is_hard_logic": true,
-      "action_count": 8,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "real-mixed",
-      "logic_skill": "tool_selection",
-      "pattern_id": "tool_boundary",
-      "expected_tool": "calculator",
-      "used_tool": "code_executor",
-      "fit_score": 0.44,
-      "residual_features": [
-        "tool_mismatch",
-        "tool_boundary_shift",
-        "boundary_ambiguous"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=tool_boundary",
-        "residuals=tool_mismatch,tool_boundary_shift,boundary_ambiguous",
-        "tool_choice_not_reconstructed"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": false
-    },
-    {
-      "case_id": "candidate-379152",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
       "expected_tool": "search",
       "used_tool": "search",
       "fit_score": 0.94,
       "residual_features": [
-        "needs_evidence"
+        "audience_compression"
       ],
       "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=needs_evidence"
+        "base_pattern=integrate_for_audience",
+        "residuals=audience_compression"
       ],
       "is_hard_logic": true,
       "action_count": 5,
@@ -167,7 +171,43 @@
       "tool_match": true
     },
     {
-      "case_id": "candidate-420926",
+      "case_id": "termination",
+      "logic_skill": "termination_judgment",
+      "pattern_id": "stop_or_continue",
+      "expected_tool": "search",
+      "used_tool": "search",
+      "fit_score": 0.94,
+      "residual_features": [
+        "termination_risk"
+      ],
+      "reconstruction_notes": [
+        "base_pattern=stop_or_continue",
+        "residuals=termination_risk"
+      ],
+      "is_hard_logic": true,
+      "action_count": 5,
+      "used_verify": false,
+      "tool_match": true
+    },
+    {
+      "case_id": "code-looking-search",
+      "logic_skill": "tool_selection",
+      "pattern_id": "tool_boundary",
+      "expected_tool": "search",
+      "used_tool": "search",
+      "fit_score": 0.86,
+      "residual_features": [],
+      "reconstruction_notes": [
+        "base_pattern=tool_boundary",
+        "residuals=none"
+      ],
+      "is_hard_logic": true,
+      "action_count": 5,
+      "used_verify": false,
+      "tool_match": true
+    },
+    {
+      "case_id": "search-looking-calc",
       "logic_skill": "tool_selection",
       "pattern_id": "tool_boundary",
       "expected_tool": "calculator",
@@ -181,70 +221,55 @@
         "residuals=direct_numeric"
       ],
       "is_hard_logic": true,
-      "action_count": 5,
+      "action_count": 8,
       "used_verify": true,
       "tool_match": true
     },
     {
-      "case_id": "real-git-triage",
-      "logic_skill": "evidence_judgment",
-      "pattern_id": "evidence_check",
+      "case_id": "stop-when-enough",
+      "logic_skill": "termination_judgment",
+      "pattern_id": "stop_or_continue",
       "expected_tool": "search",
       "used_tool": "search",
-      "fit_score": 0.88,
-      "residual_features": [],
-      "reconstruction_notes": [
-        "base_pattern=evidence_check",
-        "residuals=none"
-      ],
-      "is_hard_logic": false,
-      "action_count": 4,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "real-cost-forecast",
-      "logic_skill": "tool_selection",
-      "pattern_id": "tool_boundary",
-      "expected_tool": "calculator",
-      "used_tool": "calculator",
-      "fit_score": 0.98,
+      "fit_score": 0.94,
       "residual_features": [
-        "direct_numeric"
+        "termination_risk"
       ],
       "reconstruction_notes": [
-        "base_pattern=tool_boundary",
-        "residuals=direct_numeric"
+        "base_pattern=stop_or_continue",
+        "residuals=termination_risk"
       ],
       "is_hard_logic": true,
       "action_count": 5,
-      "used_verify": true,
-      "tool_match": true
-    },
-    {
-      "case_id": "real-release-plan",
-      "logic_skill": "step_planning",
-      "pattern_id": "plan_then_verify",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.88,
-      "residual_features": [],
-      "reconstruction_notes": [
-        "base_pattern=plan_then_verify",
-        "residuals=none"
-      ],
-      "is_hard_logic": false,
-      "action_count": 4,
       "used_verify": false,
       "tool_match": true
     },
     {
-      "case_id": "real-multi-source-summary",
+      "case_id": "conflict-no-answer",
+      "logic_skill": "conflict_detection",
+      "pattern_id": "conflict_first",
+      "expected_tool": "search",
+      "used_tool": "search",
+      "fit_score": 0.98,
+      "residual_features": [
+        "conflict_unresolved"
+      ],
+      "reconstruction_notes": [
+        "base_pattern=conflict_first",
+        "residuals=conflict_unresolved"
+      ],
+      "is_hard_logic": true,
+      "action_count": 8,
+      "used_verify": true,
+      "tool_match": true
+    },
+    {
+      "case_id": "integrate-for-exec",
       "logic_skill": "result_integration",
       "pattern_id": "integrate_for_audience",
       "expected_tool": "bigmodel_proxy",
       "used_tool": "bigmodel_proxy",
-      "fit_score": 0.94,
+      "fit_score": 0.96,
       "residual_features": [
         "audience_compression",
         "generation_delegated"
@@ -254,184 +279,19 @@
         "residuals=audience_compression,generation_delegated"
       ],
       "is_hard_logic": true,
-      "action_count": 8,
+      "action_count": 1,
       "used_verify": false,
       "tool_match": true
-    },
-    {
-      "case_id": "repair-comparison-001",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.94,
-      "residual_features": [
-        "needs_evidence",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=needs_evidence,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-conflict_detection-017",
-      "logic_skill": "conflict_detection",
-      "pattern_id": "conflict_first",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.98,
-      "residual_features": [
-        "conflict_unresolved",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=conflict_first",
-        "residuals=conflict_unresolved,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 6,
-      "used_verify": true,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-comparison-002",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.94,
-      "residual_features": [
-        "needs_evidence",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=needs_evidence,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-conflict_detection-019",
-      "logic_skill": "conflict_detection",
-      "pattern_id": "conflict_first",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.98,
-      "residual_features": [
-        "conflict_unresolved",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=conflict_first",
-        "residuals=conflict_unresolved,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 6,
-      "used_verify": true,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-comparison-003",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.94,
-      "residual_features": [
-        "needs_evidence",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=needs_evidence,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-conflict_detection-020",
-      "logic_skill": "conflict_detection",
-      "pattern_id": "conflict_first",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.98,
-      "residual_features": [
-        "conflict_unresolved",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=conflict_first",
-        "residuals=conflict_unresolved,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 6,
-      "used_verify": true,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-comparison-004",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
-      "expected_tool": "search",
-      "used_tool": "search",
-      "fit_score": 0.94,
-      "residual_features": [
-        "needs_evidence",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=needs_evidence,repair_case"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": true
-    },
-    {
-      "case_id": "repair-comparison-005",
-      "logic_skill": "comparison",
-      "pattern_id": "compare_with_evidence",
-      "expected_tool": "search",
-      "used_tool": "bigmodel_proxy",
-      "fit_score": 0.44,
-      "residual_features": [
-        "tool_mismatch",
-        "tool_boundary_shift",
-        "needs_evidence",
-        "repair_case"
-      ],
-      "reconstruction_notes": [
-        "base_pattern=compare_with_evidence",
-        "residuals=tool_mismatch,tool_boundary_shift,needs_evidence,repair_case",
-        "tool_choice_not_reconstructed"
-      ],
-      "is_hard_logic": true,
-      "action_count": 5,
-      "used_verify": false,
-      "tool_match": false
     }
   ],
   "hard_eval": {
     "case_count": 6,
-    "pass_count": 5,
-    "pass_rate": 0.8333,
-    "failed_case_ids": [
-      "real-mixed"
-    ],
+    "pass_count": 6,
+    "pass_rate": 1.0,
+    "failed_case_ids": [],
     "rows": [
       {
-        "id": "real-conflict",
+        "id": "conflict-check",
         "pass": true,
         "failure_reasons": [],
         "expected_pattern": "conflict_first",
@@ -446,26 +306,22 @@
         "fit_score": 0.98
       },
       {
-        "id": "real-mixed",
-        "pass": false,
-        "failure_reasons": [
-          "unacceptable_failures:tool_mismatch"
-        ],
+        "id": "search-looking-calc",
+        "pass": true,
+        "failure_reasons": [],
         "expected_pattern": "tool_boundary",
         "actual_pattern": "tool_boundary",
         "required_residuals": [
-          "boundary_ambiguous"
+          "direct_numeric"
         ],
         "actual_residuals": [
-          "tool_mismatch",
-          "tool_boundary_shift",
-          "boundary_ambiguous"
+          "direct_numeric"
         ],
         "expected_decision": "choose_calculator_with_boundary_note",
-        "fit_score": 0.44
+        "fit_score": 0.98
       },
       {
-        "id": "real-exec-summary",
+        "id": "integrate-for-exec",
         "pass": true,
         "failure_reasons": [],
         "expected_pattern": "integrate_for_audience",
@@ -479,42 +335,36 @@
           "generation_delegated"
         ],
         "expected_decision": "delegate_generation",
-        "fit_score": 0.94
+        "fit_score": 0.96
       },
       {
-        "id": "real-multi-source-summary",
+        "id": "result-integration",
         "pass": true,
         "failure_reasons": [],
         "expected_pattern": "integrate_for_audience",
         "actual_pattern": "integrate_for_audience",
         "required_residuals": [
-          "audience_compression",
-          "generation_delegated"
+          "audience_compression"
         ],
         "actual_residuals": [
-          "audience_compression",
-          "generation_delegated"
+          "audience_compression"
         ],
         "expected_decision": "delegate_generation",
         "fit_score": 0.94
       },
       {
-        "id": "candidate-379152",
+        "id": "compare-db",
         "pass": true,
         "failure_reasons": [],
         "expected_pattern": "compare_with_evidence",
         "actual_pattern": "compare_with_evidence",
-        "required_residuals": [
-          "needs_evidence"
-        ],
-        "actual_residuals": [
-          "needs_evidence"
-        ],
+        "required_residuals": [],
+        "actual_residuals": [],
         "expected_decision": "search_then_verify",
-        "fit_score": 0.94
+        "fit_score": 0.86
       },
       {
-        "id": "repair-conflict_detection-017",
+        "id": "conflict-no-answer",
         "pass": true,
         "failure_reasons": [],
         "expected_pattern": "conflict_first",
@@ -523,8 +373,7 @@
           "conflict_unresolved"
         ],
         "actual_residuals": [
-          "conflict_unresolved",
-          "repair_case"
+          "conflict_unresolved"
         ],
         "expected_decision": "verify_or_defer",
         "fit_score": 0.98

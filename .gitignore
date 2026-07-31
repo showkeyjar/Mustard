@@ -8,3 +8,49 @@ __pycache__/
 .dumate/
 
 logs/
+
+# Temporary analysis scripts
+analyze_*.py
+check_*.py
+check_*.ps1
+count_*.ps1
+
+# Server logs
+bfcl_server_*.log
+carm_bfcl_server.log
+carm_server_*.log
+carm_server_*.txt
+data/carm_server*.log
+
+# BFCL evaluation intermediate results
+data/eval/bfcl_v4_fast_results.json
+
+# Evolution intermediate candidates and runs
+data/evolution/candidates/
+data/evolution/runs/
+
+# Benchmark report versions
+data/eval/benchmark_report_v*.json
+
+# Framework comparison results
+data/eval/framework_results/
+data/eval/bfcl_v3_framework*.json
+
+# Control intermediate data
+data/control/
+
+# Concept state snapshots
+concept_state.json
+core_state.json
+data/concept_state.json
+data/carm/concept_state.json
+
+# Backup files
+.env.bfcl.backup
+
+# BFCL dataset cache
+data/bfcl_v3/datasets/
+
+# Stray log files
+"D\357\200\272codesMustarddatacarm_server.log"
+"D\357\200\272codesMustarddatacarm_server_err.log"

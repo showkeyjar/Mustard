@@ -1,8 +1,8 @@
 {
   "prompts": [
     {
-      "id": "candidate-379152",
-      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "id": "repair-comparison-005",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "search",

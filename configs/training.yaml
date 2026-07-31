@@ -3,7 +3,7 @@
     "mode": "two_stage",
     "pretraining": {
       "enabled": true,
-      "artifact_dir": "data/pretrain",
+      "artifact_dir": "data/experience",
       "replay_success_only": true,
       "max_episodes": 500,
       "dataset_path": "data/pretrain/pretrain_corpus.jsonl",

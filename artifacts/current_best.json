@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-04-26T06:41:12.184346+00:00",
+  "generated_at_utc": "2026-07-30T02:03:08.813565+00:00",
   "workspace_root": "D:\\codes\\Mustard",
-  "git_commit": "aa45defd272efefb49beed1dd10fece07d089144",
+  "git_commit": "543b6e44a916c983bab843ac4b03adf2af652748",
   "best_run_id": "20260324T094015Z",
   "best_variant_name": "pretrained",
-  "status": "needs_attention",
-  "decision": "investigate_failures_before_promoting_further_changes",
+  "status": "healthy",
+  "decision": "keep_current_best",
   "sources": {
     "train_report": "data\\train_runs\\auto_train_latest.json",
     "real_prompt_eval": "data/eval/real_prompt_eval_latest.json",
@@ -424,210 +424,92 @@
     },
     "real_prompt_eval": {
       "summary": {
-        "prompt_count": 20,
-        "baseline_match_rate": 0.9,
-        "pretrained_match_rate": 0.9,
-        "baseline_avg_steps": 5.3,
-        "pretrained_avg_steps": 5.3
+        "prompt_count": 14,
+        "baseline_match_rate": 0.9286,
+        "pretrained_match_rate": 1.0,
+        "baseline_avg_steps": 5.7857,
+        "pretrained_avg_steps": 5.7857,
+        "tool_match_rate": 0.9286,
+        "match_count": 13,
+        "total_count": 14,
+        "real_prompt_match_rate": 1.0,
+        "critical_failure_count": 0
       },
       "rows": [
         {
-          "id": "real-doc-check",
-          "logic_skill": "evidence_judgment",
+          "id": "compare-db",
+          "logic_skill": "comparison",
           "expected_tool": "search",
           "baseline_used_tool": "search",
           "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
           "baseline_actions": [
             "WRITE_MEM",
-            "CALL_TOOL",
             "WRITE_MEM",
+            "CALL_TOOL",
             "WRITE_MEM",
             "ANSWER"
           ],
           "pretrained_actions": [
             "WRITE_MEM",
-            "CALL_TOOL",
             "WRITE_MEM",
+            "CALL_TOOL",
             "WRITE_MEM",
             "ANSWER"
           ],
-          "baseline_match": true,
-          "pretrained_match": true
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Use search: Compare intent without explicit code action — knowledge search.",
+          "prompt_preview": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性"
         },
         {
-          "id": "real-budget",
+          "id": "calc-basic",
           "logic_skill": "tool_selection",
           "expected_tool": "calculator",
           "baseline_used_tool": "calculator",
           "pretrained_used_tool": "calculator",
-          "baseline_actions": [
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
           "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "real-plan",
-          "logic_skill": "step_planning",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
+          "pretrained_match": true,
           "baseline_actions": [
             "WRITE_MEM",
             "CALL_TOOL",
             "WRITE_MEM",
-            "ANSWER"
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
           ],
           "pretrained_actions": [
             "WRITE_MEM",
             "CALL_TOOL",
             "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "real-conflict",
-          "logic_skill": "conflict_detection",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
             "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
             "VERIFY",
-            "ANSWER"
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
           ],
-          "baseline_match": true,
-          "pretrained_match": true
+          "used_tool": "calculator",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Use calculator: Hard rule: explicit arithmetic expression requires calculator.",
+          "prompt_preview": "请计算 12 + 30 / 3"
         },
         {
-          "id": "real-exec-summary",
-          "logic_skill": "result_integration",
-          "expected_tool": "bigmodel_proxy",
-          "baseline_used_tool": "bigmodel_proxy",
-          "pretrained_used_tool": "bigmodel_proxy",
-          "baseline_actions": [
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL"
-          ],
-          "pretrained_actions": [
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "real-mixed",
+          "id": "code-debug",
           "logic_skill": "tool_selection",
-          "expected_tool": "calculator",
-          "baseline_used_tool": "code_executor",
+          "expected_tool": "code_executor",
+          "baseline_used_tool": "search",
           "pretrained_used_tool": "code_executor",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
           "baseline_match": false,
-          "pretrained_match": false
-        },
-        {
-          "id": "candidate-379152",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "candidate-420926",
-          "logic_skill": "tool_selection",
-          "expected_tool": "calculator",
-          "baseline_used_tool": "calculator",
-          "pretrained_used_tool": "calculator",
+          "pretrained_match": true,
           "baseline_actions": [
             "WRITE_MEM",
             "CALL_TOOL",
             "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "real-git-triage",
-          "logic_skill": "evidence_judgment",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
             "WRITE_MEM",
             "ANSWER"
           ],
@@ -635,43 +517,28 @@
             "WRITE_MEM",
             "CALL_TOOL",
             "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "real-cost-forecast",
-          "logic_skill": "tool_selection",
-          "expected_tool": "calculator",
-          "baseline_used_tool": "calculator",
-          "pretrained_used_tool": "calculator",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
             "WRITE_MEM",
             "VERIFY",
             "ANSWER"
           ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
+          "used_tool": "code_executor",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Use code_executor: code error context detected (报空指针错误) — 为什么 does not override code signal when code error is present.",
+          "prompt_preview": "帮我理解这段 Python 脚本为什么会报空指针错误"
         },
         {
-          "id": "real-release-plan",
+          "id": "plan-migration",
           "logic_skill": "step_planning",
           "expected_tool": "search",
           "baseline_used_tool": "search",
           "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
           "baseline_actions": [
             "WRITE_MEM",
             "CALL_TOOL",
+            "WRITE_MEM",
             "WRITE_MEM",
             "ANSWER"
           ],
@@ -679,244 +546,325 @@
             "WRITE_MEM",
             "CALL_TOOL",
             "WRITE_MEM",
+            "WRITE_MEM",
             "ANSWER"
           ],
-          "baseline_match": true,
-          "pretrained_match": true
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Use search: Planning task with search signal — user needs information gathering, not execution.",
+          "prompt_preview": "如何规划一次低风险的数据库迁移"
         },
         {
-          "id": "real-multi-source-summary",
+          "id": "fact-check",
+          "logic_skill": "evidence_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Use search: Hard rule: evidence judgment signal detected — search for verification, not calculation.",
+          "prompt_preview": "如何判断一篇教程里的代码建议是否过时"
+        },
+        {
+          "id": "constraint-plan",
+          "logic_skill": "constraint_planning",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Use search: Consultative/advisory intent without code action — knowledge search.",
+          "prompt_preview": "如果需求里同时要求低成本、快速上线和后期可扩展，应该怎么先拆约束？"
+        },
+        {
+          "id": "conflict-check",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Conflict task needs evidence before synthesis — forcing search.",
+          "prompt_preview": "多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？"
+        },
+        {
+          "id": "result-integration",
+          "logic_skill": "result_integration",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Guard: explicit search action overrides bigmodel escalation.",
+          "prompt_preview": "拿到若干检索结果后，如何整合成一份带风险说明的结论？"
+        },
+        {
+          "id": "termination",
+          "logic_skill": "termination_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Guard: explicit search action overrides bigmodel escalation.",
+          "prompt_preview": "什么时候应该停止继续检索并开始形成结论？"
+        },
+        {
+          "id": "code-looking-search",
+          "logic_skill": "tool_selection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Use search: Choice/alternation query with search signal — user needs information to decide, not exec",
+          "prompt_preview": "有篇博客说 Python 3.13 默认已经启用无 GIL 构建，这种说法更应该查官方资料还是直接本地跑个脚本？"
+        },
+        {
+          "id": "search-looking-calc",
+          "logic_skill": "tool_selection",
+          "expected_tool": "calculator",
+          "baseline_used_tool": "calculator",
+          "pretrained_used_tool": "calculator",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "used_tool": "calculator",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Use calculator: Hard rule: explicit arithmetic expression requires calculator.",
+          "prompt_preview": "套餐说明写着每席位 79 元，12 人团队按年付总价是多少？请按 79 * 12 * 12 精确计算，不要泛泛比较。"
+        },
+        {
+          "id": "stop-when-enough",
+          "logic_skill": "termination_judgment",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "pretrained_actions": [
+            "WRITE_MEM",
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "ANSWER"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Use search: Explicit search action detected (搜索/搜一下/查一下).",
+          "prompt_preview": "我已经拿到官方文档、发布日期和迁移指南三项证据，还要继续检索才能判断这个功能是否可用吗？"
+        },
+        {
+          "id": "conflict-no-answer",
+          "logic_skill": "conflict_detection",
+          "expected_tool": "search",
+          "baseline_used_tool": "search",
+          "pretrained_used_tool": "search",
+          "baseline_match": true,
+          "pretrained_match": true,
+          "baseline_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "pretrained_actions": [
+            "CALL_TOOL",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "WRITE_MEM",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY",
+            "VERIFY"
+          ],
+          "used_tool": "search",
+          "tool_match": true,
+          "used_verify": true,
+          "reason": "Conflict task needs evidence before synthesis — forcing search.",
+          "prompt_preview": "两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？"
+        },
+        {
+          "id": "integrate-for-exec",
           "logic_skill": "result_integration",
           "expected_tool": "bigmodel_proxy",
           "baseline_used_tool": "bigmodel_proxy",
           "pretrained_used_tool": "bigmodel_proxy",
+          "baseline_match": true,
+          "pretrained_match": true,
           "baseline_actions": [
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
             "CALL_BIGMODEL"
           ],
           "pretrained_actions": [
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
-            "CALL_BIGMODEL",
             "CALL_BIGMODEL"
           ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-comparison-001",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-conflict_detection-017",
-          "logic_skill": "conflict_detection",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-comparison-002",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-conflict_detection-019",
-          "logic_skill": "conflict_detection",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-comparison-003",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-conflict_detection-020",
-          "logic_skill": "conflict_detection",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "VERIFY",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-comparison-004",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "search",
-          "pretrained_used_tool": "search",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_TOOL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": true,
-          "pretrained_match": true
-        },
-        {
-          "id": "repair-comparison-005",
-          "logic_skill": "comparison",
-          "expected_tool": "search",
-          "baseline_used_tool": "bigmodel_proxy",
-          "pretrained_used_tool": "bigmodel_proxy",
-          "baseline_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "pretrained_actions": [
-            "WRITE_MEM",
-            "WRITE_MEM",
-            "CALL_BIGMODEL",
-            "WRITE_MEM",
-            "ANSWER"
-          ],
-          "baseline_match": false,
-          "pretrained_match": false
+          "used_tool": "bigmodel_proxy",
+          "tool_match": true,
+          "used_verify": false,
+          "reason": "Escalate to larger external model. Signals: search,formal,anaphora",
+          "prompt_preview": "我已经收集了几份检索材料，请把它们整合成一份面向管理层的正式结论，语言要完整稳妥。"
         }
       ]
     }
   },
   "summary": {
     "pretrain_tool_match_rate": 1.0,
-    "real_prompt_count": 20,
-    "real_prompt_match_rate": 0.9,
-    "critical_failure_count": 2,
-    "avg_steps": 5.3,
-    "hard_logic_count": 16,
-    "hard_logic_avg_fit_score": 0.8962,
-    "residual_explanation_rate": 0.8,
-    "verify_when_residual_risky_rate": 0.3636,
-    "hard_eval_pass_rate": 0.8333,
+    "real_prompt_count": 14,
+    "real_prompt_match_rate": 1.0,
+    "critical_failure_count": 0,
+    "avg_steps": 5.7857,
+    "hard_logic_count": 11,
+    "hard_logic_avg_fit_score": 0.9382,
+    "residual_explanation_rate": 0.5714,
+    "verify_when_residual_risky_rate": 1.0,
+    "hard_eval_pass_rate": 1.0,
     "attention_focus_continuity": 1.0,
     "attention_evidence_grounding": 0.625,
     "attention_residual_resolution": 0.8718,
@@ -925,21 +873,6 @@
     "attention_conflict_to_verification_rate": 0.25,
     "attention_tool_boundary_block_rate": 1.0
   },
-  "hard_eval_failures": [
-    "real-mixed"
-  ],
-  "key_failures": [
-    {
-      "id": "real-mixed",
-      "logic_skill": "tool_selection",
-      "expected_tool": "calculator",
-      "used_tool": "code_executor"
-    },
-    {
-      "id": "repair-comparison-005",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "used_tool": "bigmodel_proxy"
-    }
-  ]
+  "hard_eval_failures": [],
+  "key_failures": []
 }

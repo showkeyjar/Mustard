@@ -22,6 +22,7 @@ from carm.signals import (
     has_evidence_judgment_signal,
     has_explain_signal,
     has_writing_signal,
+    has_search_signal,
     has_search_action_signal,
     has_translate_signal,
     has_polish_signal,
@@ -531,7 +532,11 @@ class OnlinePolicy:
                 chosen_reason = "Travel/lifestyle service intent detected."
                 hard_rule_hit = True
             # Override 0b: Writing/synthesis intent → consult (bigmodel)
-            elif hard_writing or (hard_synthesis and not hard_code_action):
+            # BUT: evidence_judgment overrides synthesis — "这个建议可靠吗" needs
+            # search verification, not LLM synthesis.
+            elif (
+                hard_writing or (hard_synthesis and not hard_code_action)
+            ) and not has_evidence_judgment_signal(user_input):
                 chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
                     "Writing/synthesis intent detected — routing to consult tool."
@@ -594,7 +599,25 @@ class OnlinePolicy:
             # When the query asks to verify/judge/assess reliability of information,
             # it needs search — not calculator — even if it contains numbers.
             # e.g. "判断 2024 年公告是否被 2026 文档推翻" has calc signal but needs search.
-            elif has_evidence_judgment_signal(user_input) and not hard_code_action:
+            # BUT: when formal/writing intent is also present ("写一份正式结论"), the
+            # user wants synthesis (bigmodel_proxy), not just evidence search.
+            # Also check for "写" + formal/conclusion pattern since hard_formal requires
+            # a synthesis verb which may not always be present.
+            elif (
+                has_evidence_judgment_signal(user_input)
+                and not hard_code_action
+                and not (
+                    hard_formal
+                    or hard_writing
+                    or (
+                        "写" in user_input
+                        and any(
+                            w in user_input
+                            for w in ("正式", "结论", "总结", "报告", "方案", "组织")
+                        )
+                    )
+                )
+            ):
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Hard rule: evidence judgment signal detected — search for verification, not calculation."
                 hard_rule_hit = True
@@ -610,12 +633,28 @@ class OnlinePolicy:
                     "Hard rule: calc intent signal detected (no code intent)."
                 )
                 hard_rule_hit = True
-            # Override 2c: Code + calc → 不再无条件选 code，需有强代码动作动词
-            # 强代码动作动词严格限定为：运行/写/实现/编写/脚本/执行/跑
-            # （注意："代码" 仅是名词，不应作为强动作动词，否则 "Python 代码 + 数值计算"
-            #  这类混合任务会被误判为 code_executor；纯数值部分应走 calculator）
+            # Override 2c: Code + calc → flag-controlled disambiguation
+            # When prefer_calculator_for_mixed_numeric_code=1 (default in runtime_controls.json),
+            # the system prefers calculator unless a strong code action verb is present.
+            # When flag=0, code_executor wins unconditionally (legacy behavior).
+            # Strong code action verbs: 运行/写/实现/编写/脚本/执行/跑
             # v5 fix: evidence_judgment 优先于 code+calc 规则
-            elif has_evidence_judgment_signal(user_input) and not hard_code_action:
+            # BUT: writing intent overrides evidence_judgment (synthesis > verification)
+            elif (
+                has_evidence_judgment_signal(user_input)
+                and not hard_code_action
+                and not (
+                    hard_formal
+                    or hard_writing
+                    or (
+                        "写" in user_input
+                        and any(
+                            w in user_input
+                            for w in ("正式", "结论", "总结", "报告", "方案", "组织")
+                        )
+                    )
+                )
+            ):
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Hard rule: evidence judgment overrides code+calc — needs search for verification."
                 hard_rule_hit = True
@@ -634,12 +673,19 @@ class OnlinePolicy:
                     "执行",
                     "跑",
                 )
-                if any(v in user_input for v in _strong_code_action_verbs):
-                    chosen_intent = IntentCategory.CODE
-                    chosen_reason = "Hard rule: code+calc co-occurrence with strong code action verb — code executor wins."
+                prefer_calc = bool(
+                    self.controls.get("prefer_calculator_for_mixed_numeric_code", 0)
+                )
+                if prefer_calc:
+                    if any(v in user_input for v in _strong_code_action_verbs):
+                        chosen_intent = IntentCategory.CODE
+                        chosen_reason = "Hard rule: code+calc co-occurrence with strong code action verb — code executor wins."
+                    else:
+                        chosen_intent = IntentCategory.CALC
+                        chosen_reason = "Hard rule: code+calc co-occurrence but no strong code action verb — calculator preferred for numeric tasks."
                 else:
-                    chosen_intent = IntentCategory.CALC
-                    chosen_reason = "Hard rule: code+calc co-occurrence but no strong code action verb — calculator preferred for numeric tasks."
+                    chosen_intent = IntentCategory.CODE
+                    chosen_reason = "Hard rule: code+calc co-occurrence — code executor wins (flag=0, legacy)."
                 hard_rule_hit = True
             # Override 3: Clear code action → code
             elif (
@@ -657,6 +703,19 @@ class OnlinePolicy:
                     "Explain intent detected — user wants knowledge, not execution."
                 )
                 hard_rule_hit = True
+            # Override 4a: Planning + search signal → search
+            # "拆计划" + "查资料" is a planning task that needs search, not code.
+            # When the query has deep_analysis signal (计划/方案/规划) AND search
+            # signal (资料/哪些/信息) but no actual code action, route to search.
+            elif (
+                has_deep_analysis_signal(user_input)
+                and has_search_signal(user_input)
+                and not hard_code_action
+                and not hard_arithmetic
+            ):
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = "Planning task with search signal — user needs information gathering, not execution."
+                hard_rule_hit = True
             # Override 5: Formal/synthesis → consult
             elif hard_formal and not hard_conflict:
                 chosen_intent = IntentCategory.CONSULT
@@ -673,6 +732,39 @@ class OnlinePolicy:
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Compare intent without explicit code action — knowledge search."
+                )
+                hard_rule_hit = True
+            # Override 4c: Search signal + no code signal → search
+            # When query has search signal (资料/信息/哪些) but no code signal
+            # and no strong code action verb, route to search even if semantic
+            # code_executor score is slightly higher (e.g. "查官方资料还是跑个脚本").
+            elif (
+                has_search_signal(user_input)
+                and not hard_code_action
+                and not has_strong_code_verb
+                and not hard_arithmetic
+                and semantic_best == "code_executor"
+            ):
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = (
+                    "Search signal present without code intent — "
+                    "prefer information gathering over execution."
+                )
+                hard_rule_hit = True
+            # Override 4d: Choice/alternation query with search signal → search
+            # "应该查官方资料还是跑个脚本" — the user is asking which approach
+            # to take, not requesting code execution. The "还是" (or/alternatively)
+            # pattern with search signal indicates a decision-support query.
+            elif (
+                "还是" in user_input
+                and has_search_signal(user_input)
+                and not hard_code_action
+                and not hard_arithmetic
+            ):
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = (
+                    "Choice/alternation query with search signal — "
+                    "user needs information to decide, not execute."
                 )
                 hard_rule_hit = True
 
@@ -856,7 +948,7 @@ class OnlinePolicy:
 
         if (
             prefer_search_for_comparison
-            and has_comparison_evidence_signal(context.user_input)
+            and has_compare_signal(context.user_input)
             and not has_formal_signal(context.user_input)
             and (
                 decision.action == Action.CALL_BIGMODEL
@@ -871,17 +963,18 @@ class OnlinePolicy:
             return ActionDecision(
                 action=Action.CALL_TOOL,
                 score=decision.score,
-                reason="Candidate gate: use search for comparison/evidence task before synthesis.",
+                reason="Candidate gate: use search for comparison task before synthesis.",
                 tool_call=ToolCall(
                     tool_name=self._resolve_tool_name(IntentCategory.SEARCH),
                     query=context.user_input,
                     arguments={"top_k": 3},
-                    reason="Comparison/evidence tasks need source grounding before generation.",
+                    reason="Comparison tasks need source grounding before generation.",
                 ),
                 feature_snapshot=dict(decision.feature_snapshot),
             )
 
-        # New unconditional guard: compare task should never route to bigmodel
+        # Unconditional guard: compare task should never route to bigmodel
+        # (fires even when prefer_search_for_comparison_evidence=0)
         if (
             has_compare_signal(context.user_input)
             and not has_formal_signal(context.user_input)
@@ -896,6 +989,36 @@ class OnlinePolicy:
                     query=context.user_input,
                     arguments={"top_k": 3},
                     reason="Comparison tasks must gather evidence before any synthesis.",
+                ),
+                feature_snapshot=dict(decision.feature_snapshot),
+            )
+
+        # Guard: explicit search action should never route to bigmodel
+        # When concept memory or ambiguous semantics push CALL_BIGMODEL but
+        # the query has an explicit search action (检索/搜索/查一下) and no
+        # writing/formal intent, force search instead.
+        if (
+            has_search_action_signal(context.user_input)
+            and not has_formal_signal(context.user_input)
+            and not has_writing_signal(context.user_input)
+            and not (
+                "写" in context.user_input
+                and any(
+                    w in context.user_input
+                    for w in ("正式", "结论", "总结", "报告", "方案", "组织")
+                )
+            )
+            and decision.action == Action.CALL_BIGMODEL
+        ):
+            return ActionDecision(
+                action=Action.CALL_TOOL,
+                score=decision.score,
+                reason="Guard: explicit search action overrides bigmodel escalation.",
+                tool_call=ToolCall(
+                    tool_name=self._resolve_tool_name(IntentCategory.SEARCH),
+                    query=context.user_input,
+                    arguments={"top_k": 3},
+                    reason="Search action detected — gather evidence before synthesis.",
                 ),
                 feature_snapshot=dict(decision.feature_snapshot),
             )

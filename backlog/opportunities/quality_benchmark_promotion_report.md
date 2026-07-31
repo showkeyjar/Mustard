@@ -4,5 +4,5 @@
 - config_path: D:\codes\Mustard\configs\quality_benchmark_eval.json
 
 ## Promoted Prompts
-- candidate-379152 | logic_skill=comparison | reason=context_support
+- repair-comparison-005 | logic_skill=comparison | reason=context_support
 - real-conflict | logic_skill=conflict_detection | reason=context_support
