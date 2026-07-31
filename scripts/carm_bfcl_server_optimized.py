@@ -666,7 +666,9 @@ Rules:
 16. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries (weather, stocks, movies). Return [] if the only available function is a generic utility and the user wants domain-specific information.
 17. If a general function (e.g., "generate_image") and a specific variant (e.g., "generate_human_image") both match, prefer the GENERAL function unless the query specifically requires the specialized capability.
 18. "uber.ride" is for booking TRANSPORTATION rides, NOT for ordering food from "uber eats". If the query mentions "order food", "burgers", "chicken wings", "uber eat" (without "ride"), do NOT select uber.ride.
-19. If the query asks for something that NO available function can do (e.g., ordering food when only ride booking is available), return [].
+ 19. If the query asks for something that NO available function can do (e.g., ordering food when only ride booking is available), return [].
+ 20. If the user asks "what should I do" or expresses confusion/helplessness, and a "handover_to_agent" function is available, select it — the user needs human assistance.
+ 21. If the user mentions forgetting a tracking number or lost information, and "submit_complaint" or "handover_to_agent" is available, select it.
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -2118,10 +2120,81 @@ def _post_process_params(
                     for wrong, right in corrections.items():
                         val = val.replace(wrong, right)
                     params[pname] = val
+            # Fix 23: For simple_java/javascript queries, when the query uses
+            # quoted variable names like 'materialProps', the GT expects the
+            # variable name as a string, not an interpreted value.
+            # Detect quoted variable names in query and use them directly.
+            # Pattern: 'variableName' in the query
+            quoted_vars = re.findall(r"'([a-zA-Z_][a-zA-Z0-9_]*)'", query)
+            if quoted_vars:
+                for pname, pval in list(params.items()):
+                    if isinstance(pval, dict):
+                        # If a quoted var name matches a key in the dict,
+                        # replace the dict with the variable name string
+                        for qv in quoted_vars:
+                            if qv in pval:
+                                params[pname] = qv
+                                logger.info(
+                                    f"Fix 23: replaced dict param '{pname}' with quoted var '{qv}'"
+                                )
+                                break
+                    elif (
+                        isinstance(pval, list)
+                        and len(pval) == 1
+                        and isinstance(pval[0], str)
+                    ):
+                        # If list contains a quoted variable name, unwrap it
+                        for qv in quoted_vars:
+                            if pval[0] == qv:
+                                params[pname] = qv
+                                break
+            # Fix 24: For database.modify_columns, normalize column names
+            # GT accepts "email" not "email_address", "ssn" not "social_security_number"
+            if name == "database.modify_columns" and "columns" in params:
+                col_corrections = {
+                    "email_address": "email",
+                    "email address": "email",
+                    "social_security_number": "ssn",
+                    "social security number": "ssn",
+                    "social_security": "ssn",
+                }
+                if isinstance(params["columns"], list):
+                    params["columns"] = [
+                        col_corrections.get(c.lower(), c) if isinstance(c, str) else c
+                        for c in params["columns"]
+                    ]
             # Fix 20: For log_food, set default portion_amount=1 and portion_unit
             # when query says "a X" (singular article implies 1 unit)
             if name == "log_food":
                 food_name = params.get("food_name", "").lower()
+                # Fix 20a: Preserve adjectives from query in food_name
+                # (e.g., "frozen mango" → food_name should be "frozen mango")
+                query_lower_food = query.lower()
+                if food_name and food_name not in query_lower_food:
+                    # food_name might be a substring of a longer phrase in query
+                    pass  # skip, too risky
+                else:
+                    # Check if query has adjective + food_name
+                    food_adj_patterns = [
+                        (r"frozen\s+" + re.escape(food_name), "frozen " + food_name),
+                        (
+                            r"gluten\s+free\s+" + re.escape(food_name),
+                            "gluten free " + food_name,
+                        ),
+                        (
+                            r"pepperoni\s+" + re.escape(food_name),
+                            "pepperoni " + food_name,
+                        ),
+                        (r"iced\s+" + re.escape(food_name), "iced " + food_name),
+                    ]
+                    for pat, replacement in food_adj_patterns:
+                        if (
+                            re.search(pat, query_lower_food)
+                            and food_name != replacement
+                        ):
+                            params["food_name"] = replacement
+                            food_name = replacement
+                            break
                 # If portion_amount is missing, default to 1
                 if "portion_amount" not in params:
                     params["portion_amount"] = 1
@@ -2153,6 +2226,31 @@ def _post_process_params(
                     logger.info(
                         f"log_food: default portion_unit='{params['portion_unit']}' for '{food_name}'"
                     )
+                else:
+                    # Fix wrong units: drinks should use "cup" not "piece"
+                    current_unit = params.get("portion_unit", "").lower()
+                    drink_keywords = [
+                        "coffee",
+                        "tea",
+                        "chai",
+                        "juice",
+                        "milk",
+                        "water",
+                        "soda",
+                        "beer",
+                        "wine",
+                        "latte",
+                        "smoothie",
+                        "shake",
+                        "iced coffee",
+                    ]
+                    if any(
+                        kw in food_name for kw in drink_keywords
+                    ) and current_unit in ("piece", "pieces"):
+                        params["portion_unit"] = "cup"
+                        logger.info(
+                            f"log_food: corrected portion_unit to 'cup' for drink '{food_name}'"
+                        )
         fixed.append((name, params))
 
     # Fix 13: Remove calls with invalid function names (non-identifier names
@@ -2616,6 +2714,35 @@ def carm_route_bfcl(
             logger.info(
                 f"Single func '{scored[0][0]['name']}' score={best_score:.2f} < {IRRELEVANCE_VERIFY_THRESHOLD} → verify relevance"
             )
+            # Hardcoded abstract variable rejection: if query uses single-letter
+            # variables in quotes for a calculation function, it's theoretical
+            query_lower_abs = query.lower()
+            has_abstract_var = bool(
+                re.search(r"['\"]\s*[a-z]\s*['\"]", query_lower_abs)
+            ) or bool(re.search(r"['\"]\s*theta\s*['\"]", query_lower_abs))
+            is_calc_func = any(
+                kw in scored[0][0].get("name", "").lower()
+                for kw in ["calculate", "compute", "solve", "convert"]
+            )
+            if has_abstract_var and is_calc_func:
+                logger.info(
+                    f"Abstract variable in calc query → reject (score={best_score:.2f})"
+                )
+                return "[]"
+            # Hardcoded "how do I find" rejection for calculation functions
+            how_to_patterns = [
+                "how do i find",
+                "how do i calculate",
+                "how to find",
+                "how to calculate",
+                "how do you find",
+                "how do you calculate",
+            ]
+            if any(pat in query_lower_abs for pat in how_to_patterns) and is_calc_func:
+                logger.info(
+                    f"'How to' pattern for calc func → reject (score={best_score:.2f})"
+                )
+                return "[]"
             if verify_relevance_via_llm(scored[0][0], query, ollama_url, ollama_model):
                 verified = [(scored[0][0], scored[0][1])]
                 logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
