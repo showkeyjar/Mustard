@@ -658,6 +658,8 @@ Rules:
 8. "Calculate X and generate Y" → select both the calculate function AND the generate function
 9. "Find A in city1 and find B in city2" → select both functions if they are different
 10. Numbered steps (1. 2. 3.) each need their own function — select ALL matching functions
+11. If two functions are similar (e.g., "search" vs "news_search"), select only the ONE that best matches the user's intent
+12. Do NOT select a function just because its name appears in the query — match by PURPOSE
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -799,7 +801,7 @@ Function: {func_name} - {func_desc}
 Parameters: {", ".join(param_names)}
 Query: "{query}"
 
-Note: "temperature" is a weather concept. "Can you tell me" is a polite request, not irrelevance.
+Note: "temperature" is a weather concept. "Can you tell me" is a polite request, not irrelevance. "all clouds" or "all providers" includes any specific cloud (AWS, GCP, Azure).
 
 Reject if:
 - The function is a generic utility (requests.get, print, etc.) and the user is asking a domain question
@@ -856,6 +858,16 @@ def detect_parallel(query: str) -> bool:
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
         # "two cities of X and Y" pattern
         r"\b(?:two|three)\s+(?:cities|locations|places)\s+of\b",
+        # "Do the same" / "do the same calculation" — repeated operation
+        r"\bdo\s+the\s+same\b",
+        r"\bsame\s+calculation\b",
+        r"\brepeat\s+(?:the|this|that)\b",
+        # "also get" / "and also" — additional request
+        r"\balso\s+get\b",
+        r"\balso\s+find\b",
+        r"\balso\s+calculate\b",
+        r"\balso\s+fetch\b",
+        r"\balso\s+check\b",
         # Chinese parallel indicators
         r"还有",
         r"以及",
@@ -1135,6 +1147,27 @@ def detect_parallel(query: str) -> bool:
                 if any(lw in p1 for lw in list_words):
                     return True
 
+    # "X and Y, A and B" pattern — two pairs of items
+    # e.g., "3 and 4, 5 and 12" → two pythagorean calculations
+    if re.search(r"\d+\s+and\s+\d+\s*,\s*\d+\s+and\s+\d+", query_lower):
+        return True
+
+    # Comma-separated number pairs
+    if re.search(r"\d+\s*,\s*\d+\s*,\s*\d+", query_lower):
+        # At least 3 comma-separated numbers → likely multiple entities
+        # Only if the query has a compute/fetch intent
+        compute_words = {
+            "compute",
+            "calculate",
+            "find",
+            "get",
+            "fetch",
+            "check",
+            "estimate",
+        }
+        if any(cw in query_lower for cw in compute_words):
+            return True
+
     return False
 
 
@@ -1377,6 +1410,8 @@ CRITICAL RULES:
 10. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about".
 11. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
 12. Do NOT return duplicate objects with the same params.
+13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Shanghai" not "上海", "Tokyo" not "東京").
+14. When the query has multiple commands separated by "and" (e.g., "list files and create file"), create one object PER command.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1464,6 +1499,7 @@ Return JSON object with param names as keys. Rules:
 10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None.
 11. For dict/object params, use the exact key names from the query (e.g., if query says "nm" and "mn", use those keys, not "name" and "moduleName").
 12. For optional params, only include them if the query explicitly provides a value. Do NOT guess or fabricate values for optional params.
+13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Shanghai" not "上海", "Tokyo" not "東京").
 
 Example for math.factorial: {{"number":5}}"""
 
