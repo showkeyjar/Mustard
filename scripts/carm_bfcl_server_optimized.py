@@ -654,6 +654,10 @@ Rules:
 4. "change drink" matches "change_drink" (modify order)
 5. Return [] if NO function is relevant
 6. Do NOT return functions that are only tangentially related
+7. If the query has MULTIPLE steps or asks for MULTIPLE different things, select ALL matching functions
+8. "Calculate X and generate Y" → select both the calculate function AND the generate function
+9. "Find A in city1 and find B in city2" → select both functions if they are different
+10. Numbered steps (1. 2. 3.) each need their own function — select ALL matching functions
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -855,6 +859,14 @@ def detect_parallel(query: str) -> bool:
         # Korean parallel indicators
         r"그리고",
         r"하고",
+        # Spanish parallel indicators — only with weather/location context
+        r"\by\b.*\b(clima|tiempo|temperatura|pronóstico|cancún|playa|tulum)\b",
+        r"\b(clima|tiempo|temperatura|pronóstico|cancún|playa|tulum)\b.*\by\b",
+        # Step-by-step indicators
+        r"\bstep\s*\d+\b",
+        r"\bsteps?\s*:",
+        # Numbered list indicators
+        r"\n\s*\d+\.\s+",
     ]
     for pat in strong_patterns:
         if re.search(pat, query_lower):
@@ -1006,30 +1018,40 @@ def detect_parallel(query: str) -> bool:
         if len(parts) >= 2 and all(len(p.strip()) >= 2 for p in parts):
             return True
 
-    # Multi-request keywords
-    multi_request_words = [
-        "both",
-        "several",
-        "multiple",
-        "various",
-        "different",
-        "each",
-        "all",
-        "two",
-        "three",
-        "both of",
-    ]
-    if any(w in query_lower for w in multi_request_words):
-        return True
-
     # Multi-request keywords — strong indicators only
+    # Use word boundary matching to avoid false positives like "three sides" or "all files"
     multi_request_words = [
         "both of",
         "several",
         "multiple",
         "various",
+        "each of",
     ]
-    if any(w in query_lower for w in multi_request_words):
+    for w in multi_request_words:
+        if re.search(r"\b" + re.escape(w) + r"\b", query_lower):
+            return True
+
+    # "two" / "three" only if followed by action nouns (requests, tasks, operations)
+    # NOT "three sides", "two parameters", "three digits"
+    num_action = re.search(r"\b(two|three)\s+(\w+)", query_lower)
+    if num_action:
+        following_word = num_action.group(2)
+        action_nouns = {
+            "requests",
+            "tasks",
+            "operations",
+            "queries",
+            "actions",
+            "calls",
+            "functions",
+            "things",
+            "operations",
+        }
+        if following_word in action_nouns:
+            return True
+
+    # "all" as multi-request only if followed by "of the" or "of these"
+    if re.search(r"\ball\s+of\s+(the|these|those)\b", query_lower):
         return True
 
     # "X and Y" where both are short noun phrases (no action verbs)
@@ -1138,6 +1160,38 @@ def split_parallel_query(query: str) -> list[str]:
             if len(cleaned) >= 2 and all(len(p) > 3 for p in cleaned):
                 return cleaned
 
+    # Spanish "y" as separator (like "Cancún, QR, y Tulum, QR")
+    # Only trigger if query is in Spanish and has weather/location context
+    weather_es_words = {
+        "clima",
+        "tiempo",
+        "temperatura",
+        "pronóstico",
+        "cancún",
+        "playa",
+        "tulum",
+    }
+    if any(w in query_lower for w in weather_es_words):
+        # Split on " y " but not "y" inside words
+        parts = re.split(r"\s+y\s+", query)
+        if len(parts) >= 2 and all(len(p.strip()) > 3 for p in parts):
+            cleaned = [p.strip().rstrip(".") for p in parts if p.strip()]
+            if len(cleaned) >= 2:
+                return cleaned
+
+    # "Also" / "Then" / "Also provide" connectors without sentence boundary
+    also_pats = [
+        r"\bAlso\s+(?:provide|calculate|find|get|create|add|check)\b",
+        r"\bThen\s+(?:find|calculate|get|create|add|check)\b",
+        r"\bAfter\s+that\b",
+    ]
+    for pat in also_pats:
+        parts = re.split(pat, query, maxsplit=1, flags=re.IGNORECASE)
+        if len(parts) >= 2:
+            cleaned = [p.strip().rstrip(".,;!?") for p in parts if p.strip()]
+            if all(len(p) > 5 for p in cleaned):
+                return cleaned
+
     # Comma + "and" split: "Calculate X, and Y" or "Find X, and find Y"
     # This handles "GCD of 96 and 128, and the least common multiple of 15 and 25"
     comma_and_match = re.search(r",\s*(?:and\s+)", query, re.IGNORECASE)
@@ -1147,6 +1201,29 @@ def split_parallel_query(query: str) -> list[str]:
         part2 = query[comma_and_match.end() :].strip().rstrip(".,;!?")
         if len(part1) > 8 and len(part2) > 8:
             return [part1, part2]
+
+    # Numbered steps: "1. clone the repo  2. analyse  3. commit"
+    # Split on numbered list items
+    numbered_parts = re.split(r"\n\s*\d+\.\s+", query)
+    if len(numbered_parts) >= 2:
+        # First part is preamble before step 1
+        # Rest are step bodies
+        cleaned = []
+        for i, p in enumerate(numbered_parts):
+            p = p.strip().rstrip(".,;!?")
+            if len(p) > 3:
+                cleaned.append(p)
+        if len(cleaned) >= 2:
+            return cleaned
+
+    # Multi-line "Steps:" format with sub-steps (2.1, 2.2, etc.)
+    if re.search(r"\d+\.\d+\s+", query):
+        # Split on top-level numbered steps (1. 2. 3.) ignoring sub-steps
+        steps = re.split(r"\n\s*(?=\d+\.\s)", query)
+        if len(steps) >= 2:
+            cleaned = [s.strip().rstrip(".,;!?") for s in steps if len(s.strip()) > 5]
+            if len(cleaned) >= 2:
+                return cleaned
 
     # Comma-separated independent clauses with action verbs
     comma_parts = re.split(r",\s*", query)
@@ -1313,6 +1390,10 @@ Return JSON object with param names as keys. Rules:
 6. For boolean params, use JSON true/false.
 7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
 8. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
+9. When the query mentions a variable name like "myItemList", pass it as a STRING "myItemList", NOT as an actual array of objects.
+10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None.
+11. For dict/object params, use the exact key names from the query (e.g., if query says "nm" and "mn", use those keys, not "name" and "moduleName").
+12. For optional params, only include them if the query explicitly provides a value. Do NOT guess or fabricate values for optional params.
 
 Example for math.factorial: {{"number":5}}"""
 
