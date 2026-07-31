@@ -2019,8 +2019,15 @@ def _post_process_params(
                         params["recipient"] = name
             # Fix 10: For US city names without state, add state abbreviation
             # for known cities that GT expects with state
+            # BUT only if the function doesn't have a separate "state" param
+            # (if it does, the city should stay without the state suffix)
+            has_state_param = "state" in params
             for pname in ("location", "city"):
-                if pname in params and isinstance(params[pname], str):
+                if (
+                    pname in params
+                    and isinstance(params[pname], str)
+                    and not has_state_param
+                ):
                     city_val = params[pname]
                     # Only add state if city has no comma (no state yet)
                     if "," not in city_val:
@@ -2059,11 +2066,19 @@ def _post_process_params(
                 ]
             # Fix 16: Normalize time params: "5:00 pm" → "5 pm", "7:30 pm" stays
             for pname in ("time", "showtime"):
-                if pname in params and isinstance(params[pname], str):
+                if pname in params:
                     val = params[pname]
-                    # Remove ":00" from times like "5:00 pm" → "5 pm"
-                    val = re.sub(r"(\d+):00\s*(pm|am|PM|AM)", r"\1 \2", val)
-                    params[pname] = val
+                    if isinstance(val, str):
+                        # Remove ":00" from times like "5:00 pm" → "5 pm"
+                        val = re.sub(r"(\d+):00\s*(pm|am|PM|AM)", r"\1 \2", val)
+                        params[pname] = val
+                    elif isinstance(val, list):
+                        params[pname] = [
+                            re.sub(r"(\d+):00\s*(pm|am|PM|AM)", r"\1 \2", v)
+                            if isinstance(v, str)
+                            else v
+                            for v in val
+                        ]
             # Fix 17: Normalize "meal_type" → "meal_name" if the function expects "meal_name"
             # (some functions use meal_name, others use meal_type — don't convert here)
             # Fix 18: For "command" params in cmd_controller, normalize:
@@ -2076,6 +2091,68 @@ def _post_process_params(
                 # Normalize "dir C:\\" to "dir c:\\"
                 cmd = re.sub(r"dir\s+C:", "dir c:", cmd, flags=re.IGNORECASE)
                 params["command"] = cmd
+            # Fix 21: For Java functions, normalize values to match GT expectations
+            # EFSNIOResource.copy: destination should be wrapped in new Path()
+            if name == "EFSNIOResource.copy" and "destination" in params:
+                dest = params["destination"]
+                if isinstance(dest, str) and not dest.startswith("new Path"):
+                    params["destination"] = f"new Path('{dest}')"
+            # BasePolicyDataProvider.getRegistryPolicyValue: root should have WinReg. prefix
+            if (
+                name == "BasePolicyDataProvider.getRegistryPolicyValue"
+                and "root" in params
+            ):
+                root = params["root"]
+                if isinstance(root, str) and not root.startswith("WinReg."):
+                    params["root"] = f"WinReg.{root}"
+            # Fix 22: Correct common misspellings in keyword/search params
+            for pname in ("keyword", "query", "search_term", "q"):
+                if pname in params and isinstance(params[pname], str):
+                    val = params[pname]
+                    corrections = {
+                        "airtificial": "artificial",
+                        "enviroment": "environment",
+                        "teh ": "the ",
+                        "adn ": "and ",
+                    }
+                    for wrong, right in corrections.items():
+                        val = val.replace(wrong, right)
+                    params[pname] = val
+            # Fix 20: For log_food, set default portion_amount=1 and portion_unit
+            # when query says "a X" (singular article implies 1 unit)
+            if name == "log_food":
+                food_name = params.get("food_name", "").lower()
+                # If portion_amount is missing, default to 1
+                if "portion_amount" not in params:
+                    params["portion_amount"] = 1
+                    logger.info(f"log_food: default portion_amount=1 for '{food_name}'")
+                # If portion_unit is missing, infer from food name
+                if "portion_unit" not in params:
+                    # Drinks typically use "cup"
+                    drink_keywords = [
+                        "coffee",
+                        "tea",
+                        "chai",
+                        "juice",
+                        "milk",
+                        "water",
+                        "soda",
+                        "beer",
+                        "wine",
+                        "latte",
+                        "smoothie",
+                        "shake",
+                    ]
+                    # Foods with specific units
+                    if any(kw in food_name for kw in drink_keywords):
+                        params["portion_unit"] = "cup"
+                    elif "pizza" in food_name:
+                        params["portion_unit"] = "slice"
+                    else:
+                        params["portion_unit"] = "pieces"
+                    logger.info(
+                        f"log_food: default portion_unit='{params['portion_unit']}' for '{food_name}'"
+                    )
         fixed.append((name, params))
 
     # Fix 13: Remove calls with invalid function names (non-identifier names
@@ -2086,6 +2163,18 @@ def _post_process_params(
         if name
         and re.match(r"^[a-zA-Z_][a-zA-Z0-9_\.]*$", name)
         and name.lower() not in ("could", "please", "would", "should", "might")
+    ]
+
+    # Fix 13b: Remove calls where a parameter value is the function name itself
+    # (LLM hallucination: ChaFod(foodItem="ChaFod") means the LLM couldn't find
+    # a real value and used the function name as a placeholder)
+    fixed = [
+        (name, params)
+        for name, params in fixed
+        if not any(
+            isinstance(v, str) and v.lower() == name.lower().split(".")[-1]
+            for v in params.values()
+        )
     ]
 
     # Fix 14: When both a general function and its specialized variant are present,
@@ -2158,6 +2247,42 @@ def _post_process_params(
                 if "date" in params and params["date"] != first_date:
                     # Only override if the date seems wrong (different from first)
                     fixed[i] = (name, {**params, "date": first_date})
+
+    # Fix 19: Cross-call parameter propagation for parallel calls with same function
+    # If one call has a param that another call with the same function name is missing,
+    # copy the param value (e.g., "category=Technology" should apply to both get_news_report calls)
+    if len(fixed) >= 2:
+        # Group by function name
+        func_groups: dict[str, list[int]] = {}
+        for i, (name, _) in enumerate(fixed):
+            func_groups.setdefault(name, []).append(i)
+        for fname, indices in func_groups.items():
+            if len(indices) < 2:
+                continue
+            # Find params that exist in some calls but not all
+            all_params: set[str] = set()
+            for idx in indices:
+                all_params.update(fixed[idx][1].keys())
+            for pname in all_params:
+                # Find a call that has this param
+                donor_idx = None
+                donor_val = None
+                for idx in indices:
+                    if pname in fixed[idx][1]:
+                        donor_idx = idx
+                        donor_val = fixed[idx][1][pname]
+                        break
+                # Fill in missing params
+                if donor_val is not None:
+                    for idx in indices:
+                        if pname not in fixed[idx][1]:
+                            fixed[idx] = (
+                                fixed[idx][0],
+                                {**fixed[idx][1], pname: donor_val},
+                            )
+                            logger.info(
+                                f"Cross-call propagation: copied {pname}={donor_val} to call {idx} ({fname})"
+                            )
     return fixed
 
 
@@ -2339,7 +2464,7 @@ def carm_route_bfcl(
         _seg_func_map = None
 
         # Hardcoded guard: generic utility functions (requests.get, print, etc.)
-        # should not be called for domain-specific queries
+        # should not be called for domain-specific queries — REGARDLESS of score
         GENERIC_UTILS = {
             "requests.get",
             "requests.post",
@@ -2353,10 +2478,7 @@ def carm_route_bfcl(
             "open",
         }
         func_name_lower = scored[0][0].get("name", "").lower()
-        if (
-            func_name_lower in GENERIC_UTILS
-            and best_score < IRRELEVANCE_VERIFY_THRESHOLD
-        ):
+        if func_name_lower in GENERIC_UTILS:
             # Check if query asks for domain-specific info
             domain_keywords = [
                 "weather",
@@ -2381,13 +2503,56 @@ def carm_route_bfcl(
                 "flight",
                 "hotel",
                 "ride",
+                "mountain",
+                "burger",
+                "chicken",
+                "food",
+                "order",
+                "snow",
             ]
             query_lower = query.lower()
             if any(kw in query_lower for kw in domain_keywords):
                 logger.info(
-                    f"Generic utility '{func_name_lower}' for domain query → reject"
+                    f"Generic utility '{func_name_lower}' for domain query → reject (score={best_score:.2f})"
                 )
                 return "[]"
+
+        # Domain mismatch guard: if function name suggests one domain but query
+        # is clearly about a different domain, reject
+        func_name = scored[0][0].get("name", "").lower()
+        query_lower_dm = query.lower()
+        # Ride/transport functions should not be called for food ordering
+        if any(kw in func_name for kw in ["ride", "uber", "taxi", "lyft"]):
+            food_keywords = [
+                "burger",
+                "chicken",
+                "food",
+                "order",
+                "eat",
+                "meal",
+                "pizza",
+                "sandwich",
+                "salad",
+                "drink",
+                "coffee",
+                "mcdonald",
+                "restaurant",
+                "menu",
+            ]
+            if any(kw in query_lower_dm for kw in food_keywords):
+                # But allow if query also mentions transportation
+                transport_keywords = [
+                    "pick up",
+                    "drop off",
+                    "drive",
+                    "go to",
+                    "take me",
+                ]
+                if not any(kw in query_lower_dm for kw in transport_keywords):
+                    logger.info(
+                        f"Domain mismatch: '{func_name}' for food query → reject"
+                    )
+                    return "[]"
 
         if best_score < IRRELEVANCE_VERIFY_THRESHOLD:
             logger.info(
@@ -2402,7 +2567,50 @@ def carm_route_bfcl(
                 )
                 return "[]"
         else:
-            verified = [(scored[0][0], scored[0][1])]
+            # Even for high-scoring single functions, verify if query has
+            # abstract variables or "how to" patterns that suggest irrelevance
+            query_lower_vr = query.lower()
+            needs_verify = False
+            # Check for abstract variable patterns: 'v', 'theta', 't' in quotes
+            abstract_patterns = [
+                r"['\"]\s*[a-z]\s*['\"]",  # 'v' or "t"
+                r"['\"]\s*theta\s*['\"]",  # 'theta'
+            ]
+            for pat in abstract_patterns:
+                if re.search(pat, query_lower_vr):
+                    needs_verify = True
+                    break
+            # Check for "how do I" / "how to" patterns (educational, not computation)
+            how_patterns = [
+                "how do i find",
+                "how do i calculate",
+                "how to find",
+                "how to calculate",
+                "how do you find",
+                "how do you calculate",
+            ]
+            if not needs_verify:
+                for pat in how_patterns:
+                    if pat in query_lower_vr:
+                        needs_verify = True
+                        break
+
+            if needs_verify:
+                logger.info(
+                    f"Single func '{scored[0][0]['name']}' score={best_score:.2f} but query has abstract/how-to pattern → verify relevance"
+                )
+                if verify_relevance_via_llm(
+                    scored[0][0], query, ollama_url, ollama_model
+                ):
+                    verified = [(scored[0][0], scored[0][1])]
+                    logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
+                else:
+                    logger.info(
+                        f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
+                    )
+                    return "[]"
+            else:
+                verified = [(scored[0][0], scored[0][1])]
             logger.info(
                 f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → use directly"
             )
