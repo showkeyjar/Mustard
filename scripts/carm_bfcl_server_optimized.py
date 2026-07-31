@@ -648,18 +648,21 @@ Available functions:
 {func_list_str}
 
 Rules:
-1. Select by SEMANTIC match: does the function's purpose address what the user wants?
-2. "cook" matches "cookbook.search_recipe" (cooking recipes)
-3. "stop washing machine" matches "ControlAppliance.execute" (appliance control)
-4. "change drink" matches "change_drink" (modify order)
-5. Return [] if NO function is relevant
-6. Do NOT return functions that are only tangentially related
-7. If the query has MULTIPLE steps or asks for MULTIPLE different things, select ALL matching functions
-8. "Calculate X and generate Y" → select both the calculate function AND the generate function
-9. "Find A in city1 and find B in city2" → select both functions if they are different
+ 1. Select by SEMANTIC match: does the function's purpose address what the user wants?
+ 2. "cook" matches "cookbook.search_recipe" (cooking recipes)
+ 3. "stop washing machine" matches "ControlAppliance.execute" (appliance control)
+ 4. "change drink" matches "change_drink" (modify order)
+ 5. Return [] if NO function is relevant
+ 6. Do NOT return functions that are only tangentially related
+ 7. If the query has MULTIPLE steps or asks for MULTIPLE different things, select ALL matching functions
+ 8. "Calculate X and generate Y" → select both the calculate function AND the generate function
+ 9. "Find A in city1 and find B in city2" → select both functions if they are different
 10. Numbered steps (1. 2. 3.) each need their own function — select ALL matching functions
-11. If two functions are similar (e.g., "search" vs "news_search"), select only the ONE that best matches the user's intent
+11. If two functions are similar (e.g., "search" vs "news_search", "generate_image" vs "generate_human_image"), select only the ONE that best matches the user's intent
 12. Do NOT select a function just because its name appears in the query — match by PURPOSE
+13. "served hot" in a drink order means temperature, NOT a food order
+14. If the query asks for WEATHER, only select weather functions — do NOT select search or news functions
+15. If the query asks about a historical event ("what is X war"), select the general search function, NOT news search
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -714,6 +717,73 @@ Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
     except Exception as e:
         logger.error(f"LLM function selection failed: {e}")
         return []
+
+
+def dedup_similar_functions(
+    selected: list[dict],
+    query: str,
+    ollama_url: str,
+    ollama_model: str,
+) -> list[dict]:
+    """Remove semantically duplicate functions from LLM selection.
+
+    When LLM selects both 'search' and 'news_search' for the same query segment,
+    keep only the best match.
+    """
+    if len(selected) <= 1:
+        return selected
+
+    # Group functions by semantic similarity
+    # Two functions are "similar" if they share the same core action verb
+    # e.g., generate_image vs generate_human_image, HNA_WQA.search vs HNA_NEWS.search
+    groups: list[list[tuple[int, dict]]] = []
+    for i, f in enumerate(selected):
+        fname = f.get("name", "").lower()
+        placed = False
+        for grp in groups:
+            # Check if similar to any function in this group
+            for _, existing in grp:
+                ename = existing.get("name", "").lower()
+                # Same root: one name contains the other, or they share a common action
+                if (
+                    fname in ename
+                    or ename in fname
+                    or (
+                        "." in fname
+                        and "." in ename
+                        and fname.split(".")[-1] == ename.split(".")[-1]
+                    )
+                ):
+                    grp.append((i, f))
+                    placed = True
+                    break
+            if placed:
+                break
+        if not placed:
+            groups.append([(i, f)])
+
+    # From each group with >1 function, keep only the best match via LLM
+    result = []
+    for grp in groups:
+        if len(grp) == 1:
+            result.append(grp[0][1])
+        else:
+            # Use LLM to pick the best one
+            candidates = [f for _, f in grp]
+            scored = [(f, score_function_relevance(f, query)) for f in candidates]
+            scored.sort(key=lambda x: x[1], reverse=True)
+
+            # If scores are close, use LLM disambiguation
+            if len(scored) >= 2 and scored[0][1] - scored[1][1] < 0.2:
+                picked = disambiguate_via_llm(scored, query, ollama_url, ollama_model)
+                result.extend(picked)
+            else:
+                result.append(scored[0][0])
+            logger.info(
+                f"Deduped similar functions: {[f['name'] for f in candidates]} → {[f['name'] for f in (picked if len(scored) >= 2 and scored[0][1] - scored[1][1] < 0.2 else [scored[0][0]])]}"
+            )
+
+    return result
 
 
 def disambiguate_via_llm(
@@ -801,7 +871,7 @@ Function: {func_name} - {func_desc}
 Parameters: {", ".join(param_names)}
 Query: "{query}"
 
-Note: "temperature" is a weather concept. "Can you tell me" is a polite request, not irrelevance. "all clouds" or "all providers" includes any specific cloud (AWS, GCP, Azure).
+Important: When a user asks about "all clouds" or "all providers", this INCLUDES any specific cloud service like AWS, GCP, or Azure. So a function that gets AWS pricing IS relevant to a query about "all clouds".
 
 Reject if:
 - The function is a generic utility (requests.get, print, etc.) and the user is asking a domain question
@@ -1216,8 +1286,9 @@ def split_parallel_query(query: str) -> list[str]:
     # "and also" / "and for" / "and calculate" / "also calculate" connectors
     connector_pats = [
         r"\band\s+also\b",
+        r"\band\s+then\b",
         r"\band\s+for\s+(?:the|a|an|my|your|our)\b",
-        r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict)\b",
+        r"\band\s+(?:calculate|find|compute|get|buy|book|turn|change|update|check|tell|provide|generate|create|search|show|list|add|delete|send|fetch|call|analyze|extract|sort|filter|start|stop|set|open|close|launch|run|build|clone|commit|push|make|estimate|predict|congratulate)\b",
         r"\bplus\b",
         r"\bcombined\s+with\b",
         r"\bas well as\b",
@@ -1385,7 +1456,20 @@ def extract_all_params_via_llm(
         req = "req" if pname in required else "opt"
         enum_vals = pinfo.get("enum", None)
         enum_str = f" enum={enum_vals}" if enum_vals else ""
-        param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
+        # Show nested dict properties
+        nested_props = pinfo.get("properties", None)
+        nested_str = ""
+        if nested_props:
+            nested_keys = []
+            for nname, ninfo in nested_props.items():
+                ntype = ninfo.get("type", "any")
+                nenum = ninfo.get("enum", None)
+                nenum_str = f" enum={nenum}" if nenum else ""
+                nested_keys.append(f"{nname}({ntype}{nenum_str})")
+            nested_str = f" [nested: {', '.join(nested_keys)}]"
+        param_lines.append(
+            f"  - {pname} ({ptype}, {req}{enum_str}){nested_str}: {pdesc}"
+        )
     param_desc = "\n".join(param_lines) if param_lines else "  (none)"
 
     prompt = f"""Extract ALL params for: {func_name}
@@ -1403,7 +1487,7 @@ CRITICAL RULES:
 3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
 5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
-6. For location params, include city + country/region/state when the city is well-known internationally (e.g., "Shanghai, China", "Tel Aviv, Israel", "Boston, MA", "San Francisco, CA"). Use common abbreviations for US states.
+ 6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says "Boston", add the state/country: "Boston, MA".
 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
@@ -1476,7 +1560,20 @@ def extract_params_via_llm_v2(
         req = "req" if pname in required else "opt"
         enum_vals = pinfo.get("enum", None)
         enum_str = f" enum={enum_vals}" if enum_vals else ""
-        param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
+        # Show nested dict properties
+        nested_props = pinfo.get("properties", None)
+        nested_str = ""
+        if nested_props:
+            nested_keys = []
+            for nname, ninfo in nested_props.items():
+                ntype = ninfo.get("type", "any")
+                nenum = ninfo.get("enum", None)
+                nenum_str = f" enum={nenum}" if nenum else ""
+                nested_keys.append(f"{nname}({ntype}{nenum_str})")
+            nested_str = f" [nested: {', '.join(nested_keys)}]"
+        param_lines.append(
+            f"  - {pname} ({ptype}, {req}{enum_str}){nested_str}: {pdesc}"
+        )
     param_desc = "\n".join(param_lines) if param_lines else "  (none)"
 
     prompt = f"""Extract params for "{func_name}".
@@ -1487,19 +1584,21 @@ Schema:
 Query: {query}
 
 Return JSON object with param names as keys. Rules:
-1. Use correct types (int/float/str/bool/array).
-2. Fill ALL required params from the query. Omit missing optional params.
-3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
-4. For location params, include city + country/region/state when the city is well-known internationally (e.g., "Shanghai, China", "Tel Aviv, Israel", "Boston, MA", "San Francisco, CA"). Use common abbreviations for US states.
-5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
-6. For boolean params, use JSON true/false.
-7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
-8. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
-9. When the query mentions a variable name like "myItemList", pass it as a STRING "myItemList", NOT as an actual array of objects.
-10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None.
+ 1. Use correct types (int/float/str/bool/array).
+ 2. Fill ALL required params from the query. Omit missing optional params.
+ 3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
+ 4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says "Boston", add the state/country: "Boston, MA".
+ 5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
+ 6. For boolean params, use JSON true/false.
+ 7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
+ 8. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2"). If the param expects a callable, format as "lambda x: x**2".
+ 9. When the query mentions a variable name like "myItemList", pass it as a STRING "myItemList", NOT as an actual array of objects. This applies even if the param type is "array" or "dict" — if the query only provides a variable name, pass the name as a string.
+10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None. If the query says "a processing function", pass "processFunction".
 11. For dict/object params, use the exact key names from the query (e.g., if query says "nm" and "mn", use those keys, not "name" and "moduleName").
 12. For optional params, only include them if the query explicitly provides a value. Do NOT guess or fabricate values for optional params.
 13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Shanghai" not "上海", "Tokyo" not "東京").
+14. Read parameter descriptions carefully — if a param says "the first and larger", assign the larger value to it. If it says "the second", assign the second value from the query.
+15. For float params, use full precision from the query (e.g., gravity 9.81 → 9.81, not 9.8).
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1768,6 +1867,10 @@ def carm_route_bfcl(
                 functions, seg, ollama_url, ollama_model
             )
             if seg_selected:
+                # Dedup similar functions within the same segment
+                seg_selected = dedup_similar_functions(
+                    seg_selected, seg, ollama_url, ollama_model
+                )
                 for f in seg_selected:
                     seg_func_list.append((seg, f))
                     selected_names.add(f["name"])
@@ -1801,6 +1904,9 @@ def carm_route_bfcl(
         if not selected:
             logger.info("LLM fallback found no match → []")
             return "[]"
+
+        # Dedup similar functions
+        selected = dedup_similar_functions(selected, query, ollama_url, ollama_model)
 
         # Trust LLM selection — it already made a semantic judgment
         # The select_function_via_llm prompt includes instructions to return [] for irrelevant
