@@ -1850,17 +1850,18 @@ def format_function_call(func_name: str, params: dict) -> str:
 
 
 def _post_process_params(
-    calls: list[tuple[str, dict]], functions: list[dict]
+    calls: list[tuple[str, dict]], functions: list[dict], query: str = ""
 ) -> list[tuple[str, dict]]:
     """Fix common LLM param extraction issues that prompts alone can't reliably fix."""
     func_map = {f["name"]: f for f in functions}
+    query_lower = query.lower()
     fixed = []
     for name, params in calls:
         func = func_map.get(name)
         if func:
             param_props = func.get("parameters", {}).get("properties", {})
-            # Fix 1: For "any" type required params that are None, replace with param name string
             required = func.get("parameters", {}).get("required", [])
+            # Fix 1: For "any" type required params that are None, replace with param name string
             for pname, pinfo in param_props.items():
                 if pname in required and pinfo.get("type") == "any":
                     if params.get(pname) is None:
@@ -1870,7 +1871,6 @@ def _post_process_params(
             for pname, pinfo in param_props.items():
                 pdesc = pinfo.get("description", "").lower()
                 if "first and larger" in pdesc and pname in params:
-                    # Find the "second" param
                     for pname2, pinfo2 in param_props.items():
                         if (
                             "second" in pinfo2.get("description", "").lower()
@@ -1884,6 +1884,21 @@ def _post_process_params(
                             except (ValueError, TypeError):
                                 pass
                             break
+            # Fix 3: Remove optional "unit" param if query doesn't mention any unit keyword
+            if "unit" in params and "unit" not in required:
+                unit_keywords = [
+                    "celsius",
+                    "fahrenheit",
+                    "kelvin",
+                    "imperial",
+                    "metric",
+                    "seconds",
+                    "milliseconds",
+                    "minutes",
+                    "hours",
+                ]
+                if not any(kw in query_lower for kw in unit_keywords):
+                    params.pop("unit", None)
         fixed.append((name, params))
     return fixed
 
@@ -2245,7 +2260,7 @@ def carm_route_bfcl(
     calls = deduped_calls
 
     # Post-processing: fix common LLM param extraction issues
-    calls = _post_process_params(calls, functions)
+    calls = _post_process_params(calls, functions, query)
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
