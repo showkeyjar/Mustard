@@ -2014,11 +2014,34 @@ def _post_process_params(
             if "recipient" in params:
                 recip = str(params["recipient"]).lower().strip()
                 if recip in ("him", "her", "them", "his", "her"):
-                    # Look for person names in the query
-                    name_match = re.search(r"\b([A-Z][a-z]+(?:'s)?)\b", query)
-                    if name_match:
-                        inferred_name = name_match.group(1).replace("'s", "")
-                        params["recipient"] = inferred_name
+                    # Look for person names in the query, skipping common
+                    # sentence-starting words (Could, Find, Please, etc.)
+                    stop_words_9 = {
+                        "could",
+                        "find",
+                        "please",
+                        "would",
+                        "should",
+                        "can",
+                        "will",
+                        "hey",
+                        "hello",
+                        "hi",
+                        "dear",
+                        "tell",
+                        "get",
+                        "check",
+                        "look",
+                        "search",
+                    }
+                    for m_9 in re.finditer(r"\b([A-Z][a-z]+(?:'s)?)\b", query):
+                        candidate_9 = m_9.group(1).replace("'s", "")
+                        if candidate_9.lower() not in stop_words_9:
+                            params["recipient"] = candidate_9
+                            logger.info(
+                                f"Fix 9: inferred recipient='{candidate_9}' from query"
+                            )
+                            break
             # Fix 10: For US city names without state, add state abbreviation
             # for known cities that GT expects with state
             # BUT only if the function doesn't have a separate "state" param
@@ -2240,18 +2263,57 @@ def _post_process_params(
                     if not re.search(r"\b(19|20)\d{2}\b", query_lower_yr):
                         del params["year"]
                         logger.info("Fix 27: removed unmentioned year param")
-            # Fix 28: For restaurant.search, remove rating if not explicitly
-            # mentioned in query near that restaurant's location
+            # Fix 28: For restaurant.search, remove rating if the rating value
+            # is not explicitly associated with this restaurant in the query
             if name == "restaurant.search" and "rating" in params:
                 query_lower_rt = query.lower()
-                rating_val = str(params["rating"])
-                if rating_val not in query_lower_rt:
-                    if (
-                        "high-rated" not in query_lower_rt
-                        and "highly rated" not in query_lower_rt
-                    ):
+                rating_val = params["rating"]
+                rating_strs = set()
+                if isinstance(rating_val, (int, float)):
+                    rating_strs.add(str(int(rating_val)))
+                    rating_strs.add(str(rating_val))
+                else:
+                    rating_strs.add(str(rating_val))
+                loc_val = str(params.get("location", "")).lower()
+                loc_core = loc_val.split(",")[0].strip() if loc_val else ""
+                # Strategy: find "high-rated of N" or "highly rated N" in query
+                # and check if this restaurant's location appears AFTER that phrase
+                hr_pattern = re.search(
+                    r"high[- ]rated\s+(?:of\s+)?(\d+)", query_lower_rt
+                )
+                if hr_pattern:
+                    hr_start = hr_pattern.start()
+                    hr_end = hr_pattern.end()
+                    hr_rating = int(hr_pattern.group(1))
+                    # This rating is valid only if:
+                    # 1. The rating value matches
+                    # 2. The location appears AFTER the "high-rated of N" phrase
+                    #    AND NOT before it (if it appears before, it's a different restaurant)
+                    if int(rating_val) == hr_rating and loc_core:
+                        loc_before_hr = query_lower_rt.find(loc_core, 0, hr_start)
+                        loc_after_hr = query_lower_rt.find(loc_core, hr_end)
+                        if loc_after_hr >= 0 and loc_before_hr < 0:
+                            # Location only after high-rated — keep rating
+                            logger.info(
+                                f"Fix 28: kept rating {rating_val} (location only after high-rated)"
+                            )
+                        else:
+                            del params["rating"]
+                            logger.info(
+                                f"Fix 28: removed rating {rating_val} (location also before high-rated)"
+                            )
+                    elif int(rating_val) != hr_rating:
                         del params["rating"]
-                        logger.info("Fix 28: removed unmentioned rating param")
+                        logger.info(
+                            f"Fix 28: removed rating {rating_val} (doesn't match high-rated value {hr_rating})"
+                        )
+                else:
+                    # No "high-rated" pattern — remove if rating not in query
+                    if not any(rs in query_lower_rt for rs in rating_strs):
+                        del params["rating"]
+                        logger.info(
+                            f"Fix 28: removed rating {rating_val} (not in query)"
+                        )
             # Fix 31: For simple_java/javascript, when param value is a dict
             # but query has a backtick/quoted variable near the param name,
             # replace dict with the variable name string
@@ -2557,6 +2619,19 @@ def _post_process_params(
             for idx in indices:
                 all_params.update(fixed[idx][1].keys())
             for pname in all_params:
+                # Skip params that are intentionally different per call
+                if pname in (
+                    "rating",
+                    "location",
+                    "cuisine",
+                    "area",
+                    "type",
+                    "food_name",
+                    "drink",
+                    "_from",
+                    "to",
+                ):
+                    continue
                 # Find a call that has this param
                 donor_idx = None
                 donor_val = None
