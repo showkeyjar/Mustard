@@ -872,6 +872,7 @@ Parameters: {", ".join(param_names)}
 Query: "{query}"
 
 Important: When a user asks about "all clouds" or "all providers", this INCLUDES any specific cloud service like AWS, GCP, or Azure. So a function that gets AWS pricing IS relevant to a query about "all clouds".
+Note: "temperature" is a weather concept — a weather function IS relevant to a temperature query. "Can you tell me" is a polite request, not irrelevance.
 
 Reject if:
 - The function is a generic utility (requests.get, print, etc.) and the user is asking a domain question
@@ -1487,15 +1488,16 @@ CRITICAL RULES:
 3. Do NOT invent extra calls for unrelated functions — only generate calls for {func_name}.
 4. Use correct types (int/float/str/bool). Omit missing optional params.
 5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
- 6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says "Boston", add the state/country: "Boston, MA".
+ 6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state, add the country: "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam".
 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
 10. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about".
 11. For "function" params in math operations, use ** for exponentiation (e.g. "x**2" not "x^2").
 12. Do NOT return duplicate objects with the same params.
-13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Shanghai" not "上海", "Tokyo" not "東京").
+13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Guangzhou" not "广州", "Shanghai" not "上海", "Tokyo" not "東京", "Seoul" not "서울").
 14. When the query has multiple commands separated by "and" (e.g., "list files and create file"), create one object PER command.
+15. If the query mentions a landmark but specifies a city (e.g., "Yosemite National Park which locates at Mariposa, CA"), use the CITY as the location, not the landmark.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1587,7 +1589,7 @@ Return JSON object with param names as keys. Rules:
  1. Use correct types (int/float/str/bool/array).
  2. Fill ALL required params from the query. Omit missing optional params.
  3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
- 4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says "Boston", add the state/country: "Boston, MA".
+ 4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state, add the country: "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam".
  5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
  6. For boolean params, use JSON true/false.
  7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
@@ -1596,9 +1598,10 @@ Return JSON object with param names as keys. Rules:
 10. When a param expects a function/callback (type "any"), pass the function name as a STRING (e.g., "processFunction"), NOT null/None. If the query says "a processing function", pass "processFunction".
 11. For dict/object params, use the exact key names from the query (e.g., if query says "nm" and "mn", use those keys, not "name" and "moduleName").
 12. For optional params, only include them if the query explicitly provides a value. Do NOT guess or fabricate values for optional params.
-13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Shanghai" not "上海", "Tokyo" not "東京").
+13. For location params, use the ENGLISH name of the city (e.g., "Beijing" not "北京", "Guangzhou" not "广州", "Shanghai" not "上海", "Tokyo" not "東京", "Seoul" not "서울").
 14. Read parameter descriptions carefully — if a param says "the first and larger", assign the larger value to it. If it says "the second", assign the second value from the query.
 15. For float params, use full precision from the query (e.g., gravity 9.81 → 9.81, not 9.8).
+16. If the query mentions a landmark but specifies a city (e.g., "Yosemite National Park which locates at Mariposa, CA"), use the CITY as the location, not the landmark.
 
 Example for math.factorial: {{"number":5}}"""
 
