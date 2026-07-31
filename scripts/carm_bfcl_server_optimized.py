@@ -2094,10 +2094,19 @@ def _post_process_params(
     to_remove = set()
     for name in func_names_present:
         # If this is a specialized variant and the general version is also present
-        # e.g., "generate_human_image" when "generate_image" is present
+        # Check by common prefix: "generate_human_image" and "generate_image" share "generate_" prefix
+        # and both end with "image"
+        name_parts = name.split("_")
         for other in func_names_present:
-            if other != name and other in name and len(other) < len(name):
-                # 'other' is a substring of 'name' and shorter → 'other' is the general version
+            if other == name:
+                continue
+            other_parts = other.split("_")
+            # If 'other' is shorter and shares the same first and last word
+            if (
+                len(other_parts) < len(name_parts)
+                and other_parts[0] == name_parts[0]
+                and other_parts[-1] == name_parts[-1]
+            ):
                 to_remove.add(name)
                 break
     if to_remove:
@@ -2105,22 +2114,35 @@ def _post_process_params(
         logger.info(f"Removed specialized variants: {to_remove}")
 
     # Fix 15: For parallel_multiple with same-prefix functions (e.g., kinematics.*),
-    # if the query says "same object" / "also compute", share params from first call
+    # if the query says "the same object" / "the object", share params from first call
+    # ONLY when query explicitly says "same" — "also" alone means different params
     query_lower_share = query.lower()
-    share_keywords = ["also", "same", "the object", "the car", "total distance"]
+    # "the same" or "same object" or "same calculation" → share params
+    share_keywords = [
+        "the same",
+        "same object",
+        "same car",
+        "the car",
+        "the moving",
+        "the object",
+    ]
     if len(fixed) >= 2 and any(kw in query_lower_share for kw in share_keywords):
-        # Find the first call's params and check if later calls have zero/default params
+        # Check if functions share a common prefix (e.g., kinematics.*)
+        first_name = fixed[0][0]
         first_params = fixed[0][1]
+        prefix = first_name.split(".")[0] if "." in first_name else ""
         for i in range(1, len(fixed)):
             name, params = fixed[i]
-            for pname, pval in first_params.items():
-                if pname in params:
-                    try:
-                        # If pred value is 0 or None but first call has a real value
-                        if float(pval) != 0 and float(params.get(pname, 0)) == 0:
-                            params[pname] = pval
-                    except (ValueError, TypeError):
-                        pass
+            # Only share if same prefix
+            if prefix and name.startswith(prefix + "."):
+                for pname, pval in first_params.items():
+                    if pname in params:
+                        try:
+                            # Share if values differ (the second call should use same params)
+                            if float(pval) != float(params.get(pname, pval)):
+                                params[pname] = pval
+                        except (ValueError, TypeError):
+                            pass
 
     # Fix 11: For "date" params where query says "same day", copy from
     # the first call's date
@@ -2276,10 +2298,15 @@ def carm_route_bfcl(
                 seg_func_list = filtered
                 selected_names = {f["name"] for _, f in seg_func_list}
 
-            verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
-            # Store the segment→function mapping for later use
-            # Use a list of (segment, function) pairs to handle multiple functions per segment
-            _seg_func_map = seg_func_list  # list of (seg, func) pairs
+            if selected_names:
+                verified = [(f, 0.0) for f in functions if f["name"] in selected_names]
+                # Store the segment→function mapping for later use
+                # Use a list of (segment, function) pairs to handle multiple functions per segment
+                _seg_func_map = seg_func_list  # list of (seg, func) pairs
+            else:
+                # All functions were filtered out as generic utilities for domain query
+                logger.info("All selected functions were generic utils → []")
+                return "[]"
         else:
             selected = select_function_via_llm(
                 functions, query, ollama_url, ollama_model
