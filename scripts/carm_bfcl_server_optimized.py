@@ -3581,12 +3581,19 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not found"})
 
     def do_POST(self):
-        if self.path in ("/v1/chat/completions", "/chat/completions"):
-            self._handle_chat_completions()
-        elif self.path in ("/v1/completions", "/completions"):
-            self._handle_completions()
-        else:
-            self._send_json(404, {"error": "not found"})
+        try:
+            if self.path in ("/v1/chat/completions", "/chat/completions"):
+                self._handle_chat_completions()
+            elif self.path in ("/v1/completions", "/completions"):
+                self._handle_completions()
+            else:
+                self._send_json(404, {"error": "not found"})
+        except Exception as e:
+            logger.error(f"do_POST unhandled error: {e}", exc_info=True)
+            try:
+                self._send_json(500, {"error": f"Internal error: {str(e)}"})
+            except:
+                pass
 
     def _handle_chat_completions(self):
         content_length = int(self.headers.get("Content-Length", 0))
@@ -3724,6 +3731,8 @@ def main():
     )
 
     server = ThreadingHTTPServer((args.host, args.port), CARMServerHandler)
+    server.daemon_threads = True
+    server.allow_reuse_address = True
     logger.info(f"CARM BFCL Server (optimized) starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
     logger.info(
