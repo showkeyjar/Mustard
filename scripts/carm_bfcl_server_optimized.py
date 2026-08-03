@@ -33,7 +33,7 @@ import json
 import logging
 import re
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import httpx
 
@@ -3723,7 +3723,7 @@ def main():
         ],
     )
 
-    server = HTTPServer((args.host, args.port), CARMServerHandler)
+    server = ThreadingHTTPServer((args.host, args.port), CARMServerHandler)
     logger.info(f"CARM BFCL Server (optimized) starting on {args.host}:{args.port}")
     logger.info(f"  Ollama: {OLLAMA_BASE_URL} / {OLLAMA_MODEL}")
     logger.info(
