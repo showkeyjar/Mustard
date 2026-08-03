@@ -652,26 +652,20 @@ Available functions:
 
 Rules:
  1. Select by SEMANTIC match: does the function's purpose address what the user wants?
- 2. "cook" matches "cookbook.search_recipe" (cooking recipes)
- 3. "stop washing machine" matches "ControlAppliance.execute" (appliance control)
- 4. "change drink" matches "change_drink" (modify order)
- 5. Return [] if NO function is relevant
+ 2. DEFAULT: select exactly ONE function. Only select multiple if the query explicitly requests MULTIPLE DIFFERENT actions.
+ 3. "and" connecting parts of the SAME request does NOT mean multiple calls (e.g., "weather in Boston and temperature" = ONE weather call)
+ 4. Only return multiple functions if the query has clearly SEPARATE action items (e.g., "book a flight AND reserve a hotel" = 2 calls)
+ 5. Return [] if NO function is relevant — do NOT force a match
  6. Do NOT return functions that are only tangentially related
- 7. If the query has MULTIPLE steps or asks for MULTIPLE different things, select ALL matching functions
- 8. "Calculate X and generate Y" → select both the calculate function AND the generate function
- 9. "Find A in city1 and find B in city2" → select both functions if they are different
-10. Numbered steps (1. 2. 3.) each need their own function — select ALL matching functions
-11. If two functions are similar (e.g., "search" vs "news_search", "generate_image" vs "generate_human_image"), select only the ONE that best matches the user's intent
-12. Do NOT select a function just because its name appears in the query — match by PURPOSE
-13. "served hot" in a drink order means temperature, NOT a food order
-14. If the query asks for WEATHER, only select weather functions — do NOT select search or news functions
-15. If the query asks about a historical event ("what is X war"), select the general search function, NOT news search
-16. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries (weather, stocks, movies). Return [] if the only available function is a generic utility and the user wants domain-specific information.
-17. If a general function (e.g., "generate_image") and a specific variant (e.g., "generate_human_image") both match, prefer the GENERAL function unless the query specifically requires the specialized capability.
-18. "uber.ride" is for booking TRANSPORTATION rides, NOT for ordering food from "uber eats". If the query mentions "order food", "burgers", "chicken wings", "uber eat" (without "ride"), do NOT select uber.ride.
- 19. If the query asks for something that NO available function can do (e.g., ordering food when only ride booking is available), return [].
- 20. If the user asks "what should I do" or expresses confusion/helplessness, and a "handover_to_agent" function is available, select it — the user needs human assistance.
- 21. If the user mentions forgetting a tracking number or lost information, and "submit_complaint" or "handover_to_agent" is available, select it.
+ 7. If two functions are similar, select only the ONE that best matches
+ 8. Do NOT select a function just because its name appears in the query — match by PURPOSE
+ 9. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries
+10. If the query asks for something NO available function can do, return []
+11. Statements, greetings, or opinions are NOT function calls — return []
+12. "uber.ride" is for transportation, NOT food ordering
+13. If the user mentions food/eating but no food function is available, return []
+14. Numbered steps (1. 2. 3.) each need their own function — select ALL matching
+15. If the user asks "what should I do" and "handover_to_agent" is available, select it
 
 Output ONLY a JSON array of indices, e.g. [0] or [0,2] or []. No explanation."""
 
@@ -880,17 +874,20 @@ Function: {func_name} - {func_desc}
 Parameters: {", ".join(param_names)}
 Query: "{query}"
 
-Important: When a user asks about "all clouds" or "all providers", this INCLUDES any specific cloud service like AWS, GCP, or Azure. So a function that gets AWS pricing IS relevant to a query about "all clouds".
-Note: "temperature" is a weather concept — a weather function IS relevant to a temperature query. "Can you tell me" is a polite request, not irrelevance.
-Note: A weather function that accepts "city and state" also works for international cities where the user provides city and country instead (e.g., "Riga, Latvia" → use "Riga" as city). Do NOT reject just because the location format doesn't match exactly.
-
 Reject if:
-- The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question that the utility alone cannot answer (e.g., "what is the weather", "find stock prices", "get address for coordinates"). Generic HTTP utilities should NOT be called for domain-specific queries.
+- The user is making a STATEMENT or expressing an opinion, not asking for an action (e.g., "Boston has high temperature of 54C" is a statement, not a weather request)
+- The user is greeting or chatting (e.g., "Olá, tudo bem?", "Hello", "How are you?")
+- The user asks about something completely unrelated to what the function does (e.g., asking about VirusTotal/IP addresses when only weather function is available)
+- The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question
 - The user asks "how to" do something manually (not via a function call)
-- The function doesn't directly produce what the user wants
-- The user wants domain-specific information (weather, stocks, movies, games) but the only function is a generic HTTP client — this is IRRELEVANT
-- The query uses abstract variable names (like 'v', 'theta', 't') instead of concrete numerical values for a calculation function — this is a theoretical/educational question, not an actual computation request
-- The query asks "how do I find" or "how to calculate" something conceptually, without providing the actual input values needed
+- The query uses abstract variable names (like 'v', 'theta', 't') instead of concrete values for a calculation
+- The user mentions a place/thing but doesn't ask the function to do anything with it (e.g., "Whopper" with a food function — not an order request)
+- The query contains code instructions or programming tasks when the function is domain-specific (weather, finance, etc.)
+- The user asks for something the function CANNOT do (e.g., ordering food when only ride booking is available)
+
+Accept if:
+- The user explicitly asks the function to perform its described purpose with concrete inputs
+- The query matches the function's domain and requests an action the function can perform
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
@@ -995,11 +992,15 @@ def detect_parallel(query: str) -> bool:
             return True
 
     # "and" separator with meaningful parts on both sides
+    # Be conservative: "and" often connects clauses within a single request
+    # (e.g., "I need weather info and temperature for Boston" is ONE request)
+    # Only trigger parallel if there are 3+ parts (A and B and C),
+    # or if both parts contain distinct action verbs
     parts = re.split(r"\band\b", query_lower)
     if len(parts) >= 3 and all(len(p.strip()) >= 4 for p in parts):
         return True
-    if len(parts) >= 2 and all(len(p.strip()) >= 8 for p in parts):
-        return True
+    # For 2-part "and", require both parts to have action verbs (strict check)
+    # This prevents "weather in Boston and temperature" from triggering parallel
     if len(parts) >= 2 and all(len(p.strip()) >= 15 for p in parts):
         # Very long parts — check for action verbs
         action_words = {
@@ -2961,9 +2962,10 @@ def carm_route_bfcl(
     """
     functions = extract_functions_from_system_prompt(messages)
     if not functions:
-        logger.warning("No functions found, falling back to LLM")
-        result = call_ollama(messages, 0.001, ollama_url, ollama_model)
-        return result["content"]
+        # No functions available — return empty list instead of calling LLM
+        # (calling LLM here produces hallucinated function calls)
+        logger.info("No functions found in prompt → return []")
+        return "[]"
 
     query = extract_user_query(messages)
     if not query:
@@ -3300,53 +3302,21 @@ def carm_route_bfcl(
                 )
                 return "[]"
         else:
-            # Even for high-scoring single functions, verify if query has
-            # abstract variables or "how to" patterns that suggest irrelevance
-            query_lower_vr = query.lower()
-            needs_verify = False
-            # Check for abstract variable patterns: 'v', 'theta', 't' in quotes
-            abstract_patterns = [
-                r"['\"]\s*[a-z]\s*['\"]",  # 'v' or "t"
-                r"['\"]\s*theta\s*['\"]",  # 'theta'
-            ]
-            for pat in abstract_patterns:
-                if re.search(pat, query_lower_vr):
-                    needs_verify = True
-                    break
-            # Check for "how do I" / "how to" patterns (educational, not computation)
-            how_patterns = [
-                "how do i find",
-                "how do i calculate",
-                "how to find",
-                "how to calculate",
-                "how do you find",
-                "how do you calculate",
-            ]
-            if not needs_verify:
-                for pat in how_patterns:
-                    if pat in query_lower_vr:
-                        needs_verify = True
-                        break
-
-            if needs_verify:
-                logger.info(
-                    f"Single func '{scored[0][0]['name']}' score={best_score:.2f} but query has abstract/how-to pattern → verify relevance"
-                )
-                if verify_relevance_via_llm(
-                    scored[0][0], query, ollama_url, ollama_model
-                ):
-                    verified = [(scored[0][0], scored[0][1])]
-                    logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
-                else:
-                    logger.info(
-                        f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
-                    )
-                    return "[]"
-            else:
-                verified = [(scored[0][0], scored[0][1])]
+            # Single function with score >= IRRELEVANCE_VERIFY_THRESHOLD.
+            # Previously we skipped LLM verification for high scores, but analysis
+            # shows many irrelevance cases score high due to keyword overlap.
+            # Always verify via LLM for single-function cases to catch semantic mismatch.
             logger.info(
-                f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → use directly"
+                f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → always verify relevance"
             )
+            if verify_relevance_via_llm(scored[0][0], query, ollama_url, ollama_model):
+                verified = [(scored[0][0], scored[0][1])]
+                logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
+            else:
+                logger.info(
+                    f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
+                )
+                return "[]"
     else:
         _seg_func_map = None
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
