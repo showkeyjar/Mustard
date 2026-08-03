@@ -1886,6 +1886,14 @@ def _post_process_params(
     calls: list[tuple[str, dict]], functions: list[dict], query: str = ""
 ) -> list[tuple[str, dict]]:
     """Fix common LLM param extraction issues that prompts alone can't reliably fix."""
+    # === OVERFITTING GUARD ===
+    # All Fix 1-39 below are targeted patches for specific BFCL test cases.
+    # They do NOT generalize to unseen data and have been disabled to measure
+    # the model's true capability. Set ENABLE_POST_PROCESS_FIXES=True to re-enable.
+    ENABLE_POST_PROCESS_FIXES = False
+    if not ENABLE_POST_PROCESS_FIXES:
+        return list(calls)
+
     func_map = {f["name"]: f for f in functions}
     query_lower = query.lower()
     fixed = []
