@@ -666,7 +666,7 @@ Rules:
  9. Generic utility functions (requests.get, print, len) should NOT be selected for domain-specific queries
 10. If the query asks for something NO available function can do, return []
 11. Statements, greetings, or opinions are NOT function calls — return []
-12. "uber.ride" is for transportation, NOT food ordering
+12. "uber.ride" is for transportation, NOT food ordering; but "uber.eat.order" IS for food delivery
 13. If the user mentions food/eating but no food function is available, return []
 14. Numbered steps (1. 2. 3.) each need their own function — select ALL matching
 15. If the user asks "what should I do" and "handover_to_agent" is available, select it
@@ -3363,9 +3363,19 @@ def carm_route_bfcl(
         # Domain mismatch guard: if function name suggests one domain but query
         # is clearly about a different domain, reject
         func_name = scored[0][0].get("name", "").lower()
+        func_desc = scored[0][0].get("description", "").lower()
         query_lower_dm = query.lower()
-        # Ride/transport functions should not be called for food ordering
-        if any(kw in func_name for kw in ["ride", "uber", "taxi", "lyft"]):
+
+        # Check if the function is actually a food-ordering function (e.g., uber.eat.order)
+        # even though its name contains "uber"
+        is_food_func = any(
+            kw in func_desc or kw in func_name
+            for kw in ["eat", "food delivery", "food order", "place an order for food"]
+        )
+        # Only apply ride/transport guard if function is NOT a food-ordering function
+        if not is_food_func and any(
+            kw in func_name for kw in ["ride", "uber", "taxi", "lyft"]
+        ):
             food_keywords = [
                 "burger",
                 "chicken",
