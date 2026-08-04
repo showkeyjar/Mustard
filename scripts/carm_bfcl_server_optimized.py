@@ -1044,6 +1044,24 @@ def detect_parallel(query: str) -> bool:
         if all(any(aw in p for aw in action_words) for p in parts):
             return True
 
+    # "and" connects two independent clauses each containing a number+unit
+    # e.g., "size 3000 sq ft. in New York and 4000 sq ft. in Los Angeles"
+    # This is parallel: two separate entities with their own measurements
+    if len(parts) >= 2:
+        unit_patterns = [
+            r"\d+\s*sq\s*ft",
+            r"\d+\s*sq\s*m",
+            r"\d+\s*(?:kg|lb|pound)",
+            r"\d+\s*(?:km|mi|mile)",
+            r"\d+\s*(?:USD|dollars|\$)",
+            r"\d+\s*(?:°|degree|celsius|fahrenheit)",
+            r"\d+\s*(?:year|month|day|hour|minute|second)s?",
+            r"\$\d+",
+        ]
+        for pat in unit_patterns:
+            if all(re.search(pat, p) for p in parts[:2]):
+                return True
+
     # Weather/temperature queries with "and" connecting locations
     # "weather in X and Y" or "temperature in X and Y"
     weather_context_words = {
@@ -1238,6 +1256,35 @@ def detect_parallel(query: str) -> bool:
                 }
                 if any(lw in p1 for lw in list_words):
                     return True
+
+    # "respectively" pattern — strong parallel indicator
+    # "Play songs from Taylor Swift and Maroon 5, with play time of 20 and 15 minutes, respectively"
+    # "Calculate sales tax for $30 in Chicago and $52 in Sacramento, respectively"
+    if re.search(r"\brespectively\b", query_lower):
+        return True
+
+    # Multi-entity patterns: "$X in City1, $Y in City2 and $Z in City3"
+    # Each entity has a value+location pair → multiple calls
+    if re.search(r"\$[\d.]+\s+(?:in|for|at)\s+\w+", query_lower):
+        # Count dollar amounts — each likely needs a separate call
+        dollar_count = len(re.findall(r"\$[\d.]+", query))
+        if dollar_count >= 2:
+            return True
+
+    # "for X, Y and Z" + unit pattern — e.g., "for 10, 20 and 30 years"
+    # "for 10, 20 and 30 years" → 3 calls
+    if re.search(
+        r"\bfor\s+([\d\s,.and]+?)\s+(?:years?|months?|days?|times?|iterations?|people|users|items?|calls?|entries|records)\b",
+        query_lower,
+    ):
+        for_match = re.search(
+            r"\bfor\s+([\d\s,.and]+?)\s+(?:years?|months?|days?|times?|iterations?|people|users|items?|calls?|entries|records)\b",
+            query_lower,
+        )
+        if for_match:
+            nums = re.findall(r"[\d.]+", for_match.group(1))
+            if len(nums) >= 2:
+                return True
 
     # "X and Y, A and B" pattern — two pairs of items
     # e.g., "3 and 4, 5 and 12" → two pythagorean calculations
@@ -3303,20 +3350,31 @@ def carm_route_bfcl(
                 return "[]"
         else:
             # Single function with score >= IRRELEVANCE_VERIFY_THRESHOLD.
-            # Previously we skipped LLM verification for high scores, but analysis
-            # shows many irrelevance cases score high due to keyword overlap.
-            # Always verify via LLM for single-function cases to catch semantic mismatch.
-            logger.info(
-                f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → always verify relevance"
-            )
-            if verify_relevance_via_llm(scored[0][0], query, ollama_url, ollama_model):
+            # For very high scores (>=0.85), signal matching is extremely strong
+            # (function name + description both match query keywords).
+            # LLM verification at this level causes false rejections (e.g.,
+            # spotify.play for "Play songs from Taylor Swift and Maroon 5").
+            # Only verify via LLM for moderate scores (0.3–0.85) where
+            # irrelevance cases commonly land due to keyword overlap.
+            if best_score >= 0.85:
+                logger.info(
+                    f"Single func '{scored[0][0]['name']}' score={best_score:.2f} >= 0.85 → trust signal (skip LLM verify)"
+                )
                 verified = [(scored[0][0], scored[0][1])]
-                logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
             else:
                 logger.info(
-                    f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
+                    f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → verify relevance via LLM"
                 )
-                return "[]"
+                if verify_relevance_via_llm(
+                    scored[0][0], query, ollama_url, ollama_model
+                ):
+                    verified = [(scored[0][0], scored[0][1])]
+                    logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
+                else:
+                    logger.info(
+                        f"LLM rejected single func '{scored[0][0]['name']}' as irrelevant → []"
+                    )
+                    return "[]"
     else:
         _seg_func_map = None
         relevant = [(f, s) for f, s in scored if s >= effective_threshold]
