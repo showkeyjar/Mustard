@@ -879,7 +879,7 @@ Parameters: {", ".join(param_names)}
 Query: "{query}"
 
 Reject if:
-- The user is making a STATEMENT or expressing an opinion, not asking for an action (e.g., "Boston has high temperature of 54C" is a statement, not a weather request)
+- The user is making a PURE STATEMENT with no request for action (e.g., "Boston has high temperature of 54C" is a statement; but "I'm at Riga, can you tell me the temperature?" IS a request)
 - The user is greeting or chatting (e.g., "Olá, tudo bem?", "Hello", "How are you?")
 - The user asks about something completely unrelated to what the function does (e.g., asking about VirusTotal/IP addresses when only weather function is available)
 - The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question
@@ -890,6 +890,8 @@ Accept if:
 - The query matches the function's domain and requests an action the function can perform
 - The user uses action verbs like "order", "get", "find", "calculate", "reverse", "sum", "search", "book", "play", "send" matching the function's purpose
 - "I want to order X" or "get me X" are valid action requests, not mere statements
+- The function's purpose is to PARSE or PROCESS a text string (e.g., "answer.string", "parseAnswer") and the user's message IS the text to be processed — this is a valid function call, not a statement
+- The function processes LLM output (e.g., "Parses the response from an LLM") and the query starts with "Sure, here is the answer" or similar LLM-style output
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
