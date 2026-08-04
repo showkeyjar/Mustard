@@ -3462,7 +3462,59 @@ def carm_route_bfcl(
                     f"'How to' pattern for calc func → reject (score={best_score:.2f})"
                 )
                 return "[]"
-            if verify_relevance_via_llm(scored[0][0], query, ollama_url, ollama_model):
+
+            # Fast-path: skip LLM verification for strong keyword-domain matches
+            # where the function name/description and query clearly align
+            func_name_check = scored[0][0].get("name", "").lower()
+            func_desc_check = scored[0][0].get("description", "").lower()
+            query_check = query.lower()
+            # Weather: function mentions weather/temperature, query mentions temperature/weather
+            if any(
+                kw in func_name_check or kw in func_desc_check
+                for kw in ["weather", "temperature", "forecast"]
+            ) and any(
+                kw in query_check
+                for kw in [
+                    "weather",
+                    "temperature",
+                    "fahren",
+                    "celsius",
+                    "hot",
+                    "cold",
+                    "degrees",
+                ]
+            ):
+                logger.info(
+                    f"Weather fast-path: skip LLM verify for '{func_name_check}'"
+                )
+                verified = [(scored[0][0], scored[0][1])]
+            # Distance: function mentions distance, query mentions distance/miles/km
+            elif any(
+                kw in func_name_check or kw in func_desc_check
+                for kw in ["distance", "calculate_distance"]
+            ) and any(
+                kw in query_check
+                for kw in ["distance", "miles", "kilometer", "how far"]
+            ):
+                logger.info(
+                    f"Distance fast-path: skip LLM verify for '{func_name_check}'"
+                )
+                verified = [(scored[0][0], scored[0][1])]
+            # Lawsuit: function mentions lawsuit, query mentions lawsuit/case
+            elif any(
+                kw in func_name_check or kw in func_desc_check
+                for kw in ["lawsuit", "legal_case"]
+            ) and any(
+                kw in query_check
+                for kw in ["lawsuit", "case", "patent", "court", "sue"]
+            ):
+                logger.info(
+                    f"Lawsuit fast-path: skip LLM verify for '{func_name_check}'"
+                )
+                verified = [(scored[0][0], scored[0][1])]
+            elif verify_relevance_via_llm(
+                scored[0][0], query, ollama_url, ollama_model
+            ):
                 verified = [(scored[0][0], scored[0][1])]
                 logger.info(f"LLM confirmed relevance: {scored[0][0]['name']}")
             else:
