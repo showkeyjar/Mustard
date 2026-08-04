@@ -3539,7 +3539,50 @@ def carm_route_bfcl(
                 logger.info(
                     f"Single func '{scored[0][0]['name']}' score={best_score:.2f} → verify relevance via LLM"
                 )
-                if verify_relevance_via_llm(
+                # Fast-path: skip LLM verification for strong keyword-domain matches
+                func_name_fp = scored[0][0].get("name", "").lower()
+                func_desc_fp = scored[0][0].get("description", "").lower()
+                query_fp = query.lower()
+                skip_verify = False
+                if any(
+                    kw in func_name_fp or kw in func_desc_fp
+                    for kw in ["weather", "temperature", "forecast"]
+                ) and any(
+                    kw in query_fp
+                    for kw in [
+                        "weather",
+                        "temperature",
+                        "fahren",
+                        "celsius",
+                        "hot",
+                        "cold",
+                        "degrees",
+                    ]
+                ):
+                    skip_verify = True
+                elif any(
+                    kw in func_name_fp or kw in func_desc_fp
+                    for kw in ["distance", "calculate_distance"]
+                ) and any(
+                    kw in query_fp
+                    for kw in ["distance", "miles", "kilometer", "how far"]
+                ):
+                    skip_verify = True
+                elif any(
+                    kw in func_name_fp or kw in func_desc_fp
+                    for kw in ["lawsuit", "legal_case"]
+                ) and any(
+                    kw in query_fp
+                    for kw in ["lawsuit", "case", "patent", "court", "sue"]
+                ):
+                    skip_verify = True
+
+                if skip_verify:
+                    logger.info(
+                        f"Fast-path: skip LLM verify for '{func_name_fp}' (score={best_score:.2f})"
+                    )
+                    verified = [(scored[0][0], scored[0][1])]
+                elif verify_relevance_via_llm(
                     scored[0][0], query, ollama_url, ollama_model
                 ):
                     verified = [(scored[0][0], scored[0][1])]
