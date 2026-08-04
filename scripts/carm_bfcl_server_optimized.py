@@ -884,14 +884,12 @@ Reject if:
 - The user asks about something completely unrelated to what the function does (e.g., asking about VirusTotal/IP addresses when only weather function is available)
 - The function is a generic utility (requests.get, print, len, etc.) and the user is asking a domain question
 - The user asks "how to" do something manually (not via a function call)
-- The query uses abstract variable names (like 'v', 'theta', 't') instead of concrete values for a calculation
-- The user mentions a place/thing but doesn't ask the function to do anything with it (e.g., "Whopper" with a food function — not an order request)
-- The query contains code instructions or programming tasks when the function is domain-specific (weather, finance, etc.)
-- The user asks for something the function CANNOT do (e.g., ordering food when only ride booking is available)
 
 Accept if:
 - The user explicitly asks the function to perform its described purpose with concrete inputs
 - The query matches the function's domain and requests an action the function can perform
+- The user uses action verbs like "order", "get", "find", "calculate", "reverse", "sum", "search", "book", "play", "send" matching the function's purpose
+- "I want to order X" or "get me X" are valid action requests, not mere statements
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
@@ -1676,7 +1674,7 @@ CRITICAL RULES:
  6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state:
     - Non-US cities: add the country (e.g., "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam", "Seoul" → "Seoul, South Korea")
     - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston")
-7. For boolean params, use JSON true/false (not Python True/False).
+ 7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
 10. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about".
