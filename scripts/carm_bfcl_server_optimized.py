@@ -521,6 +521,7 @@ def score_function_relevance(func: dict, query: str) -> float:
         "law",
         "movie",
         "weather",
+        "temperature",
         "ecology",
         "employee",
         "database",
@@ -570,6 +571,9 @@ def score_function_relevance(func: dict, query: str) -> float:
         ("coffee", "drink", 0.25),
         ("latte", "drink", 0.25),
         ("weather", "weather", 0.3),
+        ("temperature", "weather", 0.3),
+        ("forecast", "weather", 0.25),
+        ("climate", "weather", 0.2),
         ("news", "news", 0.3),
         ("movie", "movie", 0.25),
         ("revenue", "revenue_forecast", 0.4),
@@ -1957,6 +1961,18 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
                         if matched:
                             break
 
+            # If still not matched and enum has exactly one non-empty value,
+            # use that value (LLM often picks a related but wrong enum value)
+            if not matched and len(enum_vals) == 1:
+                coerced = enum_vals[0]
+                matched = True
+            # If enum has an empty string and one other value, prefer the non-empty
+            elif not matched and len(enum_vals) == 2 and "" in enum_vals:
+                non_empty = [ev for ev in enum_vals if ev != ""]
+                if non_empty:
+                    coerced = non_empty[0]
+                    matched = True
+
         # Clean keyword/search params: strip question prefixes
         if isinstance(coerced, str) and pname.lower() in (
             "keyword",
@@ -1971,6 +1987,16 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
                 coerced,
                 flags=re.IGNORECASE,
             ).strip()
+
+        # Trim country/state suffixes for "city" params
+        # e.g., "Tokyo, Japan" → "Tokyo" when param description says "city"
+        if (
+            isinstance(coerced, str)
+            and "city" in pschema.get("description", "").lower()
+        ):
+            # Only trim if there's a comma-separated suffix
+            if ", " in coerced:
+                coerced = coerced.split(", ")[0].strip()
 
         validated[pname] = coerced
 
