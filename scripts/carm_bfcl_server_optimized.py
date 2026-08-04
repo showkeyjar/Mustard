@@ -1988,16 +1988,6 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
                 flags=re.IGNORECASE,
             ).strip()
 
-        # Trim country/state suffixes for "city" params
-        # e.g., "Tokyo, Japan" → "Tokyo" when param description says "city"
-        if (
-            isinstance(coerced, str)
-            and "city" in pschema.get("description", "").lower()
-        ):
-            # Only trim if there's a comma-separated suffix
-            if ", " in coerced:
-                coerced = coerced.split(", ")[0].strip()
-
         validated[pname] = coerced
 
     return validated
