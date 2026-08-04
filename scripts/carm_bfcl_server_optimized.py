@@ -1307,6 +1307,82 @@ def detect_parallel(query: str) -> bool:
         if any(cw in query_lower for cw in compute_words):
             return True
 
+    # "and another" / "and a second" — explicit second request
+    if re.search(r"\band\s+another\b", query_lower):
+        return True
+    if re.search(r"\band\s+a\s+(?:second|third)\b", query_lower):
+        return True
+
+    # "X recipe and Y recipe" — two distinct recipe requests
+    if re.search(r"\brecipe\b.*\band\b.*\brecipe\b", query_lower):
+        return True
+
+    # "of X and Y" where X and Y are capitalized proper nouns (names, places)
+    # "presidency of Abraham Lincoln and George Washington"
+    if re.search(r"\bof\s+[A-Z][a-z]+\s+[A-Z][a-z]+\s+and\s+[A-Z][a-z]+", query):
+        return True
+
+    # "numbers X, Y, and Z" — multiple numbers to process
+    if re.search(r"\bnumbers?\s+\d+\s*,\s*\d+", query_lower):
+        return True
+    # "of the numbers X, Y"
+    if re.search(r"\bof\s+(?:the\s+)?numbers?\s+[\d,\s]+and\s+\d+", query_lower):
+        return True
+
+    # "pairs of numbers (X, Y) and (A, B)" — multiple pairs
+    if re.search(r"\(\s*\d+\s*,\s*\d+\s*\)\s*and\s*\(\s*\d+\s*,\s*\d+\s*\)", query):
+        return True
+
+    # "two" + noun (not just action nouns) — "two movie theatres", "two flights"
+    # Already partially handled above, but only for action nouns
+    # Expand to common object nouns
+    two_noun = re.search(r"\b(?:two|three|four)\s+(\w+)", query_lower)
+    if two_noun:
+        object_nouns = {
+            "movie",
+            "movies",
+            "theatre",
+            "theatres",
+            "theater",
+            "theaters",
+            "flight",
+            "flights",
+            "restaurant",
+            "restaurants",
+            "hotel",
+            "hotels",
+            "recipe",
+            "recipes",
+            "house",
+            "houses",
+            "car",
+            "cars",
+            "book",
+            "books",
+            "song",
+            "songs",
+            "store",
+            "stores",
+            "shop",
+            "shops",
+            "event",
+            "events",
+            "species",
+            "birds",
+            "charges",
+            "pairs",
+            "investments",
+        }
+        if two_noun.group(1) in object_nouns:
+            return True
+
+    # "Find X near me in Y and Z near me in W" — two location-based searches
+    if re.search(
+        r"\bnear\s+(?:me\s+)?in\s+\w+.*\band\b.*\bnear\s+(?:me\s+)?in\s+\w+",
+        query_lower,
+    ):
+        return True
+
     return False
 
 
