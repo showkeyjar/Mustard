@@ -892,6 +892,8 @@ Accept if:
 - "I want to order X" or "get me X" are valid action requests, not mere statements
 - The function's purpose is to PARSE or PROCESS a text string (e.g., "answer.string", "parseAnswer") and the user's message IS the text to be processed — this is a valid function call, not a statement
 - The function processes LLM output (e.g., "Parses the response from an LLM") and the query starts with "Sure, here is the answer" or similar LLM-style output
+- The function's description is BROAD enough to cover the query's specific sub-domain (e.g., "calculate_distance" covers Earth-to-Moon distance, not just GPS coordinates; "get_lawsuit_cases" covers patent lawsuits, not just general lawsuits)
+- The query uses a specifier that narrows the function's scope (e.g., "patent lawsuit" is still a "lawsuit" case; "miles" is still a "distance")
 
 Answer with ONLY one word: RELEVANT or IRRELEVANT."""
 
@@ -1693,6 +1695,12 @@ CRITICAL RULES:
 21. For directory/repo params, if a previous step cloned a repo (e.g., "git@github.com:user/repo-name.git"), use the repo name as the directory name.
 22. For math "function" params, do NOT add "math." prefix. Use "exp(-x**2)" not "math.exp(-x**2)", "sin(x)" not "math.sin(x)".
 23. When a query asks to compute multiple things about the SAME object, use the SAME parameter values for both functions.
+24. For "destination" params, extract ONLY the city name without the country (e.g., "Tokyo, Japan" → "Tokyo", "Paris, France" → "Paris").
+25. For "species" params, use the scientific name when the query mentions "human" (e.g., "human" → "Homo sapiens").
+26. For "cell_type" params, use the organism name only (e.g., "human cell" → "human", "plant cell" → "plant").
+27. For "unit" params, use the abbreviated form (e.g., "miles" → "mi", "kilometers" → "km").
+28. For "root_type" params, if the query says "all roots" or "find all", use "all" (not the default "real").
+29. For optional params with defaults (e.g., status="all"), if the query does not specify a value, OMIT the param rather than passing the default explicitly.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -1808,6 +1816,11 @@ Return JSON object with param names as keys. Rules:
 23. For math "function" params, do NOT add "math." prefix. Use "exp(-x**2)" not "math.exp(-x**2)", "sin(x)" not "math.sin(x)".
 23. When a query asks to compute multiple things about the SAME object (e.g., "final velocity AND distance covered by the object"), use the SAME parameter values (initial_velocity, acceleration, time) for both functions.
 25. For "root_type" params, if the query says "all roots" or "find all", use "all" (not the default "real").
+26. For "destination" params, extract ONLY the city name without the country (e.g., "Tokyo, Japan" → "Tokyo", "Paris, France" → "Paris").
+27. For "species" params, use the scientific name when the query mentions "human" (e.g., "human" → "Homo sapiens").
+28. For "cell_type" params, use the organism name only (e.g., "human cell" → "human", "plant cell" → "plant").
+29. For "unit" params, use the abbreviated form (e.g., "miles" → "mi", "kilometers" → "km", "fahrenheit" → "fahrenheit").
+30. For "status" params with default "all", if the query does not specify a status, OMIT the param (let the default apply) rather than passing "all" explicitly.
 
 Example for math.factorial: {{"number":5}}"""
 
@@ -1972,6 +1985,13 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
                 if non_empty:
                     coerced = non_empty[0]
                     matched = True
+            # If still not matched and the param is optional, drop it
+            # (e.g., status="Patent" when enum=["open","closed","all"])
+            if not matched and pname not in required:
+                logger.info(
+                    f"Enum param '{pname}' value '{coerced}' not in {enum_vals} and is optional → dropped"
+                )
+                continue
 
         # Clean keyword/search params: strip question prefixes
         if isinstance(coerced, str) and pname.lower() in (
