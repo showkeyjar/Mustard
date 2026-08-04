@@ -96,7 +96,7 @@ def build_messages(item: dict) -> tuple[list[dict], list[dict]]:
     return messages, functions
 
 
-def send_query(messages: list[dict], timeout: int = 120) -> str | None:
+def send_query(messages: list[dict], timeout: int = 60) -> str | None:
     """Send a chat completion request to CARM server."""
     try:
         r = httpx.post(
@@ -545,6 +545,15 @@ def run_eval(categories: list[str] | None = None, max_samples: int | None = None
             gt = gt_map.get(item_id, [])
 
             content = send_query(messages)
+
+            if idx % 50 == 0 and idx > 0:
+                elapsed = time.time() - t_start
+                rate = idx / elapsed if elapsed > 0 else 0
+                eta = (len(items) - idx) / rate if rate > 0 else 0
+                print(
+                    f"    [{cat}] {idx}/{len(items)} ({rate:.1f}/s, ETA {eta:.0f}s)",
+                    flush=True,
+                )
 
             if content is None:
                 errors.append(
