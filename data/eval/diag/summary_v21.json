@@ -1,0 +1,110 @@
+{
+  "parallel_multiple": {
+    "cat": "parallel_multiple",
+    "correct": 135,
+    "total": 200,
+    "accuracy": 67.5,
+    "transport_errors": 0,
+    "time_s": 982.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_multiple_v21.jsonl"
+  },
+  "live_parallel_multiple": {
+    "cat": "live_parallel_multiple",
+    "correct": 16,
+    "total": 24,
+    "accuracy": 66.67,
+    "transport_errors": 0,
+    "time_s": 95.0,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_parallel_multiple_v21.jsonl"
+  },
+  "simple_java": {
+    "cat": "simple_java",
+    "correct": 74,
+    "total": 100,
+    "accuracy": 74.0,
+    "transport_errors": 0,
+    "time_s": 222.5,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_java_v21.jsonl"
+  },
+  "simple_python": {
+    "cat": "simple_python",
+    "correct": 369,
+    "total": 400,
+    "accuracy": 92.25,
+    "transport_errors": 0,
+    "time_s": 792.5,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_python_v21.jsonl"
+  },
+  "multiple": {
+    "cat": "multiple",
+    "correct": 180,
+    "total": 200,
+    "accuracy": 90.0,
+    "transport_errors": 0,
+    "time_s": 362.7,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\multiple_v21.jsonl"
+  },
+  "parallel": {
+    "cat": "parallel",
+    "correct": 171,
+    "total": 200,
+    "accuracy": 85.5,
+    "transport_errors": 0,
+    "time_s": 623.0,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_v21.jsonl"
+  },
+  "irrelevance": {
+    "cat": "irrelevance",
+    "correct": 204,
+    "total": 240,
+    "accuracy": 85.0,
+    "transport_errors": 0,
+    "time_s": 158.1,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\irrelevance_v21.jsonl"
+  },
+  "live_simple": {
+    "cat": "live_simple",
+    "correct": 197,
+    "total": 258,
+    "accuracy": 76.36,
+    "transport_errors": 0,
+    "time_s": 524.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_simple_v21.jsonl"
+  },
+  "live_parallel": {
+    "cat": "live_parallel",
+    "correct": 11,
+    "total": 16,
+    "accuracy": 68.75,
+    "transport_errors": 0,
+    "time_s": 40.3,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_parallel_v21.jsonl"
+  },
+  "live_relevance": {
+    "cat": "live_relevance",
+    "correct": 15,
+    "total": 16,
+    "accuracy": 93.75,
+    "transport_errors": 0,
+    "time_s": 46.9,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_relevance_v21.jsonl"
+  },
+  "live_multiple": {
+    "cat": "live_multiple",
+    "correct": 722,
+    "total": 1053,
+    "accuracy": 68.57,
+    "transport_errors": 0,
+    "time_s": 2483.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_multiple_v21.jsonl"
+  },
+  "live_irrelevance": {
+    "cat": "live_irrelevance",
+    "correct": 573,
+    "total": 884,
+    "accuracy": 64.82,
+    "transport_errors": 0,
+    "time_s": 1217.9,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_irrelevance_v21.jsonl"
+  }
+}

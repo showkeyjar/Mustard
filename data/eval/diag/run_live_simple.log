@@ -1,0 +1,14 @@
+    [live_simple] 25/258 (0.27/s, ETA 871s)
+    [live_simple] 50/258 (0.22/s, ETA 945s)
+    [live_simple] 75/258 (0.22/s, ETA 822s)
+    [live_simple] 100/258 (0.23/s, ETA 695s)
+    [live_simple] 125/258 (0.23/s, ETA 579s)
+    [live_simple] 150/258 (0.25/s, ETA 425s)
+    [live_simple] 175/258 (0.27/s, ETA 302s)
+    [live_simple] 200/258 (0.29/s, ETA 199s)
+    [live_simple] 225/258 (0.31/s, ETA 107s)
+    [live_simple] 250/258 (0.32/s, ETA 25s)
+  live_simple               :  199/ 258 =  77.1%  (796s, 2 transport errors) -> live_simple_v16.jsonl
+
+TOTAL: 199/258 = 77.13%
+Summary -> D:\codes\Mustard\data\eval\diag\summary_v16.json

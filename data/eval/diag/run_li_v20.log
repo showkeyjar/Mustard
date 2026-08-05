@@ -1,0 +1,31 @@
+    [live_irrelevance] 25/400 (1.86/s, ETA 202s)
+    [live_irrelevance] 50/400 (1.84/s, ETA 190s)
+    [live_irrelevance] 75/400 (1.78/s, ETA 183s)
+    [live_irrelevance] 100/400 (1.73/s, ETA 173s)
+    [live_irrelevance] 125/400 (1.57/s, ETA 175s)
+    [live_irrelevance] 150/400 (1.24/s, ETA 202s)
+    [live_irrelevance] 175/400 (1.14/s, ETA 197s)
+    [live_irrelevance] 200/400 (1.11/s, ETA 180s)
+    [live_irrelevance] 225/400 (1.04/s, ETA 168s)
+    [live_irrelevance] 250/400 (0.99/s, ETA 151s)
+    [live_irrelevance] 275/400 (0.90/s, ETA 139s)
+    [live_irrelevance] 300/400 (0.85/s, ETA 118s)
+    [live_irrelevance] 325/400 (0.90/s, ETA 83s)
+    [live_irrelevance] 350/400 (0.92/s, ETA 54s)
+    [live_irrelevance] 375/400 (0.94/s, ETA 27s)
+    [live_irrelevance] 400/400 (0.94/s, ETA 0s)
+  live_irrelevance          :  314/ 400 =  78.5%  (424s, 0 transport errors) -> live_irrelevance_v20.jsonl
+    [live_simple] 25/258 (0.54/s, ETA 429s)
+    [live_simple] 50/258 (0.46/s, ETA 453s)
+    [live_simple] 75/258 (0.47/s, ETA 389s)
+    [live_simple] 100/258 (0.47/s, ETA 337s)
+    [live_simple] 125/258 (0.45/s, ETA 298s)
+    [live_simple] 150/258 (0.46/s, ETA 237s)
+    [live_simple] 175/258 (0.47/s, ETA 177s)
+    [live_simple] 200/258 (0.47/s, ETA 123s)
+    [live_simple] 225/258 (0.48/s, ETA 69s)
+    [live_simple] 250/258 (0.48/s, ETA 17s)
+  live_simple               :  197/ 258 =  76.4%  (534s, 0 transport errors) -> live_simple_v20.jsonl
+
+TOTAL: 511/658 = 77.66%
+Summary -> D:\codes\Mustard\data\eval\diag\summary_v20.json

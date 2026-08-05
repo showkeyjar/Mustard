@@ -1,0 +1,38 @@
+{
+  "live_parallel_multiple": {
+    "cat": "live_parallel_multiple",
+    "correct": 14,
+    "total": 24,
+    "accuracy": 58.33,
+    "transport_errors": 1,
+    "time_s": 92.6,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_parallel_multiple_v16.jsonl"
+  },
+  "parallel_multiple": {
+    "cat": "parallel_multiple",
+    "correct": 96,
+    "total": 200,
+    "accuracy": 48.0,
+    "transport_errors": 0,
+    "time_s": 1047.6,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_multiple_v16.jsonl"
+  },
+  "live_irrelevance": {
+    "cat": "live_irrelevance",
+    "correct": 279,
+    "total": 400,
+    "accuracy": 69.75,
+    "transport_errors": 3,
+    "time_s": 1023.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_irrelevance_v16.jsonl"
+  },
+  "live_simple": {
+    "cat": "live_simple",
+    "correct": 199,
+    "total": 258,
+    "accuracy": 77.13,
+    "transport_errors": 2,
+    "time_s": 796.5,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_simple_v16.jsonl"
+  }
+}

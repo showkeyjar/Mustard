@@ -1,0 +1,85 @@
+{
+  "_purpose": "改动F 的事前承诺清单。先写死预期，再跑评测，避免事后凑解释。",
+  "_written_before_eval": true,
+  "_date": "2026-08-05",
+
+  "_methodology_incident": {
+    "what_happened": "改动F 最初用 scripts/diag_recursive_split.py 做离线集合层面反事实，报 GAINED 16 / LOST 0，据此写入生产代码。落地后 scripts/test_recursive_split.py 回放只复现 10 例，且预测集 6 例未命中、3 例额外。",
+    "root_cause_1_baseline_drift": "原型跑在 F1 落地之前，基线是带捕获组 bug 的切分器；回放跑在 F1 之后。两者基线不同，F1 的贡献被误记到 F2 头上。",
+    "root_cause_2_mirror_unfaithful": "更严重：离线镜像本身不成立。scripts/diag_mirror_fidelity.py 用 v21 实测 jsonl 校验，线上集合正确率 87.1%，镜像 44.2%，二元一致率仅 55.4%。",
+    "why_mirror_failed": "看线上 trace 才发现生产管线逐段发一次 LLM 调用做函数选择（trace 里的 Verified 行，分数全 0.00），不是启发式 argmax；入口门控也是 has_parallel_hint and len(relevant)>=2，不是 detect_parallel。镜像在入口门控和选择机制两处都错。",
+    "rule_learned": "构造代理指标后，必须先拿真实系统输出校验保真度，才能用它做决策。未经校验的离线反事实不能作为部署依据。",
+    "candidate_C_killed": "由此还催生过一个 best-of 仲裁候选，在镜像上报 +52。损伤扫描显示它在非并行类别 LOST 4 / GAINED 1（过度选择），已废弃。"
+  },
+
+  "_trustworthy_offline_facts": {
+    "_note": "切分器是确定性代码、不含 LLM，以下事实可信；切分之后的影响不可离线预测。",
+    "f1_segmentation_changed_parallel": 74,
+    "f1_segmentation_changed_nonparallel": 11,
+    "f1_nonparallel_total_scanned": 3035,
+    "f1_splitter_winner_changed": [
+      "live_parallel_multiple_12-10-1", "live_parallel_multiple_20-17-0",
+      "parallel_multiple_11", "parallel_multiple_121", "parallel_multiple_139",
+      "parallel_multiple_142", "parallel_multiple_149", "parallel_multiple_182",
+      "parallel_multiple_192", "parallel_multiple_40", "parallel_multiple_62",
+      "parallel_multiple_69"
+    ],
+    "f1_mechanism": "捕获组把标记词漏成独立元素；'Also'/'Then'/'Next' 只有4字符，触发 all(len(p)>5) 守卫否决整条 transition 切分，查询跌落到带自验证的 fallback 切分器。该 bug 意外承担了质量门控作用。",
+    "f2_expanded_parallel": 20,
+    "f2_expanded_nonparallel": 1
+  },
+
+  "baseline_v21": {
+    "parallel_multiple": "135/200 (67.50%)",
+    "live_parallel_multiple": "16/24 (66.67%)",
+    "combined": "151/224 (67.41%)",
+    "judge_noise_floor": "v19->v21 逐样本翻转分析中噪声翻转 0/224，故本轮任何落在影响集之外的翻转都应视为异常信号，需排查评测框架"
+  },
+
+  "decision_ship_f2_alone_first": {
+    "rationale": "F2 触及 20 例、其中 12 例当前正确（回归风险小），且理据由失败分析独立支持。F1 触及 74 例、其中 50 例当前正确（回归风险大），且唯一理据已被证伪。捆绑上线会混淆归因：若结果持平将无法分辨是 F2 无效还是被 F1 抵消。故 F1 先回退，单独立项评估。",
+    "f1_reverted_in_prod": true
+  },
+
+  "v22_f2_only": {
+    "_config": "F1 回退（保留捕获组，= v21 行为）+ F2 递归再切分开启",
+
+    "_id_list_drift_incident": "本清单第一版记的影响集是 20 个 ID，那是在 F1 尚未回退时导出的。F1 一退，基础切分改变，F2 的展开集合变成 29 个。scripts/test_recursive_split.py 的切分契约断言抓到了这次漂移。教训与前面 root_cause_1 同源：影响集必须在**真正要上线的配置**下导出，否则事前承诺清单本身就是错的。",
+
+    "affected_ids_must_be_subset_of": [
+      "live_parallel_multiple_11-10-0", "live_parallel_multiple_3-2-1",
+      "parallel_multiple_105", "parallel_multiple_106", "parallel_multiple_107",
+      "parallel_multiple_111", "parallel_multiple_114", "parallel_multiple_117",
+      "parallel_multiple_119", "parallel_multiple_122", "parallel_multiple_123",
+      "parallel_multiple_132", "parallel_multiple_137", "parallel_multiple_144",
+      "parallel_multiple_153", "parallel_multiple_155", "parallel_multiple_167",
+      "parallel_multiple_171", "parallel_multiple_172", "parallel_multiple_174",
+      "parallel_multiple_180", "parallel_multiple_184", "parallel_multiple_191",
+      "parallel_multiple_61", "parallel_multiple_71", "parallel_multiple_72",
+      "parallel_multiple_81", "parallel_multiple_93", "parallel_multiple_94"
+    ],
+    "headroom_currently_failing": [
+      "live_parallel_multiple_11-10-0",
+      "parallel_multiple_106", "parallel_multiple_107", "parallel_multiple_114",
+      "parallel_multiple_117", "parallel_multiple_119", "parallel_multiple_122",
+      "parallel_multiple_137", "parallel_multiple_61", "parallel_multiple_81",
+      "parallel_multiple_93", "parallel_multiple_94"
+    ],
+    "regression_guard_currently_correct_count": 17,
+    "max_possible_gain": 12,
+    "segment_growth": "全部为 2->3 或 2->4，无更激进的展开；自验证门控在 29/29 上均成立",
+
+    "prediction": "净收益 >= +4 且回归 <= 3。若净收益 <= 0 则 F2 不部署。",
+    "_prediction_rationale": "17 例在险 vs 12 例上限，风险收益比不算宽裕。定 +4 的门槛是因为：12 例上限里有 6 例（106/117/119/122/137/94）是失败分析明确诊断出的『segs=2 但 gt_calls>=3』欠切分，属于 F2 的直接靶心；若这批都拿不下，说明欠切分不是真因。",
+    "falsifier": "若有影响集之外的样本翻转，说明评测框架或服务状态有问题，先查框架再看结论。v19->v21 的噪声本底是 0/224。",
+    "note_live_parallel_multiple": "F2 在 live_parallel_multiple 上仅 2 例展开（11-10-0 当前失败、3-2-1 当前正确），故该类别几乎是天然对照组。"
+  },
+
+  "v23_f1_only_deferred": {
+    "status": "deferred - 单独立项",
+    "headroom_currently_failing": 24,
+    "regression_risk_currently_correct": 50,
+    "prediction": "无先验，符号未知。这是诚实的'不知道，去测'，不预设方向。",
+    "note": "F1 有真实的效率收益（trace 证实每段一次 LLM 调用，孤立标记段白烧一次），但正确性优先。"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "live_irrelevance": {
+    "cat": "live_irrelevance",
+    "correct": 300,
+    "total": 400,
+    "accuracy": 75.0,
+    "transport_errors": 2,
+    "time_s": 428.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_irrelevance_v18.jsonl"
+  }
+}

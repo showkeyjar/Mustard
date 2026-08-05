@@ -1,0 +1,44 @@
+===== DAMAGE SCAN: 3035 samples =====
+
+F1 changed the SEGMENTATION on 11 samples
+   of which set also changed : 2
+     verb_whitelist -> verb_whitelist   8
+     no_split -> verb_whitelist         2
+     fallback -> verb_whitelist         1
+
+----- F1 alone            (S0 -> S1) -----
+  set changed : 2
+  GAINED      : 1   ['live_multiple_1013-242-0']
+  LOST        : 0   []
+  NEUTRAL     : 1
+
+----- F2 on top of F1     (S1 -> S2) -----
+  set changed : 1
+  GAINED      : 0   []
+  LOST        : 0   []
+  NEUTRAL     : 1
+
+----- candidate B: F1+F2  (S0 -> S2) -----
+  set changed : 3
+  GAINED      : 1   ['live_multiple_1013-242-0']
+  LOST        : 0   []
+  NEUTRAL     : 2
+
+----- candidate A: F2 only, keep bug (S0 -> S3) -----
+  set changed : 1
+  GAINED      : 0   []
+  LOST        : 0   []
+  NEUTRAL     : 1
+
+----- candidate C: F1+F2+best-of     (S0 -> S4) -----
+  set changed : 10
+  GAINED      : 1   ['live_multiple_1013-242-0']
+  LOST        : 4   ['live_multiple_132-50-4', 'live_multiple_180-76-0', 'live_multiple_483-146-8', 'live_multiple_53-22-0']
+  NEUTRAL     : 5
+
+===== CANDIDATE SUMMARY (vs v21 baseline S0) =====
+  B  F1 + F2                   GAINED   1   LOST   0   NET  +1
+  A  F2 only (retain bug)      GAINED   0   LOST   0   NET  +0
+  C  F1 + F2 + best-of split   GAINED   1   LOST   4   NET  -3
+
+NET verdict: GAINED 1 / LOST 0

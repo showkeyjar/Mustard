@@ -1,0 +1,11 @@
+{
+  "simple_javascript": {
+    "cat": "simple_javascript",
+    "correct": 39,
+    "total": 50,
+    "accuracy": 78.0,
+    "transport_errors": 0,
+    "time_s": 113.2,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_javascript_probe12.jsonl"
+  }
+}

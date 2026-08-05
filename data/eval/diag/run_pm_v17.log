@@ -1,0 +1,12 @@
+    [parallel_multiple] 25/200 (0.16/s, ETA 1116s)
+    [parallel_multiple] 50/200 (0.17/s, ETA 861s)
+    [parallel_multiple] 75/200 (0.19/s, ETA 665s)
+    [parallel_multiple] 100/200 (0.19/s, ETA 532s)
+    [parallel_multiple] 125/200 (0.19/s, ETA 385s)
+    [parallel_multiple] 150/200 (0.20/s, ETA 247s)
+    [parallel_multiple] 175/200 (0.20/s, ETA 125s)
+    [parallel_multiple] 200/200 (0.20/s, ETA 0s)
+  parallel_multiple         :  101/ 200 =  50.5%  (998s, 0 transport errors) -> parallel_multiple_v17.jsonl
+
+TOTAL: 101/200 = 50.50%
+Summary -> D:\codes\Mustard\data\eval\diag\summary_v17.json

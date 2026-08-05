@@ -1,0 +1,15 @@
+20732	C:\Users\shaok\.workbuddy\binaries\python\versions\3.13.12\python.exe server.py
+28764	C:\Users\shaok\.workbuddy\binaries\python\versions\3.13.12\python.exe server.py
+31428	C:\Users\shaok\.workbuddy\binaries\python\versions\3.13.12\python.exe server.py
+72232	
+34668	D:\tools\miniconda3\python.exe -X utf8 scripts/run_fill_download_batch.py --config-dir W:/bamboo/_runtime/download-configs/sentinel2-bamboo-1deg-fill --summary W:/bamboo/artifacts/reports/fill_download_batch_apr_may_summary.json --per-config-timeout 3600
+38828	D:\tools\miniconda3\python.exe -X utf8 scripts/run_fill_download_batch.py --config-dir W:/bamboo/_runtime/download-configs/sentinel2-bamboo-1deg-fill-june-july --summary W:/bamboo/artifacts/reports/fill_download_batch_june_july_summary.json --per-config-timeout 3600
+129080	D:\tools\miniconda3\python.exe -X utf8 scripts/run_fill_download_batch.py --config-dir W:/bamboo/_runtime/download-configs/sentinel2-bamboo-1deg-fill --summary W:/bamboo/artifacts/reports/fill_download_batch_apr_may_summary.json --per-config-timeout 43200
+132544	D:\tools\miniconda3\python.exe -X utf8 scripts/run_fill_download_batch.py --config-dir W:/bamboo/_runtime/download-configs/sentinel2-bamboo-1deg-fill-june-july --summary W:/bamboo/artifacts/reports/fill_download_batch_june_july_summary.json --per-config-timeout 43200
+121192	D:\tools\miniconda3\python.exe -m bamboo_inversion.cli --config W:\bamboo\_runtime\download-configs\sentinel2-bamboo-1deg-fill\fill1d_x101_y24_2023_05.yaml download-stac-assets
+132688	D:\tools\miniconda3\python.exe -m bamboo_inversion.cli --config W:\bamboo\_runtime\download-configs\sentinel2-bamboo-1deg-fill-june-july\fill2d_x103_y29_2023_06.yaml download-stac-assets
+22668	"D:\tools\miniconda3\python.exe" -m bamboo_inversion.cli --config W:\bamboo\_runtime\download-configs\sentinel2-bamboo-1deg-fill\fill1d_x102_y21_2023_04.yaml download-stac-assets
+134124	D:\tools\miniconda3\envs\BFCL\python.exe scripts/carm_bfcl_server_optimized.py --port 11401
+118136	D:\tools\miniconda3\python.exe -m bamboo_inversion.cli --config W:\bamboo\_runtime\download-configs\sentinel2-bamboo-1deg-fill\fill1d_x104_y27_2023_05.yaml download-stac-assets
+16944	D:\tools\miniconda3\envs\BFCL\python.exe scripts/diag_bfcl_v4.py --categories simple_python,multiple,parallel,irrelevance,live_simple,live_parallel,live_relevance --tag v21 --workers 12
+130164	D:\tools\miniconda3\python.exe -m bamboo_inversion.cli --config W:\bamboo\_runtime\download-configs\sentinel2-bamboo-1deg-fill-june-july\fill2d_x106_y24_2023_07.yaml download-stac-assets

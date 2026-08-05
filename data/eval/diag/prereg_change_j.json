@@ -13,11 +13,17 @@
     "verifier_rejections": 86,
     "correct_rejections": 72,
     "wrong_rejections": 14,
-    "correct_rejection_categories": ["irrelevance"],
+    "correct_rejection_categories": [
+      "irrelevance"
+    ],
     "correct_rejection_qlen_max": 146,
     "wrong_rejection_qlen_median": 115,
     "wrong_rejection_qlen_max": 709,
-    "scan_at_T150": {"rescue_upper_bound": 6, "damage": 0, "net": 6}
+    "scan_at_T150": {
+      "rescue_upper_bound": 6,
+      "damage": 0,
+      "net": 6
+    }
   },
   "why_frozen": "T=150 处 damage=0 完全由 irrelevance 子集 query 长度封顶 146 造成。query 长度是数据固有属性，不是模型行为，因此该阈值无法外推到 live_irrelevance。",
   "falsifiable_prediction": {
@@ -25,9 +31,12 @@
     "quantified": {
       "live_irrelevance_total": 884,
       "frac_qlen_gt_150_in_dataset": 0.129,
-      "observed_verifier_reject_rate_on_irrelevance": 0.30,
+      "observed_verifier_reject_rate_on_irrelevance": 0.3,
       "expected_damage_at_T150_point_estimate": 34,
-      "expected_damage_at_T150_range": [15, 60],
+      "expected_damage_at_T150_range": [
+        15,
+        60
+      ],
       "expected_rescue_gain_at_T150": "维持 6 附近（live_irrelevance 的 GT 全为空，不产生 rescue）",
       "expected_net_at_T150": "明显为负"
     },
@@ -38,5 +47,39 @@
     "存在一个阈值，其 damage 占正确拒绝总数的比例可接受",
     "该阈值不是只在单一类别上成立"
   ],
-  "verify_command": "python scripts/diag_change_j_threshold.py v21"
+  "verify_command": "python scripts/diag_change_j_threshold.py v21",
+  "outcome": {
+    "resolved_at": "2026-08-05T15:12:44",
+    "data_now_complete": {
+      "categories": 13,
+      "samples": 3641,
+      "live_irrelevance": "573/884 = 64.82%"
+    },
+    "observed": {
+      "verifier_rejections": 166,
+      "correct_rejections": 152,
+      "wrong_rejections": 14,
+      "live_irrelevance_rejections": 80,
+      "damage_at_T150": 13,
+      "rescue_upper_bound_at_T150": 6,
+      "net_at_T150": -7,
+      "correct_rejection_qlen_max": 877,
+      "net_by_threshold": {
+        "80": -21,
+        "100": -11,
+        "120": -12,
+        "150": -7,
+        "200": -3,
+        "250": -4,
+        "300": -1,
+        "400": 1,
+        "500": 1
+      }
+    },
+    "verdict": "PREDICTION HELD (direction), MAGNITUDE OVERESTIMATED",
+    "detail": "方向完全正确：damage 由 0 升至 13，净值转负 -7。量级点估 34 偏高 2.6 倍，落在预测区间 [15,60] 下界之外。误差来源可定位：外推时套用了 irrelevance 的验证器拒绝率 30%，而 live_irrelevance 实际仅 80/884 = 9.0%；反向地，被拒样本中 >150 字符的占比 16.25% 高于数据集整体的 12.9%。",
+    "falsified": false,
+    "falsification_check": "证伪条件为 damage<5 且净值>=+5；实测 damage=13、净值=-7，未触发。",
+    "decision": "Change J 否决。T=80~300 净值全负；T=400/500 的 +1 由 rescue 2 / damage 1 构成，而 rescue 是上界（撤销拒绝后函数名与参数仍须全对），真实值可能为 0 或负。更根本的是正确拒绝的 query 最长已达 877 字符，与误拒的 [42,709] 完全重叠，query 长度这个特征不具备可用的分离度。不再尝试基于长度的变体。"
+  }
 }

@@ -1,0 +1,92 @@
+{
+  "irrelevance": {
+    "cat": "irrelevance",
+    "correct": 204,
+    "total": 240,
+    "accuracy": 85.0,
+    "transport_errors": 0,
+    "time_s": 163.7,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\irrelevance_v22.jsonl"
+  },
+  "live_irrelevance": {
+    "cat": "live_irrelevance",
+    "correct": 566,
+    "total": 884,
+    "accuracy": 64.03,
+    "transport_errors": 0,
+    "time_s": 1248.4,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_irrelevance_v22.jsonl"
+  },
+  "live_multiple": {
+    "cat": "live_multiple",
+    "correct": 722,
+    "total": 1053,
+    "accuracy": 68.57,
+    "transport_errors": 0,
+    "time_s": 2482.2,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_multiple_v22.jsonl"
+  },
+  "live_relevance": {
+    "cat": "live_relevance",
+    "correct": 15,
+    "total": 16,
+    "accuracy": 93.75,
+    "transport_errors": 0,
+    "time_s": 52.2,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_relevance_v22.jsonl"
+  },
+  "multiple": {
+    "cat": "multiple",
+    "correct": 180,
+    "total": 200,
+    "accuracy": 90.0,
+    "transport_errors": 0,
+    "time_s": 363.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\multiple_v22.jsonl"
+  },
+  "parallel": {
+    "cat": "parallel",
+    "correct": 170,
+    "total": 200,
+    "accuracy": 85.0,
+    "transport_errors": 0,
+    "time_s": 638.6,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_v22.jsonl"
+  },
+  "parallel_multiple": {
+    "cat": "parallel_multiple",
+    "correct": 137,
+    "total": 200,
+    "accuracy": 68.5,
+    "transport_errors": 0,
+    "time_s": 1086.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_multiple_v22.jsonl"
+  },
+  "simple_java": {
+    "cat": "simple_java",
+    "correct": 76,
+    "total": 100,
+    "accuracy": 76.0,
+    "transport_errors": 0,
+    "time_s": 223.9,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_java_v22.jsonl"
+  },
+  "simple_javascript": {
+    "cat": "simple_javascript",
+    "correct": 43,
+    "total": 50,
+    "accuracy": 86.0,
+    "transport_errors": 0,
+    "time_s": 111.3,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_javascript_v22.jsonl"
+  },
+  "simple_python": {
+    "cat": "simple_python",
+    "correct": 374,
+    "total": 400,
+    "accuracy": 93.5,
+    "transport_errors": 0,
+    "time_s": 855.9,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\simple_python_v22.jsonl"
+  }
+}

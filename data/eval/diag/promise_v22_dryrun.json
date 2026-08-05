@@ -1,10 +1,10 @@
 {
   "base": "v21",
-  "target": "v22",
+  "target": "v22_dryrun",
   "counts": {
     "gain": 10,
-    "loss": 2,
-    "neutral": 30
+    "loss": 0,
+    "neutral": 29
   },
   "invariants_checked": [
     "irrelevance_130",
@@ -12,30 +12,6 @@
     "live_relevance_6-6-0"
   ],
   "affected": [
-    {
-      "id": "live_irrelevance_558-171-0",
-      "category": "live_irrelevance",
-      "was_correct": true,
-      "predicted_correct": false,
-      "direction": "loss",
-      "change": "G"
-    },
-    {
-      "id": "live_irrelevance_598-193-0",
-      "category": "live_irrelevance",
-      "was_correct": true,
-      "predicted_correct": false,
-      "direction": "loss",
-      "change": "G"
-    },
-    {
-      "id": "live_irrelevance_620-196-1",
-      "category": "live_irrelevance",
-      "was_correct": true,
-      "predicted_correct": true,
-      "direction": "neutral",
-      "change": "G"
-    },
     {
       "id": "live_multiple_26-6-1",
       "category": "live_multiple",

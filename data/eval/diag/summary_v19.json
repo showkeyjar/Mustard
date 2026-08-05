@@ -1,0 +1,20 @@
+{
+  "parallel_multiple": {
+    "cat": "parallel_multiple",
+    "correct": 110,
+    "total": 200,
+    "accuracy": 55.0,
+    "transport_errors": 0,
+    "time_s": 939.1,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\parallel_multiple_v19.jsonl"
+  },
+  "live_parallel_multiple": {
+    "cat": "live_parallel_multiple",
+    "correct": 15,
+    "total": 24,
+    "accuracy": 62.5,
+    "transport_errors": 1,
+    "time_s": 94.4,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_parallel_multiple_v19.jsonl"
+  }
+}
