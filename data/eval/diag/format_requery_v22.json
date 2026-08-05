@@ -1,0 +1,1323 @@
+[
+  {
+    "id": "live_multiple_3-2-0",
+    "cat": "live_multiple",
+    "func": "api.weather",
+    "param": "loc",
+    "pred": "Ha Noi",
+    "gt": [
+      "Ha Noi, Vietnam"
+    ],
+    "desc": "The location for which weather information is to be retrieved, in the format of 'City, Country' (e.g., 'Paris, France').",
+    "query": "Get weather of Ha Noi for me",
+    "correct": false,
+    "requery": "Ha Noi, Vietnam",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_4-2-1",
+    "cat": "live_multiple",
+    "func": "uber.ride",
+    "param": "loc",
+    "pred": "123 Hanoi Street",
+    "gt": [
+      "123 Hanoi Street"
+    ],
+    "desc": "The starting location for the Uber ride, in the format of 'Street Address, City, State', such as '123 Main St, Springfield, IL'.",
+    "query": "Tìm chuyến xe cho tôi từ Hà Nội loại Plus trong 10 phút nữa. Address: 123 Hanoi Street",
+    "correct": true,
+    "requery": "123 Hanoi Street, Hà Nội, Vietnam",
+    "verdict": "broke"
+  },
+  {
+    "id": "live_multiple_34-11-0",
+    "cat": "live_multiple",
+    "func": "get_news_report",
+    "param": "location",
+    "pred": "Letterkenny",
+    "gt": [
+      "Letterkenny, Ireland"
+    ],
+    "desc": "The location for which to retrieve the news, in the format of 'City, State' or 'Location, Country', such as 'San Francisco, CA', 'Paris, France', or 'New York, NY'. If using state name, only then use short form for state.",
+    "query": "Could you provide me with the latest news for Letterkenny?",
+    "correct": false,
+    "requery": "Letterkenny, Ireland",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_181-76-1",
+    "cat": "live_multiple",
+    "func": "api_name.get_weather_forecast",
+    "param": "location",
+    "pred": "New York City",
+    "gt": [
+      "New York City, NY"
+    ],
+    "desc": "The geographic location for which the weather forecast is requested, in the format of 'City, State' or 'City, Country', such as 'Berkeley, CA' or 'Berlin, Germany'.",
+    "query": "I'd like to know how to retrieve a weather forecast for New York City on the 4th of July this year.",
+    "correct": false,
+    "requery": "New York City, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_279-128-2",
+    "cat": "live_multiple",
+    "func": "Restaurants_2_FindRestaurants",
+    "param": "location",
+    "pred": "Santa Clara",
+    "gt": [
+      "Santa Clara, CA"
+    ],
+    "desc": "The city where the restaurant is located, in the format 'City, State' (e.g., 'New York, NY'). State has to be abbrieviated",
+    "query": "I'm craving Asian Fusion cuisine. Can you search for a restaurant in Santa Clara that serves this type of food?",
+    "correct": false,
+    "requery": "Santa Clara, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_286-129-1",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "san jose",
+    "gt": [
+      "San Jose, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State has to be abbrieviated",
+    "query": "Search for therapist help my mental health issues in san jose",
+    "correct": false,
+    "requery": "san jose, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_288-129-3",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "berkeley",
+    "gt": [
+      "Berkeley, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State has to be abbrieviated",
+    "query": "I am needing to seek counseling and need a therapist. Will you search for a family counselor in berkeley?",
+    "correct": false,
+    "requery": "berkeley, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_290-129-5",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Walnut Creek",
+    "gt": [
+      "Walnut Creek, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State has to be abbrieviated",
+    "query": "I need you to find me a Family Therapist in Walnut Creek.'",
+    "correct": false,
+    "requery": "Walnut Creek, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_292-130-1",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Long Beach",
+    "gt": [
+      "Long Beach, CA"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated",
+    "query": "Can you find me a house accommodation in Long Beach with a review rating of at least 4.2? It's just for myself.",
+    "correct": false,
+    "requery": "Long Beach, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_294-130-3",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Kuala Lumpur",
+    "gt": [
+      "Kuala Lumpur, Malaysia"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State' or 'City, Country', such as 'Austin, TX', 'Paris, France', or 'San Francisco, CA'. State has to be abbrieviated",
+    "query": "I am going on vacation and will travellling to Kuala Lumpur. Will you search for a housethat is rated 3.8 or higher. It will be for one person.",
+    "correct": false,
+    "requery": "Kuala Lumpur, Malaysia",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_295-130-4",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "LAX",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated",
+    "query": "Hotel room are so costly , I need a house to stay . I am travelling to LAX.",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_298-130-7",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Chi-town",
+    "gt": [
+      "Chicago, IL"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated",
+    "query": "Find me a house with laundry service, rated 3.9 or more at Chi-town",
+    "correct": false,
+    "requery": "Chicago, IL",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_300-130-9",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Rio de Janeiro",
+    "gt": [
+      "Rio de Janeiro, Brazil"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State' or 'City, Country', such as 'Austin, TX', 'Paris, France', or 'San Francisco, CA'. State has to be abbrieviated",
+    "query": "I need a home rated above 4.2 for 2 people in Rio de Janeiro.",
+    "correct": false,
+    "requery": "Rio de Janeiro, Brazil",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_301-131-0",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "London",
+    "gt": [
+      "London, UK"
+    ],
+    "desc": "The city or town where the accommodation is searched for, in the format of 'City, State' or 'City, Country'. State has to be abbrieviated",
+    "query": "I need to find a hotel in London",
+    "correct": false,
+    "requery": "London, Country",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_302-131-1",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "New York City",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The city or town where the accommodation is searched for, in the format of 'City, State' or 'City, Country'. State has to be abbrieviated",
+    "query": "Find a hotel in New York City with 1 room?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_303-131-2",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "Vancouver",
+    "gt": [
+      "Vancouver"
+    ],
+    "desc": "The city or town where the accommodation is searched for, in the format of 'City, State' or 'City, Country'. State has to be abbrieviated",
+    "query": "Hello. I need your help finding a hotel in Vancouver. I'll need just one room and would prefer a three star hotel.",
+    "correct": true,
+    "requery": "Vancouver, WA",
+    "verdict": "broke"
+  },
+  {
+    "id": "live_multiple_304-131-3",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "LA",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city or town where the accommodation is searched for, in the format of 'City, State' or 'City, Country'. State has to be abbrieviated",
+    "query": "Can you locate a 4 star hotel in LA for me?",
+    "correct": false,
+    "requery": "LA, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_306-131-5",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "Kuala Lumpur",
+    "gt": [
+      "Kuala Lumpur, Malaysia"
+    ],
+    "desc": "The city or town where the accommodation is searched for, in the format of 'City, State' or 'City, Country'.",
+    "query": "find available accommodations in Kuala Lumpur for the upcoming weekend?",
+    "correct": false,
+    "requery": "Kuala Lumpur, Malaysia",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_378-135-2",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Mountain View",
+    "gt": [
+      "Mountain View, CA"
+    ],
+    "desc": "The city in which the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated with two letters.",
+    "query": "I need help looking for a Family Therapist in Mountain View.",
+    "correct": false,
+    "requery": "Mountain View, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_387-137-5",
+    "cat": "live_multiple",
+    "func": "Messaging_1_ShareLocation",
+    "param": "location",
+    "pred": "New York",
+    "gt": null,
+    "desc": "The geographic coordinates or address to share, in the format of 'Latitude, Longitude' (e.g., '37.7749, -122.4194') or a physical address (e.g., '1600 Amphitheatre Parkway, Mountain View, CA').",
+    "query": "I'm in New York, and I need to find a hair stylist for a quick trim. Can you look up a place that does both men's and women's haircuts?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_393-138-1",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Pinole",
+    "gt": [
+      "Pinole, CA"
+    ],
+    "desc": "The city where the salon is located, in the format of 'City, State' (e.g., 'Austin, TX'). State names must be abbreviated with two letters.",
+    "query": "I have the urgency to find a unisex salon in Pinole",
+    "correct": false,
+    "requery": "Pinole, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_394-138-2",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Berkeley",
+    "gt": [
+      "Berkeley, CA"
+    ],
+    "desc": "The city where the salon is located, in the format of 'City, State' (e.g., 'Austin, TX'). State names must be abbreviated with two letters.",
+    "query": "I'm thinking about finding a salon in Berkeley",
+    "correct": false,
+    "requery": "Berkeley, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_395-138-3",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Rohnert Park",
+    "gt": [
+      "Rohnert Park, CA"
+    ],
+    "desc": "The city where the salon is located, in the format of 'City, State' (e.g., 'Austin, TX'). State names must be abbreviated with two letters.",
+    "query": "Are there any salon in Rohnert Park.",
+    "correct": false,
+    "requery": "Rohnert Park, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_398-139-2",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "San Diego",
+    "gt": [
+      "San Diego, CA"
+    ],
+    "desc": "The city where the event is taking place, in the format 'City, State' or 'City, Country' (e.g., 'New York, NY' or 'London, UK'). State names must be abbreviated with two letters.",
+    "query": "get a Music event happening in San Diego on 2023-05-02?",
+    "correct": false,
+    "requery": "San Diego, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_399-139-3",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Chicago",
+    "gt": [
+      "Chicago, IL"
+    ],
+    "desc": "The city where the event is taking place, in the format 'City, State' or 'City, Country' (e.g., 'New York, NY' or 'London, UK').",
+    "query": "Find a Theater event in Chicago on 2023-5-2?",
+    "correct": false,
+    "requery": "Chicago, IL",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_401-139-5",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Toronto",
+    "gt": [
+      "Toronto, ON",
+      "Toronto, Canada"
+    ],
+    "desc": "The city where the event is taking place, in the format 'City, State' or 'City, Country' (e.g., 'New York, NY' or 'London, UK'). State names should be abbreviated (e.g., 'CA' for California)",
+    "query": "I'm looking to attend a music concert in Toronto. Find one for me that's happening 2023.10.2?",
+    "correct": false,
+    "requery": "Toronto, Canada",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_411-141-0",
+    "cat": "live_multiple",
+    "func": "Movies_1_FindMovies",
+    "param": "location",
+    "pred": "Union City",
+    "gt": [
+      "Union City, CA"
+    ],
+    "desc": "The city where the theatre is located, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated",
+    "query": "Are there any Cartoon movies showing at imax in Union City?",
+    "correct": false,
+    "requery": "Union City, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_413-141-2",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "Berkeley",
+    "gt": [
+      "Berkeley, CA"
+    ],
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'. State names must be abbreviated",
+    "query": "I'd like to purchase 2 tickets for 'After The Wedding' showing on 2023-04-22 at 19:00 in Berkeley.",
+    "correct": false,
+    "requery": "Berkeley, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_418-141-7",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'. State names must be abbreviated",
+    "query": "Can you help me purchase two tickets for 'Space Adventure' on 2023 April 15th at 19:30 in New York?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_419-141-8",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "San Ramon",
+    "gt": null,
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'.",
+    "query": "I would like a regular drama movie at Regal Crow Canyon which locates at San Ramon.",
+    "correct": false,
+    "requery": "San Ramon, CA",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_421-141-10",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "mountain view",
+    "gt": null,
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'.",
+    "query": "I am interested in going for a movie in mountain view. Can you help in this?",
+    "correct": false,
+    "requery": "Mountain View, CA",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_423-141-12",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'. State names must be abbreviated",
+    "query": "Hi, I'm looking to watch 'The Last Adventure'. Find me two tickets for a show around 8:30 pm in San Francisco?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_432-141-21",
+    "cat": "live_multiple",
+    "func": "Movies_1_BuyMovieTickets",
+    "param": "location",
+    "pred": "Los Angeles",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city in which the movie theater is located, in the format of 'City, State', such as 'Los Angeles, CA'. State names must be abbreviated",
+    "query": "I'd like to purchase 2 tickets for 'Once Upon a Time In Hollywood' on the 15th of April, 2023, showing at 19:00 in Los Angeles.",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_440-144-0",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "berkeley",
+    "gt": [
+      "Berkeley, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated",
+    "query": "I need a therapist for my family in berkeley.",
+    "correct": false,
+    "requery": "Berkeley, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_441-144-1",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Los Altos",
+    "gt": [
+      "Los Altos, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated.",
+    "query": "Hello! Help me find therapists specialized in Family Counseling in Los Altos?",
+    "correct": false,
+    "requery": "Los Altos, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_444-144-4",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Los Gatos",
+    "gt": [
+      "Los Gatos, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated.",
+    "query": "Can you find me a Family Counselor in Los Gatos?",
+    "correct": false,
+    "requery": "Los Gatos, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_445-144-5",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Santa Rosa",
+    "gt": [
+      "Santa Rosa, CA"
+    ],
+    "desc": "The city where the user is looking for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated.",
+    "query": "I am looking for a Psychiatrist in Santa Rosa.",
+    "correct": false,
+    "requery": "Santa Rosa, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_453-145-4",
+    "cat": "live_multiple",
+    "func": "Travel_1_FindAttractions",
+    "param": "location",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The name of the city or town where attractions are being searched for, in the format of 'City, State' or 'City, Country'; for example, 'Paris, France' or 'New York, NY'. State names must be abbreviated",
+    "query": "I'm looking for something to do with my grandchildren in San Francisco. Hopefully something that's free.",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_456-145-7",
+    "cat": "live_multiple",
+    "func": "Travel_1_FindAttractions",
+    "param": "location",
+    "pred": "London",
+    "gt": [
+      "London, UK"
+    ],
+    "desc": "The name of the city or town where attractions are being searched for, in the format of 'City, State' or 'City, Country'; for example, 'Paris, France' or 'New York, NY'. State names must be abbreviated",
+    "query": "Hi, are there any free performance venue I can visit in London?",
+    "correct": false,
+    "requery": "London, UK",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_460-145-11",
+    "cat": "live_multiple",
+    "func": "Travel_1_FindAttractions",
+    "param": "location",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The name of the city or town where attractions are being searched for, in the format of 'City, State' or 'City, Country'; for example, 'Paris, France' or 'New York, NY'. State names must be abbreviated",
+    "query": "Can you find me a list of parks in New York that have free entry and are suitable for children?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_464-145-15",
+    "cat": "live_multiple",
+    "func": "Travel_1_FindAttractions",
+    "param": "location",
+    "pred": "Orlanda",
+    "gt": [
+      "Orlando, FL"
+    ],
+    "desc": "The name of the city or town where attractions are being searched for, in the format of 'City, State' or 'City, Country'; for example, 'Paris, France' or 'New York, NY'. State names must be abbreviated",
+    "query": "Can you search for a Theme Park in Orlanda that's great for kids and has no entry fee?",
+    "correct": false,
+    "requery": "Orlanda, FL",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_468-145-19",
+    "cat": "live_multiple",
+    "func": "Travel_1_FindAttractions",
+    "param": "location",
+    "pred": "Seattle",
+    "gt": [
+      "Seattle, WA"
+    ],
+    "desc": "The name of the city or town where attractions are being searched for, in the format of 'City, State' or 'City, Country'; for example, 'Paris, France' or 'New York, NY'. State names must be abbreviated",
+    "query": "Retrieve a list of attractions in Seattle that are suitable for children?",
+    "correct": false,
+    "requery": "Seattle, WA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_490-148-0",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Chicago",
+    "gt": [
+      "Chicago, IL"
+    ],
+    "desc": "The city where the event is taking place, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated",
+    "query": "Can you find me a Theater event in Chicago for the date 2023-04-29?",
+    "correct": false,
+    "requery": "Chicago, IL",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_500-148-10",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city where the event is taking place, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'. State names must be abbreviated",
+    "query": "I'm looking to catch a music concert today in San Francisco. Find some cultural events for me?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_513-150-1",
+    "cat": "live_multiple",
+    "func": "Movies_1_FindMovies",
+    "param": "location",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The city where the theater is located, in the format of 'City, State' (e.g., 'Los Angeles, CA'). State names must be abbreviated",
+    "query": "Find action movies showing in New York this weekend?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_522-150-10",
+    "cat": "live_multiple",
+    "func": "Movies_1_FindMovies",
+    "param": "location",
+    "pred": "Larkspur",
+    "gt": [
+      "Larkspur, CA"
+    ],
+    "desc": "The city where the theater is located, in the format of 'City, State' (e.g., 'Los Angeles, CA'). State names must be abbreviated",
+    "query": "Can you find a theater in Larkspur that's showing action movies? I'm not picky about the genre if there are no action movies available.",
+    "correct": false,
+    "requery": "Larkspur, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_528-151-4",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The city where the event is being searched for, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "I'm currently in New York, and I'm looking to attend a Theater show. check if there are any plays happening today?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_529-151-5",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Los Angeles",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city where the event is being searched for, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "Find any Music events happening in Los Angeles on 04/07/2023?",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_530-151-6",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The city where the event is being searched for, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "I'm looking for a Music event happening on 09/09/2023 in New York.",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_531-151-7",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Philadelphia",
+    "gt": [
+      "Philadelphia, PA"
+    ],
+    "desc": "The city where the event is being searched for, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "I'm looking for a Music event in Philadelphia. Find what's available?",
+    "correct": false,
+    "requery": "Philadelphia, PA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_532-151-8",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Portland",
+    "gt": [
+      "Portland, OR"
+    ],
+    "desc": "The city where the event is being searched for, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "Find a music event in Portland that's happening sometime?",
+    "correct": false,
+    "requery": "Portland, OR",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_540-152-2",
+    "cat": "live_multiple",
+    "func": "Homes_2_FindHomeByArea",
+    "param": "area",
+    "pred": "Fremont",
+    "gt": [
+      "Fremont, CA"
+    ],
+    "desc": "The city where the property is located, in the format of 'City, State' (e.g., 'San Francisco, CA'). State names must be abbreviated",
+    "query": "I'm looking to rent a home in Fremont with at least 3 bedrooms, 2 bathrooms, I have a car so ideally garage. Can you find options for me?",
+    "correct": false,
+    "requery": "Fremont, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_552-153-1",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Walnut Creek",
+    "gt": [
+      "Walnut Creek"
+    ],
+    "desc": "The city where the salon is located, such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I want to go to a Salon which should be an Unisex one. I am now in Walnut Creek so please search for the one located here.",
+    "correct": true,
+    "requery": "Walnut Creek, CA",
+    "verdict": "broke"
+  },
+  {
+    "id": "live_multiple_553-153-2",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "San Fran",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city where the salon is located, such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I am in desperate need for a haircut, can you help me find a salon in San Fran?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_577-156-3",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "San Jose",
+    "gt": [
+      "San Jose, CA"
+    ],
+    "desc": "The city where the salon is located, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "i didn't do my hair cut for a long time.will you find me a unisex salon in San Jose.",
+    "correct": false,
+    "requery": "San Jose, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_596-158-2",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city or town where the hotel is located, in the format of 'City, State' or 'City, Country'; for example, 'New York, NY' or 'Paris, France'.",
+    "query": "I'm looking for a hotel in San Francisco. Can you find one that has a single room available?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_598-158-4",
+    "cat": "live_multiple",
+    "func": "Hotels_4_ReserveHotel",
+    "param": "location",
+    "pred": "Washington D.C.",
+    "gt": null,
+    "desc": "The location of the accommodation, in the format 'City, State', such as 'San Francisco, CA'.",
+    "query": "I'm planning a trip to Washington D.C. and need to reserve a room for my stay. I'd like to check in on April 21, 2023, and will be staying for 3 nights. Find me a place?",
+    "correct": false,
+    "requery": "Washington D.C., DC",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_598-158-4",
+    "cat": "live_multiple",
+    "func": "Hotels_4_SearchHotel",
+    "param": "location",
+    "pred": "Washington D.C.",
+    "gt": [
+      "Washington D.C."
+    ],
+    "desc": "The city or town where the hotel is located, in the format of 'City, State' or 'City, Country'; for example, 'New York, NY' or 'Paris, France'.",
+    "query": "I'm planning a trip to Washington D.C. and need to reserve a room for my stay. I'd like to check in on April 21, 2023, and will be staying for 3 nights. Find me a place?",
+    "correct": false,
+    "requery": "Washington D.C., DC",
+    "verdict": "broke"
+  },
+  {
+    "id": "live_multiple_612-159-5",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "Los Angeles",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city in which to search for events, in the format of 'City, State' (e.g., 'New York, NY').",
+    "query": "I'm interested in attending a concert this weekend. Find some music events happening in Los Angeles?",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_661-162-3",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The name of the city where the event is taking place, in the format of 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "I'm looking for a music event in New York on the date 2023-05-21. ",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_664-162-6",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The name of the city where the event is taking place, in the format of 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "Find me some musical events happening in New York?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_669-162-11",
+    "cat": "live_multiple",
+    "func": "Events_3_FindEvents",
+    "param": "city",
+    "pred": "New York",
+    "gt": [
+      "New York, NY"
+    ],
+    "desc": "The name of the city where the event is taking place, in the format of 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "I'm looking for a Music event in New York on March 7th 2023. ",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_717-165-4",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Kuala Lumpur",
+    "gt": [
+      "Kuala Lumpur, MY"
+    ],
+    "desc": "The location of the desired house, specified in the format 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I'm after a house for one person in Kuala Lumpur, with laundry service please.",
+    "correct": false,
+    "requery": "Kuala Lumpur, Malaysia",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_719-165-6",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Anaheim",
+    "gt": [
+      "Anaheim, CA"
+    ],
+    "desc": "The location of the desired house, specified in the format 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I'll be visiting Anaheim and need a house to stay, for 1 person.",
+    "correct": false,
+    "requery": "Anaheim, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_720-165-7",
+    "cat": "live_multiple",
+    "func": "Hotels_2_BookHouse",
+    "param": "where_to",
+    "pred": "New York",
+    "gt": null,
+    "desc": "The location of the house in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I'm looking to book a house in New York for 4 adults. We plan to check in on 05/10/2023 and check out on 05/15/2023. Find available options for those dates?",
+    "correct": false,
+    "requery": "New York, NY",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_721-165-8",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Philadelphia",
+    "gt": [
+      "Philadelphia, PA"
+    ],
+    "desc": "The location of the desired house, specified in the format 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "Can you find a house in Philadelphia ideally with a washing machine and a rating of at least 4.1 for one person?",
+    "correct": false,
+    "requery": "Philadelphia, PA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_722-165-9",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Los Angeles",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The location of the desired house, specified in the format 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I need to book a house in Los Angeles for four adults from 04/23/2023 to 04/27/2023. rating higher than 4.1?",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_737-167-8",
+    "cat": "live_multiple",
+    "func": "Homes_2_FindHomeByArea",
+    "param": "area",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city where the search for properties is conducted, in the format of 'City, State' (e.g., 'Los Angeles, CA').",
+    "query": "Hello. I'm looking to buy a property in San Francisco that has at least 2 bedrooms and 3 bathrooms. Could you also include options that have a garage?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_763-170-1",
+    "cat": "live_multiple",
+    "func": "Buses_3_FindBus",
+    "param": "from_city",
+    "pred": "LA",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city to depart from, in the format of 'City, State', such as 'Austin, TX'.",
+    "query": "I need a bus for 2 people from LA to SD on 2023.10.1.",
+    "correct": false,
+    "requery": "LA, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_763-170-1",
+    "cat": "live_multiple",
+    "func": "Buses_3_FindBus",
+    "param": "to_city",
+    "pred": "SD",
+    "gt": [
+      "San Diego, CA"
+    ],
+    "desc": "The destination city of the trip, in the format of 'City, State', such as 'Dallas, TX'.",
+    "query": "I need a bus for 2 people from LA to SD on 2023.10.1.",
+    "correct": false,
+    "requery": "SD, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_769-171-2",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Mill Valley",
+    "gt": [
+      "Mill Valley, CA"
+    ],
+    "desc": "The city where the search for a hair stylist is targeted, in the format 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "Would you help me to find a salon in Mill Valley?",
+    "correct": false,
+    "requery": "Mill Valley, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_770-171-3",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Burlingame",
+    "gt": [
+      "Burlingame, CA"
+    ],
+    "desc": "The city where the search for a hair stylist is targeted, in the format 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "I would like to take my sister out and I know she has been complaining about her hair so can you find me a unisex salon in Burlingame?",
+    "correct": false,
+    "requery": "Burlingame, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_772-171-5",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Fremont",
+    "gt": [
+      "Fremont, CA"
+    ],
+    "desc": "The city where the search for a hair stylist is targeted, in the format 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "Since long back i didn't do my hair cut. will you find me a salon in Fremont?",
+    "correct": false,
+    "requery": "Fremont, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_773-171-6",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "San Ramon",
+    "gt": [
+      "San Ramon, CA"
+    ],
+    "desc": "The city where the search for a hair stylist is targeted, in the format 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "I'll be in San Ramon and want to go to a salon.",
+    "correct": false,
+    "requery": "San Ramon, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_774-171-7",
+    "cat": "live_multiple",
+    "func": "Services_1_FindProvider",
+    "param": "city",
+    "pred": "Morgan Hill",
+    "gt": [
+      "Morgan Hill, CA",
+      "Morgan Hill"
+    ],
+    "desc": "The city where the search for a hair stylist is targeted, in the format 'City, State', such as 'New York, NY' or 'Los Angeles, CA'.",
+    "query": "Find me a unisex salon in Morgan Hill.",
+    "correct": true,
+    "requery": "Morgan Hill, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_778-173-0",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Gilroy",
+    "gt": [
+      "Gilroy, CA"
+    ],
+    "desc": "The city where the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "Can you find me a Family Counselor in Gilroy?",
+    "correct": false,
+    "requery": "Gilroy, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_779-173-1",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "San Jose",
+    "gt": [
+      "San Jose, CA"
+    ],
+    "desc": "The city where the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I'm looking for a psychologist in San Jose.",
+    "correct": false,
+    "requery": "San Jose, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_781-173-3",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "SF",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city where the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "Hi, I think I need some help. Can you get me the best SF Psychologist please?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_782-173-4",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Sausalito",
+    "gt": [
+      "Sausalito, CA"
+    ],
+    "desc": "The city where the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "Can you search for any therapist in Sausalito? It's for my mental health.",
+    "correct": false,
+    "requery": "Sausalito, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_785-173-7",
+    "cat": "live_multiple",
+    "func": "Services_4_FindProvider",
+    "param": "city",
+    "pred": "Sunnyvale",
+    "gt": [
+      "Sunnyvale, CA"
+    ],
+    "desc": "The city where the user is searching for a therapist, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I need to talk to someone about how to deal with my boss at work. I would really appreciate your help locating a therapist. I'd like to find a therapist that works out of Sunnyvale.",
+    "correct": false,
+    "requery": "Sunnyvale, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_817-177-0",
+    "cat": "live_multiple",
+    "func": "Events_3_BuyEventTickets",
+    "param": "city",
+    "pred": "Seattle",
+    "gt": [
+      "Seattle, WA"
+    ],
+    "desc": "The city where the event is located, in the format of 'City, State', such as 'Berkeley, CA' and 'New York, NY'.",
+    "query": "Could you help me buy 2 tickets for the Anthony Green concert at Seattle happening on the 10th of march 2023?",
+    "correct": false,
+    "requery": "Seattle, WA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_864-182-1",
+    "cat": "live_multiple",
+    "func": "Movies_1_FindMovies",
+    "param": "location",
+    "pred": "LA",
+    "gt": [
+      "Los Angeles, CA"
+    ],
+    "desc": "The city where the theater is located, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "Hi, I'm in the mood to watch a movie. Can you find me just a regular show in LA, in 2023-10-1?",
+    "correct": false,
+    "requery": "LA, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_873-182-10",
+    "cat": "live_multiple",
+    "func": "Movies_1_FindMovies",
+    "param": "location",
+    "pred": "San Francisco",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city where the theater is located, in the format of 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "Search for movies playing in San Francisco?",
+    "correct": false,
+    "requery": "San Francisco, CA",
+    "verdict": "now_hit"
+  },
+  {
+    "id": "live_multiple_886-184-3",
+    "cat": "live_multiple",
+    "func": "Buses_3_FindBus",
+    "param": "from_city",
+    "pred": "my current location",
+    "gt": [
+      "San Francisco, CA"
+    ],
+    "desc": "The city of departure, formatted as 'City, State' (e.g., 'New York, NY').",
+    "query": "Find a bus itinerary for two passengers from my current location to Fresno, departing on March 4th 2023?",
+    "correct": false,
+    "requery": "my current location, CA",
+    "verdict": "still_miss"
+  },
+  {
+    "id": "live_multiple_904-186-1",
+    "cat": "live_multiple",
+    "func": "Trains_1_GetTrainTickets",
+    "param": "to",
+    "pred": "Los Angeles",
+    "gt": null,
+    "desc": "The destination city for the train journey, in the format 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I am planning a short trip and need to reserve two seats on a train for March 4th. Can you find available trains from New York, NY to Los Angeles on that date?",
+    "correct": false,
+    "requery": "Los Angeles, CA",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_907-186-4",
+    "cat": "live_multiple",
+    "func": "Trains_1_GetTrainTickets",
+    "param": "to",
+    "pred": "a city",
+    "gt": null,
+    "desc": "The destination city for the train journey, in the format 'City, State', such as 'Berkeley, CA' or 'New York, NY'.",
+    "query": "I'm looking to book train tickets from Philadelphia, PA to a city on the 8th of march 2023. Find me the available trains with the Value fare class?",
+    "correct": false,
+    "requery": "Philadelphia, PA",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_1046-273-0",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Delhi",
+    "gt": [
+      "Delhi"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "Search for a house accommodation in Delhi that has a review rating of at least 4.6 for two?",
+    "correct": true,
+    "requery": "Delhi, Delhi",
+    "verdict": "broke"
+  },
+  {
+    "id": "live_multiple_1047-274-0",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Cape Town",
+    "gt": null,
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I'm traveling to Cape Town, and I'm looking for a house to book from May 15th to May 22nd, 2023 for two adults.",
+    "correct": false,
+    "requery": "Cape Town, South Africa",
+    "verdict": "no_gt"
+  },
+  {
+    "id": "live_multiple_1048-275-0",
+    "cat": "live_multiple",
+    "func": "Hotels_2_SearchHouse",
+    "param": "where_to",
+    "pred": "Paris",
+    "gt": [
+      "Paris"
+    ],
+    "desc": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'.",
+    "query": "I need to find accommodation in Paris for myself and one other adult.",
+    "correct": false,
+    "requery": "Paris, France",
+    "verdict": "broke"
+  }
+]
