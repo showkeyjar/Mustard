@@ -33,11 +33,43 @@ import json
 import logging
 import re
 import time
+import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import httpx
 
 logger = logging.getLogger("carm_bfcl_server_optimized")
+
+# ---------------------------------------------------------------------------
+# Decision-path tracing
+#
+# Every routing branch already emits logger.info(...). Instead of rewriting
+# thousands of lines, we attach a thread-local capturing handler so each HTTP
+# request can return the exact sequence of decisions it took. This makes
+# failure attribution evidence-based instead of guesswork.
+# ---------------------------------------------------------------------------
+
+_trace_local = threading.local()
+
+
+class _ThreadTraceHandler(logging.Handler):
+    def emit(self, record):  # noqa: D102
+        buf = getattr(_trace_local, "buf", None)
+        if buf is not None and len(buf) < 200:
+            try:
+                buf.append(record.getMessage())
+            except Exception:  # noqa: BLE001
+                pass
+
+
+def trace_begin():
+    _trace_local.buf = []
+
+
+def trace_end() -> list[str]:
+    buf = getattr(_trace_local, "buf", None) or []
+    _trace_local.buf = None
+    return buf
 
 # ---------------------------------------------------------------------------
 # Config
@@ -3637,17 +3669,19 @@ def carm_route_bfcl(
                 segments = split_parallel_query(query)
                 if len(segments) > 1:
                     verified = []
-                    seen_names = set()
                     for seg in segments:
                         seg_scores = [
                             (f, score_function_relevance(f, seg)) for f in functions
                         ]
                         seg_scores.sort(key=lambda x: x[1], reverse=True)
                         if seg_scores and seg_scores[0][1] >= effective_threshold:
-                            fname = seg_scores[0][0]["name"]
-                            if fname not in seen_names:
-                                verified.append(seg_scores[0])
-                                seen_names.add(fname)
+                            verified.append(seg_scores[0])
+                    # NOTE: intentionally do NOT dedupe by function name across
+                    # segments. BFCL parallel_multiple requires repeated calls to
+                    # the *same* function with *different* params (e.g. price of
+                    # two different items, each its own get_artwork_price call).
+                    # Genuine exact duplicates (same name + same params) are still
+                    # removed later at the call-level dedup (line ~3786).
                     logger.info(
                         f"Segment-based parallel: {len(verified)} functions from {len(segments)} segments"
                     )
@@ -3914,16 +3948,21 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             f"Calling carm_route_bfcl with self.ollama_url={self.ollama_url}, self.ollama_model={self.ollama_model}"
         )
         start = time.time()
+        trace_begin()
         try:
             content = carm_route_bfcl(messages, self.ollama_url, self.ollama_model)
             latency = time.time() - start
             logger.info(
                 f"carm_route_bfcl completed in {latency:.2f}s, result length={len(content)}"
             )
+            carm_trace = trace_end()
         except Exception as e:
             latency = time.time() - start
+            carm_trace = trace_end()
             logger.error(f"carm_route_bfcl failed after {latency:.2f}s: {e}")
-            self._send_json(500, {"error": f"Internal error: {str(e)}"})
+            self._send_json(
+                500, {"error": f"Internal error: {str(e)}", "carm_trace": carm_trace}
+            )
             return
 
         # BFCL uses prompting mode (is_fc_model=False) and expects plain text content
@@ -3944,6 +3983,7 @@ class CARMServerHandler(BaseHTTPRequestHandler):
             ],
             "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             "latency": latency,
+            "carm_trace": carm_trace,
         }
         self._send_json(200, response)
 
@@ -4004,6 +4044,7 @@ def main():
             logging.StreamHandler(),
         ],
     )
+    logging.getLogger().addHandler(_ThreadTraceHandler())
 
     server = ThreadingHTTPServer((args.host, args.port), CARMServerHandler)
     server.daemon_threads = True
