@@ -329,6 +329,28 @@ def main() -> None:
             l_ = sum(1 for e in grp if e["direction"] == "loss")
             if grp:
                 print(f"    {name}: gain {g} / loss {l_} / neutral {len(grp)-g-l_}")
+
+        # 噪声标尺。承诺之外的样本理论上不受 G/H 影响，它们的翻转量就是
+        # 这套评测的重跑噪声。没有这个数，读者无法判断"净 +N"是不是真的。
+        promised_ids = {e["id"] for e in promise["affected"]}
+        base_ok = {}
+        for _cat, row in load_rows(promise.get("base", args.base)):
+            base_ok[row.get("id", "")] = str(row.get("correct")) == "True"
+        both = (set(base_ok) & set(actual)) - promised_ids
+        up = sum(1 for i in both if actual[i] and not base_ok[i])
+        down = sum(1 for i in both if base_ok[i] and not actual[i])
+        if both:
+            print()
+            print("噪声标尺（承诺之外的样本，理论上不受 G/H 影响）:")
+            print(f"  可比样本 {len(both)}   变好 {up}   变坏 {down}   "
+                  f"净 {up-down:+d}   翻转率 {(up+down)/len(both):.2%}")
+            net_promised = sum(
+                1 for e in promise["affected"] if e["direction"] == "gain"
+            ) - sum(1 for e in promise["affected"] if e["direction"] == "loss")
+            print(f"  承诺净收益 {net_promised:+d}，噪声净漂移 {up-down:+d}")
+            if abs(up - down) >= abs(net_promised):
+                print("  → 总体准确率差值无法区分信号与噪声，"
+                      "结论只能来自上面的逐样本对账。")
         raise SystemExit(0 if miss == 0 else 1)
 
     print(f"CONTRACT CHECK  base={args.base}  (production code as it stands now)")
