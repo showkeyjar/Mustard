@@ -1,0 +1,29 @@
+{
+  "live_multiple": {
+    "cat": "live_multiple",
+    "correct": 776,
+    "total": 1053,
+    "accuracy": 73.69,
+    "transport_errors": 0,
+    "time_s": 2409.1,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_multiple_v23.jsonl"
+  },
+  "live_relevance": {
+    "cat": "live_relevance",
+    "correct": 15,
+    "total": 16,
+    "accuracy": 93.75,
+    "transport_errors": 0,
+    "time_s": 47.8,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_relevance_v23.jsonl"
+  },
+  "live_irrelevance": {
+    "cat": "live_irrelevance",
+    "correct": 572,
+    "total": 884,
+    "accuracy": 64.71,
+    "transport_errors": 0,
+    "time_s": 1195.5,
+    "file": "D:\\codes\\Mustard\\data\\eval\\diag\\live_irrelevance_v23.jsonl"
+  }
+}

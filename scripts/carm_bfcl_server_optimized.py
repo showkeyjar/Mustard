@@ -628,9 +628,19 @@ def requery_documented_formats(calls, functions, query, ollama_url, ollama_model
     """Post-processing: for each string arg that declares a comma-two-part
     format and is not already in that shape, re-ask the model for the suffix.
 
-    Triggers only on the same set the commitment list was derived from; in v22
-    that set was 100% live_multiple, so other categories are no-ops. On any
-    failure the original value is kept, so this step is fail-safe.
+    Scope. The commitment list was derived from live_multiple only, because on
+    v22's recorded predictions that was the only category where a declaring
+    param actually held a non-compliant value. That is an OBSERVATION, not an
+    invariant: the v23 run fired this step 5 times in live_relevance. The
+    structural upper bound is what matters, and it is measured by
+    scripts/diag_format_exposure.py — as of BFCL V4 only live_multiple,
+    live_irrelevance and live_relevance contain declaring param sites at all;
+    the other seven categories cannot be reached by this step no matter how the
+    generation drifts.
+
+    Fail-safe. On any failure, empty reply, or a reply rejected by
+    _requery_value_rejected, the ORIGINAL value is kept, so this step can only
+    ever rewrite a string argument in place — it never adds or removes a call.
     """
     if not ENABLE_FORMAT_REQUERY or not calls:
         return calls

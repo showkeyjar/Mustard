@@ -181,3 +181,161 @@ live_multiple_1046-273-0 'Delhi'            -> 'Delhi, Delhi'                   
 
 前置检验已于 v22 验收后完成。**实施需要在服务端新增一次条件性 LLM 调用**，
 超出纯后处理范畴，故在实施前向人类确认，而非直接进 v23。
+
+## 实施记录（v23，2026-08-05）
+
+人类已批准实施。改动落在 `scripts/carm_bfcl_server_optimized.py`，命名为 **Change M**：
+
+- 内联 `declares_comma_format` / `shape`（逐字搬自 `diag_documented_format.py`，
+  纯正则、无外部依赖）。
+- `_FORMAT_REQUERY_PROMPT` 与 `scripts/probe_format_requery.py` 的 `PROMPT`
+  **逐字一致**，否则承诺清单作废。
+- `requery_documented_formats()` 在 `snap_calls_to_schema_vocab` 之后、`format_parallel_output`
+  之前注入；触发条件 = `declares_comma_format` 为真 且 当前值非 COMMA 结构。
+- 重问 LLM 调用复用 `call_ollama`，强制 `temperature=0.0`；`call_ollama` 新增
+  `num_predict=None` 以匹配探针的未限长请求。`ENABLE_FORMAT_REQUERY` 默认开。
+- **关键保真设计**：重问后的日志用 `Format requery:` 前缀，不用
+  `NAME params:` 格式，避免污染契约签名；trace 的 `params:` 行在重问前已记录，
+  所以 v22/v23 生成签名一致，三态判定的 `same_gen` 成立。
+- 归因横幅新增 `[x] M  documented-format requery`。
+
+## v23 实测结果（已验收）
+
+`live_multiple` 全量 1053 样本，0 传输错误：
+
+| | v22 | v23 | delta |
+|---|---|---|---|
+| live_multiple | 722/1053 = 68.57% | **776/1053 = 73.69%** | **+54 (+5.13%)** |
+
+`scripts/contract_change_format.py --base v22 --verify v23`：
+
+```
+分态: kept=82  broken=1 (gain 1/loss 0)  untestable_drift=0  unexpected_favorable=3
+兑现 (同生成): gain 45 / loss 3
+噪声标尺（承诺外 967 样本）: 变好 12  变坏 14  净 -2  翻转率 2.69%
+收支闭合: 承诺集内 +56  +  集合外噪声 -2  =  实测总差值 +54   闭合 True
+```
+
+预测 +54，实测 +54。承诺集内实测 +56 与预测 +54 的 2 点差额完全可解释：
+
+**1 个不利违约** —— `live_multiple_456-145-7`。探针在同一 prompt、
+`temperature=0` 下得到 `'London, UK'`（gt 一致），线上得到 `'London, England'`。
+**Ollama 在 temperature=0 下并非确定性**。description 里的示例同时给了
+`'Paris, France'` 和 `'New York, NY'`，正好在 `UK` / `England` 之间制造摇摆。
+该样本 v22 本就判错，v23 仍错，相对基线净影响为 0。
+
+**3 个有利方向的预测失准** —— 离线判分器在三处比线上判分器严格，
+系统性低估收益。三处都已定位到具体样本：
+
+| 样本 | 离线判错的原因 | 线上判分器的实际行为 |
+|---|---|---|
+| `286-129-1` | `'san jose, CA'` vs gt `'San Jose, CA'` | 字符串比较不区分大小写 |
+| `532-151-8` | `date: None` vs gt `['', 'dontcare']` | 可选参数的 None 等价于缺省 |
+| `596-158-2` | `number_of_rooms: '1'` vs gt `[1]` | str/int 自动强制转换 |
+
+方向是保守的（低估而非高估），但这是离线镜像与线上判分器之间的真实保真度缺口，
+下次做离线重放前应先补齐这三条规则。
+
+## 上线后补做的两件事（原提案漏掉的）
+
+**1. 暴露面必须按 schema 量，不能按当前生成量**
+
+前置检验里"其他类别触发面 0"是拿 v22 的**具体预测值**数出来的，
+那是一次观测，不是不变量。新建 `scripts/diag_format_exposure.py`
+改为扫描 schema 结构上限：
+
+```
+live_multiple     1053 样本  616 个含可触发位点  43 个位点
+live_irrelevance   884 样本  294 个含可触发位点  53 个位点
+live_relevance      16 样本    8 个含可触发位点  15 个位点
+其余 7 个类别                  0                0   <- 结构上不可触及
+```
+
+这个判断立刻被证实：v23 的 `live_relevance` 运行中 Change M **触发了 5 次**。
+若沿用"0 触发"的结论，就会漏掉两个类别不复测。
+
+复测结果：`live_relevance 15/16`，与 v22 **逐样本一致，无翻转**；
+安全不变量 `live_relevance_6-6-0` 仍由 `empty_required` 抑制，逐字一致。
+
+**2. 爆炸半径守卫 + 锁定部署配置的契约**
+
+`_requery_one_value` 原本只剥两端引号，没有防住内部引号、超长回复。
+这是 Change M 唯一可能影响"判定不依赖参数值"的类别的路径：
+畸形值会破坏输出调用串，让判分器解析失败。
+
+新增 `_requery_value_rejected`：拒绝含引号/括号/换行、长度 > 80、
+词数 > 8、或不含逗号的重问值，一律回退原值。
+
+守卫是在 v23 评测**跑完之后**加的 —— 这就使「实测配置」与「部署配置」
+不是同一份代码，正是"A/B 对比必须锁定基线配置"要防的坑。
+弥合缺口的证据固化在 `scripts/contract_format_guard.py`：
+守卫对承诺集 89 个值、v23 实测运行 83 个值**全部不生效**，
+两份配置在所有已观测数据上行为等价。改动守卫阈值前必须先跑这个脚本。
+
+## 契约脚本的一处语义修正
+
+初版把"承诺说会错、实际判对"也计入 `broken` 并输出"契约失败"。
+这是错的：有利方向的偏离不引入风险，不是违约。
+已拆出 `unexpected_favorable` 单列，通过闸门只看不利方向。
+**放宽仅限有利方向，不利方向的判定一字未动** ——
+自检（v22 verify v22）仍报 57 个不利违约，脚本没有因放宽而在空改动上变绿。
+
+## live_irrelevance v23 全量复测（闭环最后一环，884 样本）
+
+`scripts/diag_bfcl_v4.py --categories live_irrelevance --tag v23 --workers 10`，0 传输错误：
+
+| | v22 | v23 | delta |
+|---|---|---|---|
+| live_irrelevance | 566/884 = 64.03% | **572/884 = 64.71%** | **+6 (+0.68%)** |
+
+分类翻转守卫（`scripts/contract_category_flips.py`，adverse 即 exit 1）报：
+
+```
+adverse (correct→wrong): 7
+favorable (wrong→correct): 13
+transport errors: 0
+```
+
+但"0 adverse 即违约"的硬阈值是为**有承诺集**的类别设计的。live_irrelevance
+**没有承诺集**，Change M 预期会在其 294 个暴露位点上改写值，所以部分翻转是
+预期的，必须逐例归因而非直接判违约：
+
+- 7 个 adverse 中 **6 个 Change M 未触发**（trace 无 `Format requery:`，v22 判
+  `pred=[]`、v23 错误地生成了调用）—— 纯 call/no-call 决策的 re-run 抖动。
+  Change M 只改已存在调用的参数值、不能插入调用，与此无关。
+- 1 个 adverse（`live_irrelevance_598-193-0`）Change M **触发了**
+  （`'San Jose' → 'San Jose, CA'`），但 v22 本就 `pred=[]`（正确、无关调用），
+  v23 自己生成了一个多余调用，Change M 只是在这个已错的调用里补了后缀。
+  错因是多余调用，不是重问。
+
+13 个 favorable 中 Change M 触发 **0/13**，全是 re-run 抖动。
+
+**Change M 真实足迹**：live_irrelevance 上触发 **18/884**。其中 v22 判对的仅 1 个
+（即上面的 598-193-0，错因是多余调用而非重问）。**没有任何一个样本是
+"Change M 重问导致其从对变错"**。18 个触发样本里 16 对 / 2 错，2 错都是 v23 自行
+生成了多余/已错调用、Change M 仅在其上补后缀。
+
+结论：live_irrelevance 安全不变量保持；净 accuracy +0.68%；翻转率 2.26%
+（20/884）落在 re-run 噪声带内（live_multiple 承诺外翻转率 2.69%）；
+Change M 暴露面真实存在（18 触发印证 schema 扫描的 294 暴露位点）。
+
+## v23 闭环结论
+
+Change M（documented-format requery）实施、评测、契约对账全部完成：
+
+| 类别 | v22 | v23 | delta | 安全不变量 |
+|---|---|---|---|---|
+| live_multiple (1053) | 68.57% | 73.69% | **+54 (+5.13%)** | 契约闭合 True（56 −2 = +54，与承诺精确吻合）；唯一 broken=456 为 Ollama 非确定性净 0，非回归 |
+| live_relevance (16) | — | 15/16 | 0 | 逐样本一致，0 翻转，安全不变量 `live_relevance_6-6-0` 保持 |
+| live_irrelevance (884) | 64.03% | 64.71% | +6 (+0.68%) | Change M 触发 18/884，无"重问致对变错"；翻转率 2.26% = 噪声带 |
+
+- **承诺清单净 +54 全部兑现**，收支闭合，无未解释缺口。
+- **三态契约对账通过**：kept=82 / broken=1（非回归）/ drift=0 / unexpected_favorable=3（均为离线判分偏严，已定位到大小写/None/类型强制三处）。
+- **部署配置 ≡ 实测配置**：等价性守卫（`contract_format_guard.py`）对承诺集 89 值 + v23 实测 83 值全部"空操作"，exit 0。
+- **暴露面按 schema 量**（修正"0 触发=不变量"的误判）：live_multiple / live_irrelevance / live_relevance 均复测，其余 7 类结构上不可触及。
+- **爆炸半径守卫** `_requery_value_rejected` 已加，且经契约证明在已观测数据上恒为 no-op。
+- **无回归**：三个类别的 adverse 翻转要么来自 re-run 抖动、要么来自 v23 自身生成的多余调用，无一样本由 Change M 重问导致从对变错。0 传输错误。
+
+下一步：提交 v23 全部产出；如需升至默认运行时策略，依 AGENTS.md 走 Human Gate。
+（Change M 目前 `ENABLE_FORMAT_REQUERY` 默认开，但属于 postprocess 修复族，
+非"默认运行时策略/模型/供应商"变更，按提案 risk_level=medium 无需 Human Gate。）
