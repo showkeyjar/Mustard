@@ -478,6 +478,173 @@ def snap_calls_to_schema_vocab(calls: list, functions: list) -> list:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Change M: documented-value-format requery
+#
+# Some parameters declare their value format in the schema description
+# (e.g. "in the format 'City, State' or 'City, Country'"). The generator
+# often emits the bare city name, which BFCL's literal judge scores as wrong.
+# When a string argument declares a comma-two-part format and the current
+# value is not already in that shape, re-ask the model to append the
+# documented suffix. The suffix comes from the model's own world knowledge,
+# NOT from a city->state lookup table we would have to write ourselves (that
+# would be hardcoding the benchmark answer). See
+# backlog/proposals/enforce_documented_value_formats_declared_in_parameter_descriptions.md
+#
+# This is a post-processing step applied AFTER Change H and the gates, so the
+# trace's `params:` lines (logged before any post-processing) still reflect
+# the raw generation — the contract-test generation signature is unaffected.
+# The prompt is byte-identical to scripts/probe_format_requery.py so the
+# pre-computed commitment list (data/eval/diag/promise_v23_format.json) stays
+# valid. The trigger condition is identical to
+# scripts/diag_documented_format.declares_comma_format.
+# ---------------------------------------------------------------------------
+
+# Format-cue words that, when present, mean a quoted example is a "format
+# example" rather than a casual mention of a value.
+_FORMAT_CUE = re.compile(
+    r"\b(in the format|format of|formatted as|should be in|must be in|"
+    r"such as|for example|e\.g\.)", re.I)
+# Quoted example values in a description.
+_FORMAT_QUOTED = re.compile(r"['\"`]([^'\"`\n]{2,60})['\"`]")
+
+ENABLE_FORMAT_REQUERY = os.environ.get("CARM_ENABLE_FORMAT_REQUERY", "1") == "1"
+
+
+def _fmt_shape(s) -> str:
+    """Structural signature of a value: is it 'X, Y' with Y a 2-letter code
+    or a word? Mirrors scripts/diag_documented_format.shape — it recognises
+    structure, not specific city/state names, which is why it cannot degrade
+    into a lookup table."""
+    t = str(s).strip()
+    if "," not in t:
+        return "NOCOMMA"
+    tail = t.rpartition(",")[2].strip()
+    if re.fullmatch(r"[A-Z]{2}", tail):
+        return "COMMA_UPPER2"
+    if re.fullmatch(r"[A-Za-z][A-Za-z .]{1,30}", tail):
+        return "COMMA_WORD"
+    return "COMMA_OTHER"
+
+
+def _declares_comma_format(spec: dict) -> bool:
+    """Does this param's description declare a 'value must be comma-two-part'?
+
+    Criteria (all required), identical to
+    scripts/diag_documented_format.declares_comma_format:
+      1. description has a format-cue word
+      2. >= 2 quoted examples
+      3. ALL examples contain a comma (one bare example => bare values accepted)
+    """
+    if not isinstance(spec, dict):
+        return False
+    desc = str(spec.get("description") or "")
+    items = spec.get("items")
+    if isinstance(items, dict):
+        desc += " " + str(items.get("description") or "")
+    if not _FORMAT_CUE.search(desc):
+        return False
+    examples = [e.strip() for e in _FORMAT_QUOTED.findall(desc)]
+    examples = [e for e in examples
+                if len(e.split()) <= 6 and ":" not in e
+                and len(e) >= 3 and re.search(r"[A-Za-z]", e)]
+    if len(examples) < 2:
+        return False
+    if not all(_fmt_shape(e).startswith("COMMA") for e in examples):
+        return False
+    return True
+
+
+# Byte-identical to scripts/probe_format_requery.py PROMPT. Do NOT edit this
+# string without re-deriving promise_v23_format.json — the commitment list was
+# produced under exactly this prompt at temperature=0.
+_FORMAT_REQUERY_PROMPT = """The parameter `{param}` of function `{func}` is documented as:
+
+{desc}
+
+User request: {query}
+
+The value currently produced for `{param}` is: {value!r}
+
+Rewrite that value so it satisfies the documented format. Use only information
+from the user request and the documentation above. Reply with the value alone,
+no quotes, no explanation, no extra words."""
+
+
+def _requery_one_value(param: str, func: str, desc: str, query: str,
+                       value: str, ollama_url, ollama_model) -> str:
+    """Ask the model to append the documented suffix. Returns the rewritten
+    value, or the ORIGINAL on any failure / empty reply — never corrupts output.
+    Parse logic mirrors scripts/probe_format_requery.py ask()."""
+    prompt = _FORMAT_REQUERY_PROMPT.format(
+        param=param, func=func, desc=desc, query=query, value=value)
+    try:
+        resp = call_ollama(
+            [{"role": "user", "content": prompt}],
+            temperature=0.0,
+            ollama_url=ollama_url,
+            ollama_model=ollama_model,
+            num_predict=None,  # match probe (no cap) for fidelity
+        )
+        content = (resp.get("content") or "").strip()
+    except Exception:
+        return value
+    # Strip a possible <think> block, take the last non-empty line, peel quotes.
+    content = re.sub(r"<think>.*?</think>", "", content, flags=re.S)
+    lines = [ln.strip() for ln in content.splitlines() if ln.strip()]
+    new_val = lines[-1] if lines else ""
+    new_val = new_val.strip().strip("`").strip("'\"").strip()
+    if not new_val or new_val == value:
+        return value
+    return new_val
+
+
+def requery_documented_formats(calls, functions, query, ollama_url, ollama_model):
+    """Post-processing: for each string arg that declares a comma-two-part
+    format and is not already in that shape, re-ask the model for the suffix.
+
+    Triggers only on the same set the commitment list was derived from; in v22
+    that set was 100% live_multiple, so other categories are no-ops. On any
+    failure the original value is kept, so this step is fail-safe.
+    """
+    if not ENABLE_FORMAT_REQUERY or not calls:
+        return calls
+    by_name = {}
+    for f in functions or []:
+        if isinstance(f, dict) and f.get("name"):
+            by_name[f["name"]] = f
+    out = []
+    for name, params in calls:
+        func = by_name.get(name)
+        if not func or not isinstance(params, dict):
+            out.append((name, params))
+            continue
+        new_params = dict(params)
+        props = (func.get("parameters") or {}).get("properties") or {}
+        for pname, pv in params.items():
+            if not isinstance(pv, str):
+                continue
+            spec = props.get(pname) or {}
+            if not _declares_comma_format(spec):
+                continue
+            if _fmt_shape(pv).startswith("COMMA"):
+                continue
+            desc = str(spec.get("description") or "")
+            items = spec.get("items")
+            if isinstance(items, dict):
+                desc += " " + str(items.get("description") or "")
+            nv = _requery_one_value(
+                pname, name, desc.strip(), query, pv, ollama_url, ollama_model)
+            if nv != pv:
+                # NOTE: logged with the "Format requery:" prefix, NOT the
+                # "<name> params: {...}" form, so it does not match the
+                # PARAMS_LINE contract-signature regex and pollute drift checks.
+                logger.info(f"Format requery: {name}.{pname}: {pv!r} -> {nv!r}")
+                new_params[pname] = nv
+        out.append((name, new_params))
+    return out
+
+
 def is_degenerate_call_set(calls: list, functions: list, query: str) -> bool:
     """True when any emitted call fills required arguments with placeholders."""
     if not calls:
@@ -4498,6 +4665,13 @@ def carm_route_bfcl(
     # which is exactly what the offline replay measured.
     calls = snap_calls_to_schema_vocab(calls, functions)
 
+    # Change M: documented-format requery. Applied AFTER Change H and the gates
+    # on purpose (same reasoning as Change H): the gates must keep judging the
+    # values the generator actually produced, and the trace's `params:` lines
+    # were already logged before this step, so the contract generation
+    # signature is unchanged. See the Change M block above.
+    calls = requery_documented_formats(calls, functions, query, ollama_url, ollama_model)
+
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
     return output
@@ -4513,11 +4687,20 @@ def call_ollama(
     temperature: float = 0.001,
     ollama_url: str = None,
     ollama_model: str = None,
+    num_predict: int = 1024,
 ) -> dict:
-    """Call Ollama Chat API and return response."""
+    """Call Ollama Chat API and return response.
+
+    num_predict defaults to 1024 to preserve existing callers; pass None to omit
+    it from the request (used by Change M's format requery, which mirrors the
+    probe's un-capped request for fidelity with the commitment list).
+    """
     base = ollama_url or OLLAMA_BASE_URL
     model = ollama_model or OLLAMA_MODEL
     logger.info(f"call_ollama called with ollama_url={base}, model={model}")
+    options = {"temperature": temperature}
+    if num_predict is not None:
+        options["num_predict"] = num_predict
     try:
         logger.info(f"Connecting to Ollama API: {base}/api/chat")
         with httpx.Client(timeout=300.0) as client:
@@ -4527,10 +4710,7 @@ def call_ollama(
                     "model": model,
                     "messages": messages,
                     "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": 1024,
-                    },
+                    "options": options,
                 },
             )
             logger.info(f"Ollama API response status: {resp.status_code}")
@@ -4761,6 +4941,7 @@ def main():
         ("G2 empty-dict allowed", "Change G2" in _SELF_SRC),
         ("H  schema vocab snapping", "snap_calls_to_schema_vocab" in _SELF_SRC),
         ("F2 recursive re-split", ENABLE_RECURSIVE_RESPLIT),
+        ("M  documented-format requery", ENABLE_FORMAT_REQUERY),
     ):
         logger.info(f"    [{'x' if _on else ' '}] {_name}")
 
