@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import re
 import time
 import threading
@@ -1934,6 +1935,15 @@ def _distinct_best_names(segments: list[str], functions: list[dict]) -> set[str]
 # ---------------------------------------------------------------------------
 
 ENABLE_RECURSIVE_RESPLIT = os.environ.get("CARM_ENABLE_F2", "0") == "1"
+
+# Own source text, read once at import, used only by the startup attribution
+# banner. Cheap, and it makes "which code is this process running?" answerable
+# from the log instead of from guesswork about commit times.
+try:
+    with open(__file__, encoding="utf-8") as _f:
+        _SELF_SRC = _f.read()
+except Exception:  # pragma: no cover - banner must never break startup
+    _SELF_SRC = ""
 
 _SUB_TRANSITION = re.compile(
     r"[.?!]\s*(?:Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile"
@@ -4742,6 +4752,17 @@ def main():
     logger.info(
         f"  Preserved: CARM signal routing + LLM irrelevance verification + LLM disambiguation"
     )
+    # Attribution banner. A running server's behaviour cannot be inferred from
+    # git timestamps -- the process may predate any commit touching this file.
+    # Print the active change set so every trace log carries its own provenance.
+    logger.info("  ACTIVE CHANGE SET (attribution banner):")
+    for _name, _on in (
+        ("G1 param_name_echo query guard", "Change G1" in _SELF_SRC),
+        ("G2 empty-dict allowed", "Change G2" in _SELF_SRC),
+        ("H  schema vocab snapping", "snap_calls_to_schema_vocab" in _SELF_SRC),
+        ("F2 recursive re-split", ENABLE_RECURSIVE_RESPLIT),
+    ):
+        logger.info(f"    [{'x' if _on else ' '}] {_name}")
 
     try:
         server.serve_forever()

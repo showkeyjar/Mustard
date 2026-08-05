@@ -1,0 +1,216 @@
+{
+  "base": "v21",
+  "target": "v22",
+  "counts": {
+    "gain": 9,
+    "loss": 0,
+    "neutral": 12
+  },
+  "invariants_checked": [
+    "irrelevance_130",
+    "irrelevance_218",
+    "live_relevance_6-6-0"
+  ],
+  "affected": [
+    {
+      "id": "simple_java_55",
+      "category": "simple_java",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "change": "G"
+    },
+    {
+      "id": "simple_javascript_1",
+      "category": "simple_javascript",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "change": "G"
+    },
+    {
+      "id": "simple_javascript_17",
+      "category": "simple_javascript",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "change": "G"
+    },
+    {
+      "id": "simple_javascript_40",
+      "category": "simple_javascript",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "change": "G"
+    },
+    {
+      "id": "simple_javascript_48",
+      "category": "simple_javascript",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "change": "G"
+    },
+    {
+      "id": "irrelevance_113",
+      "category": "irrelevance",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('find_pois', {'location': 'London', 'category': ['restaurants']})]",
+      "after": "[('find_pois', {'location': 'London', 'category': ['Restaurants']})]",
+      "change": "H"
+    },
+    {
+      "id": "multiple_48",
+      "category": "multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('library.find_nearby', {'location': 'New York City', 'preferences': ['pet-friendly', 'facilities for disabled people']})]",
+      "after": "[('library.find_nearby', {'location': 'New York City', 'preferences': ['Pet-friendly', 'facilities for disabled people']})]",
+      "change": "H"
+    },
+    {
+      "id": "parallel_39",
+      "category": "parallel",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('museum_info.get_info', {'location': 'Washington D.C.', 'details': ['opening hours', 'ticket prices']}), ('museum_info.get_info', {'location': 'Paris', 'details': ['opening hours', 'ticket prices']}",
+      "after": "[('museum_info.get_info', {'location': 'Washington D.C.', 'details': ['Opening hours', 'ticket prices']}), ('museum_info.get_info', {'location': 'Paris', 'details': ['Opening hours', 'ticket prices']}",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_55",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('recipe_search', {'ingredient': 'spaghetti', 'dietary_requirements': ['gluten free'], 'isHomemade': True}), ('recipe_nutrition_info', {'recipe': 'homemade healthy spaghetti'})]",
+      "after": "[('recipe_search', {'ingredient': 'spaghetti', 'dietary_requirements': ['gluten_free'], 'isHomemade': True}), ('recipe_nutrition_info', {'recipe': 'homemade healthy spaghetti'})]",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_57",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('hotel.find', {'location': 'Paris, France', 'stars': 4, 'amenities': ['free WiFi', 'breakfast included', 'gym facility']}), ('hotel.find', {'location': 'New York, USA', 'stars': 4, 'amenities': ['fr",
+      "after": "[('hotel.find', {'location': 'Paris, France', 'stars': 4, 'amenities': ['Free WiFi', 'Breakfast Included', 'gym facility']}), ('hotel.find', {'location': 'New York, USA', 'stars': 4, 'amenities': ['Fr",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_96",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('library.find_nearby', {'location': 'New York City, NY', 'preferences': ['pet-friendly', 'cafe']}), ('library.find_nearby', {'location': 'New York City, NY', 'preferences': ['disabled access', '24 h",
+      "after": "[('library.find_nearby', {'location': 'New York City, NY', 'preferences': ['Pet-friendly', 'cafe']}), ('library.find_nearby', {'location': 'New York City, NY', 'preferences': ['Disabled Access', '24 h",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_125",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('restaurant.find_group', {'location': 'Seattle, WA', 'group_size': 10, 'cuisine': ['Seafood', 'Italian']}), ('events.find_event', {'location': 'Seattle, WA', 'event_type': ['food', 'concert', 'sport",
+      "after": "[('restaurant.find_group', {'location': 'Seattle, WA', 'group_size': 10, 'cuisine': ['Seafood', 'Italian']}), ('events.find_event', {'location': 'Seattle, WA', 'event_type': ['food', 'Concert', 'Sport",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_149",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "before": "[('hotel_booking', {'location': 'Paris', 'room_type': 'deluxe', 'duration': 5, 'start_date': '20th June', 'preferences': ['gym', 'free breakfast']}), ('soccer.get_last_match', {'team_name': 'Mancheste",
+      "after": "[('hotel_booking', {'location': 'Paris', 'room_type': 'deluxe', 'duration': 5, 'start_date': '20th June', 'preferences': ['gym', 'free_breakfast']}), ('soccer.get_last_match', {'team_name': 'Mancheste",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_166",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "before": "[('park_information', {'park_name': 'Yellowstone National Park', 'information': ['elevation', 'area']}), ('park_information', {'park_name': 'Yosemite National Park', 'information': ['location', 'estab",
+      "after": "[('park_information', {'park_name': 'Yellowstone National Park', 'information': ['Elevation', 'Area']}), ('park_information', {'park_name': 'Yosemite National Park', 'information': ['Location', 'Estab",
+      "change": "H"
+    },
+    {
+      "id": "parallel_multiple_189",
+      "category": "parallel_multiple",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('vegan_restaurant.find_nearby', {'location': 'San Francisco, CA', 'operating_hours': 22}), ('hotel_booking', {'location': 'San Francisco, CA', 'room_type': 'deluxe', 'duration': 3, 'start_date': '20",
+      "after": "[('vegan_restaurant.find_nearby', {'location': 'San Francisco, CA', 'operating_hours': 22}), ('hotel_booking', {'location': 'San Francisco, CA', 'room_type': 'deluxe', 'duration': 3, 'start_date': '20",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_166",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('lawyer.find_nearby', {'city': 'Chicago', 'specialty': ['divorce'], 'fee': 400})]",
+      "after": "[('lawyer.find_nearby', {'city': 'Chicago', 'specialty': ['Divorce'], 'fee': 400})]",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_277",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('museum_info', {'museum': 'The British Museum', 'date': '2023-06-20', 'information': ['working hours', 'ticket price']})]",
+      "after": "[('museum_info', {'museum': 'The British Museum', 'date': '2023-06-20', 'information': ['working hours', 'ticket_price']})]",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_330",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "before": "[('board_game_info', {'game_name': 'Catan', 'info_required': ['average review rating', 'age range']})]",
+      "after": "[('board_game_info', {'game_name': 'Catan', 'info_required': ['average_review_rating', 'age_range']})]",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_358",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "before": "[('recipe_search', {'diet': ['gluten-free'], 'time_limit': 30, 'dish': 'cookie'})]",
+      "after": "[('recipe_search', {'diet': ['Gluten Free'], 'time_limit': 30, 'dish': 'cookie'})]",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_374",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": false,
+      "direction": "neutral",
+      "before": "[('grocery_info.nutritional_info', {'store': 'Walmart', 'food': 'avocado', 'information': ['protein', 'calories', 'carbs']})]",
+      "after": "[('grocery_info.nutritional_info', {'store': 'Walmart', 'food': 'avocado', 'information': ['Protein', 'Calories', 'carbs']})]",
+      "change": "H"
+    },
+    {
+      "id": "simple_python_380",
+      "category": "simple_python",
+      "was_correct": false,
+      "predicted_correct": true,
+      "direction": "gain",
+      "before": "[('hotel_booking', {'location': 'Manhattan, New York', 'room_type': 'single', 'duration': 3, 'start_date': '2023-03-10', 'preferences': ['pet friendly']})]",
+      "after": "[('hotel_booking', {'location': 'Manhattan, New York', 'room_type': 'single', 'duration': 3, 'start_date': '2023-03-10', 'preferences': ['pet_friendly']})]",
+      "change": "H"
+    }
+  ]
+}

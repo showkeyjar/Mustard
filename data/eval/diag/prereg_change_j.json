@@ -1,0 +1,42 @@
+{
+  "change": "J",
+  "description": "query 字符数 > T 时撤销 LLM 相关性验证器的 reject 判定",
+  "registered_at": "2026-08-05T14:47:28 (before live_irrelevance_v21.jsonl landed)",
+  "registered_before_data": [
+    "live_multiple_v21.jsonl",
+    "live_irrelevance_v21.jsonl"
+  ],
+  "evidence_at_registration": {
+    "tag": "v21",
+    "categories": 11,
+    "samples": 1704,
+    "verifier_rejections": 86,
+    "correct_rejections": 72,
+    "wrong_rejections": 14,
+    "correct_rejection_categories": ["irrelevance"],
+    "correct_rejection_qlen_max": 146,
+    "wrong_rejection_qlen_median": 115,
+    "wrong_rejection_qlen_max": 709,
+    "scan_at_T150": {"rescue_upper_bound": 6, "damage": 0, "net": 6}
+  },
+  "why_frozen": "T=150 处 damage=0 完全由 irrelevance 子集 query 长度封顶 146 造成。query 长度是数据固有属性，不是模型行为，因此该阈值无法外推到 live_irrelevance。",
+  "falsifiable_prediction": {
+    "statement": "live_irrelevance 落盘后，T=150 处的 damage 将从 0 显著上升，净值转负或退化为噪声级别。",
+    "quantified": {
+      "live_irrelevance_total": 884,
+      "frac_qlen_gt_150_in_dataset": 0.129,
+      "observed_verifier_reject_rate_on_irrelevance": 0.30,
+      "expected_damage_at_T150_point_estimate": 34,
+      "expected_damage_at_T150_range": [15, 60],
+      "expected_rescue_gain_at_T150": "维持 6 附近（live_irrelevance 的 GT 全为空，不产生 rescue）",
+      "expected_net_at_T150": "明显为负"
+    },
+    "falsified_if": "damage_at_T150 < 5 且净值仍 >= +5，则本预测被推翻，说明 live_irrelevance 的长 query 样本没有被验证器拒绝，需要重新解释机制而非直接采纳 Change J。"
+  },
+  "unfreeze_criteria": [
+    "全量 rescue - damage 显著为正，不是个位数噪声",
+    "存在一个阈值，其 damage 占正确拒绝总数的比例可接受",
+    "该阈值不是只在单一类别上成立"
+  ],
+  "verify_command": "python scripts/diag_change_j_threshold.py v21"
+}
