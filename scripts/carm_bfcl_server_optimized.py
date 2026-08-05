@@ -86,6 +86,291 @@ RELEVANCE_THRESHOLD = 0.1
 # Set to 0.55 — irrelevance cases score 0.32-0.50, simple cases mostly ≥ 0.54
 IRRELEVANCE_VERIFY_THRESHOLD = 0.55
 
+# --- Fabricated-argument gate -------------------------------------------------
+# A query too short to specify a request, answered with argument values that
+# cannot be traced back to the query text, is a hallucinated call.
+# Examples caught: "air" -> ThinQ_Connect(body={airConJobMode: AIR_CLEAN, ...}),
+# "Whopper" -> ChaFod(TheFod='BURGER'), "detail?" -> six get_adriel_* calls.
+# Thresholds come from an offline sweep over the live_irrelevance diagnostics:
+# maxSize=4 / minUngrounded=1 recovers 20/118 false positives with 0/315
+# damage to currently-correct positive samples (see scripts/diag_gate_eval.py).
+FABRICATED_GATE_MAX_QUERY_SIZE = 4.0
+FABRICATED_GATE_MIN_UNGROUNDED = 1
+
+# Argument names that are structural rather than content-bearing; their values
+# are legitimately supplied as defaults and must not count as fabrication.
+_GATE_TRIVIAL_KEYS = {
+    "unit",
+    "units",
+    "format",
+    "lang",
+    "language",
+    "page",
+    "limit",
+    "offset",
+    "timezone",
+}
+
+_RE_LATIN = re.compile(r"[A-Za-z0-9]+")
+_RE_CJK = re.compile(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]")
+_RE_THAI = re.compile(r"[\u0e00-\u0e7f]")
+_RE_OTHER_SCRIPT = re.compile(r"[\u0590-\u05ff\u0600-\u06ff\u0400-\u04ff]+")
+
+
+def _query_size(query: str) -> float:
+    """Script-aware approximate word count.
+
+    CJK and Thai are written without spaces, so a plain ``\\w+`` split would
+    collapse a whole sentence into one token and make every long CJK query look
+    short. CJK is sized at chars/2, Thai at chars/3.
+    """
+    q = str(query)
+    return (
+        len(_RE_LATIN.findall(q))
+        + len(_RE_CJK.findall(q)) / 2.0
+        + len(_RE_THAI.findall(q)) / 3.0
+        + len(_RE_OTHER_SCRIPT.findall(q))
+    )
+
+
+def _gate_tokens(s) -> list:
+    return re.findall(r"[a-z0-9]+", str(s).lower())
+
+
+def _is_non_latin_query(query: str) -> bool:
+    q = str(query)
+    non_latin = (
+        len(_RE_CJK.findall(q))
+        + len(_RE_THAI.findall(q))
+        + len(_RE_OTHER_SCRIPT.findall(q))
+    )
+    return non_latin > len(_RE_LATIN.findall(q))
+
+
+def _value_grounded(value, query: str, query_lower: str, query_tokens: set) -> bool:
+    """Can this argument value be traced back to the query text?
+
+    Abstains (returns True) whenever the comparison would not be meaningful —
+    booleans, empty values, and Latin values against a non-Latin query (a
+    Chinese query answered with ``location='Guangzhou, China'`` is correctly
+    grounded even though no token overlaps).
+    """
+    if isinstance(value, bool) or value is None:
+        return True
+    if isinstance(value, (int, float)):
+        return str(value) in query_lower
+    if isinstance(value, list):
+        return all(
+            _value_grounded(v, query, query_lower, query_tokens) for v in value
+        )
+    if isinstance(value, dict):
+        return all(
+            _value_grounded(v, query, query_lower, query_tokens)
+            for v in value.values()
+        )
+    s = str(value).strip()
+    if not s:
+        return True
+    if s.lower() in query_lower:
+        return True
+    if _RE_LATIN.search(s) and _is_non_latin_query(query):
+        return True  # cross-script: cannot judge
+    value_tokens = _gate_tokens(s)
+    if not value_tokens:
+        return True
+    hits = sum(1 for t in value_tokens if t in query_tokens)
+    return hits / len(value_tokens) >= 0.5
+
+
+def _count_ungrounded_args(calls: list, query: str) -> int:
+    """Number of content-bearing argument values absent from the query."""
+    query_lower = query.lower()
+    query_tokens = set(_gate_tokens(query))
+    total = 0
+    for _name, params in calls:
+        if not isinstance(params, dict):
+            continue
+        for key, value in params.items():
+            if key.lower() in _GATE_TRIVIAL_KEYS:
+                continue
+            if isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    if sub_key.lower() in _GATE_TRIVIAL_KEYS:
+                        continue
+                    if not _value_grounded(
+                        sub_value, query, query_lower, query_tokens
+                    ):
+                        total += 1
+            elif not _value_grounded(value, query, query_lower, query_tokens):
+                total += 1
+    return total
+
+
+def is_fabricated_call_set(calls: list, query: str) -> bool:
+    """True when the emitted calls are fabricated rather than requested.
+
+    Fires only for queries too short to carry a real request whose calls
+    nonetheless contain invented argument values.
+    """
+    if not calls:
+        return False
+    if _query_size(query) > FABRICATED_GATE_MAX_QUERY_SIZE:
+        return False
+    n_ungrounded = _count_ungrounded_args(calls, query)
+    if n_ungrounded >= FABRICATED_GATE_MIN_UNGROUNDED:
+        logger.info(
+            f"Fabricated-argument gate: query size "
+            f"{_query_size(query):.1f} <= {FABRICATED_GATE_MAX_QUERY_SIZE} with "
+            f"{n_ungrounded} ungrounded arg(s) → suppress {[n for n, _ in calls]}"
+        )
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Degenerate-argument gate
+# ---------------------------------------------------------------------------
+# The fabricated-argument gate above only fires on very short queries. A second
+# family of hallucinated calls survives it: fluent, natural-length requests the
+# model answers by filling REQUIRED parameters with placeholder rubbish.
+#
+#   "Where is my order"        -> order_status_check(order_id="", product="")
+#   "set 50 degree"            -> ThinQ_Connect()
+#   "I want to buy 10 wings"   -> uber.eat.order(restaurant="uber.eat.order")
+#   "drink"                    -> ChaDri.change_drink(drink_id="drink")
+#   "Can I get authenticated?" -> user_authentication.login(username="user")
+#
+# Every signal below was measured independently against the v18 diagnostics:
+# together they suppress 14/98 residual false positives with 0/315 damage to
+# currently-correct calls (see scripts/diag_degenerate_gate.py). Each is scoped
+# to REQUIRED parameters and abstains on schema enum values, so legitimately
+# generic answers ("search_type=MPN", "anchor=user") are left alone.
+
+_GATE_PLACEHOLDER_TOKENS = {
+    "user", "username", "user123", "your_username", "your_name", "yourname",
+    "string", "str", "text", "value", "example", "sample", "test", "testing",
+    "n/a", "na", "none", "null", "nil", "unknown", "unspecified", "undefined",
+    "placeholder", "foo", "bar", "baz", "xxx", "abc", "todo", "tbd",
+    "item", "items", "product", "order", "default", "any", "all",
+}
+
+# Suffixes stripped when checking whether a value merely echoes its own name.
+_GATE_NAME_SUFFIXES = ("_id", "_ids", "_name", "_names", "_code", "_key", "_no", "_number")
+
+# Words that make an empty container a legitimate, user-requested value
+# ("start from an empty board", "with no filters").
+_GATE_EMPTINESS_WORDS = ("empty", "blank", "none", "no ", "without", "clear", "nothing")
+
+
+def _gate_schema_map(functions: list) -> dict:
+    """name -> {"required": [...], "enum": {param: [lowercased values]}}"""
+    out = {}
+    for f in functions or []:
+        if not isinstance(f, dict):
+            continue
+        params = f.get("parameters") or {}
+        props = params.get("properties") or {}
+        enums = {}
+        for pname, pspec in props.items():
+            if isinstance(pspec, dict) and pspec.get("enum"):
+                enums[pname] = [str(x).strip().lower() for x in pspec["enum"]]
+        out[f.get("name", "")] = {
+            "required": list(params.get("required") or []),
+            "enum": enums,
+        }
+    return out
+
+
+def _strip_name_suffix(name: str) -> str:
+    n = str(name).strip().lower()
+    for suf in _GATE_NAME_SUFFIXES:
+        if n.endswith(suf) and len(n) > len(suf):
+            return n[: -len(suf)]
+    return n
+
+
+def _is_degenerate_call(fname: str, args: dict, spec: dict, query: str) -> str:
+    """Return the name of the degeneracy signal that fires, or "" if clean."""
+    if not isinstance(args, dict):
+        return ""
+    required = spec.get("required") or []
+    enums = spec.get("enum") or {}
+    query_lower = str(query).lower()
+
+    # 1. every required parameter absent
+    if required and all(r not in args for r in required):
+        return "missing_required"
+
+    # 2. a required parameter present but empty
+    user_wants_empty = any(w in query_lower for w in _GATE_EMPTINESS_WORDS)
+    for r in required:
+        if r not in args:
+            continue
+        v = args[r]
+        if v is None:
+            return "empty_required"
+        if isinstance(v, str) and not v.strip():
+            return "empty_required"
+        if isinstance(v, (list, dict, tuple)) and len(v) == 0 and not user_wants_empty:
+            return "empty_required"
+
+    # 3. a value echoes the function name (and is not in the query)
+    name_parts = {str(fname).strip().lower()}
+    name_parts |= {p.strip().lower() for p in str(fname).split(".") if p}
+    name_parts |= {
+        p.strip().lower() for p in str(fname).replace(".", "_").split("_") if len(p) > 3
+    }
+    for k, v in args.items():
+        if not isinstance(v, str):
+            continue
+        nv = v.strip().lower()
+        if not nv:
+            continue
+        if nv in name_parts and nv not in query_lower and nv not in enums.get(k, []):
+            return "func_name_echo"
+
+    # 4. a value merely repeats its own parameter name
+    for k, v in args.items():
+        if not isinstance(v, str) or not v.strip():
+            continue
+        nv = v.strip().lower()
+        if nv in enums.get(k, []):
+            continue
+        if nv == str(k).strip().lower() or nv == _strip_name_suffix(k):
+            return "param_name_echo"
+
+    # 5. a required value is a generic placeholder absent from the query
+    for k in required:
+        v = args.get(k)
+        if not isinstance(v, str):
+            continue
+        nv = v.strip().lower()
+        if nv in enums.get(k, []):
+            continue
+        if nv in _GATE_PLACEHOLDER_TOKENS and nv not in query_lower:
+            return "placeholder"
+
+    return ""
+
+
+def is_degenerate_call_set(calls: list, functions: list, query: str) -> bool:
+    """True when any emitted call fills required arguments with placeholders."""
+    if not calls:
+        return False
+    schemas = _gate_schema_map(functions)
+    for name, params in calls:
+        spec = schemas.get(name)
+        if not spec:
+            continue
+        signal = _is_degenerate_call(name, params, spec, query)
+        if signal:
+            logger.info(
+                f"Degenerate-argument gate [{signal}]: {name}({params}) "
+                f"→ suppress {[n for n, _ in calls]}"
+            )
+            return True
+    return False
+
 
 # ---------------------------------------------------------------------------
 # Function selection (CARM-style signal matching) — UNCHANGED
@@ -1427,6 +1712,50 @@ def detect_parallel(query: str) -> bool:
 # ---------------------------------------------------------------------------
 # Query splitting for parallel processing
 # ---------------------------------------------------------------------------
+
+
+# Generic connectors used by the self-validating fallback split below.
+_FALLBACK_CONNECTOR = re.compile(
+    r"\s+and\s+also\s+|\s+and\s+then\s+|\s+and\s+|\s*;\s*|\s+as\s+well\s+as\s+"
+    r"|(?<=[.?!])\s+(?:Also|Additionally|Then|Next|Finally)\b[,]?\s*",
+    re.IGNORECASE,
+)
+_FALLBACK_MIN_SEGMENT_CHARS = 8
+
+
+def split_parallel_query_fallback(query: str, functions: list[dict]) -> list[str]:
+    """Self-validating split for queries the verb whitelist cannot handle.
+
+    ``split_parallel_query`` keys off a hand-written verb list, so a query like
+    "Invest $2000 in Google and withdraw $1000 from Apple" stays whole because
+    "withdraw" is not on the list. Extending that list is endless whack-a-mole.
+
+    Instead, split on every generic connector and keep the result only when the
+    segments map to at least two *distinct* best-scoring functions. A spurious
+    split collapses onto a single function and is discarded, so the rule
+    validates itself against the actual candidate schemas rather than against
+    English grammar.
+
+    Returns ``[]`` when no trustworthy split exists.
+    """
+    if len(functions) < 2:
+        return []
+    parts = [p.strip().rstrip(".,;!?") for p in _FALLBACK_CONNECTOR.split(query)]
+    parts = [p for p in parts if len(p) >= _FALLBACK_MIN_SEGMENT_CHARS]
+    if len(parts) < 2:
+        return []
+    best_names = set()
+    for seg in parts:
+        scored = sorted(
+            ((f, score_function_relevance(f, seg)) for f in functions),
+            key=lambda t: t[1],
+            reverse=True,
+        )
+        if scored:
+            best_names.add(scored[0][0]["name"])
+    if len(best_names) < 2:
+        return []
+    return parts
 
 
 def split_parallel_query(query: str) -> list[str]:
@@ -3667,6 +3996,19 @@ def carm_route_bfcl(
                 # For parallel_multiple: each segment maps to exactly ONE function
                 # Use segment-based selection to avoid over-generating
                 segments = split_parallel_query(query)
+                if len(segments) <= 1:
+                    # The verb-whitelist splitter gave up. Try the generic
+                    # connector split, which is accepted only if the segments
+                    # resolve to >= 2 distinct functions. Without this, these
+                    # queries drop into the close-score fallback below, which
+                    # fails 78% of the time on parallel_multiple.
+                    fallback = split_parallel_query_fallback(query, functions)
+                    if fallback:
+                        segments = fallback
+                        has_parallel_segments = True
+                        logger.info(
+                            f"Fallback connector split: {len(segments)} segments"
+                        )
                 if len(segments) > 1:
                     verified = []
                     seen_names = set()
@@ -3800,6 +4142,20 @@ def carm_route_bfcl(
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
+
+    # Final gate: a query too short to state a request, answered with invented
+    # argument values, is a hallucination rather than a call. Applied last so it
+    # sees the exact arguments that would be emitted, regardless of which
+    # decision branch produced them (signal match, LLM selection, LLM fallback
+    # or any fast-path).
+    if is_fabricated_call_set(calls, query):
+        return "[]"
+
+    # Second gate: a natural-length request answered by filling REQUIRED
+    # parameters with placeholders ("", [], the function's own name, the
+    # parameter's own name, or a generic token) is likewise a hallucination.
+    if is_degenerate_call_set(calls, functions, query):
+        return "[]"
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
