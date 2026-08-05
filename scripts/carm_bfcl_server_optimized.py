@@ -311,7 +311,12 @@ def _is_degenerate_call(fname: str, args: dict, spec: dict, query: str) -> str:
             return "empty_required"
         if isinstance(v, str) and not v.strip():
             return "empty_required"
-        if isinstance(v, (list, dict, tuple)) and len(v) == 0 and not user_wants_empty:
+        # Change G2: an empty dict is a legitimate value for object-typed
+        # parameters (callers routinely pass {} for "no options"). Empty
+        # list/tuple stays degenerate — that rule is what protects the
+        # irrelevance categories (irrelevance_130, irrelevance_218 both fire
+        # on an empty list and must keep firing).
+        if isinstance(v, (list, tuple)) and len(v) == 0 and not user_wants_empty:
             return "empty_required"
 
     # 3. a value echoes the function name (and is not in the query)
@@ -336,6 +341,12 @@ def _is_degenerate_call(fname: str, args: dict, spec: dict, query: str) -> str:
         nv = v.strip().lower()
         if nv in enums.get(k, []):
             continue
+        # Change G1: align with rule 3 — a value that literally appears in the
+        # query was supplied by the user, not hallucinated as a placeholder.
+        # JS/Java signatures often name a parameter after the very identifier
+        # the caller passes (listElement=listElement), which is correct code.
+        if nv in query_lower:
+            continue
         if nv == str(k).strip().lower() or nv == _strip_name_suffix(k):
             return "param_name_echo"
 
@@ -351,6 +362,119 @@ def _is_degenerate_call(fname: str, args: dict, spec: dict, query: str) -> str:
             return "placeholder"
 
     return ""
+
+
+# ---------------------------------------------------------------------------
+# Change H: schema vocabulary snapping
+#
+# The generator frequently writes an enum-ish value in prose form
+# ("pet friendly", "Gluten Free") when the schema spells it "pet_friendly" /
+# "gluten-free". Judging is a literal match, so the call is scored wrong even
+# though the intent is right. Snap the value onto the schema's own wording,
+# but ONLY when the two collapse to the same string once inner separators and
+# case are removed. No semantic rewriting ever happens here.
+#
+# Offline replay over v21 (scripts/diag_vocab_snap.py): 5 gained, 0 lost,
+# 10 value-changed-but-verdict-unchanged. Fidelity self-check replayed 1415
+# samples and excluded 77 where offline judging disagreed with the live
+# verdict (94.6% agreement).
+# ---------------------------------------------------------------------------
+
+# Tokens in schema text that look like identifiers: snake_case or camelCase.
+_VOCAB_IDENT = re.compile(
+    r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b|\b[a-z]+(?:[A-Z][a-z0-9]+)+\b"
+)
+# Quoted / backticked literals in a description are vocabulary too.
+_VOCAB_QUOTED = re.compile(r"['\"`]([^'\"`]{2,40})['\"`]")
+
+
+def _vocab_canon(s) -> str:
+    """Normalise INNER separators and case, keep leading/trailing punctuation.
+
+    Keeping the prefix matters: '-waitTime' is a CLI flag, 'waitTime' is not
+    the same token. An earlier revision stripped hyphens everywhere and ate
+    the '-' prefix of a Java argv value, turning a correct answer into a
+    wrong one (simple_java_89).
+    """
+    t = str(s).strip()
+    m = re.match(r"^([^0-9A-Za-z]*)(.*?)([^0-9A-Za-z]*)$", t, re.DOTALL)
+    lead, core, trail = m.group(1), m.group(2), m.group(3)
+    return lead + re.sub(r"[\s_\-]+", "", core.lower()) + trail
+
+
+def _param_vocab(func: dict, pname: str) -> list[str]:
+    """Accepted wordings for one parameter, most trustworthy first."""
+    props = (func.get("parameters") or {}).get("properties") or {}
+    spec = props.get(pname) or {}
+    vocab: list[str] = []
+    if isinstance(spec, dict):
+        for v in spec.get("enum") or []:
+            vocab.append(str(v))
+        items = spec.get("items")
+        if isinstance(items, dict):
+            for v in items.get("enum") or []:
+                vocab.append(str(v))
+        desc = str(spec.get("description") or "")
+        if isinstance(items, dict):
+            desc += " " + str(items.get("description") or "")
+        vocab.extend(_VOCAB_IDENT.findall(desc))
+        vocab.extend(_VOCAB_QUOTED.findall(desc))
+    fdesc = str(func.get("description") or "")
+    vocab.extend(_VOCAB_IDENT.findall(fdesc))
+    vocab.extend(_VOCAB_QUOTED.findall(fdesc))
+    seen, out = set(), []
+    for v in vocab:
+        if v and v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out
+
+
+def _snap_value(pv, vocab: list[str]):
+    """Return the snapped value, or the original when nothing matches."""
+    if not vocab:
+        return pv
+    index: dict = {}
+    for v in vocab:
+        index.setdefault(_vocab_canon(v), v)
+
+    def snap_one(x):
+        if not isinstance(x, str):
+            return x
+        if x in vocab:
+            return x
+        hit = index.get(_vocab_canon(x))
+        return hit if hit is not None and hit != x else x
+
+    if isinstance(pv, str):
+        return snap_one(pv)
+    if isinstance(pv, list):
+        return [snap_one(x) for x in pv]
+    return pv
+
+
+def snap_calls_to_schema_vocab(calls: list, functions: list) -> list:
+    """Rewrite argument values onto the schema's own wording where equivalent."""
+    if not calls:
+        return calls
+    by_name = {}
+    for f in functions or []:
+        if isinstance(f, dict) and f.get("name"):
+            by_name[f["name"]] = f
+    out = []
+    for name, params in calls:
+        func = by_name.get(name)
+        if not func or not isinstance(params, dict):
+            out.append((name, params))
+            continue
+        new_params = dict(params)
+        for k, v in params.items():
+            nv = _snap_value(v, _param_vocab(func, k))
+            if nv != v:
+                logger.info(f"Vocab snap: {name}.{k}: {v!r} -> {nv!r}")
+                new_params[k] = nv
+        out.append((name, new_params))
+    return out
 
 
 def is_degenerate_call_set(calls: list, functions: list, query: str) -> bool:
@@ -1797,7 +1921,19 @@ def _distinct_best_names(segments: list[str], functions: list[dict]) -> set[str]
 #
 # Offline counterfactual: parallel categories GAINED 16 / LOST 0;
 # 3035 non-parallel samples produced exactly 1 changed routing, 0 gain 0 loss.
+#
+# GATED OFF BY DEFAULT — do not flip without reading this.
+# The v21 baseline was produced by a service started at 11:35, which predates
+# F2 (first committed 12:38 in aff686f). Verified at runtime, not assumed:
+# offline this code fires on 27 parallel/parallel_multiple samples, yet ZERO
+# v21 traces contain "Recursive re-split". So v21 == no F2.
+# Shipping F2 in the same restart as Change G/H would blend 27 F2-affected
+# samples into a promise list that only accounts for G/H's 21, making the v22
+# numbers unattributable. Ship G/H first, verify against promise_v22.json,
+# then enable this with CARM_ENABLE_F2=1 and measure it on its own.
 # ---------------------------------------------------------------------------
+
+ENABLE_RECURSIVE_RESPLIT = os.environ.get("CARM_ENABLE_F2", "0") == "1"
 
 _SUB_TRANSITION = re.compile(
     r"[.?!]\s*(?:Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile"
@@ -4189,13 +4325,16 @@ def carm_route_bfcl(
                 if len(segments) > 1:
                     # Both splitters cut at most once. Take a second pass and
                     # expand any segment that still resolves to >= 2 distinct
-                    # functions (改动F2).
-                    grown = expand_segments(segments, functions)
-                    if len(grown) > len(segments):
-                        logger.info(
-                            f"Recursive re-split: {len(segments)} -> {len(grown)} segments"
-                        )
-                        segments = grown
+                    # functions (改动F2). Off unless CARM_ENABLE_F2=1 — see the
+                    # note at the ENABLE_RECURSIVE_RESPLIT definition.
+                    if ENABLE_RECURSIVE_RESPLIT:
+                        grown = expand_segments(segments, functions)
+                        if len(grown) > len(segments):
+                            logger.info(
+                                f"Recursive re-split: {len(segments)} -> "
+                                f"{len(grown)} segments"
+                            )
+                            segments = grown
                     verified = []
                     seen_names = set()
                     for seg in segments:
@@ -4342,6 +4481,12 @@ def carm_route_bfcl(
     # parameter's own name, or a generic token) is likewise a hallucination.
     if is_degenerate_call_set(calls, functions, query):
         return "[]"
+
+    # Change H, applied AFTER both gates on purpose: the gates must keep
+    # judging the values the generator actually produced, so their behaviour
+    # is unchanged by this rewrite. Snapping only touches what gets emitted,
+    # which is exactly what the offline replay measured.
+    calls = snap_calls_to_schema_vocab(calls, functions)
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
