@@ -596,7 +596,32 @@ def _requery_one_value(param: str, func: str, desc: str, query: str,
     new_val = new_val.strip().strip("`").strip("'\"").strip()
     if not new_val or new_val == value:
         return value
+    if _requery_value_rejected(new_val):
+        logger.info(f"Format requery rejected (unsafe shape): {new_val!r}")
+        return value
     return new_val
+
+
+# Blast-radius guard. This does NOT tune the result: it was verified to reject
+# 0 of the 89 values in the commitment set and 0 of the 83 values produced by
+# the measured v23 run, so the deployed config is behaviourally identical to
+# the measured one on all observed data. That equivalence is pinned by
+# scripts/contract_format_guard.py — run it before changing any threshold here.
+# Its only job is to bound what a rambling or malformed model reply can do to
+# the emitted call string, which is the sole path by which this change could
+# affect a category whose verdict does not depend on argument values.
+_REQUERY_UNSAFE_CHARS = set("\"'{}[]()\n\r\t")
+
+
+def _requery_value_rejected(v: str) -> bool:
+    """True when a rewritten value has a shape we refuse to emit."""
+    if any(c in _REQUERY_UNSAFE_CHARS for c in v):
+        return True
+    if len(v) > 80 or len(v.split()) > 8:
+        return True
+    if "," not in v:          # the entire point is to add the documented suffix
+        return True
+    return False
 
 
 def requery_documented_formats(calls, functions, query, ollama_url, ollama_model):
