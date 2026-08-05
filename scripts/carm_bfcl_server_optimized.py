@@ -1778,6 +1778,76 @@ def _distinct_best_names(segments: list[str], functions: list[dict]) -> set[str]
     return names
 
 
+# ---------------------------------------------------------------------------
+# Recursive re-split (改动F2)
+#
+# Both split_parallel_query and the transition/connector patterns above use
+# ``maxsplit=1``, so the primary splitter structurally cannot return more than
+# two segments (only the numbered-list branch can). On parallel_multiple that
+# caps recall: 14 of the 65 remaining v21 failures were "segs=2 but gt_calls=3
+# or 4", with the trailing segment visibly swallowing two tasks --
+#   pm_117 seg2 "... book another ticket for Ed Sheeran ..., and finally ..."
+#   pm_122 seg2 "... find the current price ..., and finally find reviews ..."
+#
+# Rather than unwind maxsplit everywhere (which changes every call site at
+# once), take one extra pass over the segments the primary splitter produced
+# and expand any segment that still decomposes into >= 2 *distinct* functions.
+# The self-validation gate is the same one the connector fallback already uses,
+# so a spurious sub-split collapses onto one function and is discarded.
+#
+# Offline counterfactual: parallel categories GAINED 16 / LOST 0;
+# 3035 non-parallel samples produced exactly 1 changed routing, 0 gain 0 loss.
+# ---------------------------------------------------------------------------
+
+_SUB_TRANSITION = re.compile(
+    r"[.?!]\s*(?:Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile"
+    r"|In addition|Apart from that|On top of that|Other than that|Besides)\b[,]?\s*",
+    re.IGNORECASE,
+)
+# Mid-sentence enumeration. The primary splitter only recognises markers that
+# follow sentence-ending punctuation, so ", and finally ..." / ", then ..." --
+# by far the most common way these queries chain tasks -- slipped through.
+_SUB_MIDSENTENCE = re.compile(
+    r",\s*(?:and\s+finally|and\s+lastly|and\s+then|finally|lastly|then|next"
+    r"|followed\s+by|after\s+that|afterwards|subsequently)\b[,]?\s*",
+    re.IGNORECASE,
+)
+_SUB_MIN_CHARS = 12
+_MAX_SEGMENTS = 6
+
+
+def _sub_split(segment: str) -> list[str]:
+    """Try to cut one segment again. ``[]`` when it does not decompose."""
+    for pattern in (_SUB_TRANSITION, _SUB_MIDSENTENCE):
+        parts = [p.strip().rstrip(".,;!?") for p in pattern.split(segment)]
+        parts = [p for p in parts if len(p) >= _SUB_MIN_CHARS]
+        if len(parts) >= 2:
+            return parts
+    return []
+
+
+def expand_segments(segments: list[str], functions: list[dict]) -> list[str]:
+    """Expand segments that still hold more than one task.
+
+    A sub-split is kept only when its parts map to >= 2 distinct best-scoring
+    functions, i.e. the split validates itself against the candidate schemas
+    rather than against English grammar.
+    """
+    if len(functions) < 2 or len(segments) >= _MAX_SEGMENTS:
+        return segments
+    grown: list[str] = []
+    for seg in segments:
+        if len(grown) >= _MAX_SEGMENTS:
+            grown.append(seg)
+            continue
+        subs = _sub_split(seg)
+        if subs and len(_distinct_best_names(subs, functions)) >= 2:
+            grown.extend(subs)
+        else:
+            grown.append(seg)
+    return grown[:_MAX_SEGMENTS]
+
+
 def split_parallel_query_fallback(query: str, functions: list[dict]) -> list[str]:
     """Self-validating split for queries the verb whitelist cannot handle.
 
@@ -1836,6 +1906,33 @@ def split_parallel_query(query: str) -> list[str]:
 
     # Sentence-level transitions: period + transition word
     transition_patterns = [
+        # DO NOT "fix" this capturing group without running an evaluation.
+        #
+        # It looks like an obvious bug: re.split() returns captured groups as
+        # list elements, so this leaks the marker word itself ("Additionally")
+        # as a standalone segment, which is then scored against every function
+        # schema and burns one LLM call (routing spends one call per segment --
+        # confirmed in the production trace's "Verified:" line).
+        #
+        # But the leak is load-bearing. It interacts with the ``all(len(p) > 5)``
+        # guard twelve lines below: "Also" / "Then" / "Next" are 4 characters, so
+        # the guard REJECTS the whole transition split and the query falls
+        # through to split_parallel_query_fallback -- which, unlike this branch,
+        # self-validates its segments against the candidate schemas. The accident
+        # is acting as a quality gate.
+        #
+        # Measured (scripts/diag_change_f_decompose.py, 224 parallel samples):
+        # removing the capture changes segmentation on 74 of 224 samples and
+        # moves 11 queries off the self-validating fallback splitter onto this
+        # one. 50 of those 74 currently PASS, so the regression surface is large
+        # and the sign is unknown.
+        #
+        # Do not trust offline set-level counterfactuals here: that mirror was
+        # measured at 55% agreement with production and understates the baseline
+        # by 43pp (scripts/diag_mirror_fidelity.py), because it models function
+        # selection as a heuristic argmax when production actually issues one LLM
+        # call per segment. Settle it with a real eval or leave it alone.
+        # Tracked as change F1 in data/eval/diag/expectation_change_f.json.
         r"[.?!]\s*(Also|Additionally|Moreover|Furthermore|Then|Next|Finally|Meanwhile)\b",
         r"[.?!]\s*In addition\b",
         r"[.?!]\s*Apart from that\b",
@@ -4090,6 +4187,15 @@ def carm_route_bfcl(
                             f"Fallback connector split: {len(segments)} segments"
                         )
                 if len(segments) > 1:
+                    # Both splitters cut at most once. Take a second pass and
+                    # expand any segment that still resolves to >= 2 distinct
+                    # functions (改动F2).
+                    grown = expand_segments(segments, functions)
+                    if len(grown) > len(segments):
+                        logger.info(
+                            f"Recursive re-split: {len(segments)} -> {len(grown)} segments"
+                        )
+                        segments = grown
                     verified = []
                     seen_names = set()
                     for seg in segments:
