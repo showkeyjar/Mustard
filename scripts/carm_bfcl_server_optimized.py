@@ -3669,19 +3669,17 @@ def carm_route_bfcl(
                 segments = split_parallel_query(query)
                 if len(segments) > 1:
                     verified = []
+                    seen_names = set()
                     for seg in segments:
                         seg_scores = [
                             (f, score_function_relevance(f, seg)) for f in functions
                         ]
                         seg_scores.sort(key=lambda x: x[1], reverse=True)
                         if seg_scores and seg_scores[0][1] >= effective_threshold:
-                            verified.append(seg_scores[0])
-                    # NOTE: intentionally do NOT dedupe by function name across
-                    # segments. BFCL parallel_multiple requires repeated calls to
-                    # the *same* function with *different* params (e.g. price of
-                    # two different items, each its own get_artwork_price call).
-                    # Genuine exact duplicates (same name + same params) are still
-                    # removed later at the call-level dedup (line ~3786).
+                            fname = seg_scores[0][0]["name"]
+                            if fname not in seen_names:
+                                verified.append(seg_scores[0])
+                                seen_names.add(fname)
                     logger.info(
                         f"Segment-based parallel: {len(verified)} functions from {len(segments)} segments"
                     )
