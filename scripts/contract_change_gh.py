@@ -57,6 +57,31 @@ def load_rows(tag: str):
                 continue
 
 
+def gen_signature(row: dict):
+    """门控/吸附之前，模型这一轮实际生成了什么。
+
+    Change G 和 Change H 都是**生成后处理**：给定同一份模型输出，它们的效果
+    是确定的。契约回放正是建立在"模型输出不变"这个前提上。
+
+    但重跑时生成本身有噪声（采样温度 + 判分器 temperature=0.001）。如果直接拿
+    correct 标志位对账，模型换了个输出导致的翻转会被记成"违约"，反过来也可能
+    掩盖真正的违约。所以对账前必须先确认前提成立。
+
+    返回 None 表示 trace 里没有可比的生成行 —— 此时只能降级为标志位比对，
+    并如实标注证据不足，而不是假装验证过了。
+    """
+    sig = []
+    for ln in row.get("trace") or []:
+        m = PARAMS_LINE.match(ln)
+        if m:
+            try:
+                args = ast.literal_eval(m.group(2))
+            except Exception:
+                args = m.group(2)
+            sig.append((m.group(1), repr(args)))
+    return tuple(sig) or None
+
+
 def schema_maps(cat: str):
     """(gate_schema_map, raw function list) per sample id."""
     from eval_bfcl_v4_fast import build_messages, load_bfcl_data
@@ -244,27 +269,66 @@ def main() -> None:
         if not promise_path.exists():
             raise SystemExit(f"no promise file at {promise_path}")
         promise = json.loads(promise_path.read_text(encoding="utf-8"))
-        actual = {}
-        for cat, row in load_rows(args.verify):
-            actual[row.get("id", "")] = str(row.get("correct")) == "True"
+        base_sig = {}
+        for _cat, row in load_rows(promise.get("base", args.base)):
+            base_sig[row.get("id", "")] = gen_signature(row)
+        actual, new_sig = {}, {}
+        for _cat, row in load_rows(args.verify):
+            sid = row.get("id", "")
+            actual[sid] = str(row.get("correct")) == "True"
+            new_sig[sid] = gen_signature(row)
         print(f"VERIFY {args.out} promises against run {args.verify}")
         print("=" * 78)
-        ok = miss = 0
+        ok = miss = drift = weak = 0
+        drifted, broken = [], []
         for entry in promise["affected"]:
             sid = entry["id"]
             if sid not in actual:
                 print(f"  [skip] {sid}: not in {args.verify}")
                 continue
+            same_gen = (
+                base_sig.get(sid) is not None
+                and base_sig.get(sid) == new_sig.get(sid)
+            )
             if actual[sid] == entry["predicted_correct"]:
                 ok += 1
-            else:
+                # A promise that came true on a *different* generation is a
+                # coincidence, not a confirmation. Count it, don't hide it.
+                if not same_gen:
+                    weak += 1
+                continue
+            # Prediction did not hold. Split real contract breaches from
+            # generation noise -- the post-processing contract only claims
+            # anything when the model produced the same calls.
+            if same_gen:
                 miss += 1
+                broken.append(entry)
                 print(
-                    f"  [MISS] {sid} ({entry['change']}/{entry['direction']}): "
-                    f"promised correct={entry['predicted_correct']} "
-                    f"actual={actual[sid]}"
+                    f"  [BROKEN] {sid} ({entry['change']}/{entry['direction']}): "
+                    f"same generation, promised correct="
+                    f"{entry['predicted_correct']} actual={actual[sid]}"
                 )
-        print(f"\n  kept={ok}  broken={miss}")
+            else:
+                drift += 1
+                drifted.append(entry)
+                print(
+                    f"  [drift ] {sid} ({entry['change']}/{entry['direction']}): "
+                    f"model generated different calls, contract not testable here"
+                )
+        print(
+            f"\n  kept={ok} (of which {weak} on a drifted generation)  "
+            f"broken={miss}  untestable_drift={drift}"
+        )
+        if drift:
+            print(
+                "  注意：drift 不是违约，但它意味着这些样本没有验证到承诺。"
+                "若 drift 集中在 gain/loss 上，收益结论就没有被证实。"
+            )
+        for grp, name in ((broken, "broken"), (drifted, "drift")):
+            g = sum(1 for e in grp if e["direction"] == "gain")
+            l_ = sum(1 for e in grp if e["direction"] == "loss")
+            if grp:
+                print(f"    {name}: gain {g} / loss {l_} / neutral {len(grp)-g-l_}")
         raise SystemExit(0 if miss == 0 else 1)
 
     print(f"CONTRACT CHECK  base={args.base}  (production code as it stands now)")

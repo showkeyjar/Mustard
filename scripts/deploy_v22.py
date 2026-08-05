@@ -90,10 +90,21 @@ def cmd_plan(promise: dict) -> None:
     for cat in cats:
         items = by_cat.get(cat, [])
         g = sum(1 for a in items if a["direction"] == "gain")
+        ls = sum(1 for a in items if a["direction"] == "loss")
         n = sum(1 for a in items if a["direction"] == "neutral")
-        why = "不变量复测" if not items else f"gain {g} / neutral {n}"
-        print(f"  {cat:<26}{why}")
+        # A plan that renders gains but omits losses is a plan that hides its
+        # own cost. Always print the loss column, and flag the categories where
+        # the change set is promised to make things worse.
+        why = "不变量复测" if not items else f"gain {g} / loss {ls} / neutral {n}"
+        mark = "  <-- 承诺净损失" if ls > g else ""
+        print(f"  {cat:<26}{why}{mark}")
     print()
+    losses = [a for a in promise["affected"] if a["direction"] == "loss"]
+    if losses:
+        print("承诺的回退样本（部署后必须逐条出现，否则契约不成立）:")
+        for a in losses:
+            print(f"  - {a['id']:<32} change {a['change']}  correct -> wrong")
+        print()
     print("运行中的服务进程:", find_server_pids() or "无")
 
 
