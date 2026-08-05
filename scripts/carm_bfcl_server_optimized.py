@@ -1722,6 +1722,61 @@ _FALLBACK_CONNECTOR = re.compile(
 )
 _FALLBACK_MIN_SEGMENT_CHARS = 8
 
+# Enumeration markers. When a user spells out "First, ... Second, ... Third,
+# ..." those markers ARE the task boundaries, and they are far more reliable
+# than a bare "and" -- which also joins ordinary noun phrases ("Microsoft and
+# Apple"). Splitting such a query on "and" produced half-sentence fragments and
+# let a single segment swallow three separate tasks (parallel_multiple_101).
+_ORDINAL_MARKER = re.compile(
+    r"(?:(?<=[.?!])|(?<=[.?!]\"))\s*"
+    r"(First|Firstly|Second|Secondly|Third|Thirdly|Fourth|Fourthly|Fifth|Fifthly"
+    r"|Next|Then|Also|Additionally|Finally|Lastly|Moreover|Furthermore)"
+    r"\b\s*,?\s+",
+    re.IGNORECASE,
+)
+# Markers that open item ONE of a list. Text before them is a preamble
+# ("Could you provide the following data...") and not a task of its own. Any
+# other marker implies the first task sits before it, so the preamble is kept.
+_ORDINAL_OPENERS = {"first", "firstly"}
+
+
+def split_on_ordinals(query: str) -> list[str]:
+    """Split a query on explicit enumeration markers.
+
+    Requires at least TWO markers: a lone "Also," is too weak a signal to
+    override the connector split. Returns ``[]`` when the rule does not apply.
+    """
+    matches = list(_ORDINAL_MARKER.finditer(query))
+    if len(matches) < 2:
+        return []
+    first_marker = matches[0].group(1).lower()
+
+    segments: list[str] = []
+    preamble = query[: matches[0].start()].strip()
+    if preamble and first_marker not in _ORDINAL_OPENERS:
+        segments.append(preamble)
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(query)
+        segments.append(query[m.end() : end].strip())
+
+    cleaned = [s.strip().strip('"').strip().rstrip(".,;!?") for s in segments]
+    cleaned = [s for s in cleaned if len(s) >= _FALLBACK_MIN_SEGMENT_CHARS]
+    return cleaned if len(cleaned) >= 2 else []
+
+
+def _distinct_best_names(segments: list[str], functions: list[dict]) -> set[str]:
+    """Best-scoring function name per segment — the self-validation signal."""
+    names: set[str] = set()
+    for seg in segments:
+        scored = sorted(
+            ((f, score_function_relevance(f, seg)) for f in functions),
+            key=lambda t: t[1],
+            reverse=True,
+        )
+        if scored:
+            names.add(scored[0][0]["name"])
+    return names
+
 
 def split_parallel_query_fallback(query: str, functions: list[dict]) -> list[str]:
     """Self-validating split for queries the verb whitelist cannot handle.
@@ -1736,24 +1791,24 @@ def split_parallel_query_fallback(query: str, functions: list[dict]) -> list[str
     validates itself against the actual candidate schemas rather than against
     English grammar.
 
+    Explicit enumeration markers ("First, ... Second, ...") are tried first
+    because they mark real task boundaries, whereas a bare "and" also joins
+    noun phrases. Both candidates go through the same self-validation.
+
     Returns ``[]`` when no trustworthy split exists.
     """
     if len(functions) < 2:
         return []
+
+    ordinal_parts = split_on_ordinals(query)
+    if ordinal_parts and len(_distinct_best_names(ordinal_parts, functions)) >= 2:
+        return ordinal_parts
+
     parts = [p.strip().rstrip(".,;!?") for p in _FALLBACK_CONNECTOR.split(query)]
     parts = [p for p in parts if len(p) >= _FALLBACK_MIN_SEGMENT_CHARS]
     if len(parts) < 2:
         return []
-    best_names = set()
-    for seg in parts:
-        scored = sorted(
-            ((f, score_function_relevance(f, seg)) for f in functions),
-            key=lambda t: t[1],
-            reverse=True,
-        )
-        if scored:
-            best_names.add(scored[0][0]["name"])
-    if len(best_names) < 2:
+    if len(_distinct_best_names(parts, functions)) < 2:
         return []
     return parts
 
@@ -1988,10 +2043,20 @@ def extract_all_params_via_llm(
     query: str,
     ollama_url: str,
     ollama_model: str,
+    context: str | None = None,
 ) -> list[dict]:
     """Use LLM to extract parameter values (array format, for parallel).
 
     Shortened prompt + reduced num_predict (512→192) for faster inference.
+
+    ``context`` carries the full user request when ``query`` is only one
+    segment of it. Segments routinely refer back to values introduced earlier
+    ("the interest coverage ratio for *the same duration*"), and without the
+    surrounding text the model has nothing to resolve them against — it
+    invented ``company_name="same duration"``, ``account="12345"`` and
+    ``acceleration=9.8`` rather than reusing the stated values. The context is
+    supplied for reference resolution only; arguments still come from
+    ``query``.
     """
     func_name = func.get("name", "")
     params = func.get("parameters", {})
@@ -2021,13 +2086,20 @@ def extract_all_params_via_llm(
         )
     param_desc = "\n".join(param_lines) if param_lines else "  (none)"
 
+    context_block = ""
+    if context and context.strip() and context.strip() != query.strip():
+        context_block = (
+            f"\nFull request (REFERENCE ONLY — the task above is one part of it):\n"
+            f"{context}\n"
+        )
+
     prompt = f"""Extract ALL params for: {func_name}
 
 Schema:
 {param_desc}
 
 Query: {query}
-
+{context_block}
 CRITICAL RULES:
 1. Return JSON array of objects, one per call.
 2. If the query mentions MULTIPLE entities (cities, people, items, dates) that each need this function, create one object PER entity.
@@ -2062,6 +2134,8 @@ CRITICAL RULES:
 27. For "unit" params, use the abbreviated form (e.g., "miles" → "mi", "kilometers" → "km").
 28. For "root_type" params, if the query says "all roots" or "find all", use "all" (not the default "real").
 29. For optional params with defaults (e.g., status="all"), if the query does not specify a value, OMIT the param rather than passing the default explicitly.
+30. If a "Full request" block is present, the Query is ONE task taken from it. When the Query refers back to something stated earlier ("the same duration", "that account", "the total distance covered"), copy the CONCRETE value from the Full request. Extract arguments for the Query's task ONLY — never pull in entities that belong to the other tasks.
+31. NEVER invent a value that appears in neither the Query nor the Full request. Omit the param instead of guessing a plausible default (no acceleration=9.8, no account="12345", no starting_balance=1000).
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -2266,6 +2340,12 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
     param_props = func.get("parameters", {}).get("properties", {})
     if not param_props:
         return params
+
+    # Required list for the "drop an unmatched optional enum param" rule below.
+    # This was previously read from an undefined name, raising NameError (HTTP
+    # 500) whenever an enum value failed to match and the enum had more than one
+    # non-empty option.
+    required = func.get("parameters", {}).get("required", []) or []
 
     validated = {}
     for pname, pvalue in params.items():
@@ -4109,7 +4189,7 @@ def carm_route_bfcl(
                 combined_seg = " ".join(segs)
 
             param_sets = extract_all_params_via_llm(
-                func, combined_seg, ollama_url, ollama_model
+                func, combined_seg, ollama_url, ollama_model, context=query
             )
             for params in param_sets:
                 params = validate_and_coerce_params(func, params)
