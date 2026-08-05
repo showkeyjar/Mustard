@@ -178,22 +178,52 @@ def check_snap(base: str):
             if prod_out != calls:
                 gt = norm(row.get("gt")) or []
                 was = str(row.get("correct")) == "True"
-                # Fidelity guard: if offline judging cannot reproduce the live
-                # verdict for this sample, it cannot be used as evidence either.
-                if vocab_ref.judged_correct(pred, gt) != was:
-                    continue
+                off_before = vocab_ref.judged_correct(pred, gt)
                 now = vocab_ref.judged_correct(
                     [{"name": n, "arguments": a} for n, a in prod_out], gt
                 )
+                basis = "replay"
+                if off_before != was:
+                    # The offline judge disagrees with the live verdict on this
+                    # sample, so its absolute verdict is not evidence. But the
+                    # *delta* still can be. Measured on all 2757 v21 rows the
+                    # offline judge is strictly stricter: offline-correct with
+                    # live-wrong happens exactly once (live_relevance_6-6-0, a
+                    # gate case), while the reverse happens 125 times. So:
+                    #
+                    #   offline_correct(after) == True  =>  live correct
+                    #
+                    # holds at 2008/2009. Concretely these are all case-only
+                    # rewrites ('seafood' -> 'Seafood') where GT is 'Seafood':
+                    # the live judge is case-insensitive and already scored
+                    # them correct, the offline one is not. After snapping the
+                    # value equals GT exactly, which is the strictest possible
+                    # match — it cannot lose a point it already held.
+                    if now:
+                        basis = "exact_match_after"
+                    elif off_before == now:
+                        # Snapping does not move the offline verdict either.
+                        # Weaker, but still no mechanism for a regression.
+                        basis = "delta_invariant"
+                    else:
+                        # offline goes correct -> wrong. This is the only shape
+                        # that can hide a real loss. Surface it, never drop it.
+                        failures.append(
+                            f"UNPREDICTED {cat}/{sid}: offline verdict flips "
+                            f"{off_before}->{now} while live said {was}; "
+                            f"before={str(calls)[:120]} after={str(prod_out)[:120]}"
+                        )
+                        continue
                 affected.append(
                     {
                         "id": sid,
                         "category": cat,
                         "was_correct": was,
-                        "predicted_correct": now,
-                        "direction": "gain" if (now and not was)
-                        else "loss" if (was and not now)
+                        "predicted_correct": now if basis == "replay" else was,
+                        "direction": "gain" if (basis == "replay" and now and not was)
+                        else "loss" if (basis == "replay" and was and not now)
                         else "neutral",
+                        "basis": basis,
                         "before": str(calls)[:200],
                         "after": str(prod_out)[:200],
                     }
@@ -251,7 +281,20 @@ def main() -> None:
     print(f"\n[Change H] compared {compared} sample(s), "
           f"{len(affected)} value(s) rewritten")
     for e in affected:
-        print(f"    {e['direction']:<8} {e['category']:<20} {e['id']}")
+        tag = "" if e.get("basis") == "replay" else f"   [{e['basis']}]"
+        print(f"    {e['direction']:<8} {e['category']:<20} {e['id']}{tag}")
+    basis_n: dict[str, int] = {}
+    for e in affected:
+        basis_n[e.get("basis", "replay")] = basis_n.get(e.get("basis", "replay"), 0) + 1
+    if set(basis_n) - {"replay"}:
+        print("\n  证据基础分布（非 replay 的说明见 check_snap 注释）:")
+        for b, n in sorted(basis_n.items()):
+            note = {
+                "replay": "离线判分复现了线上判定，直接回放",
+                "exact_match_after": "吸附后与 GT 完全相等，严格判分器也判对",
+                "delta_invariant": "吸附不改变离线判定，无回退机制",
+            }.get(b, "")
+            print(f"    {b:<20}{n:>4}   {note}")
     for f in snap_fail[:5]:
         print(f"    !! {f}")
 
