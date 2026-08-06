@@ -550,12 +550,18 @@ class OnlinePolicy:
                 )
                 hard_rule_hit = True
             # Override 0d: Consultative intent → search or consult
+            # v6 fix: evidence_judgment 优先于 consult+deep_analysis 合成。
+            # "请基于公开资料总结要点，并给出一个能验证的实验" 有 consult+deep_analysis
+            # 信号，但真实意图是先检索证据再下结论 → 应走 search，而不是 bigmodel 合成。
+            # 与 Override 0b / 2a 的 evidence_judgment 守卫保持一致。
             elif (
                 has_consult_signal(user_input)
                 and not has_calc_signal(user_input)
                 and not has_strong_code_verb
             ):
-                if has_deep_analysis_signal(user_input):
+                if has_deep_analysis_signal(
+                    user_input
+                ) and not has_evidence_judgment_signal(user_input):
                     chosen_intent = IntentCategory.CONSULT
                     chosen_reason = "Consultative + deep analysis intent — routing to consult tool for synthesis."
                 else:

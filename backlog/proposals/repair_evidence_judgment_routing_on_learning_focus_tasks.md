@@ -19,3 +19,16 @@
   - python -m scripts.build_learning_intake
   - python -m scripts.build_learning_focus_eval
   - python -m scripts.evaluate_learning_focus
+
+- status: implemented_and_verified
+- verified_at: 2026-08-06
+- verification_result:
+  - learning_focus_pretrained_match_rate=1.0（目标 >=0.75，从 0.5714 提升）
+  - mismatch_ids_after_fix=[]（learning-focus-004/005/006 均正确路由 search）
+  - real_prompt_pretrained_match_rate=0.7302（63 条完整评测，A/B 对比旧 policy 0.6984，净提升 +3.2pp）
+  - 回归确认：stress-conflict-missing-evidence-004、guard-conflict-fenqi-001 由 bigmodel_proxy 修复为 search
+  - 相关单元测试：test_learning_focus_eval / test_policy_adaptation / test_learning_focus_search_first_adversarial / test_real_prompt_candidates 7 passed
+- root_cause_fixed:
+  - policy.py Override 0d：has_consult_signal + has_deep_analysis_signal 分支缺少 has_evidence_judgment_signal 守卫，抢在 Override 2a 之前把 evidence 任务路由到 CONSULT。已补守卫（与 Override 0b/2a 一致）。
+  - 附带修复：scripts/evaluate_real_prompts.py main() 仅在无参数（官方 configs/real_prompt_eval.json）运行时写 real_prompt_eval_latest.json，避免 recovery-variant/stress 探针污染正式快照；tools/search_tool.py ThreadPoolExecutor shutdown(wait=False)，避免被墙的 DuckDuckGo connect 阻塞评测。
+- human_gate: not_required（risk_level=low，与既有 Override 0b/2a 修复同一家族，离线验证先行）

@@ -84,3 +84,18 @@
   3. **反向子串匹配**：query token 是 function name substring 时加分（"cook"→"cookbook"、"weather"→"OpenWeatherMap"）
 - irrelevance 下降是已知 tradeoff：零 LLM 调用下无法完美区分"不相关"和"低重叠但相关"
 - pyarrow 通过直接下载 wheel 安装（pip 损坏，用 zipfile.extractall 到 site-packages）
+
+### 第四轮修复（2026-08-06）
+
+10. **policy.py Override 0d 守卫**：`has_consult_signal + has_deep_analysis_signal → CONSULT` 分支补上 `and not has_evidence_judgment_signal(user_input)`（与第二轮 Override 0b、2a 的守卫一致）。此前 0d 抢在 Override 2a 之前，把 evidence_judgment 任务（learning-focus-004/005/006、stress-conflict-missing-evidence-004、guard-conflict-fenqi-001）误路由到 bigmodel_proxy。修复后 learning_focus_pretrained_match_rate 0.5714 → **1.0**；real_prompt 63 条匹配率 0.6984 → **0.7302**（A/B 对比确认无回归）。
+
+11. **evaluate_real_prompts.py latest 写入门控**：main() 只在无参数（官方 configs/real_prompt_eval.json）时写 `data/eval/real_prompt_eval_latest.json`。此前 team_conductor 的 recovery-variant/stress/quality-focus 探针都会覆盖正式快照，导致 arbiter 连续误报 `real_prompt_match_below_threshold:0.0000` 与 `real_prompt_count_too_low:4<20`。探针结果由各自调用方持久化（如 `data/evolution/research_recovery_variants.json`）。
+
+12. **search_tool.py DDG 线程不阻塞**：`_search_ddgs` 的 ThreadPoolExecutor 由 `shutdown(wait=True)` 改为 `wait=False`。此前 future 5s 超时后仍会等待被墙的 DuckDuckGo connect（SYN-SENT）直到操作系统超时，每次搜索多等 20-40s，导致评测/测试极慢（63 条评测数小时跑不完）。
+
+### 验证数据（第四轮）
+
+- learning_focus_pretrained_match_rate：0.5714 → **1.0**（7/7）
+- real_prompt_pretrained_match_rate：0.6984 → **0.7302**（63 条）
+- hard_eval 6 个失败（conflict-check/search-looking-calc/integrate-for-exec/result-integration/compare-db/conflict-no-answer）：A/B 确认与第四轮无关（旧 policy 同样失败，是 63 条评测集扩展后的既有问题）
+- `tests/test_combined_tool_policy_candidate.py` 的 1.0 断言已过时（评测集从 14 条扩展到 63 条后无法达到），需后续更新断言或拆分回归集

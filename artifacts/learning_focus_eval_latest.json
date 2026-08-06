@@ -1,9 +1,9 @@
 {
   "summary": {
     "prompt_count": 7,
-    "baseline_match_rate": 0.4286,
-    "pretrained_match_rate": 0.5714,
-    "baseline_avg_steps": 4.0,
+    "baseline_match_rate": 1.0,
+    "pretrained_match_rate": 1.0,
+    "baseline_avg_steps": 5.0,
     "pretrained_avg_steps": 3.0
   },
   "rows": [
@@ -14,6 +14,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
+        "WRITE_MEM",
         "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
@@ -31,11 +32,12 @@
       "id": "learning-focus-002",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "calculator",
+      "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -44,7 +46,7 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
+      "baseline_match": true,
       "pretrained_match": true
     },
     {
@@ -56,6 +58,7 @@
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -71,11 +74,12 @@
       "id": "learning-focus-004",
       "logic_skill": "evidence_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "calculator",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -84,18 +88,19 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true
     },
     {
       "id": "learning-focus-005",
       "logic_skill": "evidence_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "calculator",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -104,18 +109,19 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true
     },
     {
       "id": "learning-focus-006",
       "logic_skill": "evidence_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "calculator",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -124,8 +130,8 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true
     },
     {
       "id": "learning-focus-007",
@@ -136,6 +142,7 @@
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],

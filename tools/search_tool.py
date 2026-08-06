@@ -61,10 +61,10 @@ class SearchTool:
 
     def _search_ddgs(self, query: str, top_k: int) -> ToolResult | None:
         """Search using duckduckgo-search library with timeout protection."""
+        pool = ThreadPoolExecutor(max_workers=1)
         try:
-            with ThreadPoolExecutor(max_workers=1) as pool:
-                future: Future = pool.submit(self._ddgs.text, query, max_results=top_k)
-                results = list(future.result(timeout=self._ddgs_timeout))
+            future: Future = pool.submit(self._ddgs.text, query, max_results=top_k)
+            results = list(future.result(timeout=self._ddgs_timeout))
             if not results:
                 return None
 
@@ -90,6 +90,12 @@ class SearchTool:
             )
         except Exception:
             return None
+        finally:
+            # wait=False: 不等待被阻塞的 connect 线程完成（例如被墙的
+            # DuckDuckGo 会卡在 SYN-SENT 直到操作系统超时），否则每次搜索
+            # 都会在 future 超时后额外等待数十秒。线程是 daemon 线程，
+            # 不会阻止进程退出。
+            pool.shutdown(wait=False)
 
     def _search_wikipedia(self, query: str, top_k: int) -> ToolResult | None:
         """Search Wikipedia API for factual queries (no extra dependencies)."""
