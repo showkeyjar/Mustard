@@ -96,11 +96,18 @@ def main(argv: list[str] | None = None) -> int:
     # Persist to data/eval/real_prompt_eval_latest.json so downstream
     # consumers (current_best.py, team_conductor.py, analyze_reasoning_patterns.py)
     # always read fresh results instead of stale snapshots.
-    latest_path = Path("data/eval/real_prompt_eval_latest.json")
-    latest_path.parent.mkdir(parents=True, exist_ok=True)
-    latest_path.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    #
+    # IMPORTANT: only the default (no-arg) run -- the official config
+    # configs/real_prompt_eval.json -- may overwrite latest. Explicit config
+    # paths are used for ad-hoc probes (recovery variants, stress evals,
+    # quality-focus evals) whose small prompt counts would otherwise pollute
+    # the official snapshot; those callers persist their own result files.
+    if not args:
+        latest_path = Path("data/eval/real_prompt_eval_latest.json")
+        latest_path.parent.mkdir(parents=True, exist_ok=True)
+        latest_path.write_text(
+            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
