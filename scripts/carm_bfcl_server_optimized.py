@@ -4018,6 +4018,132 @@ def _is_multi_turn_session(messages: list[dict]) -> bool:
     return any(m.get("role") == "assistant" for m in messages)
 
 
+def _extract_current_directory(messages: list[dict]) -> str:
+    """Extract current working directory from state_info GorillaFileSystem messages.
+
+    BFCL multi-turn sessions inject state_info messages (role='state_info')
+    that contain the current filesystem root as a string like:
+      <Directory: workspace, Parent: None, Contents: {'document': ...}>
+    We parse the top-level directory name from this representation.
+    """
+    for msg in messages:
+        if msg.get("role") != "state_info":
+            continue
+        content = msg.get("content", {})
+        class_name = content.get("class_name", "") if isinstance(content, dict) else ""
+        if class_name != "GorillaFileSystem":
+            continue
+        root = content.get("root", "") if isinstance(content, dict) else ""
+        if not root:
+            continue
+        # Parse: "<Directory: workspace, Parent: None, Contents: ...>"
+        m = re.match(r"<Directory:\s*(\S+),\s*Parent:", str(root))
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _patch_messages_with_dir_context(
+    messages: list[dict], current_dir: str
+) -> list[dict]:
+    """Patch a COPY of messages to include current directory context.
+
+    This helps the LLM know where it is and emit the correct cd() calls.
+    """
+    import copy
+    patched = copy.deepcopy(messages)
+
+    if not current_dir:
+        return patched
+
+    # Find the last user message (not a tool result)
+    for i in range(len(patched) - 1, -1, -1):
+        if patched[i].get("role") == "user":
+            content = patched[i].get("content", "")
+            if "'role': 'tool'" in str(content):
+                continue
+            # Append directory context hint
+            if current_dir != "workspace":
+                patched[i] = dict(patched[i])
+                patched[i]["content"] = (
+                    f"{content}\n\n"
+                    f"NOTE: Your current working directory is '{current_dir}'. "
+                    f"If the user's request involves files or directories not in the current location, "
+                    f"prepend the appropriate cd() call to navigate there first."
+                )
+            else:
+                patched[i] = dict(patched[i])
+                patched[i]["content"] = (
+                    f"{content}\n\n"
+                    f"NOTE: Your current working directory is '{current_dir}'. "
+                    f"If the user's request involves files in a subdirectory (e.g. 'document'), "
+                    f"you MUST prepend a cd() call to navigate there first. "
+                    f"For example, to work with files in 'document', first call cd(folder='document')."
+                )
+            break
+    return patched
+
+
+def _is_system_text(messages: list[dict]) -> bool:
+    """Check if the system prompt contains pre-loaded memory content."""
+    text = _system_text(messages)
+    return '"user_name"' in text or '"user_age"' in text or "Core Memory" in text
+
+
+def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
+    """Extract answer directly from pre-loaded memory in system prompt.
+
+    Memory snapshot uses snake_case keys (user_name, user_age, etc.).
+    We map natural-language queries to these keys and extract values.
+    """
+    system_text = _system_text(messages)
+
+    # Parse the core memory JSON from the system prompt
+    # Look for the JSON block between "Core Memory from previous interactions:" and the next section
+    mem_pattern = r"Here is the content of your Core Memory from previous interactions:\s*(\{[^}]+\})"
+    mem_match = re.search(mem_pattern, system_text, re.DOTALL)
+    if not mem_match:
+        return None
+
+    try:
+        memory = json.loads(mem_match.group(1))
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(memory, dict):
+        return None
+
+    # Map common query patterns to memory keys
+    key_map = {
+        "name": "user_name",
+        "first name": "user_name",
+        "full name": "user_name",
+        "age": "user_age",
+        "years old": "user_age",
+        "city": "user_city",
+        "location": "user_city",
+        "where.*live": "user_city",
+        "occupation": "user_occupation",
+        "job": "user_occupation",
+        "work": "user_occupation",
+        "interests": "user_interests",
+        "hobbies": "user_interests",
+        "espresso": "user_preference_espresso",
+        "coffee": "user_preference_espresso",
+    }
+
+    query_lower = query.lower()
+    for pattern, key in key_map.items():
+        if re.search(pattern, query_lower):
+            if key in memory:
+                value = str(memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+
+    # If no direct match, return the full memory context for the LLM to extract
+    memory_str = json.dumps(memory, ensure_ascii=False)
+    return f"{{'answer': '{memory_str}', 'context': 'Core memory content returned for reference.'}}"
+
+
 def _system_text(messages: list[dict]) -> str:
     return "\n".join(
         m.get("content", "") for m in messages if m.get("role") == "system"
@@ -4275,6 +4401,12 @@ def carm_route_multi_turn(
     is_agentic = _is_agentic_answer_scenario(messages)
     tool_results = _parse_tool_results(messages)
 
+    # --- Multi-turn filesystem path-awareness ---
+    # Parse the current working directory from state_info messages so the
+    # router can prepend cd() calls when the user's request implies a
+    # directory change.
+    current_dir = _extract_current_directory(messages)
+
     if tool_results is not None:
         # The last message is a tool result: the previous step executed calls.
         # 1) Anti-loop: same call emitted again within the same turn.
@@ -4309,6 +4441,14 @@ def carm_route_multi_turn(
     # No tool result: the last message is a fresh user query (new turn).
     if is_agentic and not _has_search_tool(functions):
         # Memory scenario: the answer context lives in the system prompt.
+        # Try direct extraction from pre-loaded memory first.
+        query = _last_real_user_query(messages) or extract_user_query(messages)
+        if query:
+            direct_answer = _extract_memory_answer(messages, query)
+            if direct_answer:
+                logger.info("Multi-turn: memory answer extracted directly from snapshot")
+                return direct_answer
+
         answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
         if answer:
             logger.info("Multi-turn: memory answer generated directly")
@@ -4327,8 +4467,12 @@ def carm_route_multi_turn(
             logger.info("Multi-turn: memory prereq add calls generated")
             return calls
 
+    # Patch the user query with current directory context so the LLM knows
+    # where it is and can emit the necessary cd() calls.
+    patched_messages = _patch_messages_with_dir_context(messages, current_dir)
+
     # Default: delegate the fresh user query to the single-turn router.
-    return carm_route_single_turn_bfcl(messages, ollama_url, ollama_model)
+    return carm_route_single_turn_bfcl(patched_messages, ollama_url, ollama_model)
 
 
 def carm_route_bfcl(
