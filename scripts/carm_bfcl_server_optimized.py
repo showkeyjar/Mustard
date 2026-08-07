@@ -3992,12 +3992,368 @@ def format_parallel_output(calls: list[tuple[str, dict]]) -> str:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Multi-turn / agentic protocol adaptation layer (P0)
+#
+# CARM's single-turn core is a stateless router: it only sees the last user
+# message and the function docs, so on BFCL's multi-turn/agentic protocol it
+# would emit the same call forever (every step re-executes, tool results are
+# ignored, the turn never ends → force_terminated → 0%).
+#
+# This wrapper only activates when an assistant turn already exists (a real
+# multi-step session). It implements three protocol rules on top of the
+# unmodified single-turn core:
+#   1. End the turn: after tool results come back, emit [] so BFCL advances to
+#      the next user query.
+#   2. Anti-loop: if the same call is emitted again within the same turn, stop.
+#   3. Agentic answer: for memory/web_search scenarios emit the final
+#      {'answer': ..., 'context': ...} payload (memory answers live in the
+#      system prompt's core-memory section; web_search results come from the
+#      search tool).
+# ---------------------------------------------------------------------------
+
+
+def _is_multi_turn_session(messages: list[dict]) -> bool:
+    """A BFCL multi-turn/agentic session always contains assistant history."""
+    return any(m.get("role") == "assistant" for m in messages)
+
+
+def _system_text(messages: list[dict]) -> str:
+    return "\n".join(
+        m.get("content", "") for m in messages if m.get("role") == "system"
+    )
+
+
+def _is_agentic_answer_scenario(messages: list[dict]) -> bool:
+    """Memory/web_search scenarios demand a final {'answer': ...} payload."""
+    text = _system_text(messages)
+    return "'answer':" in text or "final answer to the user" in text
+
+
+def _has_search_tool(functions: list[dict]) -> bool:
+    return any(
+        f.get("name", "").lower().endswith("search_engine_query") for f in functions
+    )
+
+
+def _parse_tool_results(messages: list[dict]):
+    """Extract the most recent tool execution results, or None.
+
+    BFCL prompting mode returns tool results as a *user* message whose content
+    is the repr of [{'role': 'tool', 'name': ..., 'content': ...}]; FC mode
+    sends role=='tool' messages directly.
+    """
+    last = messages[-1] if messages else None
+    if last is None:
+        return None
+    role = last.get("role")
+    content = last.get("content", "")
+    if role == "tool":
+        return [{"name": "", "content": content}]
+    if role != "user":
+        return None
+    if isinstance(content, str) and "'role': 'tool'" in content:
+        try:
+            import ast
+
+            parsed = ast.literal_eval(content)
+            if isinstance(parsed, list):
+                return [dict(x) for x in parsed if isinstance(x, dict)]
+        except Exception:  # noqa: BLE001
+            return None
+    return None
+
+
+def _normalize_calls(output: str) -> str:
+    return re.sub(r"\s+", "", str(output))
+
+
+def _same_round_repeated_call(messages: list[dict]) -> bool:
+    """Detect the same call being emitted repeatedly within one turn."""
+    assistant_msgs = [
+        (i, m.get("content", ""))
+        for i, m in enumerate(messages)
+        if m.get("role") == "assistant"
+    ]
+    if len(assistant_msgs) < 2:
+        return False
+    i2, out2 = assistant_msgs[-1]
+    i1, out1 = assistant_msgs[-2]
+    if not out1 or not out2:
+        return False
+    if _normalize_calls(out2) != _normalize_calls(out1):
+        return False
+    # They belong to the same turn only if no fresh user query lies between them
+    for m in messages[i1 + 1 : i2]:
+        if m.get("role") == "user" and "'role': 'tool'" not in str(
+            m.get("content", "")
+        ):
+            return False  # a new user query in between → different turns
+    return True
+
+
+def _tool_results_all_success(tool_results: list[dict]) -> bool:
+    if not tool_results:
+        return False
+    for tr in tool_results:
+        content = tr.get("content", "")
+        try:
+            data = json.loads(content)
+            if isinstance(data, dict) and "error" in data:
+                return False
+        except Exception:  # noqa: BLE001
+            pass
+    return True
+
+
+def _extract_answer_value(tool_results: list[dict]):
+    """Pull an answerable value out of memory retrieve results.
+    Handles both backends: memory_kv returns {'value': ...}, memory_vector
+    returns {'result': [{..., 'text': ...}, ...]}."""
+    for tr in tool_results:
+        content = tr.get("content", "")
+        try:
+            data = json.loads(content)
+            if not isinstance(data, dict) or "error" in data:
+                continue
+            if "value" in data and data["value"] is not None:
+                return str(data["value"])
+            if "result" in data:
+                result = data["result"]
+                if isinstance(result, list) and result:
+                    # vector backend: take the top hit's text
+                    first = result[0]
+                    if isinstance(first, dict) and first.get("text"):
+                        return str(first["text"])
+                    return str(result)
+                if isinstance(result, str) and result:
+                    return result
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def _last_real_user_query(messages: list[dict]) -> str:
+    """Last user message that is NOT a BFCL tool-result payload (which is also
+    delivered as a user message in prompting mode)."""
+    for msg in reversed(messages):
+        if msg.get("role") != "user":
+            continue
+        content = str(msg.get("content", ""))
+        if "'role': 'tool'" in content:
+            continue
+        return content
+    return ""
+
+
+def _generate_agentic_answer(
+    messages: list[dict], ollama_url: str, ollama_model: str
+):
+    """Ask the backend LLM to answer using ONLY context already available
+    (system-prompt memory content, tool results). Never loops on tools."""
+    system_text = _system_text(messages)
+    query = _last_real_user_query(messages) or extract_user_query(messages)
+
+    # Keep the memory content / tool-result-bearing section of the system prompt
+    memory_context = system_text[-2500:]
+
+    # Include the most recent tool results explicitly (they often hold the answer)
+    tool_context = ""
+    tool_results = _parse_tool_results(messages)
+    if tool_results is not None:
+        tool_context = "\n".join(
+            f"- {tr.get('name', 'tool')}: {tr.get('content', '')}" for tr in tool_results
+        )
+
+    prompt = (
+        "You are a memory-augmented assistant. Answer the user's question using the "
+        "memory content below, which is authoritative. Do not call any functions.\n\n"
+        "MEMORY CONTENT:\n"
+        f"{memory_context}\n"
+        + (
+            "\nTOOL RESULTS (reference only; a failed lookup like 'Key not found' "
+            "does NOT mean the memory content above is wrong):\n"
+            f"{tool_context}\n"
+            if tool_context
+            else ""
+        )
+        + f"\nQUESTION: {query}\n\n"
+        "Respond with ONLY the answer, in exactly this format:\n"
+        "{'answer': <short and precise answer>, 'context': <one sentence explaining how you got it>}\n"
+        "If the answer is genuinely not present in the memory content, respond exactly with:\n"
+        "{'answer': 'I do not know', 'context': 'The information is not available.'}"
+    )
+    try:
+        resp = call_ollama(
+            [{"role": "user", "content": prompt}],
+            ollama_url=ollama_url,
+            ollama_model=ollama_model,
+            num_predict=256,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Agentic answer generation failed: {e}")
+        return None
+    content = (resp.get("content") or "").strip()
+    if not content:
+        return None
+    m = re.search(r"\{'answer':.*?\}", content, re.DOTALL)
+    if m:
+        return m.group(0)
+    if "'answer':" in content:
+        return content
+    return None
+
+
+def _generate_memory_add_calls(
+    messages: list[dict], functions: list[dict], ollama_url: str, ollama_model: str
+):
+    """For memory prerequisite turns: extract facts from the conversation and
+    return memory_add function calls (keys snake_case, values verbatim)."""
+    query = extract_user_query(messages)
+    add_funcs = [
+        f for f in functions if "memory_add" in f.get("name", "") or "memory_append" in f.get("name", "")
+    ]
+    if not add_funcs:
+        return None
+    # Show the real schema so the generated calls match the backend exactly
+    # (memory_kv uses key/value, memory_vector uses text).
+    schema_lines = []
+    for f in add_funcs:
+        params = f.get("parameters", {})
+        props = params.get("properties", {})
+        required = params.get("required", [])
+        args = ", ".join(
+            f"{p}: {props[p].get('type', 'string')}" + (" (required)" if p in required else "")
+            for p in props
+        )
+        schema_lines.append(f"- {f.get('name')}({args})")
+    schema_block = "\n".join(schema_lines) if schema_lines else ", ".join(
+        f.get("name", "") for f in add_funcs
+    )
+    prompt = (
+        "You are managing a persistent memory system. From the user's message below, "
+        "extract personal facts worth remembering and store them with memory_add calls.\n\n"
+        "Available add functions (use EXACTLY these names and parameters):\n"
+        f"{schema_block}\n\n"
+        "Rules:\n"
+        "- For key/value style functions, keys must be snake_case, no spaces, meaningful "
+        "(e.g. user_name, user_age, user_city); values must be short and factual, copied "
+        "verbatim from the message when possible.\n"
+        "- For text style functions, store the fact as a short standalone sentence.\n"
+        "- If the message contains no new memorable facts, respond with []\n"
+        "- Do NOT retrieve or search memory.\n\n"
+        "USER MESSAGE:\n" + query + "\n\n"
+        "Respond ONLY with the function call list, e.g. "
+        '[core_memory_add(key="user_name", value="Michael")]'
+    )
+    try:
+        resp = call_ollama(
+            [{"role": "user", "content": prompt}],
+            ollama_url=ollama_url,
+            ollama_model=ollama_model,
+            num_predict=512,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Memory prereq generation failed: {e}")
+        return None
+    content = (resp.get("content") or "").strip()
+    if not content:
+        return None
+    m = re.search(r"\[.*\]", content, re.DOTALL)
+    return m.group(0) if m else None
+
+
+def carm_route_multi_turn(
+    messages: list[dict], ollama_url: str, ollama_model: str
+) -> str:
+    """Protocol-aware router for BFCL multi-turn / agentic sessions."""
+    functions = extract_functions_from_system_prompt(messages)
+    if not functions:
+        logger.info("Multi-turn: no functions in prompt → []")
+        return "[]"
+
+    is_agentic = _is_agentic_answer_scenario(messages)
+    tool_results = _parse_tool_results(messages)
+
+    if tool_results is not None:
+        # The last message is a tool result: the previous step executed calls.
+        # 1) Anti-loop: same call emitted again within the same turn.
+        if _same_round_repeated_call(messages):
+            logger.info("Multi-turn: repeated identical call detected → stop loop")
+            if is_agentic:
+                answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
+                if answer:
+                    return answer
+            return "[]"
+
+        # 2) Agentic: if a value was retrieved, answer with it.
+        if is_agentic:
+            value = _extract_answer_value(tool_results)
+            if value is not None:
+                logger.info("Multi-turn: retrieved value → answer with it")
+                return (
+                    "{'answer': '%s', 'context': 'Retrieved from memory.'}" % value
+                )
+            answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
+            if answer:
+                logger.info("Multi-turn: agentic answer generated")
+                return answer
+            logger.info("Multi-turn: tool result received, ending turn")
+            return "[]"
+
+        # 3) Plain multi-turn: this turn's calls have been executed; end the
+        #    turn so BFCL moves to the next user query.
+        logger.info("Multi-turn: tool result received → end turn []")
+        return "[]"
+
+    # No tool result: the last message is a fresh user query (new turn).
+    if is_agentic and not _has_search_tool(functions):
+        # Memory scenario: the answer context lives in the system prompt.
+        answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
+        if answer:
+            logger.info("Multi-turn: memory answer generated directly")
+            return answer
+        # Fall through to the single-turn core.
+
+    if is_agentic and _has_search_tool(functions):
+        # Web search: issue the search call first; answer after results arrive.
+        logger.info("Multi-turn: web_search → single-turn core to emit search call")
+        return carm_route_single_turn_bfcl(messages, ollama_url, ollama_model)
+
+    if any("memory_add" in f.get("name", "") for f in functions) and not is_agentic:
+        # Memory prerequisite turn: extract facts into memory_add calls.
+        calls = _generate_memory_add_calls(messages, functions, ollama_url, ollama_model)
+        if calls:
+            logger.info("Multi-turn: memory prereq add calls generated")
+            return calls
+
+    # Default: delegate the fresh user query to the single-turn router.
+    return carm_route_single_turn_bfcl(messages, ollama_url, ollama_model)
+
+
 def carm_route_bfcl(
     messages: list[dict],
     ollama_url: str,
     ollama_model: str,
 ) -> str:
-    """Main CARM routing pipeline — OPTIMIZED v6.
+    """Entry point: route a BFCL request, dispatching multi-turn/agentic
+    sessions to the protocol adaptation layer and everything else to the
+    stateless single-turn core."""
+    if _is_multi_turn_session(messages):
+        logger.info("Multi-turn session detected → carm_route_multi_turn")
+        return carm_route_multi_turn(messages, ollama_url, ollama_model)
+    return carm_route_single_turn_bfcl(messages, ollama_url, ollama_model)
+
+
+def carm_route_single_turn_bfcl(
+    messages: list[dict],
+    ollama_url: str,
+    ollama_model: str,
+) -> str:
+    """Single-turn CARM routing pipeline — OPTIMIZED v6.
+
+    This is the stateless router: it reads only the last user message plus the
+    function docs in the system prompt and returns one function-call list.
 
     Changes from v5:
       - Parallel detection: segment-based + enhanced separator heuristic
