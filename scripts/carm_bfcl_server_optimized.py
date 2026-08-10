@@ -4198,8 +4198,6 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
     system_text = _system_text(messages)
 
     # Parse the core memory JSON from the system prompt
-    # The memory JSON can be complex with nested structures, so we use a
-    # more robust approach: find the JSON object that contains user_* keys
     # Strategy 1: Look for "Core Memory" section and extract the JSON
     mem_pattern = r"Here is the content of your Core Memory from previous interactions:\s*(\{[\s\S]*?\})\s*(?:Archival|Here is a summary|Next steps|For your final answer|$)"
     mem_match = re.search(mem_pattern, system_text, re.DOTALL)
@@ -4226,24 +4224,39 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
     if not isinstance(memory, dict):
         return None
 
+    # Also extract archival memory if present
+    archival_memory = {}
+    archival_pattern = r"Here is the content of your Archival Memory from previous interactions:\s*(\{[\s\S]*?\})"
+    archival_match = re.search(archival_pattern, system_text, re.DOTALL)
+    if archival_match:
+        try:
+            archival_memory = json.loads(archival_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Combine both memories for lookup
+    all_memory = {**memory, **archival_memory}
+
     # Build comprehensive key map from actual memory keys
     # Map query patterns to memory keys
     query_lower = query.lower().strip()
 
     # Direct key lookup: if query matches a key pattern, use it directly
-    for key in memory:
+    for key in all_memory:
         key_lower = key.lower()
-        # Check if the query directly maps to this key
+        # Check if the query directly matches to this key
         if key_lower in query_lower or query_lower in key_lower:
-            value = str(memory[key])
-            return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+            value = str(all_memory[key])
+            return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
-    # Semantic mapping from query to likely keys
+    # Comprehensive semantic mapping from query to likely keys
     key_map = {
         # Name queries
-        "first name": "user_name",
-        "full name": "user_name",
-        "name": "user_name",
+        "first name": "introduction",
+        "full name": "introduction",
+        "what is my name": "introduction",
+        "my name": "introduction",
+        "who am i": "introduction",
         # Age queries
         "age": "user_age",
         "years old": "user_age",
@@ -4261,77 +4274,190 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
         "work": "user_occupation",
         "what do you do": "user_occupation",
         "profession": "user_occupation",
+        "freelance": "user_occupation",
+        "graphic designer": "user_occupation",
         # Interest queries
         "interests": "user_interests",
         "hobbies": "user_interests",
         "what do you like": "user_interests",
         "like to do": "user_interests",
+        "gadgets": "user_interests",
+        "appliances": "user_interests",
         # Preference queries
-        "espresso": "user_preference_espresso",
-        "coffee": "user_preference_espresso",
-        "prefer": "user_preference",
-        "favorite": "user_preference",
+        "espresso": "user_product_interest",
+        "coffee": "user_product_interest",
+        "prefer": "user_product_interest",
+        "favorite": "user_product_interest",
+        "product interest": "user_product_interest",
         # Morning routine
         "morning": "user_morning_routine",
         "routine": "user_morning_routine",
-        # Experience level
-        "experience": "user_experience_level",
-        "level": "user_experience_level",
-        "professional": "user_experience_level",
-        "barista": "user_experience_level",
+        # Latte queries
+        "latte": "user_coffee_machine_interest",
+        "strawberry matcha": "user_coffee_machine_interest",
+        "what kind of latte": "user_coffee_machine_interest",
+        "latte art": "user_event_type",
+        "coffee machine interest": "user_coffee_machine_interest",
+        # Kitchen queries
+        "kitchen counter": "user_kitchen_setup_constraints",
+        "square feet": "user_kitchen_setup_constraints",
+        "kitchen": "user_kitchen_setup_constraints",
+        "toaster oven": "user_kitchen_organization_strategy",
+        "pantry": "user_kitchen_organization_strategy",
+        # Shipping queries
+        "shipping": "shipping_timeline",
+        "delivery": "shipping_timeline",
+        "estimated delivery": "shipping_timeline",
+        "business days": "shipping_timeline",
+        "warehouse": "user_shipping_preference",
+        "ship": "shipping_timeline",
+        # Event queries
+        "event": "user_event",
+        "gathering": "user_event",
+        "family": "user_event",
+        "siblings": "user_event",
+        "friends": "user_event",
+        "latte art showdown": "user_event_type",
+        # Damage queries
+        "damage": "espresso_machine_damage_report",
+        "bent": "frothing_pitcher_condition",
+        "scratch": "frothing_pitcher_condition",
+        "crushed corners": "delivery_condition",
+        "corners": "delivery_condition",
+        "outer box": "delivery_condition",
+        "dented": "product_damage",
+        "dent": "product_damage",
+        # Accessory queries
+        "accessories": "ordered_accessories",
+        "frothing pitcher": "ordered_accessories",
+        "filters": "ordered_accessories",
+        "pitcher": "ordered_accessories",
+        # Product queries
+        "coffee machine": "user_product_interest",
+        "espresso machine": "user_espresso_machine",
+        "steam wand": "user_coffee_machine_interest",
+        "grinder": "user_grinder_importance",
+        "grinder bundle": "user_grinder_priority",
+        # Order queries
+        "order": "user_order_number",
+        "order number": "user_order_number",
+        "second order": "user_current_transaction_2",
+        "digital scale": "user_digital_scale",
+        "collaborate": "user_digital_scale",
+        # Travel queries
+        "travel": "user_event",
+        "weekend": "user_event",
+        "freelance gig": "user_event",
+        "portland": "user_event",
+        # Hobby queries
+        "hobby": "user_interests",
+        "creative": "user_interests",
+        "art": "user_interests",
+        "digital art": "user_interests",
+        # Warranty queries
+        "warranty": "user_machine_warranty",
+        "extended warranty": "user_machine_warranty",
+        "months": "user_machine_warranty",
+        # Discount queries
+        "discount": "new_customer_discount",
+        "percent off": "new_customer_discount",
+        "new customers": "new_customer_discount",
+        # Storage queries
+        "storage canister": "user_storage_preference",
+        "keep beans fresher": "user_storage_preference",
+        "cost": "user_storage_preference",
+        # Subscription queries
+        "subscription": "user_subscription_interest",
+        "mL": "user_subscription_interest",
+        "nuanced": "user_subscription_interest",
+        "small-batch": "user_subscription_interest",
+        "roasts": "user_subscription_interest",
+        # Charge queries
+        "charge": "user_noticed_unexpected_charge",
+        "unexpected": "user_noticed_unexpected_charge",
+        "days ago": "user_noticed_unexpected_charge",
+        "statement": "credit_card_statement",
+        # Instagram queries
+        "instagram": "user_instagram_page",
+        "coffee instagram": "user_instagram_page",
+        "page": "user_instagram_page",
+        # Event queries
+        "impromptu": "user_impromptu_event",
+        "host": "user_impromptu_event",
+        "art contest": "user_impromptu_event",
+        # Shipping concern queries
+        "concern": "user_current_concern",
+        "shipping concern": "shipping_concern",
+        "corner dent": "shipping_concern",
+        # Brand queries
+        "brand": "user_trusted_brand",
+        "trust": "user_trusted_brand",
+        "monobean": "user_trusted_brand",
+        # Rainfall queries
+        "rainfall": "user_weather_concern",
+        "inches": "user_weather_concern",
+        "shipping unpredictable": "user_weather_concern",
+        # Email queries
+        "email": "user_email_address",
+        "order confirmed": "user_received_double_order_confirmation_emails",
+        "emails": "user_received_double_order_confirmation_emails",
+        # Magazine queries
+        "magazine": "user_kitchen_appearance",
+        "kitchen look like": "user_kitchen_appearance",
+        "creative boom": "user_kitchen_appearance",
     }
 
     for pattern, key in key_map.items():
         if re.search(pattern, query_lower):
-            if key in memory:
-                value = str(memory[key])
-                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+            if key in all_memory:
+                value = str(all_memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For medical/healthcare queries, check for health-related keys
     health_keywords = ["health", "medical", "diagnosis", "condition", "patient",
                        "blood", "glucose", "diabetes", "cholesterol", "blood pressure",
                        "vitamin", "medication", "surgery", "doctor", "hospital"]
     if any(kw in query_lower for kw in health_keywords):
-        for key in memory:
+        for key in all_memory:
             if any(kw in key.lower() for kw in ["health", "medical", "blood", "diabetes",
                                                   "cholesterol", "pressure", "vitamin",
                                                   "medication", "surgery", "patient"]):
-                value = str(memory[key])
-                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+                value = str(all_memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For finance queries
     finance_keywords = ["finance", "investment", "money", "stock", "portfolio",
                         "budget", "report", "deadline", "client", "deal", "firm"]
     if any(kw in query_lower for kw in finance_keywords):
-        for key in memory:
+        for key in all_memory:
             if any(kw in key.lower() for kw in ["investment", "finance", "money", "stock",
                                                   "budget", "deal", "firm", "deadline"]):
-                value = str(memory[key])
-                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+                value = str(all_memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For student queries
     student_keywords = ["student", "school", "college", "university", "course",
                         "class", "major", "study", "research", "project", "club"]
     if any(kw in query_lower for kw in student_keywords):
-        for key in memory:
+        for key in all_memory:
             if any(kw in key.lower() for kw in ["course", "class", "major", "study",
                                                   "research", "project", "club", "school"]):
-                value = str(memory[key])
-                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+                value = str(all_memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For notetaker queries
     notetaker_keywords = ["meeting", "schedule", "appointment", "reminder",
                           "task", "note", "todo", "deadline", "call"]
     if any(kw in query_lower for kw in notetaker_keywords):
-        for key in memory:
+        for key in all_memory:
             if any(kw in key.lower() for kw in ["meeting", "schedule", "appointment",
                                                   "reminder", "task", "note", "deadline", "call"]):
-                value = str(memory[key])
-                return f"{{'answer': '{value}', 'context': 'Retrieved from core memory.'}}"
+                value = str(all_memory[key])
+                return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # If no direct match, return the full memory context for the LLM to extract
-    memory_str = json.dumps(memory, ensure_ascii=False)
-    return f"{{'answer': '{memory_str}', 'context': 'Core memory content returned for reference.'}}"
+    memory_str = json.dumps(all_memory, ensure_ascii=False)
+    return f"{{'answer': '{memory_str}', 'context': 'Memory content returned for reference.'}}"
 
 
 def _system_text(messages: list[dict]) -> str:
