@@ -4201,11 +4201,11 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
     # The memory JSON can be complex with nested structures, so we use a
     # more robust approach: find the JSON object that contains user_* keys
     # Strategy 1: Look for "Core Memory" section and extract the JSON
-    mem_pattern = r"Here is the content of your Core Memory from previous interactions:\s*(\{[\s\S]*?\})\s*(?:Archival|Here is a summary|Next steps|$)"
+    mem_pattern = r"Here is the content of your Core Memory from previous interactions:\s*(\{[\s\S]*?\})\s*(?:Archival|Here is a summary|Next steps|For your final answer|$)"
     mem_match = re.search(mem_pattern, system_text, re.DOTALL)
     if not mem_match:
         # Strategy 2: Find any JSON object with user_ keys
-        mem_pattern2 = r"(\{[\s\S]*?\"user_name\"[\s\S]*?\})"
+        mem_pattern2 = r"(\{[\s\S]*?\"user_age\"[\s\S]*?\})"
         mem_match = re.search(mem_pattern2, system_text, re.DOTALL)
 
     if not mem_match:
