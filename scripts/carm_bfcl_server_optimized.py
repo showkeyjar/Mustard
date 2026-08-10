@@ -4455,9 +4455,25 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
                 value = str(all_memory[key])
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
-    # If no direct match, return the full memory context for the LLM to extract
-    memory_str = json.dumps(all_memory, ensure_ascii=False)
-    return f"{{'answer': '{memory_str}', 'context': 'Memory content returned for reference.'}}"
+    # If no direct match, search through all memory values for relevant content
+    query_words = set(query_lower.split())
+    best_match = None
+    best_match_score = 0
+
+    for key, value in all_memory.items():
+        value_str = str(value).lower()
+        # Count how many query words appear in the value
+        match_count = sum(1 for word in query_words if word in value_str)
+        if match_count > best_match_score:
+            best_match_score = match_count
+            best_match = (key, value)
+
+    if best_match and best_match_score >= 1:
+        key, value = best_match
+        return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
+
+    # If still no match, return empty to let the model try its own retrieval
+    return None
 
 
 def _system_text(messages: list[dict]) -> str:
