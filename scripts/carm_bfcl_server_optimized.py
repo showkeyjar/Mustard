@@ -3053,21 +3053,44 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 # Common short-code → natural-word mappings for enum value detection
-_ENUM_VALUE_SYNONYMS: dict[str, str] = {
-    "en": "english",
-    "fr": "french",
-    "es": "spanish",
-    "de": "german",
-    "zh": "chinese",
-    "ja": "japanese",
-    "ko": "korean",
-    "it": "italian",
-    "pt": "portuguese",
-    "ru": "russian",
-    "mi": "mi",
-    "km": "km",
-    "celsius": "celsius",
-    "fahrenheit": "fahrenheit",
+# Multi-language synonyms: each value maps to a LIST of possible synonyms
+# (English variants + Chinese translations). If ANY synonym appears in the
+# query, the enum value is considered user-mentioned and kept.
+_ENUM_VALUE_SYNONYMS: dict[str, list[str]] = {
+    "en": ["english"],
+    "fr": ["french"],
+    "es": ["spanish"],
+    "de": ["german"],
+    "zh": ["chinese"],
+    "ja": ["japanese"],
+    "ko": ["korean"],
+    "it": ["italian"],
+    "pt": ["portuguese"],
+    "ru": ["russian"],
+    "mi": ["mi"],
+    "km": ["km"],
+    "celsius": ["celsius", "c"],
+    "fahrenheit": ["fahrenheit", "f"],
+    "metric": ["metric", "\u516c\u5236"],  # 公制
+    "imperial": ["imperial", "\u82f1\u5236"],  # 英制
+    "kelvin": ["kelvin", "\u5f00\u5c14\u6587"],  # 开尔文
+}
+
+# Param-name synonyms for multilingual queries: if the param NAME (or a
+# translation) appears in the query, the user likely mentioned it, so we
+# should NOT strip the enum value even if the value itself isn't in the query.
+_PARAM_NAME_SYNONYMS: dict[str, list[str]] = {
+    "unit": ["unit", "\u5355\u4f4d"],  # 单位
+    "currency": ["currency", "\u8d27\u5e01"],  # 货币
+    "language": ["language", "\u8bed\u8a00"],  # 语言
+    "format": ["format", "\u683c\u5f0f"],  # 格式
+    "color": ["color", "\u989c\u8272"],  # 颜色
+    "priority": ["priority", "\u4f18\u5148"],  # 优先
+    "category": ["category", "\u5206\u7c7b"],  # 分类
+    "sort_by": ["sort", "\u6392\u5e8f"],  # 排序
+    "order": ["order", "\u6392\u5e8f"],  # 排序
+    "region": ["region", "\u5730\u533a"],  # 地区
+    "type": ["type", "\u7c7b\u578b"],  # 类型
 }
 
 
@@ -3123,15 +3146,26 @@ def _strip_fabricated_optional_enum_params(
             value_str = str(pvalue).lower() if pvalue is not None else ""
 
             if enum_vals:
-                # --- Enum param: strip if value not in query ---
+                # --- Enum param: strip if value not mentioned in query ---
+                # Check 1: value itself appears in query
                 if value_str and value_str in query_lower:
                     continue  # Value found in query — keep it
 
-                synonym = _ENUM_VALUE_SYNONYMS.get(value_str, "")
-                if synonym and synonym in query_lower:
+                # Check 2: any synonym (English variant or Chinese translation)
+                synonyms = _ENUM_VALUE_SYNONYMS.get(value_str, [])
+                if isinstance(synonyms, str):
+                    synonyms = [synonyms]  # backwards compat
+                if any(s in query_lower for s in synonyms):
                     continue  # Synonym found — keep it
 
-                # Value not in query — strip it
+                # Check 3: param name (or its translations) appears in query
+                # → user mentioned the param, so the LLM likely inferred the
+                # correct enum value from context (e.g., Chinese "公制单位" → unit="metric")
+                param_synonyms = _PARAM_NAME_SYNONYMS.get(pname, [])
+                if any(s in query_lower for s in param_synonyms):
+                    continue  # Param name mentioned — keep the value
+
+                # Value not in query, no synonym match, param not mentioned — strip
                 logger.info(
                     f"  Stripped fabricated optional enum "
                     f"'{pname}'='{pvalue}' (not in query)"
@@ -3179,6 +3213,73 @@ def _strip_fabricated_optional_enum_params(
         stripped_calls.append((name, new_params))
 
     return stripped_calls
+
+
+def _split_array_params_into_calls(
+    calls: list[tuple[str, dict]], functions: list[dict]
+) -> list[tuple[str, dict]]:
+    """Split list-type params with multiple values into individual calls.
+
+    When a parameter is type=array and contains N>1 values, BFCL often expects
+    each value in its own separate call (as a single-element list). If there
+    are already multiple calls to the same function (e.g., for different
+    values of another param), this generates the full cross-product.
+
+    Example:
+      Input:  [find(case_number=['67813','71249'], case_type="Civil"),
+               find(case_number=['67813','71249'], case_type="Criminal")]
+      Output: [find(case_number=['67813'], case_type="Civil"),
+               find(case_number=['71249'], case_type="Civil"),
+               find(case_number=['67813'], case_type="Criminal"),
+               find(case_number=['71249'], case_type="Criminal")]
+    """
+    if not calls:
+        return calls
+
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    result = []
+
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            result.append((name, params))
+            continue
+
+        props = func.get("parameters", {}).get("properties", {})
+
+        # Find array params with multiple values
+        multi_array_params = []
+        for pname, pval in params.items():
+            pinfo = props.get(pname, {})
+            if (
+                pinfo.get("type") == "array"
+                and isinstance(pval, list)
+                and len(pval) > 1
+            ):
+                multi_array_params.append(pname)
+
+        if not multi_array_params:
+            result.append((name, params))
+            continue
+
+        # Split: generate one call per combination of array values
+        # For simplicity, handle the first multi-value array param
+        # (multiple multi-array params in one call is rare)
+        arr_param = multi_array_params[0]
+        arr_values = params[arr_param]
+
+        for val in arr_values:
+            new_params = dict(params)
+            new_params[arr_param] = [val] if isinstance(val, str) else val
+            result.append((name, new_params))
+
+        if len(arr_values) > 1:
+            logger.info(
+                f"  Split array param '{arr_param}' with {len(arr_values)} "
+                f"values into {len(arr_values)} individual calls"
+            )
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -5921,6 +6022,10 @@ def carm_route_single_turn_bfcl(
     # query never mentions a unit). Applied before gates so they see the
     # cleaned-up values.
     calls = _strip_fabricated_optional_enum_params(calls, functions, query)
+
+    # Split list-type array params with multiple values into individual calls
+    # (BFCL expects each value in its own call, not combined in one array)
+    calls = _split_array_params_into_calls(calls, functions)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
