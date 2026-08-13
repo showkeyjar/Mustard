@@ -2635,7 +2635,9 @@ CRITICAL RULES:
 28. For "root_type" params, if the query says "all roots" or "find all", use "all" (not the default "real").
 29. For optional params with defaults (e.g., status="all"), if the query does not specify a value, OMIT the param rather than passing the default explicitly.
 30. If a "Full request" block is present, the Query is ONE task taken from it. When the Query refers back to something stated earlier ("the same duration", "that account", "the total distance covered"), copy the CONCRETE value from the Full request. Extract arguments for the Query's task ONLY — never pull in entities that belong to the other tasks.
-31. NEVER invent a value that appears in neither the Query nor the Full request. Omit the param instead of guessing a plausible default (no acceleration=9.8, no account="12345", no starting_balance=1000).
+ 31. NEVER invent a value that appears in neither the Query nor the Full request. Omit the param instead of guessing a plausible default (no acceleration=9.8, no account="12345", no starting_balance=1000).
+ 32. If the query mentions multiple distinct identifiers (case numbers, IDs, codes) for the SAME parameter, create one object PER identifier. Do NOT combine them into a list. Example: "case numbers 123 and 456" → [{{"id":"123"}}, {{"id":"456"}}], NOT [{{"id":["123","456"]}}].
+ 33. If the query mentions multiple values for a parameter that are combined with another varying parameter (e.g. "type 'Civil' and 'Criminal'" with different case numbers), create one object PER combination. Example: "numbers A,B for type X and Y" → 4 objects: (A,X), (B,X), (A,Y), (B,Y).
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -3072,15 +3074,19 @@ _ENUM_VALUE_SYNONYMS: dict[str, str] = {
 def _strip_fabricated_optional_enum_params(
     calls: list[tuple[str, dict]], functions: list[dict], query: str
 ) -> list[tuple[str, dict]]:
-    """Remove optional enum params whose values the LLM fabricated.
+    """Remove optional params whose values the LLM fabricated.
 
-    For each call, checks optional (non-required) params that have an ``enum``
-    constraint. If the chosen value does not appear in the query text (nor a
-    known synonym), the param is stripped entirely so the evaluator matches
-    against the default/empty value.
+    Handles two categories:
 
-    This fixes the common failure where the LLM adds ``unit="celsius"`` or
-    ``language="en"`` even though the user never specified a unit or language.
+    1. **Enum params**: strips if the chosen value (or a known synonym) does
+       not appear in the query text. Fixes ``unit="celsius"`` when the user
+       never mentioned a unit.
+
+    2. **Non-enum string params**: strips if the value string is not found in
+       the query AND the value looks fabricated (contains dunder, is a Python
+       default like ``"__main__"``, or is a technical identifier the user
+       wouldn't have typed). This is conservative — short values and values
+       that appear as substrings in the query are kept.
     """
     if not calls:
         return calls
@@ -3088,6 +3094,14 @@ def _strip_fabricated_optional_enum_params(
     func_map = {f["name"]: f for f in functions} if functions else {}
     query_lower = query.lower()
     stripped_calls = []
+
+    # Param names that are commonly inferred from context, not quoted directly
+    _INFERENCE_SAFE = {
+        "meal_name",
+        "meal_type",  # "for breakfast" → meal_name="breakfast"
+        "category",  # "technology news" → category="Technology"
+        "priority",  # commonly inferred
+    }
 
     for name, params in calls:
         func = func_map.get(name)
@@ -3105,26 +3119,62 @@ def _strip_fabricated_optional_enum_params(
 
             pinfo = props.get(pname, {})
             enum_vals = pinfo.get("enum")
-            if not enum_vals:
-                continue
-
             pvalue = new_params[pname]
-            value_str = str(pvalue).lower()
+            value_str = str(pvalue).lower() if pvalue is not None else ""
 
-            # Check if the value (or a synonym) appears in the query
-            if value_str and value_str in query_lower:
-                continue  # Value found in query — keep it
+            if enum_vals:
+                # --- Enum param: strip if value not in query ---
+                if value_str and value_str in query_lower:
+                    continue  # Value found in query — keep it
 
-            synonym = _ENUM_VALUE_SYNONYMS.get(value_str, "")
-            if synonym and synonym in query_lower:
-                continue  # Synonym found — keep it
+                synonym = _ENUM_VALUE_SYNONYMS.get(value_str, "")
+                if synonym and synonym in query_lower:
+                    continue  # Synonym found — keep it
 
-            # Value not in query — strip it
-            logger.info(
-                f"  Stripped fabricated optional enum "
-                f"'{pname}'='{pvalue}' (not in query)"
-            )
-            del new_params[pname]
+                # Value not in query — strip it
+                logger.info(
+                    f"  Stripped fabricated optional enum "
+                    f"'{pname}'='{pvalue}' (not in query)"
+                )
+                del new_params[pname]
+            else:
+                # --- Non-enum string param: strip if clearly fabricated ---
+                ptype = pinfo.get("type", "string")
+
+                # Keep numbers, booleans, lists, dicts
+                if ptype not in ("string", "any", None):
+                    continue
+                if not isinstance(pvalue, str):
+                    continue
+                # Keep inference-safe params
+                if pname in _INFERENCE_SAFE:
+                    continue
+                # Keep short values (likely abbreviations or codes)
+                if len(value_str) <= 3:
+                    continue
+                # Keep if value appears in query
+                if value_str in query_lower:
+                    continue
+
+                # Strip fabricated technical defaults (dunders, "None",
+                # "null", "default", "auto", "main", "__main__")
+                _FABRICATED_MARKERS = (
+                    "__",
+                    "null",
+                    "none",
+                    "default",
+                    "auto",
+                    "main",
+                    "unknown",
+                    "n/a",
+                    "na",
+                )
+                if any(m in value_str for m in _FABRICATED_MARKERS):
+                    logger.info(
+                        f"  Stripped fabricated optional "
+                        f"'{pname}'='{pvalue}' (fabricated marker)"
+                    )
+                    del new_params[pname]
 
         stripped_calls.append((name, new_params))
 
