@@ -3209,6 +3209,38 @@ def _strip_fabricated_optional_enum_params(
                         f"'{pname}'='{pvalue}' (fabricated marker)"
                     )
                     del new_params[pname]
+                    continue
+
+                # --- Numeric optional params: strip if not in query ---
+                # The LLM often fabricates plausible-looking numbers (port=8080,
+                # replicas=3, timeout=30) that the user never mentioned.
+                if isinstance(pvalue, (int, float)) and not isinstance(pvalue, bool):
+                    # Check if the number appears in the query text
+                    if str(pvalue) not in query_lower:
+                        logger.info(
+                            f"  Stripped fabricated optional numeric "
+                            f"'{pname}'={pvalue} (not in query)"
+                        )
+                        del new_params[pname]
+                        continue
+
+                # --- Non-enum string with fabricated deployment-style values ---
+                # e.g. deployment_name="myapp-deployment" when user didn't specify
+                if isinstance(pvalue, str) and pvalue not in _INFERENCE_SAFE:
+                    # Check if the value (or its core token) appears in query
+                    if value_str not in query_lower:
+                        # Check if any significant word from the value is in query
+                        words = re.findall(r"[a-z]+", value_str)
+                        query_has_word = any(
+                            w in query_lower and len(w) > 3 for w in words
+                        )
+                        if not query_has_word and len(value_str) > 5:
+                            logger.info(
+                                f"  Stripped fabricated optional "
+                                f"'{pname}'='{pvalue}' (value not in query)"
+                            )
+                            del new_params[pname]
+                            continue
 
         stripped_calls.append((name, new_params))
 
