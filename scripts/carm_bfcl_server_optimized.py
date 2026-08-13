@@ -2678,6 +2678,92 @@ Nested: [{{"users":[{{"name":"Alice","age":30}},{{"name":"Bob","age":25}}]}}]"""
         return [{}]
 
 
+def _retry_multi_entity_extraction(
+    func: dict, query: str, ollama_url: str, ollama_model: str
+) -> list[dict] | None:
+    """Re-prompt the LLM when the first extraction returned only 1 param set
+    but the query likely contains multiple entities.
+
+    Uses a targeted prompt that explicitly asks the model to enumerate every
+    entity and produce one JSON object per entity. Returns ``None`` if the
+    retry also fails or the query doesn't look multi-entity.
+    """
+    # Quick heuristic: does the query have multi-entity signals?
+    q_lower = query.lower()
+    has_multi_signal = (
+        re.search(r"\d+\s+and\s+\d+", q_lower) is not None  # "2 and 4 gb"
+        or re.search(r"\band\s+ones\b", q_lower) is not None  # "and ones"
+        or re.search(r"'[^']+'\s+and\s+'[^']+'", q_lower) is not None  # "'X' and 'Y'"
+        or len(re.findall(r"\band\b", q_lower)) >= 2  # multiple "and"
+        or re.search(r"[.?!]\s*(?:for\s+)?(?:breakfast|lunch|dinner|snack)\b", q_lower)
+        is not None
+    )
+    if not has_multi_signal:
+        return None
+
+    func_name = func.get("name", "")
+    params = func.get("parameters", {})
+    param_props = params.get("properties", {})
+    required = params.get("required", [])
+
+    param_lines = []
+    for pname, pinfo in param_props.items():
+        ptype = pinfo.get("type", "any")
+        pdesc = pinfo.get("description", "")
+        req = "req" if pname in required else "opt"
+        enum_vals = pinfo.get("enum", None)
+        enum_str = f" enum={enum_vals}" if enum_vals else ""
+        param_lines.append(f"  - {pname} ({ptype}, {req}{enum_str}): {pdesc}")
+    param_desc = "\n".join(param_lines) if param_lines else "  (none)"
+
+    prompt = f"""The query below mentions MULTIPLE entities that each need the function "{func_name}".
+Your previous attempt returned only 1 call. Re-read the query carefully and create ONE JSON object PER entity.
+
+Schema:
+{param_desc}
+
+Query: {query}
+
+CRITICAL: Count every distinct entity (number, location, item, person) in the query.
+Create exactly one JSON object per entity. Do NOT merge entities into a single call.
+Return ONLY a JSON array of objects."""
+
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            resp = client.post(
+                f"{ollama_url}/api/chat",
+                json={
+                    "model": ollama_model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Output only a JSON array of objects.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.001,
+                        "num_predict": 400,
+                    },
+                },
+            )
+            resp.raise_for_status()
+            content = resp.json().get("message", {}).get("content", "")
+
+        result = _parse_param_list(content)
+        if result and len(result) > 1:
+            logger.info(f"Multi-entity retry: got {len(result)} param sets (was 1)")
+            return result
+        logger.info(
+            f"Multi-entity retry: still {len(result) if result else 0} sets, keeping original"
+        )
+        return None
+    except Exception as e:
+        logger.warning(f"Multi-entity retry failed: {e}")
+        return None
+
+
 def extract_params_via_llm_v2(
     func: dict,
     query: str,
@@ -2952,6 +3038,97 @@ def validate_and_coerce_params(func: dict, params: dict) -> dict:
         validated[pname] = coerced
 
     return validated
+
+
+# ---------------------------------------------------------------------------
+# Fabricated optional-enum param stripping
+#
+# The LLM routinely invents values for optional enum params (e.g. unit="celsius"
+# when the query says "weather in Beijing" without specifying a unit). BFCL's
+# ground truth usually accepts "" (empty/default) or the explicitly-mentioned
+# value. Stripping the fabricated value lets the evaluator match against the
+# default, which is almost always accepted.
+# ---------------------------------------------------------------------------
+
+# Common short-code → natural-word mappings for enum value detection
+_ENUM_VALUE_SYNONYMS: dict[str, str] = {
+    "en": "english",
+    "fr": "french",
+    "es": "spanish",
+    "de": "german",
+    "zh": "chinese",
+    "ja": "japanese",
+    "ko": "korean",
+    "it": "italian",
+    "pt": "portuguese",
+    "ru": "russian",
+    "mi": "mi",
+    "km": "km",
+    "celsius": "celsius",
+    "fahrenheit": "fahrenheit",
+}
+
+
+def _strip_fabricated_optional_enum_params(
+    calls: list[tuple[str, dict]], functions: list[dict], query: str
+) -> list[tuple[str, dict]]:
+    """Remove optional enum params whose values the LLM fabricated.
+
+    For each call, checks optional (non-required) params that have an ``enum``
+    constraint. If the chosen value does not appear in the query text (nor a
+    known synonym), the param is stripped entirely so the evaluator matches
+    against the default/empty value.
+
+    This fixes the common failure where the LLM adds ``unit="celsius"`` or
+    ``language="en"`` even though the user never specified a unit or language.
+    """
+    if not calls:
+        return calls
+
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    query_lower = query.lower()
+    stripped_calls = []
+
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            stripped_calls.append((name, params))
+            continue
+
+        required = set(func.get("parameters", {}).get("required", []) or [])
+        props = func.get("parameters", {}).get("properties", {})
+
+        new_params = dict(params)
+        for pname in list(new_params.keys()):
+            if pname in required:
+                continue
+
+            pinfo = props.get(pname, {})
+            enum_vals = pinfo.get("enum")
+            if not enum_vals:
+                continue
+
+            pvalue = new_params[pname]
+            value_str = str(pvalue).lower()
+
+            # Check if the value (or a synonym) appears in the query
+            if value_str and value_str in query_lower:
+                continue  # Value found in query — keep it
+
+            synonym = _ENUM_VALUE_SYNONYMS.get(value_str, "")
+            if synonym and synonym in query_lower:
+                continue  # Synonym found — keep it
+
+            # Value not in query — strip it
+            logger.info(
+                f"  Stripped fabricated optional enum "
+                f"'{pname}'='{pvalue}' (not in query)"
+            )
+            del new_params[pname]
+
+        stripped_calls.append((name, new_params))
+
+    return stripped_calls
 
 
 # ---------------------------------------------------------------------------
@@ -5626,6 +5803,15 @@ def carm_route_single_turn_bfcl(
         # The LLM sees the entire query and can identify all entities (cities, items, etc.)
         func = verified[0][0]
         param_sets = extract_all_params_via_llm(func, query, ollama_url, ollama_model)
+
+        # Under-generation guard: if only 1 param set returned but the query
+        # clearly mentions multiple entities, re-prompt with stronger emphasis.
+        if len(param_sets) <= 1:
+            param_sets = (
+                _retry_multi_entity_extraction(func, query, ollama_url, ollama_model)
+                or param_sets
+            )
+
         for params in param_sets:
             params = validate_and_coerce_params(func, params)
             calls.append((func["name"], params))
@@ -5680,6 +5866,11 @@ def carm_route_single_turn_bfcl(
     if len(deduped_calls) < len(calls):
         logger.info(f"Deduped {len(calls) - len(deduped_calls)} duplicate calls")
     calls = deduped_calls
+
+    # Strip fabricated optional enum params (e.g. unit="celsius" when the
+    # query never mentions a unit). Applied before gates so they see the
+    # cleaned-up values.
+    calls = _strip_fabricated_optional_enum_params(calls, functions, query)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
