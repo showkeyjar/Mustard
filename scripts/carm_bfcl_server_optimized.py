@@ -3221,9 +3221,10 @@ def _split_array_params_into_calls(
     """Split list-type params with multiple values into individual calls.
 
     When a parameter is type=array and contains N>1 values, BFCL often expects
-    each value in its own separate call (as a single-element list). If there
-    are already multiple calls to the same function (e.g., for different
-    values of another param), this generates the full cross-product.
+    each value in its own separate call (as a single-element list). This ONLY
+    applies to entity-identifier params (e.g. case_number, record_id) — NOT
+    to attribute/collection params (e.g. data_points, amenities, show_list)
+    which represent multiple values for a single call.
 
     Example:
       Input:  [find(case_number=['67813','71249'], case_type="Civil"),
@@ -3236,6 +3237,35 @@ def _split_array_params_into_calls(
     if not calls:
         return calls
 
+    # Only split params whose names suggest entity identifiers.
+    # Attribute/collection params (data_points, amenities, show_list, etc.)
+    # should keep their multiple values in one call.
+    _SPLITTABLE_PATTERNS = (
+        "case_number",
+        "case_id",
+        "case_no",
+        "record_id",
+        "entity_id",
+        "item_id",
+        "user_id",
+        "account_id",
+        "order_id",
+        "transaction_id",
+        "invoice_id",
+        "customer_id",
+        "product_id",
+    )
+
+    def _is_splittable(pname: str) -> bool:
+        pl = pname.lower()
+        # Direct match on known entity-id param names
+        if any(p in pl for p in _SPLITTABLE_PATTERNS):
+            return True
+        # Generic: ends with _id or _number (but not "data_points" etc.)
+        if pl.endswith("_id") or pl.endswith("_number"):
+            return True
+        return False
+
     func_map = {f["name"]: f for f in functions} if functions else {}
     result = []
 
@@ -3247,7 +3277,7 @@ def _split_array_params_into_calls(
 
         props = func.get("parameters", {}).get("properties", {})
 
-        # Find array params with multiple values
+        # Find splittable array params with multiple values
         multi_array_params = []
         for pname, pval in params.items():
             pinfo = props.get(pname, {})
@@ -3255,6 +3285,7 @@ def _split_array_params_into_calls(
                 pinfo.get("type") == "array"
                 and isinstance(pval, list)
                 and len(pval) > 1
+                and _is_splittable(pname)
             ):
                 multi_array_params.append(pname)
 
@@ -3262,9 +3293,7 @@ def _split_array_params_into_calls(
             result.append((name, params))
             continue
 
-        # Split: generate one call per combination of array values
-        # For simplicity, handle the first multi-value array param
-        # (multiple multi-array params in one call is rare)
+        # Split: generate one call per array value
         arr_param = multi_array_params[0]
         arr_values = params[arr_param]
 
