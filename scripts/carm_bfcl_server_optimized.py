@@ -72,6 +72,7 @@ def trace_end() -> list[str]:
     _trace_local.buf = None
     return buf
 
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -161,13 +162,10 @@ def _value_grounded(value, query: str, query_lower: str, query_tokens: set) -> b
     if isinstance(value, (int, float)):
         return str(value) in query_lower
     if isinstance(value, list):
-        return all(
-            _value_grounded(v, query, query_lower, query_tokens) for v in value
-        )
+        return all(_value_grounded(v, query, query_lower, query_tokens) for v in value)
     if isinstance(value, dict):
         return all(
-            _value_grounded(v, query, query_lower, query_tokens)
-            for v in value.values()
+            _value_grounded(v, query, query_lower, query_tokens) for v in value.values()
         )
     s = str(value).strip()
     if not s:
@@ -198,9 +196,7 @@ def _count_ungrounded_args(calls: list, query: str) -> int:
                 for sub_key, sub_value in value.items():
                     if sub_key.lower() in _GATE_TRIVIAL_KEYS:
                         continue
-                    if not _value_grounded(
-                        sub_value, query, query_lower, query_tokens
-                    ):
+                    if not _value_grounded(sub_value, query, query_lower, query_tokens):
                         total += 1
             elif not _value_grounded(value, query, query_lower, query_tokens):
                 total += 1
@@ -248,15 +244,56 @@ def is_fabricated_call_set(calls: list, query: str) -> bool:
 # generic answers ("search_type=MPN", "anchor=user") are left alone.
 
 _GATE_PLACEHOLDER_TOKENS = {
-    "user", "username", "user123", "your_username", "your_name", "yourname",
-    "string", "str", "text", "value", "example", "sample", "test", "testing",
-    "n/a", "na", "none", "null", "nil", "unknown", "unspecified", "undefined",
-    "placeholder", "foo", "bar", "baz", "xxx", "abc", "todo", "tbd",
-    "item", "items", "product", "order", "default", "any", "all",
+    "user",
+    "username",
+    "user123",
+    "your_username",
+    "your_name",
+    "yourname",
+    "string",
+    "str",
+    "text",
+    "value",
+    "example",
+    "sample",
+    "test",
+    "testing",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "nil",
+    "unknown",
+    "unspecified",
+    "undefined",
+    "placeholder",
+    "foo",
+    "bar",
+    "baz",
+    "xxx",
+    "abc",
+    "todo",
+    "tbd",
+    "item",
+    "items",
+    "product",
+    "order",
+    "default",
+    "any",
+    "all",
 }
 
 # Suffixes stripped when checking whether a value merely echoes its own name.
-_GATE_NAME_SUFFIXES = ("_id", "_ids", "_name", "_names", "_code", "_key", "_no", "_number")
+_GATE_NAME_SUFFIXES = (
+    "_id",
+    "_ids",
+    "_name",
+    "_names",
+    "_code",
+    "_key",
+    "_no",
+    "_number",
+)
 
 # Words that make an empty container a legitimate, user-requested value
 # ("start from an empty board", "with no filters").
@@ -504,7 +541,9 @@ def snap_calls_to_schema_vocab(calls: list, functions: list) -> list:
 # example" rather than a casual mention of a value.
 _FORMAT_CUE = re.compile(
     r"\b(in the format|format of|formatted as|should be in|must be in|"
-    r"such as|for example|e\.g\.)", re.I)
+    r"such as|for example|e\.g\.)",
+    re.I,
+)
 # Quoted example values in a description.
 _FORMAT_QUOTED = re.compile(r"['\"`]([^'\"`\n]{2,60})['\"`]")
 
@@ -545,9 +584,14 @@ def _declares_comma_format(spec: dict) -> bool:
     if not _FORMAT_CUE.search(desc):
         return False
     examples = [e.strip() for e in _FORMAT_QUOTED.findall(desc)]
-    examples = [e for e in examples
-                if len(e.split()) <= 6 and ":" not in e
-                and len(e) >= 3 and re.search(r"[A-Za-z]", e)]
+    examples = [
+        e
+        for e in examples
+        if len(e.split()) <= 6
+        and ":" not in e
+        and len(e) >= 3
+        and re.search(r"[A-Za-z]", e)
+    ]
     if len(examples) < 2:
         return False
     if not all(_fmt_shape(e).startswith("COMMA") for e in examples):
@@ -571,13 +615,15 @@ from the user request and the documentation above. Reply with the value alone,
 no quotes, no explanation, no extra words."""
 
 
-def _requery_one_value(param: str, func: str, desc: str, query: str,
-                       value: str, ollama_url, ollama_model) -> str:
+def _requery_one_value(
+    param: str, func: str, desc: str, query: str, value: str, ollama_url, ollama_model
+) -> str:
     """Ask the model to append the documented suffix. Returns the rewritten
     value, or the ORIGINAL on any failure / empty reply — never corrupts output.
     Parse logic mirrors scripts/probe_format_requery.py ask()."""
     prompt = _FORMAT_REQUERY_PROMPT.format(
-        param=param, func=func, desc=desc, query=query, value=value)
+        param=param, func=func, desc=desc, query=query, value=value
+    )
     try:
         resp = call_ollama(
             [{"role": "user", "content": prompt}],
@@ -619,7 +665,7 @@ def _requery_value_rejected(v: str) -> bool:
         return True
     if len(v) > 80 or len(v.split()) > 8:
         return True
-    if "," not in v:          # the entire point is to add the documented suffix
+    if "," not in v:  # the entire point is to add the documented suffix
         return True
     return False
 
@@ -669,7 +715,8 @@ def requery_documented_formats(calls, functions, query, ollama_url, ollama_model
             if isinstance(items, dict):
                 desc += " " + str(items.get("description") or "")
             nv = _requery_one_value(
-                pname, name, desc.strip(), query, pv, ollama_url, ollama_model)
+                pname, name, desc.strip(), query, pv, ollama_url, ollama_model
+            )
             if nv != pv:
                 # NOTE: logged with the "Format requery:" prefix, NOT the
                 # "<name> params: {...}" form, so it does not match the
@@ -1603,6 +1650,14 @@ def detect_parallel(query: str) -> bool:
         r"\band\s+how\s+(?:much|many|long)\b",
         # "and compute" / "and calculate" — connects two compute tasks
         r"\band\s+(?:compute|calculate)\b",
+        # Numeric multiplicity: "2 and 4 gb", "5 and 10 miles"
+        r"\d+\s+and\s+\d+\s+\w+",
+        # "and ones" — parallel entity reference ("from X and ones from Y")
+        r"\band\s+ones\b",
+        # Quoted values connected by "and": "'Civil' and 'Criminal'"
+        r"'[^']+'\s+and\s+'[^']+'",
+        # Multiple meal-logging sentences: ". For breakfast" / ". Lunch"
+        r"[.?!]\s*(?:for\s+)?(?:breakfast|lunch|dinner|snack)\b",
         # Chinese parallel indicators
         r"还有",
         r"以及",
@@ -4043,7 +4098,9 @@ def _extract_current_directory(messages: list[dict]) -> str:
     return ""
 
 
-def _is_miss_param_scenario(messages: list[dict], query: str, functions: list[dict]) -> bool:
+def _is_miss_param_scenario(
+    messages: list[dict], query: str, functions: list[dict]
+) -> bool:
     """Detect miss_param scenarios where NO function call is needed.
 
     The miss_param tests check if the model can recognize when a query doesn't
@@ -4060,9 +4117,14 @@ def _is_miss_param_scenario(messages: list[dict], query: str, functions: list[di
     query_lower = query.lower().strip()
 
     # Check if we're in a filesystem context (miss_param tests use filesystem functions)
-    fs_functions = [f for f in functions if any(kw in f.get("name", "").lower()
-                                                for kw in ["mkdir", "mv", "cp", "cat",
-                                                           "grep", "sort", "diff", "echo", "cd"])]
+    fs_functions = [
+        f
+        for f in functions
+        if any(
+            kw in f.get("name", "").lower()
+            for kw in ["mkdir", "mv", "cp", "cat", "grep", "sort", "diff", "echo", "cd"]
+        )
+    ]
     if not fs_functions:
         return False
 
@@ -4113,8 +4175,12 @@ def _is_miss_param_scenario(messages: list[dict], query: str, functions: list[di
         # Check if query doesn't match any function well
         max_score = 0
         for f in functions:
-            score = sum(1 for kw in query_lower.split() if kw in f.get("name", "").lower()
-                       or kw in f.get("description", "").lower())
+            score = sum(
+                1
+                for kw in query_lower.split()
+                if kw in f.get("name", "").lower()
+                or kw in f.get("description", "").lower()
+            )
             max_score = max(max_score, score)
         if max_score == 0:
             return True
@@ -4132,7 +4198,9 @@ def _is_miss_param_scenario(messages: list[dict], query: str, functions: list[di
     for indicator in miss_param_indicators:
         if indicator in query_lower:
             # Check if query provides enough parameters
-            if "grep" in query_lower and ("file_name" not in query_lower and "pattern" not in query_lower):
+            if "grep" in query_lower and (
+                "file_name" not in query_lower and "pattern" not in query_lower
+            ):
                 return True
             if "find" in query_lower and "file_name" not in query_lower:
                 return True
@@ -4149,6 +4217,7 @@ def _patch_messages_with_dir_context(
     Also detects no-op turns where [] should be returned.
     """
     import copy
+
     patched = copy.deepcopy(messages)
 
     if not current_dir:
@@ -4414,44 +4483,134 @@ def _extract_memory_answer(messages: list[dict], query: str) -> str | None:
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For medical/healthcare queries, check for health-related keys
-    health_keywords = ["health", "medical", "diagnosis", "condition", "patient",
-                       "blood", "glucose", "diabetes", "cholesterol", "blood pressure",
-                       "vitamin", "medication", "surgery", "doctor", "hospital"]
+    health_keywords = [
+        "health",
+        "medical",
+        "diagnosis",
+        "condition",
+        "patient",
+        "blood",
+        "glucose",
+        "diabetes",
+        "cholesterol",
+        "blood pressure",
+        "vitamin",
+        "medication",
+        "surgery",
+        "doctor",
+        "hospital",
+    ]
     if any(kw in query_lower for kw in health_keywords):
         for key in all_memory:
-            if any(kw in key.lower() for kw in ["health", "medical", "blood", "diabetes",
-                                                  "cholesterol", "pressure", "vitamin",
-                                                  "medication", "surgery", "patient"]):
+            if any(
+                kw in key.lower()
+                for kw in [
+                    "health",
+                    "medical",
+                    "blood",
+                    "diabetes",
+                    "cholesterol",
+                    "pressure",
+                    "vitamin",
+                    "medication",
+                    "surgery",
+                    "patient",
+                ]
+            ):
                 value = str(all_memory[key])
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For finance queries
-    finance_keywords = ["finance", "investment", "money", "stock", "portfolio",
-                        "budget", "report", "deadline", "client", "deal", "firm"]
+    finance_keywords = [
+        "finance",
+        "investment",
+        "money",
+        "stock",
+        "portfolio",
+        "budget",
+        "report",
+        "deadline",
+        "client",
+        "deal",
+        "firm",
+    ]
     if any(kw in query_lower for kw in finance_keywords):
         for key in all_memory:
-            if any(kw in key.lower() for kw in ["investment", "finance", "money", "stock",
-                                                  "budget", "deal", "firm", "deadline"]):
+            if any(
+                kw in key.lower()
+                for kw in [
+                    "investment",
+                    "finance",
+                    "money",
+                    "stock",
+                    "budget",
+                    "deal",
+                    "firm",
+                    "deadline",
+                ]
+            ):
                 value = str(all_memory[key])
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For student queries
-    student_keywords = ["student", "school", "college", "university", "course",
-                        "class", "major", "study", "research", "project", "club"]
+    student_keywords = [
+        "student",
+        "school",
+        "college",
+        "university",
+        "course",
+        "class",
+        "major",
+        "study",
+        "research",
+        "project",
+        "club",
+    ]
     if any(kw in query_lower for kw in student_keywords):
         for key in all_memory:
-            if any(kw in key.lower() for kw in ["course", "class", "major", "study",
-                                                  "research", "project", "club", "school"]):
+            if any(
+                kw in key.lower()
+                for kw in [
+                    "course",
+                    "class",
+                    "major",
+                    "study",
+                    "research",
+                    "project",
+                    "club",
+                    "school",
+                ]
+            ):
                 value = str(all_memory[key])
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
     # For notetaker queries
-    notetaker_keywords = ["meeting", "schedule", "appointment", "reminder",
-                          "task", "note", "todo", "deadline", "call"]
+    notetaker_keywords = [
+        "meeting",
+        "schedule",
+        "appointment",
+        "reminder",
+        "task",
+        "note",
+        "todo",
+        "deadline",
+        "call",
+    ]
     if any(kw in query_lower for kw in notetaker_keywords):
         for key in all_memory:
-            if any(kw in key.lower() for kw in ["meeting", "schedule", "appointment",
-                                                  "reminder", "task", "note", "deadline", "call"]):
+            if any(
+                kw in key.lower()
+                for kw in [
+                    "meeting",
+                    "schedule",
+                    "appointment",
+                    "reminder",
+                    "task",
+                    "note",
+                    "deadline",
+                    "call",
+                ]
+            ):
                 value = str(all_memory[key])
                 return f"{{'answer': '{value}', 'context': 'Retrieved from memory.'}}"
 
@@ -4604,9 +4763,7 @@ def _last_real_user_query(messages: list[dict]) -> str:
     return ""
 
 
-def _generate_agentic_answer(
-    messages: list[dict], ollama_url: str, ollama_model: str
-):
+def _generate_agentic_answer(messages: list[dict], ollama_url: str, ollama_model: str):
     """Ask the backend LLM to answer using ONLY context already available
     (system-prompt memory content, tool results). Never loops on tools."""
     system_text = _system_text(messages)
@@ -4620,7 +4777,8 @@ def _generate_agentic_answer(
     tool_results = _parse_tool_results(messages)
     if tool_results is not None:
         tool_context = "\n".join(
-            f"- {tr.get('name', 'tool')}: {tr.get('content', '')}" for tr in tool_results
+            f"- {tr.get('name', 'tool')}: {tr.get('content', '')}"
+            for tr in tool_results
         )
 
     prompt = (
@@ -4669,7 +4827,9 @@ def _generate_memory_add_calls(
     return memory_add function calls (keys snake_case, values verbatim)."""
     query = extract_user_query(messages)
     add_funcs = [
-        f for f in functions if "memory_add" in f.get("name", "") or "memory_append" in f.get("name", "")
+        f
+        for f in functions
+        if "memory_add" in f.get("name", "") or "memory_append" in f.get("name", "")
     ]
     if not add_funcs:
         return None
@@ -4681,12 +4841,15 @@ def _generate_memory_add_calls(
         props = params.get("properties", {})
         required = params.get("required", [])
         args = ", ".join(
-            f"{p}: {props[p].get('type', 'string')}" + (" (required)" if p in required else "")
+            f"{p}: {props[p].get('type', 'string')}"
+            + (" (required)" if p in required else "")
             for p in props
         )
         schema_lines.append(f"- {f.get('name')}({args})")
-    schema_block = "\n".join(schema_lines) if schema_lines else ", ".join(
-        f.get("name", "") for f in add_funcs
+    schema_block = (
+        "\n".join(schema_lines)
+        if schema_lines
+        else ", ".join(f.get("name", "") for f in add_funcs)
     )
     prompt = (
         "You are managing a persistent memory system. From the user's message below, "
@@ -4755,9 +4918,7 @@ def carm_route_multi_turn(
             value = _extract_answer_value(tool_results)
             if value is not None:
                 logger.info("Multi-turn: retrieved value → answer with it")
-                return (
-                    "{'answer': '%s', 'context': 'Retrieved from memory.'}" % value
-                )
+                return "{'answer': '%s', 'context': 'Retrieved from memory.'}" % value
             answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
             if answer:
                 logger.info("Multi-turn: agentic answer generated")
@@ -4778,7 +4939,9 @@ def carm_route_multi_turn(
         if query:
             direct_answer = _extract_memory_answer(messages, query)
             if direct_answer:
-                logger.info("Multi-turn: memory answer extracted directly from snapshot")
+                logger.info(
+                    "Multi-turn: memory answer extracted directly from snapshot"
+                )
                 return direct_answer
 
         answer = _generate_agentic_answer(messages, ollama_url, ollama_model)
@@ -4794,7 +4957,9 @@ def carm_route_multi_turn(
 
     if any("memory_add" in f.get("name", "") for f in functions) and not is_agentic:
         # Memory prerequisite turn: extract facts into memory_add calls.
-        calls = _generate_memory_add_calls(messages, functions, ollama_url, ollama_model)
+        calls = _generate_memory_add_calls(
+            messages, functions, ollama_url, ollama_model
+        )
         if calls:
             logger.info("Multi-turn: memory prereq add calls generated")
             return calls
@@ -5544,7 +5709,9 @@ def carm_route_single_turn_bfcl(
     # values the generator actually produced, and the trace's `params:` lines
     # were already logged before this step, so the contract generation
     # signature is unchanged. See the Change M block above.
-    calls = requery_documented_formats(calls, functions, query, ollama_url, ollama_model)
+    calls = requery_documented_formats(
+        calls, functions, query, ollama_url, ollama_model
+    )
 
     output = format_parallel_output(calls)
     logger.info(f"Output: {output}")
