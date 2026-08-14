@@ -3172,21 +3172,58 @@ def _strip_fabricated_optional_enum_params(
                 )
                 del new_params[pname]
             else:
-                # --- Non-enum string param: strip if clearly fabricated ---
+                # --- Non-enum optional param: strip if fabricated ---
+
+                # Keep inference-safe params (LLM can infer from context)
+                if pname in _INFERENCE_SAFE:
+                    continue
+
+                # --- Numeric params (int/float, not bool) ---
+                # The LLM often fabricates plausible numbers (port=8080,
+                # replicas=3, timeout=30) the user never mentioned.
+                if isinstance(pvalue, (int, float)) and not isinstance(pvalue, bool):
+                    val_str = str(pvalue)
+                    # For single-digit numbers (0-9), the digit might appear
+                    # in the query as a list/step number — require word-boundary
+                    # match or explicit numeric context to keep.
+                    if len(val_str) == 1:
+                        # Single digit: only keep if it appears as a standalone
+                        # number in the query (not part of a step like "3. ")
+                        import re as _re
+
+                        if not _re.search(
+                            r"(?<!\d)" + _re.escape(val_str) + r"(?!\d)",
+                            query,
+                        ):
+                            logger.info(
+                                f"  Stripped fabricated optional numeric "
+                                f"'{pname}'={pvalue} (single digit, not "
+                                f"standalone in query)"
+                            )
+                            del new_params[pname]
+                            continue
+                    elif val_str not in query_lower:
+                        logger.info(
+                            f"  Stripped fabricated optional numeric "
+                            f"'{pname}'={pvalue} (not in query)"
+                        )
+                        del new_params[pname]
+                        continue
+                    else:
+                        continue  # Value found in query — keep
+
+                # --- String params ---
                 ptype = pinfo.get("type", "string")
 
-                # Keep numbers, booleans, lists, dicts
+                # Keep booleans, lists, dicts
                 if ptype not in ("string", "any", None):
                     continue
                 if not isinstance(pvalue, str):
                     continue
-                # Keep inference-safe params
-                if pname in _INFERENCE_SAFE:
-                    continue
                 # Keep short values (likely abbreviations or codes)
                 if len(value_str) <= 3:
                     continue
-                # Keep if value appears in query
+                # Keep if exact value appears in query
                 if value_str in query_lower:
                     continue
 
