@@ -3217,6 +3217,12 @@ def _strip_fabricated_optional_enum_params(
                             del new_params[pname]
                             continue
                     elif val_str not in query_lower:
+                        # Check percentage equivalents: 0.95 ↔ "95%",
+                        # 0.05 ↔ "5%", etc.
+                        if isinstance(pvalue, float) and 0 < pvalue < 1:
+                            pct_str = str(int(pvalue * 100))
+                            if pct_str in query:
+                                continue  # E.g., 0.95 ↔ "95%" in query
                         logger.info(
                             f"  Stripped fabricated optional numeric "
                             f"'{pname}'={pvalue} (not in query)"
