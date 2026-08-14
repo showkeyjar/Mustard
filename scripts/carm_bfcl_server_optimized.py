@@ -3241,6 +3241,59 @@ def _strip_fabricated_optional_enum_params(
                 if value_str in query_lower:
                     continue
 
+                # Check: if value is a compound (contains "-" or "_")
+                # and the full compound is not in the query, strip even if
+                # individual words match (e.g. "nodejs-welcome-deployment"
+                # when query only has "nodejs-welcome")
+                if ("-" in value_str or "_" in value_str) and len(value_str) > 5:
+                    # The full compound value is NOT in the query
+                    # Check if any part is a fabricated suffix
+                    parts = re.split(r"[-_]", value_str)
+                    # If the last part looks like a fabricated descriptor
+                    # (e.g. "-deployment", "-service", "-config")
+                    _FABRICATED_SUFFIXES = (
+                        "deployment",
+                        "service",
+                        "config",
+                        "resource",
+                        "container",
+                        "pod",
+                        "app",
+                        "default",
+                    )
+                    if len(parts) >= 2 and parts[-1] in _FABRICATED_SUFFIXES:
+                        logger.info(
+                            f"  Stripped fabricated optional "
+                            f"'{pname}'='{pvalue}' (compound with "
+                            f"fabricated suffix '{parts[-1]}')"
+                        )
+                        del new_params[pname]
+                        continue
+                    # If the value has more parts than what's in the query
+                    # (e.g. "nodejs-welcome-deployment" vs "nodejs-welcome"),
+                    # strip the extra compound
+                    query_compounds = set()
+                    for qc in re.findall(r"[a-z]+[-_][a-z]+[-_]?[a-z]*", query_lower):
+                        query_compounds.add(qc)
+                    if value_str not in query_compounds:
+                        # Check if a prefix of the value IS in the query
+                        for i in range(len(parts) - 1, 0, -1):
+                            prefix = "-".join(parts[:i])
+                            if prefix in query_lower:
+                                # The value is a fabricated extension
+                                logger.info(
+                                    f"  Stripped fabricated optional "
+                                    f"'{pname}'='{pvalue}' (extends query "
+                                    f"term '{prefix}')"
+                                )
+                                del new_params[pname]
+                                break
+                        else:
+                            # No prefix match — fall through to general check
+                            pass
+                        if pname not in new_params:
+                            continue
+
                 # Strip fabricated technical defaults (dunders, "None",
                 # "null", "default", "auto", "main", "__main__")
                 _FABRICATED_MARKERS = (
