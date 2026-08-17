@@ -2637,7 +2637,10 @@ CRITICAL RULES:
 30. If a "Full request" block is present, the Query is ONE task taken from it. When the Query refers back to something stated earlier ("the same duration", "that account", "the total distance covered"), copy the CONCRETE value from the Full request. Extract arguments for the Query's task ONLY — never pull in entities that belong to the other tasks.
  31. NEVER invent a value that appears in neither the Query nor the Full request. Omit the param instead of guessing a plausible default (no acceleration=9.8, no account="12345", no starting_balance=1000).
  32. If the query mentions multiple distinct identifiers (case numbers, IDs, codes) for the SAME parameter, create one object PER identifier. Do NOT combine them into a list. Example: "case numbers 123 and 456" → [{{"id":"123"}}, {{"id":"456"}}], NOT [{{"id":["123","456"]}}].
- 33. If the query mentions multiple values for a parameter that are combined with another varying parameter (e.g. "type 'Civil' and 'Criminal'" with different case numbers), create one object PER combination. Example: "numbers A,B for type X and Y" → 4 objects: (A,X), (B,X), (A,Y), (B,Y).
+  33. If the query mentions multiple values for a parameter that are combined with another varying parameter (e.g. "type 'Civil' and 'Criminal'" with different case numbers), create one object PER combination. Example: "numbers A,B for type X and Y" → 4 objects: (A,X), (B,X), (A,Y), (B,Y).
+  34. For "signature" or "method info" functions, ONLY extract calls for methods EXPLICITLY requested in the query. If the query says "signatures of setCellValue and getCellValue", create exactly 2 objects — NOT for every method name mentioned in the context. Do NOT create calls for methods that are mentioned as background/context but not explicitly requested.
+  35. For "find relevant classes" or "search classes" functions, if the query asks about ONE class (e.g., "find relevant classes related to CellResult"), return ONE object with that class as the search term. Do NOT create additional objects for other classes mentioned in the context.
+  36. For "get class info" functions, ONLY create calls when the query EXPLICITLY asks for class information. Do NOT create calls for classes that are merely mentioned as context.
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
