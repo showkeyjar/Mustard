@@ -4060,6 +4060,158 @@ def _filter_overgenerated_stats_calls(
         filtered.append((name, params))
     return filtered
 
+def _strip_query_prefix(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Strip common prefixes from query params (e.g. 'Search memory for ...').
+
+    recall_memory_search calls often have 'Search memory for' or 'Search for'
+    prepended to the query value. Remove these to match the actual search intent.
+    """
+    prefixes = [
+        "search memory for ",
+        "search for ",
+        "look up ",
+        "find ",
+        "recall ",
+    ]
+    result = []
+    for name, params in calls:
+        new_params = dict(params)
+        if "query" in new_params and isinstance(new_params["query"], str):
+            val = new_params["query"]
+            val_lower = val.lower()
+            changed = False
+            for prefix in prefixes:
+                if val_lower.startswith(prefix):
+                    new_params["query"] = val[len(prefix):]
+                    logger.info(
+                        f"  Query prefix strip: '{val}' -> '{new_params['query']}'"
+                    )
+                    changed = True
+                    break
+            if not changed:
+                # Also strip "Search memory for when is" -> "when is"
+                m = re.match(
+                    r"^(?:search\s+memory\s+for\s+|search\s+)(.+)", val_lower
+                )
+                if m:
+                    new_params["query"] = val[m.end():]
+                    logger.info(
+                        f"  Query prefix strip: '{val}' -> '{new_params['query']}'"
+                    )
+        result.append((name, new_params))
+    return result
+
+
+def _filter_redundant_search_calls(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
+    """Remove generic search calls when a domain-specific function is called.
+
+    E.g. when weather function is called and user asks about weather,
+    remove HNA_WQA.search calls.
+    """
+    q_lower = query.lower()
+    has_weather_call = any("weather" in n.lower() for n, _ in calls)
+    has_weather_query = bool(re.search(r"weather|temperature|forecast", q_lower))
+
+    if has_weather_call and has_weather_query:
+        filtered = []
+        for name, params in calls:
+            if "HNA_WQA" in name or ("search" in name.lower() and "weather" not in name.lower()
+                                      and "news" not in name.lower()
+                                      and "recipe" not in name.lower()
+                                      and "product" not in name.lower()):
+                logger.info(f"  Redundant search filter: removed {name} (weather function covers query)")
+                continue
+            filtered.append((name, params))
+        return filtered
+    return list(calls)
+
+
+def _filter_food_order_when_drink_change(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
+    """Remove ChaFod (food order) calls when only drink change is requested.
+
+    User saying 'change my drink... served hot' should modify drink preferences,
+    not trigger a separate food order.
+    """
+    q_lower = query.lower()
+    has_change_drink = bool(re.search(r"change.*drink|drink.*change", q_lower))
+    has_drink_call = any("change_drink" in n.lower() or "chadri" in n.lower() for n, _ in calls)
+    has_food_call = any("chafod" in n.lower() or "food" in n.lower() for n, _ in calls)
+
+    if has_change_drink and has_drink_call and has_food_call:
+        # Check if user explicitly asks to order food (not just change drink)
+        has_order_food = bool(re.search(r"order\s+food|add\s+food|also\s+order", q_lower))
+        if not has_order_food:
+            filtered = []
+            for name, params in calls:
+                if "chafod" in n.lower() or ("food" in n.lower() and "change" not in n.lower()):
+                    logger.info(f"  Food over-gen filter: removed {name} (only drink change requested)")
+                    continue
+                filtered.append((name, params))
+            return filtered
+    return list(calls)
+
+
+def _fix_keyword_typos(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Fix common typos in keyword/search params.
+
+    E.g. 'airtificial' -> 'artificial'
+    """
+    typo_map = {
+        "airtificial": "artificial",
+        "intellegence": "intelligence",
+        "enviroment": "environment",
+        "teh ": "the ",
+    }
+    result = []
+    for name, params in calls:
+        new_params = dict(params)
+        for pname in ["keyword", "query", "search_term", "q"]:
+            if pname in new_params and isinstance(new_params[pname], str):
+                val = new_params[pname]
+                for wrong, right in typo_map.items():
+                    if wrong in val.lower():
+                        new_params[pname] = val.lower().replace(wrong, right)
+                        if new_params[pname] != val:
+                            logger.info(f"  Typo fix: '{val}' -> '{new_params[pname]}'")
+                # Capitalize first letter if it was originally a proper noun
+                if val and val[0].isupper() and new_params[pname]:
+                    new_params[pname] = new_params[pname][0].upper() + new_params[pname][1:]
+        result.append((name, new_params))
+    return result
+
+
+def _strip_extra_location_from_param(calls: list[tuple[str, dict]], query: str) -> list[tuple[str, dict]]:
+    """Strip appended city/country from address-like params.
+
+    When user says 'Address: 123 Hanoi Street', the param should be
+    '123 Hanoi Street', not '123 Hanoi Street, Hanoi, Vietnam'.
+    """
+    q_lower = query.lower()
+    # Check if query has an explicit address
+    addr_match = re.search(r"address[:\s]+(.+?)(?:\.|$)", q_lower)
+    if not addr_match:
+        return list(calls)
+    explicit_addr = addr_match.group(1).strip()
+
+    result = []
+    for name, params in calls:
+        new_params = dict(params)
+        for pname in ["loc", "location", "address", "pickup", "destination"]:
+            if pname in new_params and isinstance(new_params[pname], str):
+                val = new_params[pname]
+                # If the param value starts with the explicit address but has extra stuff
+                if val.lower().startswith(explicit_addr.lower()) and len(val) > len(explicit_addr) + 2:
+                    new_params[pname] = explicit_addr
+                    logger.info(f"  Location strip: '{val}' -> '{new_params[pname]}'")
+        result.append((name, new_params))
+    return result
+
+
+
 
 def _post_process_params(
     calls: list[tuple[str, dict]], functions: list[dict], query: str = ""
