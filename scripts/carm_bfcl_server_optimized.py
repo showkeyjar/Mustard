@@ -2610,7 +2610,7 @@ CRITICAL RULES:
 5. Use enum values EXACTLY as listed. Do NOT iterate over enum values — pick ONE based on the query.
  6. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state:
     - Non-US cities: add the country (e.g., "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam", "Seoul" → "Seoul, South Korea")
-    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston")
+    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston") UNLESS the param description specifies "City, State" format — then apply rule 38.
  7. For boolean params, use JSON true/false (not Python True/False).
 8. If the query asks for the same thing only once, return exactly ONE object.
 9. "all clouds" or "all providers" means call this function ONCE, not once per region/zone.
@@ -2641,6 +2641,8 @@ CRITICAL RULES:
   34. For "signature" or "method info" functions, ONLY extract calls for methods EXPLICITLY requested in the query. If the query says "signatures of setCellValue and getCellValue", create exactly 2 objects — NOT for every method name mentioned in the context. Do NOT create calls for methods that are mentioned as background/context but not explicitly requested.
   35. For "find relevant classes" or "search classes" functions, if the query asks about ONE class (e.g., "find relevant classes related to CellResult"), return ONE object with that class as the search term. Do NOT create additional objects for other classes mentioned in the context.
   36. For "get class info" functions, ONLY create calls when the query EXPLICITLY asks for class information. Do NOT create calls for classes that are merely mentioned as context.
+  37. For optional "date" params: if the user EXPLICITLY mentions a date (e.g., "March 1st 2023", "March 10th", "on 2023-05-21"), fill it in formatted as YYYY-MM-DD. Convert month names: January=01, February=02, ..., December=12. If the year is not in the date phrase but mentioned elsewhere ("this year is 2023"), use that year. Do NOT omit the date param when the user explicitly specifies a date.
+  38. If a parameter's description specifies a format like "City, State (abbr)" or "City, State", and the user provides only a city name without the state, add the state abbreviation for well-known US cities: New York→"New York, NY", Los Angeles→"Los Angeles, CA", San Francisco→"San Francisco, CA", San Diego→"San Diego, CA", Boston→"Boston, MA", Chicago→"Chicago, IL", Seattle→"Seattle, WA", Houston→"Houston, TX", Dallas→"Dallas, TX", Atlanta→"Atlanta, GA", Miami→"Miami, FL", Denver→"Denver, CO", Phoenix→"Phoenix, AZ", Philadelphia→"Philadelphia, PA".
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -3516,6 +3518,121 @@ def _enforce_schema_param_ordering(
                             pass
         result.append((name, new_params))
     return result
+
+
+def _filter_cross_entity_calls(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
+    """Remove calls to entity-prefixed functions the user never asked about.
+
+    When both ``user.X`` and ``partner.X`` (or similar entity prefixes) are
+    available and the user explicitly mentions only one entity type, calls
+    to the other are over-generation. E.g. "mandates of users parath and
+    bhanu" should only produce ``user.mandates`` calls, not ``partner.mandates``.
+    """
+    q_lower = query.lower()
+    has_user = bool(re.search(r"\busers?\b", q_lower))
+    has_partner = bool(re.search(r"\bpartners?\b", q_lower))
+
+    # Only filter when the user explicitly mentions one entity type
+    if has_user == has_partner:  # both or neither → can't disambiguate
+        return list(calls)
+
+    keep_entity = "user" if has_user else "partner"
+    drop_entity = "partner" if has_user else "user"
+    drop_prefix = f"{drop_entity}."
+
+    filtered = []
+    removed = 0
+    for name, params in calls:
+        if name.startswith(drop_prefix):
+            removed += 1
+            logger.info(
+                f"  Cross-entity filter: removed {name} (user asked for {keep_entity})"
+            )
+        else:
+            filtered.append((name, params))
+    return filtered
+
+
+def _dedup_redundant_class_calls(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
+    """Remove get_class_info calls when get_relevant_classes already covers them.
+
+    If the user asks "find relevant classes related to CellResult" and we also
+    call get_class_info(class_name="CellResult"), the latter is redundant — the
+    user wanted to *search*, not get info about a known class. Also removes
+    get_signature calls for methods mentioned only as error context, not as
+    explicit signature requests.
+    """
+    # Collect search strings from get_relevant_classes calls
+    search_strings = set()
+    has_relevant_classes = False
+    for name, params in calls:
+        if name == "get_relevant_classes":
+            has_relevant_classes = True
+            ss = params.get("search_string", "")
+            if ss:
+                search_strings.add(ss.lower())
+
+    if not has_relevant_classes:
+        return list(calls)
+
+    # Extract explicitly requested method names from query
+    # Pattern: "signatures of 'X' and 'Y'" or "signatures of X and Y"
+    requested_methods = set()
+    # Match 'methodName' or "methodName" after "signatures of"
+    sig_match = re.search(
+        r"signatures?\s+of\s+(.+?)(?:\s+(?:methods?|in)\s+|$)",
+        query,
+        re.IGNORECASE,
+    )
+    if sig_match:
+        method_part = sig_match.group(1)
+        # Extract quoted method names
+        for m in re.finditer(r"['\"](\w+)['\"]", method_part):
+            requested_methods.add(m.group(1).lower())
+        # Also try unquoted: "setCellValue and getCellValue"
+        for m in re.finditer(
+            r"\b([a-z]\w+)\s+and\s+([a-z]\w+)", method_part, re.IGNORECASE
+        ):
+            requested_methods.add(m.group(1).lower())
+            requested_methods.add(m.group(2).lower())
+
+    filtered = []
+    removed = 0
+    for name, params in calls:
+        # Remove get_class_info for classes already being searched
+        if name == "get_class_info":
+            cn = params.get("class_name", "")
+            if cn and cn.lower() in search_strings:
+                removed += 1
+                logger.info(
+                    f"  Redundant class info: removed get_class_info({cn}) — covered by get_relevant_classes"
+                )
+                continue
+            # Also remove if class_name appears in any search string as substring
+            if any(cn.lower() in ss for ss in search_strings):
+                removed += 1
+                logger.info(
+                    f"  Redundant class info: removed get_class_info({cn}) — substring match in get_relevant_classes"
+                )
+                continue
+
+        # Remove get_signature for methods not explicitly requested
+        if name == "get_signature" and requested_methods:
+            mn = params.get("method_name", "")
+            if mn and mn.lower() not in requested_methods:
+                removed += 1
+                logger.info(
+                    f"  Unrequested signature: removed get_signature({mn}) — not in explicit request"
+                )
+                continue
+
+        filtered.append((name, params))
+
+    return filtered
 
 
 def _post_process_params(
@@ -6236,6 +6353,12 @@ def carm_route_single_turn_bfcl(
 
     # Enforce schema-implied parameter ordering (e.g. "larger" param first)
     calls = _enforce_schema_param_ordering(calls, functions)
+
+    # Filter cross-entity calls (e.g. partner.mandates when user only asks for users)
+    calls = _filter_cross_entity_calls(calls, query)
+
+    # Remove redundant get_class_info / unrequested get_signature calls
+    calls = _dedup_redundant_class_calls(calls, query)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
