@@ -2643,6 +2643,9 @@ CRITICAL RULES:
   36. For "get class info" functions, ONLY create calls when the query EXPLICITLY asks for class information. Do NOT create calls for classes that are merely mentioned as context.
   37. For optional "date" params: if the user EXPLICITLY mentions a date (e.g., "March 1st 2023", "March 10th", "on 2023-05-21"), fill it in formatted as YYYY-MM-DD. Convert month names: January=01, February=02, ..., December=12. If the year is not in the date phrase but mentioned elsewhere ("this year is 2023"), use that year. Do NOT omit the date param when the user explicitly specifies a date.
   38. If a parameter's description specifies a format like "City, State (abbr)" or "City, State", and the user provides only a city name without the state, add the state abbreviation for well-known US cities: New York→"New York, NY", Los Angeles→"Los Angeles, CA", San Francisco→"San Francisco, CA", San Diego→"San Diego, CA", Boston→"Boston, MA", Chicago→"Chicago, IL", Seattle→"Seattle, WA", Houston→"Houston, TX", Dallas→"Dallas, TX", Atlanta→"Atlanta, GA", Miami→"Miami, FL", Denver→"Denver, CO", Phoenix→"Phoenix, AZ", Philadelphia→"Philadelphia, PA".
+  39. For "mode" or transportation params: map user phrases to enum values: "public transportation"/"public transport"/"transit"/"bus"/"subway" → "transit", "driving"/"by car"/"car" → "drive", "walking"/"on foot"/"by foot" → "walk", "biking"/"by bike"/"cycling" → "bike". Fill in the mode param when the user mentions transportation.
+  40. For "platform" params: use the platform name only, not the store name. "PlayStation Store" → "PlayStation", "Xbox Store" → "Xbox", "Nintendo eShop" → "Nintendo Switch".
+  41. For array/list params (e.g., stats_fields): use the EXACT terms from the user query. Do NOT shorten "points per game" to "points" or "minutes per game" to "minutes".
 
 Examples:
 Simple: [{{"a":1,"b":2}}]
@@ -3890,6 +3893,168 @@ def _fix_image_function_selection(
                     continue
         result.append((name, params))
     return result
+
+
+# Transportation mode synonyms
+_TRANSPORT_MODE_SYNONYMS = {
+    "public transportation": "transit",
+    "public transport": "transit",
+    "transit": "transit",
+    "bus": "transit",
+    "subway": "transit",
+    "metro": "transit",
+    "train": "transit",
+    "driving": "drive",
+    "by car": "drive",
+    "car": "drive",
+    "drive": "drive",
+    "walking": "walk",
+    "on foot": "walk",
+    "by foot": "walk",
+    "walk": "walk",
+    "biking": "bike",
+    "by bike": "bike",
+    "cycling": "bike",
+    "bike": "bike",
+    "bicycle": "bike",
+}
+
+
+def _fill_missing_transport_mode(
+    calls: list[tuple[str, dict]], functions: list[dict], query: str
+) -> list[tuple[str, dict]]:
+    """Fill in missing 'mode' param when user mentions transportation.
+
+    If a function has an optional 'mode' parameter and the user mentions a
+    transportation mode (e.g., "public transportation"), fill it in with
+    the normalized enum value.
+    """
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    q_lower = query.lower()
+
+    # Detect transport mode from query
+    detected_mode = None
+    for phrase, mode in _TRANSPORT_MODE_SYNONYMS.items():
+        if phrase in q_lower:
+            detected_mode = mode
+            break
+
+    if not detected_mode:
+        return list(calls)
+
+    result = []
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            result.append((name, params))
+            continue
+        props = func.get("parameters", {}).get("properties", {})
+        if "mode" in props and "mode" not in params:
+            # Check if the detected mode is in the enum
+            mode_info = props["mode"]
+            enum_vals = mode_info.get("enum", [])
+            if not enum_vals or detected_mode in enum_vals:
+                new_params = dict(params)
+                new_params["mode"] = detected_mode
+                logger.info(f"  Filled missing mode: {name} mode={detected_mode}")
+                result.append((name, new_params))
+                continue
+        result.append((name, params))
+    return result
+
+
+def _normalize_platform_values(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Normalize platform param values by stripping store suffixes.
+
+    "PlayStation Store" → "PlayStation", "Xbox Store" → "Xbox", etc.
+    """
+    result = []
+    for name, params in calls:
+        new_params = dict(params)
+        for pname in ["platform"]:
+            if pname in new_params and isinstance(new_params[pname], str):
+                val = new_params[pname]
+                # Strip common store suffixes
+                for suffix in [" Store", " store", " eShop", " eShop"]:
+                    if val.endswith(suffix):
+                        new_params[pname] = val[: -len(suffix)]
+                        logger.info(
+                            f"  Platform normalize: '{val}' → '{new_params[pname]}'"
+                        )
+                        break
+        result.append((name, new_params))
+    return result
+
+
+def _expand_stats_fields(calls, query):
+    """Expand short stats_fields values to match query wording."""
+    q_lower = query.lower()
+    per_match = re.search(r"(per\s+(?:game|season|match|minute))", q_lower)
+    if not per_match:
+        return list(calls)
+    per_suffix = per_match.group(1)  # e.g. "per game"
+    # Build mapping from short form to full phrase
+    expand_map = {}
+    for word in ["points", "assists", "rebounds", "minutes", "steals", "blocks", "turnovers"]:
+        if re.search(r"" + word + r"\s+" + re.escape(per_suffix), q_lower):
+            expand_map[word] = word + " " + per_suffix
+    if not expand_map:
+        return list(calls)
+    result = []
+    for name, params in calls:
+        new_params = dict(params)
+        if "stats_fields" in new_params and isinstance(new_params["stats_fields"], list):
+            new_fields = []
+            for f in new_params["stats_fields"]:
+                if f in expand_map:
+                    new_fields.append(expand_map[f])
+                else:
+                    new_fields.append(f)
+            if new_fields != new_params["stats_fields"]:
+                new_params["stats_fields"] = new_fields
+                logger.info(f"  Stats fields expand: {expand_map}")
+        result.append((name, new_params))
+    return result
+
+
+def _filter_overgenerated_stats_calls(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
+    """Remove game_stats/team_stats calls when user only asks for player stats.
+
+    If the user asks about "player stats" without mentioning "game stats" or
+    "team stats", and both player_stats and game_stats/team_stats functions
+    are called, remove the game_stats/team_stats calls.
+    """
+    q_lower = query.lower()
+    # Check for specific stats request patterns, not just the word "game"
+    has_player_stats = bool(re.search(r"player\s+stat", q_lower)) or bool(
+        re.search(r"stat.*player", q_lower)
+    )
+    has_game_stats = bool(re.search(r"game\s+stat", q_lower)) or bool(
+        re.search(r"stat.*game\b", q_lower)
+    )
+    has_team_stats = bool(re.search(r"team\s+stat", q_lower)) or bool(
+        re.search(r"stat.*team\b", q_lower)
+    )
+
+    # Also check if "player" is mentioned (broader signal)
+    has_player = bool(re.search(r"\bplayer\b", q_lower))
+
+    # Only filter when user asks for player stats but not game/team stats
+    if not has_player or has_game_stats or has_team_stats:
+        return list(calls)
+
+    filtered = []
+    for name, params in calls:
+        # Remove game_stats and team_stats calls
+        if "game_stats" in name or "team_stats" in name:
+            logger.info(
+                f"  Stats over-gen filter: removed {name} (user asked for player stats only)"
+            )
+            continue
+        filtered.append((name, params))
+    return filtered
 
 
 def _post_process_params(
@@ -6628,6 +6793,15 @@ def carm_route_single_turn_bfcl(
 
     # Fix city format: add state abbreviation when schema requires "City, State"
     calls = _fix_city_state_format(calls, functions)
+
+    # Fill missing transport mode when user mentions transportation
+    calls = _fill_missing_transport_mode(calls, functions, query)
+
+    # Normalize platform values (strip store suffixes)
+    calls = _normalize_platform_values(calls)
+
+    # Filter overgenerated stats calls (game_stats when user only asks for player_stats)
+    calls = _filter_overgenerated_stats_calls(calls, query)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
