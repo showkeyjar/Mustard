@@ -2822,7 +2822,7 @@ Return JSON object with param names as keys. Rules:
  3. Use enum values EXACTLY as listed — do not add extra words like "milk" or "juice" to enum values.
  4. For location params, use the location string AS IT APPEARS in the query. If the query says "Boston, USA", use "Boston, USA" exactly. If the query only says a city name without country/state:
     - Non-US cities: add the country (e.g., "Tel Aviv" → "Tel Aviv, Israel", "Bangkok" → "Bangkok, Thailand", "Moscow" → "Moscow, Russia", "Hyderabad" → "Hyderabad, India", "Riga" → "Riga, Latvia", "Lang Son" → "Lang Son, Vietnam", "Seoul" → "Seoul, South Korea")
-    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston")
+    - US cities: keep as-is (e.g., "Seattle" → "Seattle", "Boston" → "Boston") UNLESS the param description specifies "City, State" format — then add the state abbreviation.
  5. For keyword/search params, extract only the core search term without question words like "who is", "what is", "tell me about", "search for".
  6. For boolean params, use JSON true/false.
  7. For string params that represent variable names or identifiers (e.g. "userDataArray", "configObject"), pass the identifier name as a string, not as an array.
@@ -3562,9 +3562,11 @@ def _dedup_redundant_class_calls(
 
     If the user asks "find relevant classes related to CellResult" and we also
     call get_class_info(class_name="CellResult"), the latter is redundant — the
-    user wanted to *search*, not get info about a known class. Also removes
-    get_signature calls for methods mentioned only as error context, not as
-    explicit signature requests.
+    user wanted to *search*, not get info about a known class. When
+    get_relevant_classes is present, ALL get_class_info calls are redundant
+    (the user asked to search, not to get info about known classes). Also
+    removes get_signature calls for methods mentioned only as error context,
+    not as explicit signature requests.
     """
     # Collect search strings from get_relevant_classes calls
     search_strings = set()
@@ -3603,22 +3605,15 @@ def _dedup_redundant_class_calls(
     filtered = []
     removed = 0
     for name, params in calls:
-        # Remove get_class_info for classes already being searched
+        # When get_relevant_classes is present, remove ALL get_class_info calls
+        # — the user asked to search, not to get info about known classes
         if name == "get_class_info":
+            removed += 1
             cn = params.get("class_name", "")
-            if cn and cn.lower() in search_strings:
-                removed += 1
-                logger.info(
-                    f"  Redundant class info: removed get_class_info({cn}) — covered by get_relevant_classes"
-                )
-                continue
-            # Also remove if class_name appears in any search string as substring
-            if any(cn.lower() in ss for ss in search_strings):
-                removed += 1
-                logger.info(
-                    f"  Redundant class info: removed get_class_info({cn}) — substring match in get_relevant_classes"
-                )
-                continue
+            logger.info(
+                f"  Redundant class info: removed get_class_info({cn}) — get_relevant_classes present"
+            )
+            continue
 
         # Remove get_signature for methods not explicitly requested
         if name == "get_signature" and requested_methods:
@@ -3633,6 +3628,268 @@ def _dedup_redundant_class_calls(
         filtered.append((name, params))
 
     return filtered
+
+
+# Common US city → state abbreviation mapping for post-processing
+_US_CITY_STATE = {
+    "new york": "NY",
+    "los angeles": "CA",
+    "san francisco": "CA",
+    "san diego": "CA",
+    "boston": "MA",
+    "chicago": "IL",
+    "seattle": "WA",
+    "houston": "TX",
+    "dallas": "TX",
+    "atlanta": "GA",
+    "miami": "FL",
+    "denver": "CO",
+    "phoenix": "AZ",
+    "philadelphia": "PA",
+    "las vegas": "NV",
+    "portland": "OR",
+    "sacramento": "CA",
+    "austin": "TX",
+    "nashville": "TN",
+    "detroit": "MI",
+    "minneapolis": "MN",
+    "pittsburgh": "PA",
+    "cleveland": "OH",
+    "orlando": "FL",
+    "tampa": "FL",
+    "fort worth": "TX",
+    "charlotte": "NC",
+    "columbus": "OH",
+    "indianapolis": "IN",
+    "san jose": "CA",
+    "new orleans": "LA",
+    "salt lake city": "UT",
+    "raleigh": "NC",
+    "memphis": "TN",
+    "louisville": "KY",
+    "baltimore": "MD",
+    "milwaukee": "WI",
+    "albuquerque": "NM",
+    "tucson": "AZ",
+    "fresno": "CA",
+    "sacramento": "CA",
+    "kansas city": "MO",
+    "omaha": "NE",
+    "miami beach": "FL",
+    "long beach": "CA",
+    "oakland": "CA",
+    "minneapolis": "MN",
+    "arlington": "VA",
+    "cincinnati": "OH",
+    "anaheim": "CA",
+    "buffalo": "NY",
+}
+
+_MONTH_MAP = {
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
+}
+
+
+def _extract_dates_from_query(query: str) -> str | None:
+    """Extract the first date from a user query as YYYY-MM-DD.
+
+    Handles patterns like:
+    - "March 1st 2023" / "March 1 2023"
+    - "March 10th" (uses year from context if available)
+    - "2023-05-21" (already ISO format)
+    - "May 21st" (uses year from context)
+    """
+    # Try ISO format first: 2023-05-21
+    m = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", query)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+
+    # Try "Month Day ordinal, Year" or "Month Day, Year"
+    # e.g., "March 1st 2023", "March 1 2023", "March 10th, 2023"
+    m = re.search(
+        r"\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})\b",
+        query,
+        re.IGNORECASE,
+    )
+    if m:
+        month = _MONTH_MAP[m.group(1).lower()]
+        day = int(m.group(2))
+        year = m.group(3)
+        return f"{year}-{month:02d}-{day:02d}"
+
+    # Try "Month Day ordinal" without year — extract year from context
+    m = re.search(
+        r"\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?\b",
+        query,
+        re.IGNORECASE,
+    )
+    if m:
+        month = _MONTH_MAP[m.group(1).lower()]
+        day = int(m.group(2))
+        # Look for year elsewhere in the query
+        year_match = re.search(r"\b(20\d{2})\b", query)
+        year = year_match.group(1) if year_match else None
+        if year:
+            return f"{year}-{month:02d}-{day:02d}"
+
+    return None
+
+
+def _fill_missing_dates(
+    calls: list[tuple[str, dict]], functions: list[dict], query: str
+) -> list[tuple[str, dict]]:
+    """Add missing date params when the user explicitly mentions a date.
+
+    Some functions have an optional 'date' parameter that the LLM fails to
+    fill even when the user explicitly states a date. This post-processing
+    step extracts dates from the query and adds them to calls missing the
+    'date' param.
+    """
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    extracted_date = _extract_dates_from_query(query)
+    if not extracted_date:
+        return list(calls)
+
+    result = []
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            result.append((name, params))
+            continue
+        props = func.get("parameters", {}).get("properties", {})
+        # Check if this function has a 'date' parameter
+        if "date" in props and "date" not in params:
+            new_params = dict(params)
+            new_params["date"] = extracted_date
+            logger.info(f"  Filled missing date: {name} date={extracted_date}")
+            result.append((name, new_params))
+        else:
+            result.append((name, params))
+    return result
+
+
+def _fix_city_state_format(
+    calls: list[tuple[str, dict]], functions: list[dict]
+) -> list[tuple[str, dict]]:
+    """Add state abbreviation to US city params when schema requires it.
+
+    If a parameter's description mentions "State (abbr)" or "City, State"
+    format and the value is a bare US city name, append the state.
+    """
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    result = []
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            result.append((name, params))
+            continue
+        new_params = dict(params)
+        props = func.get("parameters", {}).get("properties", {})
+        for pname, pinfo in props.items():
+            if pname not in new_params:
+                continue
+            pdesc = pinfo.get("description", "").lower()
+            # Check if the description specifies City, State format
+            if "state" in pdesc and (
+                "abbr" in pdesc or "abbreviation" in pdesc or "short form" in pdesc
+            ):
+                val = new_params[pname]
+                if not isinstance(val, str):
+                    continue
+                # Check if it already has a state (contains comma)
+                if "," in val:
+                    continue
+                # Look up the city
+                city_lower = val.lower().strip()
+                if city_lower in _US_CITY_STATE:
+                    state = _US_CITY_STATE[city_lower]
+                    new_val = f"{val}, {state}"
+                    new_params[pname] = new_val
+                    logger.info(
+                        f"  City state fix: {name}.{pname} '{val}' → '{new_val}'"
+                    )
+        result.append((name, new_params))
+    return result
+
+
+def _strip_none_params(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Remove params with None values — they should be omitted, not passed as null."""
+    result = []
+    for name, params in calls:
+        new_params = {k: v for k, v in params.items() if v is not None}
+        result.append((name, new_params))
+    return result
+
+
+# Art-related keywords that indicate a general art prompt, not a demographic portrait
+_ART_KEYWORDS = {
+    "painting",
+    "digital painting",
+    "cyberpunk",
+    "alfons",
+    "mucha",
+    "style",
+    "complex pattern",
+    "elegant",
+    "art",
+    "artwork",
+    "illustration",
+    "surreal",
+    "abstract",
+    "concept art",
+    "oil painting",
+    "watercolor",
+    "pencil sketch",
+    "digital art",
+    "fantasy art",
+    "conceptual",
+    "aesthetic",
+}
+
+
+def _fix_image_function_selection(
+    calls: list[tuple[str, dict]], functions: list[dict]
+) -> list[tuple[str, dict]]:
+    """Switch generate_human_image → generate_image for art prompts.
+
+    When both functions are available and the prompt is clearly an art/digital
+    painting request (not a simple demographic portrait), generate_image is
+    the correct choice. The LLM picks generate_human_image because it sees a
+    human subject, but art prompts should use the general function.
+    """
+    func_names = {f["name"] for f in functions} if functions else set()
+    if "generate_human_image" not in func_names or "generate_image" not in func_names:
+        return list(calls)  # Both must be available
+
+    result = []
+    for name, params in calls:
+        if name == "generate_human_image":
+            prompt_val = params.get("prompt", "")
+            if isinstance(prompt_val, str):
+                prompt_lower = prompt_val.lower()
+                # Check if the prompt contains art-related keywords
+                is_art_prompt = any(kw in prompt_lower for kw in _ART_KEYWORDS)
+                if is_art_prompt:
+                    # Switch to generate_image, strip non-generate_image params
+                    new_params = {"prompt": prompt_val}
+                    logger.info(
+                        f"  Image func fix: generate_human_image → generate_image (art prompt detected)"
+                    )
+                    result.append(("generate_image", new_params))
+                    continue
+        result.append((name, params))
+    return result
 
 
 def _post_process_params(
@@ -6359,6 +6616,18 @@ def carm_route_single_turn_bfcl(
 
     # Remove redundant get_class_info / unrequested get_signature calls
     calls = _dedup_redundant_class_calls(calls, query)
+
+    # Strip None values from params (should be omitted, not passed as null)
+    calls = _strip_none_params(calls)
+
+    # Fix image function selection (generate_human_image → generate_image for art prompts)
+    calls = _fix_image_function_selection(calls, functions)
+
+    # Fill missing date params when user explicitly mentions dates
+    calls = _fill_missing_dates(calls, functions, query)
+
+    # Fix city format: add state abbreviation when schema requires "City, State"
+    calls = _fix_city_state_format(calls, functions)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
