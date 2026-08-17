@@ -3468,6 +3468,56 @@ def format_function_call(func_name: str, params: dict) -> str:
     return f"[{func_name}({', '.join(parts)})]"
 
 
+def _enforce_schema_param_ordering(
+    calls: list[tuple[str, dict]], functions: list[dict]
+) -> list[tuple[str, dict]]:
+    """Enforce parameter ordering implied by schema descriptions.
+
+    Some schemas declare that a param should hold the "larger" value and
+    another the "smaller" one (e.g. math_gcd: a="first and larger", b="second").
+    The LLM often fills them in query order regardless. This swaps values
+    when the schema contract is violated.
+    """
+    func_map = {f["name"]: f for f in functions} if functions else {}
+    result = []
+    for name, params in calls:
+        func = func_map.get(name)
+        if not func:
+            result.append((name, params))
+            continue
+        new_params = dict(params)
+        props = func.get("parameters", {}).get("properties", {})
+        for pname, pinfo in props.items():
+            pdesc = pinfo.get("description", "").lower()
+            if "larger" in pdesc and pname in new_params:
+                # Find the "second" param
+                for pname2, pinfo2 in props.items():
+                    if (
+                        "second" in pinfo2.get("description", "").lower()
+                        and pname2 in new_params
+                        and pname2 != pname
+                    ):
+                        try:
+                            a_val = new_params[pname]
+                            b_val = new_params[pname2]
+                            if isinstance(a_val, (int, float)) and isinstance(
+                                b_val, (int, float)
+                            ):
+                                if a_val < b_val:
+                                    new_params[pname], new_params[pname2] = (
+                                        b_val,
+                                        a_val,
+                                    )
+                                    logger.info(
+                                        f"  Schema ordering: swapped "
+                                        f"{pname}/{pname2} ({a_val}<{b_val})"
+                                    )
+                        except (TypeError, ValueError):
+                            pass
+        result.append((name, new_params))
+    return result
+
+
 def _post_process_params(
     calls: list[tuple[str, dict]], functions: list[dict], query: str = ""
 ) -> list[tuple[str, dict]]:
@@ -6183,6 +6233,9 @@ def carm_route_single_turn_bfcl(
     # Split list-type array params with multiple values into individual calls
     # (BFCL expects each value in its own call, not combined in one array)
     calls = _split_array_params_into_calls(calls, functions)
+
+    # Enforce schema-implied parameter ordering (e.g. "larger" param first)
+    calls = _enforce_schema_param_ordering(calls, functions)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
