@@ -3989,21 +3989,31 @@ def _normalize_platform_values(calls: list[tuple[str, dict]]) -> list[tuple[str,
 def _expand_stats_fields(calls, query):
     """Expand short stats_fields values to match query wording."""
     q_lower = query.lower()
-    per_match = re.search(r"(per\s+(?:game|season|match|minute))", q_lower)
+    per_match = re.search(r"\b(per\s+(?:game|season|match|minute))\b", q_lower)
     if not per_match:
         return list(calls)
     per_suffix = per_match.group(1)  # e.g. "per game"
     # Build mapping from short form to full phrase
     expand_map = {}
-    for word in ["points", "assists", "rebounds", "minutes", "steals", "blocks", "turnovers"]:
-        if re.search(r"" + word + r"\s+" + re.escape(per_suffix), q_lower):
+    for word in [
+        "points",
+        "assists",
+        "rebounds",
+        "minutes",
+        "steals",
+        "blocks",
+        "turnovers",
+    ]:
+        if re.search(r"\b" + word + r"\s+" + re.escape(per_suffix), q_lower):
             expand_map[word] = word + " " + per_suffix
     if not expand_map:
         return list(calls)
     result = []
     for name, params in calls:
         new_params = dict(params)
-        if "stats_fields" in new_params and isinstance(new_params["stats_fields"], list):
+        if "stats_fields" in new_params and isinstance(
+            new_params["stats_fields"], list
+        ):
             new_fields = []
             for f in new_params["stats_fields"]:
                 if f in expand_map:
@@ -4027,16 +4037,10 @@ def _filter_overgenerated_stats_calls(
     are called, remove the game_stats/team_stats calls.
     """
     q_lower = query.lower()
-    # Check for specific stats request patterns, not just the word "game"
-    has_player_stats = bool(re.search(r"player\s+stat", q_lower)) or bool(
-        re.search(r"stat.*player", q_lower)
-    )
-    has_game_stats = bool(re.search(r"game\s+stat", q_lower)) or bool(
-        re.search(r"stat.*game\b", q_lower)
-    )
-    has_team_stats = bool(re.search(r"team\s+stat", q_lower)) or bool(
-        re.search(r"stat.*team\b", q_lower)
-    )
+    # Check for specific stats request patterns (adjacent words only)
+    has_player_stats = bool(re.search(r"player\s+stat", q_lower))
+    has_game_stats = bool(re.search(r"game\s+stat", q_lower))
+    has_team_stats = bool(re.search(r"team\s+stat", q_lower))
 
     # Also check if "player" is mentioned (broader signal)
     has_player = bool(re.search(r"\bplayer\b", q_lower))
@@ -6802,6 +6806,9 @@ def carm_route_single_turn_bfcl(
 
     # Filter overgenerated stats calls (game_stats when user only asks for player_stats)
     calls = _filter_overgenerated_stats_calls(calls, query)
+
+    # Expand short stats_fields values (e.g. "points" -> "points per game")
+    calls = _expand_stats_fields(calls, query)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
