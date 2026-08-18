@@ -4060,6 +4060,7 @@ def _filter_overgenerated_stats_calls(
         filtered.append((name, params))
     return filtered
 
+
 def _strip_query_prefix(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
     """Strip common prefixes from query params (e.g. 'Search memory for ...').
 
@@ -4082,7 +4083,7 @@ def _strip_query_prefix(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]
             changed = False
             for prefix in prefixes:
                 if val_lower.startswith(prefix):
-                    new_params["query"] = val[len(prefix):]
+                    new_params["query"] = val[len(prefix) :]
                     logger.info(
                         f"  Query prefix strip: '{val}' -> '{new_params['query']}'"
                     )
@@ -4090,11 +4091,9 @@ def _strip_query_prefix(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]
                     break
             if not changed:
                 # Also strip "Search memory for when is" -> "when is"
-                m = re.match(
-                    r"^(?:search\s+memory\s+for\s+|search\s+)(.+)", val_lower
-                )
+                m = re.match(r"^(?:search\s+memory\s+for\s+|search\s+)(.+)", val_lower)
                 if m:
-                    new_params["query"] = val[m.end():]
+                    new_params["query"] = val[m.end() :]
                     logger.info(
                         f"  Query prefix strip: '{val}' -> '{new_params['query']}'"
                     )
@@ -4117,11 +4116,16 @@ def _filter_redundant_search_calls(
     if has_weather_call and has_weather_query:
         filtered = []
         for name, params in calls:
-            if "HNA_WQA" in name or ("search" in name.lower() and "weather" not in name.lower()
-                                      and "news" not in name.lower()
-                                      and "recipe" not in name.lower()
-                                      and "product" not in name.lower()):
-                logger.info(f"  Redundant search filter: removed {name} (weather function covers query)")
+            if "HNA_WQA" in name or (
+                "search" in name.lower()
+                and "weather" not in name.lower()
+                and "news" not in name.lower()
+                and "recipe" not in name.lower()
+                and "product" not in name.lower()
+            ):
+                logger.info(
+                    f"  Redundant search filter: removed {name} (weather function covers query)"
+                )
                 continue
             filtered.append((name, params))
         return filtered
@@ -4138,17 +4142,25 @@ def _filter_food_order_when_drink_change(
     """
     q_lower = query.lower()
     has_change_drink = bool(re.search(r"change.*drink|drink.*change", q_lower))
-    has_drink_call = any("change_drink" in n.lower() or "chadri" in n.lower() for n, _ in calls)
+    has_drink_call = any(
+        "change_drink" in n.lower() or "chadri" in n.lower() for n, _ in calls
+    )
     has_food_call = any("chafod" in n.lower() or "food" in n.lower() for n, _ in calls)
 
     if has_change_drink and has_drink_call and has_food_call:
         # Check if user explicitly asks to order food (not just change drink)
-        has_order_food = bool(re.search(r"order\s+food|add\s+food|also\s+order", q_lower))
+        has_order_food = bool(
+            re.search(r"order\s+food|add\s+food|also\s+order", q_lower)
+        )
         if not has_order_food:
             filtered = []
             for name, params in calls:
-                if "chafod" in n.lower() or ("food" in n.lower() and "change" not in n.lower()):
-                    logger.info(f"  Food over-gen filter: removed {name} (only drink change requested)")
+                if "chafod" in name.lower() or (
+                    "food" in name.lower() and "change" not in name.lower()
+                ):
+                    logger.info(
+                        f"  Food over-gen filter: removed {name} (only drink change requested)"
+                    )
                     continue
                 filtered.append((name, params))
             return filtered
@@ -4179,12 +4191,16 @@ def _fix_keyword_typos(calls: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
                             logger.info(f"  Typo fix: '{val}' -> '{new_params[pname]}'")
                 # Capitalize first letter if it was originally a proper noun
                 if val and val[0].isupper() and new_params[pname]:
-                    new_params[pname] = new_params[pname][0].upper() + new_params[pname][1:]
+                    new_params[pname] = (
+                        new_params[pname][0].upper() + new_params[pname][1:]
+                    )
         result.append((name, new_params))
     return result
 
 
-def _strip_extra_location_from_param(calls: list[tuple[str, dict]], query: str) -> list[tuple[str, dict]]:
+def _strip_extra_location_from_param(
+    calls: list[tuple[str, dict]], query: str
+) -> list[tuple[str, dict]]:
     """Strip appended city/country from address-like params.
 
     When user says 'Address: 123 Hanoi Street', the param should be
@@ -4204,13 +4220,14 @@ def _strip_extra_location_from_param(calls: list[tuple[str, dict]], query: str) 
             if pname in new_params and isinstance(new_params[pname], str):
                 val = new_params[pname]
                 # If the param value starts with the explicit address but has extra stuff
-                if val.lower().startswith(explicit_addr.lower()) and len(val) > len(explicit_addr) + 2:
+                if (
+                    val.lower().startswith(explicit_addr.lower())
+                    and len(val) > len(explicit_addr) + 2
+                ):
                     new_params[pname] = explicit_addr
                     logger.info(f"  Location strip: '{val}' -> '{new_params[pname]}'")
         result.append((name, new_params))
     return result
-
-
 
 
 def _post_process_params(
@@ -6961,6 +6978,21 @@ def carm_route_single_turn_bfcl(
 
     # Expand short stats_fields values (e.g. "points" -> "points per game")
     calls = _expand_stats_fields(calls, query)
+
+    # Strip query prefixes like "Search memory for ..." from query params
+    calls = _strip_query_prefix(calls)
+
+    # Filter redundant search calls (e.g. HNA_WQA.search when weather function is called)
+    calls = _filter_redundant_search_calls(calls, query)
+
+    # Filter food order calls when only drink change is requested
+    calls = _filter_food_order_when_drink_change(calls, query)
+
+    # Fix common typos in keyword/search params (e.g. "airtificial" -> "artificial")
+    calls = _fix_keyword_typos(calls)
+
+    # Strip extra city/country appended to address-like params
+    calls = _strip_extra_location_from_param(calls, query)
 
     # Post-processing: fix common LLM param extraction issues
     calls = _post_process_params(calls, functions, query)
