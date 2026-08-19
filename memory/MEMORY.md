@@ -111,3 +111,17 @@
 - 团队卡在 `uncertain_needs_human`（0.7302<0.90）的真正原因 = 17 条模型上限 + 0.90 门槛高于可达上限，**不是** flag 未开。
 - Human Gate 已批准并落地：`require_conflict_verify_before_answer=1`（另两 flag 默认已为 1），版本 `20260819T021329064225Z`，audit 已记录。但须如实告知用户：**预期收益未实现**，启用无害但不解决卡死。
 - 配套提交 `8529618`（超时守卫 + 回归子集）的**代码改动仍有效**：超时守卫修掉 CI 挂死（原 `EXIT=124`）；回归子集在外部可达的 CI 下有意义。但提交说明中"候选 1.0"论断为假，须撤回。
+
+## 战略方向共识：Self-Harness / Adaptive Cognitive Runtime（docs/2026-08-18 建议书）
+
+- **核心主张**：Mustard 研究重心应从「训练更强的 Compact Agentic Reasoning Model (CARM)」升级为「**Self-Harness / Adaptive Cognitive Runtime**」——研究 Agent 能否根据任务、执行反馈、历史经验自动选择/修改/优化自己的执行机制（Harness Policy），并在后续未见任务获得可验证提升。保留 CARM 作实验载体，但不让模型规模/benchmark 分数成为唯一核心。
+- **一等对象 HarnessPolicy**：`reasoning_mode / context_strategy / memory_strategy / tool_strategy / verification / retry_policy / exploration / governance` 等可组合维度，避免退化成"自动 Prompt Engineering"。
+- **Self-Harness 评估协议**（替代单分数）：`P_before`（初始能力）、`ΔP`（适应增益）、Transfer Gain（迁移）、Retention（保留）、Regression（回归）、Cost（代价）。核心要证明「Agent 会成长且成长可迁移」，而非单点分数。
+- **与本项目实测发现的衔接（强吻合）**：
+  - §8 反对「单一 benchmark 分数门槛」↔ `configs/team_cycle.json:18` 的 `min_real_prompt_match_rate: 0.9`——正是把 Arbiter 卡在 `uncertain_needs_human`（0.7302<0.90）的物理位置。
+  - §4–6「HarnessPolicy 一等对象」↔ 实测 `build_runner_from_state_dir` 用 `data/control/runtime_controls.json` 静默覆盖 workspace controls（CONTROLS 死代码陷阱）；显式 Policy 对象可根除该陷阱。
+  - §15「不建议只追求单一 benchmark 分数」↔ 已证 0.7302 是可达上限、17 条失败是模型上限。
+- **落地状态（2026-08-19）**：仅记入项目记忆作为**方向共识**；未改动任何运行时。
+  - 改 `team_cycle.json` 的 0.9 门槛属「默认运行时策略/治理」层 **Human Gate**，未执行、待用户拍板。
+  - 把散落 controls 重构成 HarnessPolicy 一等对象（即「CONTROLS 死代码」修复的更好出口）尚未动手。
+  - 文档是「建议书」非已批准设计；当前 AGENTS.md 的 Mission（低风险持续改进）与其不冲突，但战略方向需用户最终确认。
