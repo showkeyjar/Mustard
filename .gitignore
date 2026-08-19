@@ -41,6 +41,8 @@ data/control/
 
 # Fixed baseline snapshot for Self-Harness P_before (pinned policy + state; not versioned)
 data/eval/baseline_snapshot/
+# Local ad-hoc baseline run (never overwrite the official latest.json)
+data/eval/baseline_run_local.json
 
 # Concept state snapshots
 concept_state.json

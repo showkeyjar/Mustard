@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -13,6 +15,50 @@ from scripts.evaluate_pretraining import build_runner_from_state_dir, load_eval_
 # instead of a stateless default runner, so delta_tool_match_rate (P_after - P_before)
 # becomes discriminative. Missing -> fall back to None (legacy behavior, DeltaP=0).
 BASELINE_SNAPSHOT_DIR = Path("data/eval/baseline_snapshot")
+
+# Wall-clock guard per runner.run. Without this, a single prompt whose agent loops
+# or blocks on an unreachable tool hangs the ENTIRE evaluation forever (observed:
+# 23/63 real prompts hung indefinitely in a sandbox with partial tool reachability).
+# A timeout marks that prompt as a non-match and lets the run continue.
+RUNNER_TIMEOUT = float(os.environ.get("REAL_PROMPT_RUNNER_TIMEOUT", "120"))
+
+
+class _EmptyTrace:
+    """Placeholder trace for a prompt whose runner.run timed out."""
+
+    steps: list = []
+    actions: list = []
+
+
+def _run_with_timeout(runner, prompt: str, timeout: float = RUNNER_TIMEOUT):
+    """Run runner.run(prompt) in a daemon thread, returning (trace, timed_out).
+
+    On timeout the runner thread is left to finish on its own (daemon) but we
+    return an _EmptyTrace so the prompt is scored as a non-match instead of
+    blocking the whole evaluation.
+    """
+    box: dict = {}
+
+    def _target() -> None:
+        try:
+            result = runner.run(prompt)
+            # runner.run returns (something, trace); the trace is the 2nd element.
+            box["trace"] = result[1] if isinstance(result, tuple) and len(result) >= 2 else result
+        except Exception as exc:  # noqa: BLE001 - surface as a non-match, not a crash
+            box["error"] = exc
+
+    t = threading.Thread(target=_target, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        return _EmptyTrace(), True
+    if "error" in box:
+        # A raised error in the runner means the prompt could not be evaluated;
+        # treat identically to a timeout (non-match) so one bad prompt can't kill
+        # the whole run.
+        return _EmptyTrace(), True
+    return box.get("trace", _EmptyTrace()), False
+
 
 
 def evaluate_isolated_prompts(
@@ -41,8 +87,12 @@ def evaluate_isolated_prompts(
                 artifact_dir, root / "pretrained", override_controls=override_controls
             )
 
-            _, baseline_trace = baseline_runner.run(str(item.get("prompt", "")))
-            _, pretrained_trace = pretrained_runner.run(str(item.get("prompt", "")))
+            baseline_trace, baseline_timed_out = _run_with_timeout(
+                baseline_runner, str(item.get("prompt", "")), timeout=RUNNER_TIMEOUT
+            )
+            pretrained_trace, pretrained_timed_out = _run_with_timeout(
+                pretrained_runner, str(item.get("prompt", "")), timeout=RUNNER_TIMEOUT
+            )
 
         expected_tool = str(item.get("expected_tool", ""))
         baseline_used_tool = next(
@@ -72,6 +122,8 @@ def evaluate_isolated_prompts(
                 "pretrained_actions": list(pretrained_trace.actions),
                 "baseline_match": baseline_match,
                 "pretrained_match": pretrained_match,
+                "baseline_timed_out": baseline_timed_out,
+                "pretrained_timed_out": pretrained_timed_out,
                 # Self-Harness pillar (P_before -> DeltaP): per-prompt movement.
                 # +1 = candidate improved over baseline, -1 = regressed, 0 = unchanged.
                 "delta": int(pretrained_match) - int(baseline_match),

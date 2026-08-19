@@ -331,3 +331,87 @@ def test_evaluate_isolated_prompts_override_controls_make_pretrained_distinct():
     assert res["rows"][0]["pretrained_match"] is True
     assert res["rows"][0]["delta"] == 1
     assert res["delta_tool_match_rate"] == 1.0
+
+
+# ---------------------------------------------------------------------------
+# runner.run wall-clock timeout guard (no single prompt may hang the whole run)
+# ---------------------------------------------------------------------------
+
+import time as _time  # noqa: E402
+
+
+class _FakeTrace:  # noqa: E302
+    def __init__(self, tool: str):
+        self.steps = [SimpleNamespace(selected_tool=tool)]
+        self.actions = ["CALL_TOOL"]
+
+
+class _HangRunner:
+    def __init__(self, sleep_s: float, tool: str = "search"):
+        self._sleep = sleep_s
+        self._tool = tool
+
+    def run(self, prompt):
+        _time.sleep(self._sleep)
+        return (None, _FakeTrace(self._tool))
+
+
+class _FastRunner:
+    def __init__(self, tool: str):
+        self._tool = tool
+
+    def run(self, prompt):
+        return (None, _FakeTrace(self._tool))
+
+
+def test_run_with_timeout_flags_hung_prompt():
+    from scripts.evaluate_real_prompts import _run_with_timeout, _EmptyTrace
+
+    trace, timed_out = _run_with_timeout(_HangRunner(sleep_s=2), "q", timeout=0.2)
+    assert timed_out is True
+    assert isinstance(trace, _EmptyTrace)
+
+
+def test_run_with_timeout_returns_trace_when_fast():
+    from scripts.evaluate_real_prompts import _run_with_timeout
+
+    trace, timed_out = _run_with_timeout(_FastRunner("search"), "q", timeout=5)
+    assert timed_out is False
+    assert isinstance(trace, _FakeTrace)
+    assert trace.steps[0].selected_tool == "search"
+
+
+def test_evaluate_isolated_prompts_survives_hung_runner():
+    """A hung pretrained runner must not block the whole evaluation: the prompt
+    is scored as a non-match (timed_out=True) and the function returns."""
+    from scripts.evaluate_real_prompts import evaluate_isolated_prompts
+
+    prompts = [{"id": "p", "prompt": "q", "expected_tool": "search"}]
+    with TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        snapshot = tmp / "snapshot"
+        snapshot.mkdir()
+        _write_controls(snapshot / "runtime_controls.json", {"policy": {}, "glance": {}, "core": {}})
+        (snapshot / "policy_state.json").write_text("{}", encoding="utf-8")
+        artifact = tmp / "artifact"
+        artifact.mkdir()
+
+        # baseline fast (matches), pretrained hangs -> row must be non-match but
+        # the call must RETURN (no hang).
+        with mock.patch(
+            "scripts.evaluate_real_prompts.build_runner_from_state_dir",
+            side_effect=lambda src, dst, override_controls=None: _HangRunner(sleep_s=2)
+            if "pretrained" in str(dst)
+            else _FastRunner("search"),
+        ):
+            with mock.patch(
+                "scripts.evaluate_real_prompts.BASELINE_SNAPSHOT_DIR", snapshot
+            ):
+                with mock.patch(
+                    "scripts.evaluate_real_prompts.RUNNER_TIMEOUT", 0.2
+                ):
+                    res = evaluate_isolated_prompts(prompts, artifact_dir=artifact)
+
+    assert res["rows"][0]["pretrained_timed_out"] is True
+    assert res["rows"][0]["baseline_match"] is True
+    assert res["rows"][0]["pretrained_match"] is False
