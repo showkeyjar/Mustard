@@ -99,3 +99,15 @@
 - real_prompt_pretrained_match_rate：0.6984 → **0.7302**（63 条）
 - hard_eval 6 个失败（conflict-check/search-looking-calc/integrate-for-exec/result-integration/compare-db/conflict-no-answer）：A/B 确认与第四轮无关（旧 policy 同样失败，是 63 条评测集扩展后的既有问题）
 - `tests/test_combined_tool_policy_candidate.py` 的 1.0 断言已过时（评测集从 14 条扩展到 63 条后无法达到），需后续更新断言或拆分回归集
+
+### 默认运行时控制与评测口径的关键陷阱（2026-08-19 重大纠正）
+
+> 纠正同日的错误结论：此前称"`require_conflict_verify_before_answer` 0→1 即可把 real_prompt_match 从 0.7302 提到 1.0"是**幻影**，已撤回。
+
+- **`build_runner_from_state_dir` 永远用 `data/control/runtime_controls.json` 覆盖 workspace 内的 controls**（`scripts/evaluate_pretraining.py` L92-105）。因此 `evaluate_combined_tool_policy_candidate.CONTROLS`（三 flag 全 1）是**死代码**——候选闸实际测的是默认文件，永远不是该常量。任何"候选 vs 默认"的差异都来自默认文件本身。
+- **评测分数高度依赖外部工具可达性**：已提交基线 0.7302（46/63）在外部 search/bigmodel_proxy 可达的环境生成；本沙箱这些工具不可达→真实得分塌到 ~0.11（7/63）。
+- **`require_conflict_verify_before_answer` 在离线环境无可测效果**：A/B（flag 0 vs 1，本沙箱）得分完全相同 0.1111、差异 0。该 flag **不是** 0.7302 的根因。
+- 17 条失败（0.7302=46/63）是 v24 已结论的**模型上限**，任何控制都修不了；即便外部可达，候选也到不了 1.0。
+- 团队卡在 `uncertain_needs_human`（0.7302<0.90）的真正原因 = 17 条模型上限 + 0.90 门槛高于可达上限，**不是** flag 未开。
+- Human Gate 已批准并落地：`require_conflict_verify_before_answer=1`（另两 flag 默认已为 1），版本 `20260819T021329064225Z`，audit 已记录。但须如实告知用户：**预期收益未实现**，启用无害但不解决卡死。
+- 配套提交 `8529618`（超时守卫 + 回归子集）的**代码改动仍有效**：超时守卫修掉 CI 挂死（原 `EXIT=124`）；回归子集在外部可达的 CI 下有意义。但提交说明中"候选 1.0"论断为假，须撤回。

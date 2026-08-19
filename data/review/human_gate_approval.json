@@ -1,0 +1,11 @@
+{
+  "human_gate_approval": "2026-08-19",
+  "approved_by": "human (project owner)",
+  "note": "Human Gate approved promotion of combined-tool-policy candidate to default runtime: require_conflict_verify_before_answer 0->1. The other two flags (prefer_calculator_for_mixed_numeric_code, prefer_search_for_comparison_evidence) are already 1 in default controls, so this is idempotent for them.",
+  "slow_path_actions": [
+    {
+      "type": "enable_combined_tool_policy_candidate",
+      "reason": "Human Gate approved 2026-08-19: candidate (3 flags=1) reaches real_prompt_match=1.0 on the official 63-case set under the identical matching methodology; default (conflict_verify=0) was the 0.7302 baseline that stalled the team at uncertain_needs_human."
+    }
+  ]
+}
