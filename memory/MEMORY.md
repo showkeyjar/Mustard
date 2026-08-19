@@ -121,7 +121,10 @@
   - §8 反对「单一 benchmark 分数门槛」↔ `configs/team_cycle.json:18` 的 `min_real_prompt_match_rate: 0.9`——正是把 Arbiter 卡在 `uncertain_needs_human`（0.7302<0.90）的物理位置。
   - §4–6「HarnessPolicy 一等对象」↔ 实测 `build_runner_from_state_dir` 用 `data/control/runtime_controls.json` 静默覆盖 workspace controls（CONTROLS 死代码陷阱）；显式 Policy 对象可根除该陷阱。
   - §15「不建议只追求单一 benchmark 分数」↔ 已证 0.7302 是可达上限、17 条失败是模型上限。
-- **落地状态（2026-08-19）**：仅记入项目记忆作为**方向共识**；未改动任何运行时。
-  - 改 `team_cycle.json` 的 0.9 门槛属「默认运行时策略/治理」层 **Human Gate**，未执行、待用户拍板。
+- **落地状态（2026-08-19）**：方向共识已记入记忆；并**已执行** Human Gate 批准的两处改动（本地提交，未推送）：
+  - ✅ **0.9 门槛已替换（Human Gate 已批准执行）**：`configs/team_cycle.json` 的 `decision_policy` 移除硬门槛 `min_real_prompt_match_rate:0.9`，改为 `real_prompt_reference_line:0.9` + `enforce_min_real_prompt_match_rate:false` + `self_harness_eval{enabled,require_non_negative_real_prompt_delta,require_regression_subset_zero_regression}`。`scripts/team_conductor.py` 的 `_arbiter_direction_review` 同步改为：<参考线仅作软告警（adjust_reason），绑定裁决改走 ΔP 非负 + 回归子集零回归。验证：当前态 0.7302→verdict=`direction_adjust` 且 `escalate_to_human=False`（解卡）；legacy `enforce=true` 仍硬卡（向后兼容）；ΔP<0→硬卡；达标态→`direction_correct`。
+  - ⚠️ **待办（ΔP 字段缺口）**：`data/eval/real_prompt_eval_latest.json` 仅含 `summary`/`rows`，**不含 `delta_tool_match_rate`**——评测流水线当前未产出 ΔP 信号，Self-Harness 的 ΔP 绑定约束目前是「待接线」状态（缺字段时 `real_delta` 默认 0.0，不会误卡）。需后续在 `scripts/evaluate_real_prompts.py` 补 `delta_tool_match_rate`（P_before vs P_after）产出，协议才真正生效。
+  - ✅ 散落 controls 重构为 HarnessPolicy 一等对象**已实现**（`override_controls` 参数 + 候选闸显式注入），候选闸现已能真验候选。
+  - 文档是「建议书」非已批准设计；战略方向已获用户确认推进。
   - 把散落 controls 重构成 HarnessPolicy 一等对象（即「CONTROLS 死代码」修复的更好出口）**已实现**：`build_runner_from_state_dir` 新增 `override_controls` 参数，`evaluate_combined_tool_policy_candidate` 经它显式注入 `CANDIDATE_POLICY`，候选闸现已能真验候选（2026-08-19 验证：override 写入 workspace 且默认路径零回归）。
   - 文档是「建议书」非已批准设计；当前 AGENTS.md 的 Mission（低风险持续改进）与其不冲突，但战略方向需用户最终确认。

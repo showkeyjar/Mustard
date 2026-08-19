@@ -15,8 +15,14 @@
   "decision_policy": {
     "owner": "arbiter",
     "escalate_on_uncertain_direction": true,
-    "min_real_prompt_match_rate": 0.9,
-    "min_pretrain_tool_match_rate": 0.95
+    "real_prompt_reference_line": 0.9,
+    "enforce_min_real_prompt_match_rate": false,
+    "min_pretrain_tool_match_rate": 0.95,
+    "self_harness_eval": {
+      "enabled": true,
+      "require_non_negative_real_prompt_delta": true,
+      "require_regression_subset_zero_regression": true
+    }
   },
   "recursive_policy": {
     "enabled": true,

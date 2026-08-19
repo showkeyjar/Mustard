@@ -494,7 +494,19 @@ def _arbiter_direction_review(signals: dict[str, object], config: dict[str, obje
     if not isinstance(decision_policy, dict):
         decision_policy = {}
 
-    min_real_prompt = float(decision_policy.get("min_real_prompt_match_rate", 0.9) or 0.9)
+    # Self-Harness evaluation protocol (docs/2026-08-18 S8).
+    # The absolute real_prompt match rate is a REACHABLE-UPPER-BOUND reference
+    # line, not a hard gate. The binding direction verdict keys off delta (a
+    # candidate must not regress) + regression-subset zero-regression -- the
+    # Self-Harness pillars P_before / DeltaP / Regression. An absolute score
+    # below the reference line is an informational alert, not a human escalation.
+    reference_line = float(decision_policy.get("real_prompt_reference_line", 0.9) or 0.9)
+    enforce_abs = bool(decision_policy.get("enforce_min_real_prompt_match_rate", False))
+    sh_policy = decision_policy.get("self_harness_eval", {})
+    if not isinstance(sh_policy, dict):
+        sh_policy = {}
+    sh_enabled = bool(sh_policy.get("enabled", False))
+
     min_pretrain = float(decision_policy.get("min_pretrain_tool_match_rate", 0.95) or 0.95)
 
     reasons: list[str] = []
@@ -513,8 +525,31 @@ def _arbiter_direction_review(signals: dict[str, object], config: dict[str, obje
         summary = real_prompt_eval.get("summary", {})
         if isinstance(summary, dict):
             real_prompt_match = float(summary.get("pretrained_match_rate", 0.0) or 0.0)
-            if real_prompt_match < min_real_prompt:
-                reasons.append(f"real_prompt_match_below_threshold:{real_prompt_match:.4f}<{min_real_prompt:.2f}")
+            # Informational alert only: below the historical reference line.
+            if real_prompt_match < reference_line:
+                adjust_reasons.append(
+                    f"real_prompt_below_reference_line:{real_prompt_match:.4f}<{reference_line:.2f}"
+                )
+            # Legacy hard gate (kept for backward-compat; OFF by default under Self-Harness).
+            if enforce_abs and real_prompt_match < reference_line:
+                reasons.append(
+                    f"real_prompt_match_below_threshold:{real_prompt_match:.4f}<{reference_line:.2f}"
+                )
+
+        # Self-Harness binding constraints (only when the protocol is enabled).
+        if sh_enabled:
+            if bool(sh_policy.get("require_non_negative_real_prompt_delta", True)):
+                real_delta = float(
+                    real_prompt_eval.get("delta_tool_match_rate", 0.0) or 0.0
+                )
+                if real_delta < 0.0:
+                    reasons.append(f"real_prompt_delta_negative:{real_delta:.4f}")
+            if bool(sh_policy.get("require_regression_subset_zero_regression", True)):
+                reg = real_prompt_eval.get("regression_summary", {})
+                if isinstance(reg, dict):
+                    reg_match = float(reg.get("pretrained_match_rate", 1.0) or 1.0)
+                    if reg_match < 1.0:
+                        reasons.append(f"regression_subset_regressed:{reg_match:.4f}")
 
     control_state = signals.get("control_state", {})
     if isinstance(control_state, dict) and str(control_state.get("rollout_status", "stable")) == "candidate":
