@@ -1,4 +1,5 @@
 {
+  "delta_tool_match_rate": 0.0,
   "summary": {
     "prompt_count": 63,
     "baseline_match_rate": 0.7302,
@@ -26,7 +27,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-budget",
@@ -46,7 +48,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-plan",
@@ -67,7 +70,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-conflict",
@@ -92,7 +96,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-exec-summary",
@@ -116,7 +121,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-mixed",
@@ -137,7 +143,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "candidate-379152",
@@ -158,7 +165,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "candidate-420926",
@@ -179,7 +187,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-git-triage",
@@ -200,7 +209,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "real-cost-forecast",
@@ -221,7 +231,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "real-release-plan",
@@ -242,7 +253,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "real-multi-source-summary",
@@ -266,7 +278,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-comparison-001",
@@ -287,7 +300,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-conflict_detection-017",
@@ -312,7 +326,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-comparison-002",
@@ -333,7 +348,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-conflict_detection-019",
@@ -358,7 +374,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-comparison-003",
@@ -379,7 +396,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-conflict_detection-020",
@@ -404,7 +422,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-comparison-004",
@@ -425,7 +444,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-comparison-005",
@@ -446,7 +466,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "stress-conflict-authority-001",
@@ -471,7 +492,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "stress-conflict-authority-002",
@@ -492,7 +514,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-001",
@@ -513,7 +536,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-002",
@@ -535,7 +559,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-003",
@@ -556,7 +581,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-004",
@@ -577,7 +603,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 1
     },
     {
       "id": "repair-missing-evidence-decision-001",
@@ -606,7 +633,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "repair-missing-evidence-decision-002",
@@ -627,7 +655,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-missing-evidence-decision-003",
@@ -649,7 +678,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "repair-comparison-005-variant",
@@ -670,7 +700,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "stress-comparison-deflects-bigmodel-001",
@@ -691,7 +722,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-step-listing-comparison-001",
@@ -712,7 +744,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-step-listing-comparison-002",
@@ -734,7 +767,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "repair-step-listing-comparison-003",
@@ -755,7 +789,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-formal-synthesis-conflict-001",
@@ -779,7 +814,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-calc-fan-er-001",
@@ -800,7 +836,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-synthesis-no-evidence-001",
@@ -824,7 +861,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-conflict-fenqi-001",
@@ -845,7 +883,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "term-judgment-001",
@@ -866,7 +905,8 @@
         "ANSWER"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "term-judgment-002",
@@ -887,7 +927,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "term-judgment-003",
@@ -916,7 +957,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "constraint-plan-001",
@@ -945,7 +987,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "constraint-plan-002",
@@ -974,7 +1017,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "result-integration-003",
@@ -995,7 +1039,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "result-integration-004",
@@ -1019,7 +1064,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "result-integration-005",
@@ -1040,7 +1086,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "evidence-judgment-003",
@@ -1061,7 +1108,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "evidence-judgment-004",
@@ -1082,7 +1130,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "step-planning-003",
@@ -1103,7 +1152,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "step-planning-004",
@@ -1124,7 +1174,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-ab-test-001",
@@ -1153,7 +1204,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "guard-bs-arch-001",
@@ -1174,7 +1226,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-or-mapping-001",
@@ -1195,7 +1248,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "guard-rw-split-001",
@@ -1224,7 +1278,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "guard-crud-api-001",
@@ -1253,7 +1308,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "tool-selection-search-001",
@@ -1274,7 +1330,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "tool-selection-bigmodel-001",
@@ -1298,7 +1355,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "tool-selection-calc-boundary-001",
@@ -1319,7 +1377,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "tool-selection-code-001",
@@ -1340,7 +1399,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     },
     {
       "id": "term-judgment-004",
@@ -1364,7 +1424,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": -1
     },
     {
       "id": "term-judgment-005",
@@ -1393,7 +1454,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "constraint-plan-003",
@@ -1422,7 +1484,8 @@
         "CALL_TOOL"
       ],
       "baseline_match": false,
-      "pretrained_match": false
+      "pretrained_match": false,
+      "delta": 0
     },
     {
       "id": "evidence-judgment-005",
@@ -1443,7 +1506,8 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "delta": 0
     }
   ]
 }

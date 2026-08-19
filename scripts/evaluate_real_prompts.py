@@ -41,6 +41,9 @@ def evaluate_isolated_prompts(
             "",
         )
 
+        baseline_match = baseline_used_tool == expected_tool if expected_tool else False
+        pretrained_match = pretrained_used_tool == expected_tool if expected_tool else False
+
         rows.append(
             {
                 "id": str(item.get("id", "")),
@@ -50,12 +53,11 @@ def evaluate_isolated_prompts(
                 "pretrained_used_tool": pretrained_used_tool,
                 "baseline_actions": list(baseline_trace.actions),
                 "pretrained_actions": list(pretrained_trace.actions),
-                "baseline_match": baseline_used_tool == expected_tool
-                if expected_tool
-                else False,
-                "pretrained_match": pretrained_used_tool == expected_tool
-                if expected_tool
-                else False,
+                "baseline_match": baseline_match,
+                "pretrained_match": pretrained_match,
+                # Self-Harness pillar (P_before -> DeltaP): per-prompt movement.
+                # +1 = candidate improved over baseline, -1 = regressed, 0 = unchanged.
+                "delta": int(pretrained_match) - int(baseline_match),
             }
         )
 
@@ -63,6 +65,10 @@ def evaluate_isolated_prompts(
     baseline_matches = sum(1 for row in rows if row["baseline_match"])
     pretrained_matches = sum(1 for row in rows if row["pretrained_match"])
     return {
+        # Self-Harness pillar DeltaP (P_after - P_before) at the aggregate level.
+        # Consumed by team_conductor.py (self_harness_eval.require_non_negative_real_prompt_delta
+        # and deep_cycle_policy.require_positive_real_prompt_delta) and build_daily_digest.
+        "delta_tool_match_rate": round((pretrained_matches - baseline_matches) / total, 4),
         "summary": {
             "prompt_count": len(rows),
             "baseline_match_rate": round(baseline_matches / total, 4),
