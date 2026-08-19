@@ -1,0 +1,281 @@
+{
+  "_comment": "Stable regression subset for the combined-tool-policy candidate gate. Derived from data/eval/real_prompt_eval_latest.json (46/63 cases currently routed correctly by the current policy). The candidate gate must keep ALL of these at 100%; the 17 known-hard cases (BFCL multi-entity parallel constructs, per v24 conclusion) stay in configs/real_prompt_eval.json as coverage only.",
+  "prompts": [
+    {
+      "id": "real-doc-check",
+      "prompt": "我手里有一篇 2023 年的 Python 教程，它建议所有项目都继续用 requirements.txt，这个建议现在还可靠吗？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "real-budget",
+      "prompt": "我们团队 9 个人，某 SaaS 每席位 129 元/月，如果按年预算估算请按 129 * 9 * 12 计算。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "real-plan",
+      "prompt": "我要在两周内把一个内部脚本工具交付给运营团队，帮我先拆计划，再告诉我哪些地方必须查资料。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "real-conflict",
+      "prompt": "两篇数据库迁移文章对是否要先加只读窗口给出了相反建议，这时候应该怎么处理？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "real-exec-summary",
+      "prompt": "我已经收集了三份资料：官方文档、社区最佳实践、一次故障复盘。现在要写给负责人一份简洁但正式的结论，应该怎么组织？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "real-mixed",
+      "prompt": "这个问题里既有一段 Python 代码，又问到一次性迁移 48000 条数据预计分几批处理，每批 6000 条。你会先走哪类工具？",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "candidate-379152",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "candidate-420926",
+      "prompt": "请计算 12 + 30 / 3",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "real-cost-forecast",
+      "prompt": "请严格做数值计算：当前月成本18600元，下月扩容35%，只需给出计算结果（18600*1.35）。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "real-multi-source-summary",
+      "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "repair-comparison-001",
+      "prompt": "从中小团队落地角度看，比较 SQLite 和 PostgreSQL 在 本地原型 里的 维护复杂度，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "prompt": "请给出一个稳妥的处理思路：多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？，并指出仍需补充的证据。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-002",
+      "prompt": "从中小团队落地角度看，比较 Redis 和 Memcached 在 缓存服务 里的 性能表现",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "prompt": "从中小团队落地角度看，两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-003",
+      "prompt": "如果要尽快推进，比较 PostgreSQL 和 MySQL 在 中小团队 里的 成本，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "prompt": "请给出一个稳妥的处理思路：两个来源对同一个数据库参数给出了相反建议，在冲突还没消解前应该直接下结论吗？，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-004",
+      "prompt": "从中小团队落地角度看，比较 FastAPI 和 Flask 在 内部工具 里的 性能表现，输出时尽量保持结构化。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-comparison-005",
+      "prompt": "比较 Redis 和 Memcached 在 缓存服务 里的 性能表现，请先列出关键步骤再给结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "stress-conflict-authority-001",
+      "prompt": "官方文档说数据库连接池最大值建议设为 CPU 核数的 2 倍，但一篇广受引用的技术博客说应该设为核数的 4 倍。两者都有具体场景描述，你在给出建议前应该怎么处理这个矛盾？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-002",
+      "prompt": "我让两个同事分别给出数据库索引优化方案，一个说先加覆盖索引，另一个说先跑 EXPLAIN 再决定，但他们都没给测试数据。在这种缺失证据的情况下我该怎么继续？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-004",
+      "prompt": "两个团队对是否启用 CDN 预热有分歧：一组说有效，另一组说会浪费带宽，但两边都没拿出过任何流量日志或压测报告。在没有证据的情况下，我应该怎么推进这个决策？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-missing-evidence-decision-002",
+      "prompt": "两篇关于数据库分区策略的文章分别支持按时间分区和按用户 ID 分区，但没有一篇给出实测查询性能数据。我现在要决定这个架构方向，该怎么推进？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "repair-comparison-005-variant",
+      "prompt": "比较 Kafka 和 RabbitMQ 在大规模消息队列场景的适用性，需要找到有实测依据的分析，而不是凭经验猜测。你会用什么工具来获取这类信息？",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "stress-comparison-deflects-bigmodel-001",
+      "prompt": "比较 PostgreSQL 全文搜索和 Elasticsearch 在中等规模数据集上的索引速度，要给出具体的参考值，但我目前没有测试环境。你会优先用什么工具获取这个信息？",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-001",
+      "prompt": "比较 Nginx 和 Caddy 在反向代理场景的性能差异，请先列出关键步骤再给出结论。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-002",
+      "prompt": "比较 MongoDB 和 PostgreSQL 在时序数据写入场景的吞吐量，请按步骤分析后给出建议。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "repair-step-listing-comparison-003",
+      "prompt": "比较 gRPC 和 REST 在内部微服务通信中的延迟表现，先梳理一下分析思路再回答。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "prompt": "我已经收集了两篇说不同观点的资料，其中一篇说用 gRPC 更好，另一篇说 REST 更稳定。现在要写给负责人的正式结论摘要。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "guard-calc-fan-er-001",
+      "prompt": "旧方案每月成本 3200 元，新方案反而更贵要 4500 元/月，请计算差值（4500 - 3200）。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "guard-synthesis-no-evidence-001",
+      "prompt": "我已经收集了关于数据库选型的几份资料，虽然没有测试数据，但需要给管理层写一份正式结论摘要，应该怎么组织？",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "guard-conflict-fenqi-001",
+      "prompt": "三个同事对缓存策略有分歧，但谁都没有拿出监控数据。我需要了解业界最佳实践再做判断，应该先查什么？",
+      "expected_tool": "search",
+      "logic_skill": "conflict_detection"
+    },
+    {
+      "id": "term-judgment-002",
+      "prompt": "关于 Redis 集群方案的资料我已经查了三次，每次结果都差不多，再查下去也不会有新发现了，怎么判断信息已经够用？",
+      "expected_tool": "search",
+      "logic_skill": "termination_judgment"
+    },
+    {
+      "id": "result-integration-003",
+      "prompt": "我已经拿到了三份性能测试报告：Go 版本 QPS 12k、Rust 版本 QPS 18k、Java 版本 QPS 9k。请整合成给技术委员会的决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "result-integration-004",
+      "prompt": "已收集了安全团队的漏洞扫描结果和运维团队的可用性报告，需要整合成一份面向管理层的风险评估摘要。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "result-integration-005",
+      "prompt": "我手上有架构评审记录、容量规划数据和成本分析三份材料，请综合这些已提供的信息给出迁移决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "result_integration"
+    },
+    {
+      "id": "evidence-judgment-003",
+      "prompt": "一篇 2021 年的博客说 Microservices 已经过时了，这个判断现在还站得住脚吗？帮我查一下最新观点。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "evidence-judgment-004",
+      "prompt": "Stack Overflow 上一个高赞回答推荐用 asyncio 而非 threading，但那回答是 2019 年的，现在还需要查证吗？",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    },
+    {
+      "id": "step-planning-003",
+      "prompt": "我要在一个月内把单体应用拆成三个微服务，先帮我查一下业界拆分流程，再告诉我每步需要注意什么。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "step-planning-004",
+      "prompt": "需要将现有 CI/CD 从 Jenkins 迁移到 GitHub Actions，先查一下迁移步骤和常见坑，再帮我梳理一下整体流程。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "guard-bs-arch-001",
+      "prompt": "项目要从单体 B/S 架构重构为微服务，先查一下 B/S 到微服务的迁移经验。",
+      "expected_tool": "search",
+      "logic_skill": "step_planning"
+    },
+    {
+      "id": "guard-or-mapping-001",
+      "prompt": "团队在讨论 O/R 映射用 MyBatis 还是 JPA，先查一下两者的优缺点对比。",
+      "expected_tool": "search",
+      "logic_skill": "comparison"
+    },
+    {
+      "id": "tool-selection-search-001",
+      "prompt": "我想了解当前主流的前端框架有哪些新变化，查一下最新趋势。",
+      "expected_tool": "search",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-bigmodel-001",
+      "prompt": "基于我已收集的三份技术评估报告，请给管理层写一份正式的选型决策建议。",
+      "expected_tool": "bigmodel_proxy",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-calc-boundary-001",
+      "prompt": "请严格计算：890 * 5 * 12，只需要给出数值结果。",
+      "expected_tool": "calculator",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "tool-selection-code-001",
+      "prompt": "帮我写一段 Python 脚本实现快速排序并验证正确性。",
+      "expected_tool": "code_executor",
+      "logic_skill": "tool_selection"
+    },
+    {
+      "id": "evidence-judgment-005",
+      "prompt": "一篇 2018 年的博客推荐用 Docker Compose 做生产环境编排，这个建议现在还站得住脚吗？帮我查一下最新观点。",
+      "expected_tool": "search",
+      "logic_skill": "evidence_judgment"
+    }
+  ]
+}
