@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from carm.runner import AgentRunner
+from carm.runtime_controls import DEFAULT_CONTROLS, load_controls, save_controls
 from carm.training import load_training_config
 from tools.base import ToolManager
 from tools.bigmodel_tool import BigModelProxyTool
@@ -63,7 +64,8 @@ def write_eval_training_config(path: str | Path) -> None:
 
 
 def build_runner_from_state_dir(
-    source_dir: Path | None, workspace: Path
+    source_dir: Path | None, workspace: Path,
+    override_controls: dict | None = None,
 ) -> AgentRunner:
     workspace.mkdir(parents=True, exist_ok=True)
     training_config_path = workspace / "eval_training.json"
@@ -89,11 +91,27 @@ def build_runner_from_state_dir(
                 )
                 shutil.copyfile(source, target)
 
-    # Also copy runtime_controls.json from data/control/ so evaluations
-    # reflect the current control parameter state (e.g. call_tool_bonus).
+    # Copy the current control parameter state so evaluations reflect the
+    # *default* HarnessPolicy (e.g. call_tool_bonus).
     controls_source = Path("data/control/runtime_controls.json")
+    controls_target = workspace / "runtime_controls.json"
     if controls_source.exists():
-        shutil.copyfile(controls_source, workspace / "runtime_controls.json")
+        shutil.copyfile(controls_source, controls_target)
+    else:
+        save_controls(controls_target, DEFAULT_CONTROLS)
+
+    # Candidate override: a HarnessPolicy may be passed explicitly so the
+    # evaluation tests the *candidate* policy instead of the live default.
+    # Without this, callers writing to the workspace controls were silently
+    # overwritten by the global file above (the dead-code CONTROLS trap).
+    if override_controls:
+        merged = load_controls(controls_target)
+        for section, values in override_controls.items():
+            if section in merged and isinstance(values, dict):
+                merged[section].update(values)
+            else:
+                merged[section] = values
+        save_controls(controls_target, merged)
 
     return AgentRunner(
         build_tool_manager(),
@@ -102,7 +120,7 @@ def build_runner_from_state_dir(
         concept_state_path=concept_state,
         core_state_path=core_state,
         review_path=workspace / "reviews.jsonl",
-        controls_path=workspace / "runtime_controls.json",
+        controls_path=controls_target,
         training_config_path=training_config_path,
     )
 

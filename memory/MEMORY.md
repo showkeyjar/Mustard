@@ -123,5 +123,5 @@
   - §15「不建议只追求单一 benchmark 分数」↔ 已证 0.7302 是可达上限、17 条失败是模型上限。
 - **落地状态（2026-08-19）**：仅记入项目记忆作为**方向共识**；未改动任何运行时。
   - 改 `team_cycle.json` 的 0.9 门槛属「默认运行时策略/治理」层 **Human Gate**，未执行、待用户拍板。
-  - 把散落 controls 重构成 HarnessPolicy 一等对象（即「CONTROLS 死代码」修复的更好出口）尚未动手。
+  - 把散落 controls 重构成 HarnessPolicy 一等对象（即「CONTROLS 死代码」修复的更好出口）**已实现**：`build_runner_from_state_dir` 新增 `override_controls` 参数，`evaluate_combined_tool_policy_candidate` 经它显式注入 `CANDIDATE_POLICY`，候选闸现已能真验候选（2026-08-19 验证：override 写入 workspace 且默认路径零回归）。
   - 文档是「建议书」非已批准设计；当前 AGENTS.md 的 Mission（低风险持续改进）与其不冲突，但战略方向需用户最终确认。

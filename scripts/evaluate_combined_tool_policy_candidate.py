@@ -10,7 +10,11 @@ from carm.training import load_training_config
 from scripts.evaluate_pretraining import build_runner_from_state_dir, load_eval_prompts
 
 
-CONTROLS = {
+# Candidate HarnessPolicy for the combined-tool-policy gate. Passed explicitly
+# to build_runner_from_state_dir(override_controls=...) so the gate tests THIS
+# policy instead of the live default controls (which build_runner used to
+# silently overwrite — the dead-code CONTROLS trap).
+CANDIDATE_POLICY = {
     "policy": {
         "prefer_calculator_for_mixed_numeric_code": 1,
         "prefer_search_for_comparison_evidence": 1,
@@ -46,11 +50,12 @@ def evaluate_candidate(output_path: Path = Path("artifacts/combined_tool_policy_
         root = Path(temp_dir)
         candidate_workspace = root / "candidate"
         candidate_workspace.mkdir(parents=True, exist_ok=True)
-        (candidate_workspace / "runtime_controls.json").write_text(
-            json.dumps(CONTROLS, ensure_ascii=False, indent=2),
-            encoding="utf-8",
+        # Pass the candidate HarnessPolicy explicitly so it is actually used:
+        # build_runner copies the default controls in, then applies this
+        # override on top — making the candidate observable and testable.
+        runner = build_runner_from_state_dir(
+            artifact_dir, candidate_workspace, override_controls=CANDIDATE_POLICY
         )
-        runner = build_runner_from_state_dir(artifact_dir, candidate_workspace)
         full_report = _evaluate_prompts(runner, full_prompts)
         regression_report = _evaluate_prompts(runner, regression_prompts)
         codec_report = build_pattern_report(full_report, prompt_payload, hard_eval_payload)
