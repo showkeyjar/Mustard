@@ -39,6 +39,9 @@ data/eval/bfcl_v3_framework*.json
 # Control intermediate data
 data/control/
 
+# Fixed baseline snapshot for Self-Harness P_before (pinned policy + state; not versioned)
+data/eval/baseline_snapshot/
+
 # Concept state snapshots
 concept_state.json
 core_state.json

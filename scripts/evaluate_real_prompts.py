@@ -8,6 +8,12 @@ from tempfile import TemporaryDirectory
 from carm.training import load_training_config
 from scripts.evaluate_pretraining import build_runner_from_state_dir, load_eval_prompts
 
+# Fixed baseline snapshot for Self-Harness P_before (populated by scripts/pin_baseline.py).
+# When present, real_prompt_eval's baseline runner loads the pinned policy + state
+# instead of a stateless default runner, so delta_tool_match_rate (P_after - P_before)
+# becomes discriminative. Missing -> fall back to None (legacy behavior, DeltaP=0).
+BASELINE_SNAPSHOT_DIR = Path("data/eval/baseline_snapshot")
+
 
 def evaluate_isolated_prompts(
     prompts: list[dict[str, str]],
@@ -19,7 +25,10 @@ def evaluate_isolated_prompts(
     for item in prompts:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            baseline_runner = build_runner_from_state_dir(None, root / "baseline")
+            baseline_source = (
+                BASELINE_SNAPSHOT_DIR if BASELINE_SNAPSHOT_DIR.exists() else None
+            )
+            baseline_runner = build_runner_from_state_dir(baseline_source, root / "baseline")
             pretrained_runner = build_runner_from_state_dir(
                 artifact_dir, root / "pretrained"
             )

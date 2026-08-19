@@ -91,14 +91,27 @@ def build_runner_from_state_dir(
                 )
                 shutil.copyfile(source, target)
 
-    # Copy the current control parameter state so evaluations reflect the
-    # *default* HarnessPolicy (e.g. call_tool_bonus).
-    controls_source = Path("data/control/runtime_controls.json")
     controls_target = workspace / "runtime_controls.json"
-    if controls_source.exists():
-        shutil.copyfile(controls_source, controls_target)
+
+    # Snapshot controls (Self-Harness P_before): if the source_dir is a *baseline
+    # snapshot* that ships its own runtime_controls.json, prefer it over the live
+    # global file so the baseline reflects the *pinned* policy rather than today's
+    # default. This is what makes real_prompt_eval's delta_tool_match_rate
+    # (P_after - P_before) discriminative instead of structurally collapsing to 0.
+    # Explicit override_controls always wins; otherwise the global file is the
+    # fallback (unchanged behavior for artifact_dir callers such as data/experience
+    # that carry no runtime_controls.json, and for source_dir=None).
+    snapshot_controls = (
+        source_dir / "runtime_controls.json" if source_dir is not None else None
+    )
+    if snapshot_controls is not None and snapshot_controls.exists() and not override_controls:
+        shutil.copyfile(snapshot_controls, controls_target)
     else:
-        save_controls(controls_target, DEFAULT_CONTROLS)
+        controls_source = Path("data/control/runtime_controls.json")
+        if controls_source.exists():
+            shutil.copyfile(controls_source, controls_target)
+        else:
+            save_controls(controls_target, DEFAULT_CONTROLS)
 
     # Candidate override: a HarnessPolicy may be passed explicitly so the
     # evaluation tests the *candidate* policy instead of the live default.
