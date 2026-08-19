@@ -7,7 +7,17 @@
   - `backlog/proposals/proposal_self_harness_eval_protocol_replacing_0.9_gate.md`（v25，已落地 0.9 门槛起草）
   - 提交 `25c47db`（v25 闭环：real_prompt_eval 已产出 `delta_tool_match_rate` 字段）
 - 变更类型：**Human Gate**（改 `scripts/evaluate_pretraining.py` 的 `build_runner_from_state_dir` controls 加载语义 + 改 `scripts/evaluate_real_prompts.py` 的 baseline 来源，均影响评测基线与 Arbiter 的 ΔP 绑定判断，属 `runtime_control` 治理层变更）
-- 状态：待用户审批（仅起草，未落地代码）
+- 状态：**已落地（用户批准，阶段一 + 阶段二均完成，本地提交 `38b709c` + 阶段二提交，GitHub 断开未推送）**
+
+## 7. 落地闭环（2026-08-19）
+
+- **阶段一（提交 `38b709c`）**：`build_runner_from_state_dir` 加 `use_snapshot_controls`；`evaluate_isolated_prompts` baseline 源切到 `BASELINE_SNAPSHOT_DIR`（不存在回退 None）；新增 `scripts/pin_baseline.py` + `.gitignore` 排除；`data/eval/baseline_snapshot/` 已 pin（=当前 0.7302 配置：runtime_controls + policy/concept/core_state）。
+- **阶段二（本次提交）**：`evaluate_isolated_prompts` 新增 `override_controls` 参数并仅传给 `pretrained_runner`（P_after=候选），baseline 仍用快照（P_before）；`main()` 默认不传→向后兼容、ΔP=0。
+- **测试（8 例全过 `tests/test_fixed_baseline_snapshot.py`）**：
+  1. 快照 controls 优先于全局（真实 builder 写盘验证）；2. 无快照回退全局；3. override 优先于快照；4. baseline 源随快照存在切换；5. delta 反映 baseline vs pretrained；6. **端到端**：真实 builder 把快照 controls 写入 baseline workspace，baseline runner 真正反映快照（判别力来自快照而非全局）；7. **端到端无假信号**：快照=全局精确副本时 ΔP=0；8. **阶段二**：候选注入后 ΔP=+1（候选 vs 基线可判别）。
+- **回归**：`test_evaluate_pretraining` 通过；`test_team_conductor` 38 通过，1 例 `test_build_proposals_prioritizes_new_failure_patterns` 既有/环境性失败（未改提案构建逻辑，与本次无关）。
+- **保真结论**：ΔP 信号链现已完整——固定快照(P_before) + 候选注入(P_after) 让 `delta_tool_match_rate` 真正有判别力；默认 run 仍 ΔP=0（如实，无误信号）。`0.7302` 外部可达上限不变。
+- **待办（可选，非必须）**：候选脚本改调 `evaluate_isolated_prompts(..., override_controls=CANDIDATE_POLICY)` 直接产出候选 ΔP；外部可达 CI 重测固化 0.7302 基线确认无假阳。
 
 ## 1. 问题（已实测确认）
 

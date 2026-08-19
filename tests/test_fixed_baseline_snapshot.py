@@ -163,3 +163,171 @@ def test_evaluate_isolated_prompts_delta_reflects_baseline_vs_pretrained():
         # baseline search==search True, pretrained calc==search False -> delta -1.
         assert res["rows"][0]["delta"] == -1
         assert res["delta_tool_match_rate"] == -1.0
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: the REAL build_runner_from_state_dir copies the snapshot controls
+# into the baseline workspace, so the baseline runner genuinely reflects the
+# pinned policy rather than the live global file. This is what makes the
+# DeltaP signal *discriminative* (phase one's whole point).
+# ---------------------------------------------------------------------------
+
+
+def _real_runner_factory_that_reads_workspace(workspace, expected_tool, marker_tool):
+    """Wrap the real builder so the workspace controls file is actually written,
+    then return a fake runner whose tool choice depends on that file's content."""
+    real_runner = build_runner_from_state_dir(
+        # source_dir / workspace are injected by the patched evaluate_isolated_prompts
+        # call; we capture them via closure below.
+        _real_runner_factory_that_reads_workspace._current_source,
+        workspace,
+        _real_runner_factory_that_reads_workspace._current_override,
+    )
+    controls = json.loads(
+        (workspace / "runtime_controls.json").read_text(encoding="utf-8")
+    )
+    marker = controls.get("policy", {}).get("_snapshot_marker")
+    chosen = marker_tool if marker else "global_tool"
+    real_runner.run = lambda prompt: (
+        "answer",
+        SimpleNamespace(
+            steps=[SimpleNamespace(selected_tool=chosen)], actions=[]
+        ),
+    )
+    return real_runner
+
+
+def test_end_to_end_snapshot_controls_make_baseline_distinct():
+    def fake_build(source_dir, workspace, override_controls=None):
+        _real_runner_factory_that_reads_workspace._current_source = source_dir
+        _real_runner_factory_that_reads_workspace._current_override = override_controls
+        return _real_runner_factory_that_reads_workspace(workspace, "search_tool", "snapshot_tool")
+
+    prompts = [{"id": "p1", "prompt": "q1", "expected_tool": "snapshot_tool"}]
+    with TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        snapshot = tmp / "snapshot"
+        snapshot.mkdir()
+        _write_controls(
+            snapshot / "runtime_controls.json",
+            {"policy": {"_snapshot_marker": 1}, "glance": {}, "core": {}},
+        )
+        (snapshot / "policy_state.json").write_text("{}", encoding="utf-8")
+        artifact = tmp / "artifact"  # no runtime_controls.json -> uses global
+        artifact.mkdir()
+
+        with mock.patch(
+            "scripts.evaluate_real_prompts.build_runner_from_state_dir",
+            side_effect=fake_build,
+        ):
+            with mock.patch(
+                "scripts.evaluate_real_prompts.BASELINE_SNAPSHOT_DIR", snapshot
+            ):
+                res = evaluate_isolated_prompts(prompts, artifact_dir=artifact)
+
+    # Baseline (snapshot, marker present) picks snapshot_tool == expected -> match.
+    # Pretrained (artifact, no controls -> global, no marker) picks global_tool -> miss.
+    assert res["rows"][0]["baseline_match"] is True
+    assert res["rows"][0]["pretrained_match"] is False
+    assert res["rows"][0]["delta"] == -1
+    assert res["delta_tool_match_rate"] == -1.0
+
+
+def test_end_to_end_no_false_signal_when_snapshot_equals_global():
+    global_controls = json.loads(
+        Path("data/control/runtime_controls.json").read_text(encoding="utf-8")
+    )
+
+    def fake_build(source_dir, workspace, override_controls=None):
+        _real_runner_factory_that_reads_workspace._current_source = source_dir
+        _real_runner_factory_that_reads_workspace._current_override = override_controls
+        return _real_runner_factory_that_reads_workspace(workspace, "tool_A", "tool_A")
+
+    prompts = [{"id": "p", "prompt": "q", "expected_tool": "global_tool"}]
+    with TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        snapshot = tmp / "snapshot"
+        snapshot.mkdir()
+        # Snapshot is an EXACT copy of the live global controls -> should behave
+        # identically to the pretrained (global) runner.
+        _write_controls(snapshot / "runtime_controls.json", global_controls)
+        (snapshot / "policy_state.json").write_text("{}", encoding="utf-8")
+        artifact = tmp / "artifact"
+        artifact.mkdir()
+
+        with mock.patch(
+            "scripts.evaluate_real_prompts.build_runner_from_state_dir",
+            side_effect=fake_build,
+        ):
+            with mock.patch(
+                "scripts.evaluate_real_prompts.BASELINE_SNAPSHOT_DIR", snapshot
+            ):
+                res = evaluate_isolated_prompts(prompts, artifact_dir=artifact)
+
+    # Both baseline (snapshot==global) and pretrained (global) pick global_tool == expected.
+    # DeltaP stays 0 -> no false signal (the honest guarantee from the proposal).
+    assert res["rows"][0]["baseline_match"] is True
+    assert res["rows"][0]["pretrained_match"] is True
+    assert res["rows"][0]["delta"] == 0
+    assert res["delta_tool_match_rate"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Phase two: override_controls injects a *candidate* HarnessPolicy as P_after,
+# so delta_tool_match_rate becomes non-zero (candidate vs pinned baseline).
+# ---------------------------------------------------------------------------
+
+
+def test_evaluate_isolated_prompts_override_controls_make_pretrained_distinct():
+    def fake_build(source_dir, workspace, override_controls=None):
+        real_runner = build_runner_from_state_dir(source_dir, workspace, override_controls)
+        # Candidate (override) is written into the workspace controls file; the
+        # fake runner reflects it. This proves the override actually reached the
+        # pretrained runner (not silently dropped by build_runner_from_state_dir).
+        controls = json.loads(
+            (workspace / "runtime_controls.json").read_text(encoding="utf-8")
+        )
+        chosen = (
+            "candidate_tool"
+            if controls.get("policy", {}).get("_candidate_marker")
+            else "baseline_tool"
+        )
+        real_runner.run = lambda prompt: (
+            "answer",
+            SimpleNamespace(steps=[SimpleNamespace(selected_tool=chosen)], actions=[]),
+        )
+        return real_runner
+
+    prompts = [{"id": "p1", "prompt": "q1", "expected_tool": "candidate_tool"}]
+    with TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        snapshot = tmp / "snapshot"
+        snapshot.mkdir()
+        _write_controls(
+            snapshot / "runtime_controls.json",
+            {"policy": {}, "glance": {}, "core": {}},
+        )
+        (snapshot / "policy_state.json").write_text("{}", encoding="utf-8")
+        artifact = tmp / "artifact"  # no runtime_controls.json -> global fallback
+        artifact.mkdir()
+
+        with mock.patch(
+            "scripts.evaluate_real_prompts.build_runner_from_state_dir",
+            side_effect=fake_build,
+        ):
+            with mock.patch(
+                "scripts.evaluate_real_prompts.BASELINE_SNAPSHOT_DIR", snapshot
+            ):
+                res = evaluate_isolated_prompts(
+                    prompts,
+                    artifact_dir=artifact,
+                    override_controls={"policy": {"_candidate_marker": 1}},
+                )
+
+    # Baseline (snapshot, no candidate marker) -> baseline_tool != expected (miss).
+    # Pretrained (candidate injected via override) -> candidate_tool == expected (hit).
+    # DeltaP = +1: candidate improved over the pinned baseline.
+    assert res["rows"][0]["baseline_match"] is False
+    assert res["rows"][0]["pretrained_match"] is True
+    assert res["rows"][0]["delta"] == 1
+    assert res["delta_tool_match_rate"] == 1.0

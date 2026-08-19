@@ -19,6 +19,7 @@ def evaluate_isolated_prompts(
     prompts: list[dict[str, str]],
     *,
     artifact_dir: Path,
+    override_controls: dict | None = None,
 ) -> dict[str, object]:
     rows: list[dict[str, object]] = []
 
@@ -29,8 +30,15 @@ def evaluate_isolated_prompts(
                 BASELINE_SNAPSHOT_DIR if BASELINE_SNAPSHOT_DIR.exists() else None
             )
             baseline_runner = build_runner_from_state_dir(baseline_source, root / "baseline")
+            # Phase two (v26): P_after tests the *candidate* HarnessPolicy when a
+            # candidate is supplied, while P_before stays the pinned baseline snapshot.
+            # override_controls wins over the snapshot (and the global file) inside
+            # build_runner_from_state_dir, so delta_tool_match_rate then measures the
+            # candidate against the pinned baseline instead of artifact-vs-snapshot.
+            # When omitted (default main() run), behavior is unchanged: pretrained
+            # uses artifact_dir -> global controls fallback -> DeltaP stays 0.
             pretrained_runner = build_runner_from_state_dir(
-                artifact_dir, root / "pretrained"
+                artifact_dir, root / "pretrained", override_controls=override_controls
             )
 
             _, baseline_trace = baseline_runner.run(str(item.get("prompt", "")))
