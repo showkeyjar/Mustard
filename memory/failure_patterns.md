@@ -4,18 +4,6 @@
 
 ## Top patterns this round
 
-### eval_coverage_too_low
-- pattern_id: eval_coverage_too_low
-- title: eval_coverage_too_low
-- frequency: current_round
-- impact: 真实场景覆盖不足，回归结果不稳定。
-- repro_hint: 运行 python -m scripts.evaluate_real_prompts 并检查 summary.prompt_count
-- owner_role: benchmark_owner
-- representative_cases: {"prompt_count": 4, "target_min": 20}
-- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
-- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
-- status: open
-
 ### attention_verification_handoff_gap
 - pattern_id: attention_verification_handoff_gap
 - title: attention_verification_handoff_gap
@@ -28,18 +16,6 @@
 - recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
 - status: open
 
-### learning_focus_evidence_tool_routing_gap
-- pattern_id: learning_focus_evidence_tool_routing_gap
-- title: learning_focus_evidence_tool_routing_gap
-- frequency: current_round
-- impact: 系统在吸收公开设计思想与研究任务时，evidence_judgment 仍可能误路由到 calculator，说明新知识还没稳定映射到检索型证据流程。
-- repro_hint: 运行 learning_focus_eval，重点检查 evidence_judgment 类任务是否仍把 search 型求证误判成 calculator。
-- owner_role: trainer
-- representative_cases: {"count": 3, "sample_ids": ["learning-focus-004", "learning-focus-005", "learning-focus-006"], "actual_tools": ["calculator"]}
-- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
-- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
-- status: open
-
 ### repeated_conflict_detection_gap
 - pattern_id: repeated_conflict_detection_gap
 - title: repeated_conflict_detection_gap
@@ -47,19 +23,7 @@
 - impact: 高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。
 - repro_hint: 复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation
 - owner_role: failure_miner
-- representative_cases: {"logic_skill": "conflict_detection", "count": 2, "avg_source_score": 1.0, "top_mutations": ["contradictory_authority", "missing_evidence"]}
-- likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
-- recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
-- status: open
-
-### comparison_under_conflicting_sources
-- pattern_id: comparison_under_conflicting_sources
-- title: comparison_under_conflicting_sources
-- frequency: current_round
-- impact: 高信息恢复采样持续指向同一类薄弱模式，说明 blind spot 已开始具体化。
-- repro_hint: 复用 recovery variants / focus eval 继续压测同类 logic skill 与 mutation
-- owner_role: failure_miner
-- representative_cases: {"logic_skill": "comparison", "count": 1, "avg_source_score": 1.0, "top_mutations": ["conflicting_sources"]}
+- representative_cases: {"logic_skill": "conflict_detection", "count": 4, "avg_source_score": 3.75, "top_mutations": ["contradictory_authority", "missing_evidence", "conflicting_sources"]}
 - likely_root_cause: current research loop still undersamples high-information weaknesses or lacks external feedback pressure
 - recommended_fix_direction: tighten sampling + convert meta-failure into explicit repair tasks
 - status: open
@@ -67,7 +31,7 @@
 ## Sampling insufficiency / blind spots
 
 - blind_spot: high-information real prompts still underrepresented even when aggregate match stays high
-- why_current_sample_is_insufficient: prompt_count=4, mismatch_count=4, bridge_feedback=2, frontier_observation_count=3
+- why_current_sample_is_insufficient: prompt_count=63, mismatch_count=17, bridge_feedback=2, frontier_observation_count=3
 - next_sampling_action: add >=4 high-information prompts and collect non-zero frontier / bridge evidence
 - owner_role: researcher
 

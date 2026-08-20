@@ -4,12 +4,12 @@
 - dataset_sample_count: 186
 - bridge_feedback: 2
 - frontier_observation_count: 3
-- real_prompt_count: 4
-- real_prompt_match_rate: 0.0000
+- real_prompt_count: 63
+- real_prompt_match_rate: 0.7302
 - attention_premature_release_count: 1
 - attention_conflict_to_verification_rate: 0.2500
 - learning_focus_prompt_count: 7
-- learning_focus_pretrained_match_rate: 0.5714
+- learning_focus_pretrained_match_rate: 1.0000
 
 ## Research Constraints
 - 必须绑定 Top Gap 或 failure pattern

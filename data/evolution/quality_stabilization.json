@@ -1,88 +1,738 @@
 {
-  "row_count": 4,
-  "high_signal_count": 0,
-  "bigmodel_proxy_mismatch_count": 0,
+  "row_count": 63,
+  "high_signal_count": 5,
+  "bigmodel_proxy_mismatch_count": 6,
   "top_rows": [
     {
-      "id": "recovery-variant-01",
+      "id": "stress-conflict-missing-evidence-004",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "separation_score": 1
-    },
-    {
-      "id": "recovery-variant-02",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "separation_score": 1
-    },
-    {
-      "id": "recovery-variant-03",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
-      "baseline_match": false,
-      "pretrained_match": false,
-      "separation_score": 1
-    },
-    {
-      "id": "recovery-variant-04",
-      "logic_skill": "tool_selection",
-      "expected_tool": "code_executor",
-      "baseline_used_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "search",
       "baseline_match": false,
+      "pretrained_match": true,
+      "separation_score": 6
+    },
+    {
+      "id": "repair-missing-evidence-decision-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": false,
       "pretrained_match": false,
-      "separation_score": 0
+      "separation_score": 3
+    },
+    {
+      "id": "stress-conflict-authority-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "stress-conflict-missing-evidence-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "stress-conflict-missing-evidence-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "real-git-triage",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 2
+    },
+    {
+      "id": "candidate-379152",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-conflict-fenqi-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-or-mapping-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
     }
   ],
   "rows": [
     {
-      "id": "recovery-variant-01",
+      "id": "stress-conflict-missing-evidence-004",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_match": false,
-      "pretrained_match": false,
-      "separation_score": 1
+      "pretrained_match": true,
+      "separation_score": 6
     },
     {
-      "id": "recovery-variant-02",
+      "id": "repair-missing-evidence-decision-003",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "calculator",
       "baseline_match": false,
       "pretrained_match": false,
-      "separation_score": 1
+      "separation_score": 3
     },
     {
-      "id": "recovery-variant-03",
+      "id": "stress-conflict-authority-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "stress-conflict-missing-evidence-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "stress-conflict-missing-evidence-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 3
+    },
+    {
+      "id": "real-git-triage",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 2
+    },
+    {
+      "id": "candidate-379152",
       "logic_skill": "comparison",
       "expected_tool": "search",
-      "baseline_used_tool": "",
-      "pretrained_used_tool": "",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-conflict-fenqi-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-or-mapping-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "guard-rw-split-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
       "baseline_match": false,
       "pretrained_match": false,
       "separation_score": 1
     },
     {
-      "id": "recovery-variant-04",
-      "logic_skill": "tool_selection",
-      "expected_tool": "code_executor",
+      "id": "guard-synthesis-no-evidence-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-conflict",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-exec-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "real-multi-source-summary",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-004",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-005",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-comparison-005-variant",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-017",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-019",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-conflict_detection-020",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-missing-evidence-decision-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-missing-evidence-decision-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-step-listing-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-step-listing-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "repair-step-listing-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "result-integration-003",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "result-integration-004",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "result-integration-005",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "stress-comparison-deflects-bigmodel-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "stress-conflict-authority-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "stress-conflict-missing-evidence-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 1
+    },
+    {
+      "id": "term-judgment-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_match": false,
       "pretrained_match": false,
+      "separation_score": 1
+    },
+    {
+      "id": "candidate-420926",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "constraint-plan-001",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "constraint-plan-002",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "constraint-plan-003",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "evidence-judgment-003",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "evidence-judgment-004",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "evidence-judgment-005",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "guard-ab-test-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "guard-bs-arch-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "guard-calc-fan-er-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "guard-crud-api-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "real-budget",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-cost-forecast",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-doc-check",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-mixed",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "real-release-plan",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "code_executor",
+      "pretrained_used_tool": "code_executor",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "step-planning-003",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "step-planning-004",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "term-judgment-002",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "term-judgment-003",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "term-judgment-004",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "term-judgment-005",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "multi_intent",
+      "pretrained_used_tool": "multi_intent",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "separation_score": 0
+    },
+    {
+      "id": "tool-selection-bigmodel-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "bigmodel_proxy",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "tool-selection-calc-boundary-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "baseline_used_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "tool-selection-code-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "code_executor",
+      "baseline_used_tool": "code_executor",
+      "pretrained_used_tool": "code_executor",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "separation_score": 0
+    },
+    {
+      "id": "tool-selection-search-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
       "separation_score": 0
     }
   ]

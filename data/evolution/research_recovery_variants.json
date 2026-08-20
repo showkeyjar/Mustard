@@ -2,23 +2,23 @@
   "variants": [
     {
       "id": "recovery-variant-01",
-      "parent_case": "recovery-variant-01",
+      "parent_case": "stress-conflict-missing-evidence-004",
       "logic_skill": "conflict_detection",
       "mutation": "contradictory_authority",
       "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under contradictory_authority",
-      "source_score": 1,
-      "selection_reason": "high_signal_parent",
+      "source_score": 6,
+      "selection_reason": "baseline_fail_pretrained_pass",
       "source_dataset": "quality_stabilization",
       "source_rank": 1,
       "expected_tool": "search"
     },
     {
       "id": "recovery-variant-02",
-      "parent_case": "recovery-variant-02",
+      "parent_case": "repair-missing-evidence-decision-003",
       "logic_skill": "conflict_detection",
       "mutation": "missing_evidence",
       "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under missing_evidence",
-      "source_score": 1,
+      "source_score": 3,
       "selection_reason": "high_signal_parent",
       "source_dataset": "quality_stabilization",
       "source_rank": 2,
@@ -26,11 +26,11 @@
     },
     {
       "id": "recovery-variant-03",
-      "parent_case": "recovery-variant-03",
-      "logic_skill": "comparison",
+      "parent_case": "stress-conflict-authority-002",
+      "logic_skill": "conflict_detection",
       "mutation": "conflicting_sources",
-      "mutation_reason": "parent had logic_skill=comparison and high recovery value under conflicting_sources",
-      "source_score": 1,
+      "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under conflicting_sources",
+      "source_score": 3,
       "selection_reason": "high_signal_parent",
       "source_dataset": "quality_stabilization",
       "source_rank": 3,
@@ -38,44 +38,27 @@
     },
     {
       "id": "recovery-variant-04",
-      "parent_case": "recovery-variant-04",
-      "logic_skill": "tool_selection",
-      "mutation": "calculator_vs_search",
-      "mutation_reason": "parent had logic_skill=tool_selection and high recovery value under calculator_vs_search",
-      "source_score": 0,
+      "parent_case": "stress-conflict-missing-evidence-001",
+      "logic_skill": "conflict_detection",
+      "mutation": "contradictory_authority",
+      "mutation_reason": "parent had logic_skill=conflict_detection and high recovery value under contradictory_authority",
+      "source_score": 3,
       "selection_reason": "high_signal_parent",
       "source_dataset": "quality_stabilization",
       "source_rank": 4,
-      "expected_tool": "code_executor"
+      "expected_tool": "search"
     }
   ],
   "clusters": [
     {
       "pattern_id": "repeated_conflict_detection_gap",
       "logic_skill": "conflict_detection",
-      "count": 2,
-      "avg_source_score": 1.0,
+      "count": 4,
+      "avg_source_score": 3.75,
       "top_mutations": [
         "contradictory_authority",
-        "missing_evidence"
-      ]
-    },
-    {
-      "pattern_id": "comparison_under_conflicting_sources",
-      "logic_skill": "comparison",
-      "count": 1,
-      "avg_source_score": 1.0,
-      "top_mutations": [
+        "missing_evidence",
         "conflicting_sources"
-      ]
-    },
-    {
-      "pattern_id": "tool_boundary_sampling_gap",
-      "logic_skill": "tool_selection",
-      "count": 1,
-      "avg_source_score": 0.0,
-      "top_mutations": [
-        "calculator_vs_search"
       ]
     }
   ],
@@ -88,20 +71,8 @@
       {
         "pattern_id": "repeated_conflict_detection_gap",
         "logic_skill": "conflict_detection",
-        "variant_count": 2,
-        "avg_source_score": 1.0
-      },
-      {
-        "pattern_id": "comparison_under_conflicting_sources",
-        "logic_skill": "comparison",
-        "variant_count": 1,
-        "avg_source_score": 1.0
-      },
-      {
-        "pattern_id": "tool_boundary_sampling_gap",
-        "logic_skill": "tool_selection",
-        "variant_count": 1,
-        "avg_source_score": 0.0
+        "variant_count": 4,
+        "avg_source_score": 3.75
       }
     ],
     "temp_config": "D:\\codes\\Mustard\\data\\evolution\\_recovery_eval_temp.json"

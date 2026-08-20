@@ -1,30 +1,63 @@
 {
   "prompts": [
     {
-      "id": "candidate-379152",
-      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
-      "logic_skill": "comparison",
+      "id": "repair-missing-evidence-decision-003",
+      "prompt": "一篇博客说容器化部署可以把资源利用率提高 40%，另一篇说在 IO 密集型应用里反而增加延迟，两篇都没有测试数据。我们团队要决定是否迁移，应该怎么推进这个结论？",
+      "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "real-exec-summary",
-      "prompt": "我已经收集了三份资料：官方文档、社区最佳实践、一次故障复盘。现在要写给负责人一份简洁但正式的结论，应该怎么组织？",
-      "logic_skill": "result_integration",
-      "expected_tool": "bigmodel_proxy",
       "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
+      "pretrained_used_tool": "calculator",
+      "baseline_match": false,
       "pretrained_match": false,
       "prune_reason": "unclassified_low_value"
     },
     {
-      "id": "real-multi-source-summary",
-      "prompt": "请基于我已提供的日志、告警、复盘三份材料，生成一段正式结论摘要（面向管理层，强调风险与决策建议）。",
+      "id": "stress-conflict-authority-002",
+      "prompt": "一篇 Google SRE 手册的摘录建议 P99 延迟要控制在 200ms 以内，但我们行业里另一家知名公司发布的案例说 500ms 才是合理基线。两个权威来源给出了不同阈值，在没有更多上下文的情况下你该如何推进？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "prune_reason": "unclassified_low_value"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-001",
+      "prompt": "我要决定是否启用某个数据库参数，只找到一篇说有显著提升、一篇说在高并发下反而降速的文章，但两篇都没提具体压测条件。现在我手里没有更多资料，应该直接给结论还是先暂停？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "prune_reason": "unclassified_low_value"
+    },
+    {
+      "id": "stress-conflict-missing-evidence-003",
+      "prompt": "有人说用 Redis 做分布式锁比 Zookeeper 更轻量，另一篇文章说 Redis 锁在网络抖动时会出问题，但两篇都没给任何基准测试数据。现在我需要决定技术选型，手里没有进一步的参考资料，下一步应该怎么做？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "prune_reason": "unclassified_low_value"
+    },
+    {
+      "id": "real-git-triage",
+      "prompt": "仓库最近 CI 失败，先查最近三次失败记录并总结最可能根因。",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_match": false,
+      "pretrained_match": false,
+      "prune_reason": "unclassified_low_value"
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "prompt": "我已经收集了两篇说不同观点的资料，其中一篇说用 gRPC 更好，另一篇说 REST 更稳定。现在要写给负责人的正式结论摘要。",
       "logic_skill": "result_integration",
       "expected_tool": "bigmodel_proxy",
       "baseline_used_tool": "bigmodel_proxy",
@@ -34,8 +67,8 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "repair-comparison-001",
-      "prompt": "从中小团队落地角度看，比较 SQLite 和 PostgreSQL 在 本地原型 里的 维护复杂度，并指出仍需补充的证据。",
+      "id": "guard-or-mapping-001",
+      "prompt": "团队在讨论 O/R 映射用 MyBatis 还是 JPA，先查一下两者的优缺点对比。",
       "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "search",
@@ -45,41 +78,8 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "repair-comparison-002",
-      "prompt": "从中小团队落地角度看，比较 Redis 和 Memcached 在 缓存服务 里的 性能表现",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "repair-comparison-003",
-      "prompt": "如果要尽快推进，比较 PostgreSQL 和 MySQL 在 中小团队 里的 成本，输出时尽量保持结构化。",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "repair-comparison-004",
-      "prompt": "从中小团队落地角度看，比较 FastAPI 和 Flask 在 内部工具 里的 性能表现，输出时尽量保持结构化。",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "repair-conflict_detection-017",
-      "prompt": "请给出一个稳妥的处理思路：多个来源给出相互冲突的数据库迁移建议时，应该先怎么处理冲突？，并指出仍需补充的证据。",
+      "id": "quality-stress-conflict-missing-evidence-004-01",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "search",
@@ -89,20 +89,207 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-005-01",
-      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
-      "logic_skill": "comparison",
+      "id": "quality-stress-conflict-missing-evidence-004-02",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "search",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "search",
       "baseline_match": true,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-005-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
+      "id": "quality-stress-conflict-missing-evidence-004-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-004-04",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-repair-missing-evidence-decision-003-01",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-repair-missing-evidence-decision-003-02",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-repair-missing-evidence-decision-003-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-repair-missing-evidence-decision-003-04",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-authority-002-01",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-authority-002-02",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-authority-002-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-authority-002-04",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-001-01",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-001-02",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-001-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-001-04",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-003-01",
+      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-003-02",
+      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-003-03",
+      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_match": true,
+      "pretrained_match": true,
+      "prune_reason": "low_signal_both_match"
+    },
+    {
+      "id": "quality-stress-conflict-missing-evidence-003-04",
+      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
+      "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
@@ -133,7 +320,7 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-real-conflict-01",
+      "id": "quality-guard-conflict-fenqi-001-01",
       "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
@@ -144,7 +331,7 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-real-conflict-02",
+      "id": "quality-guard-conflict-fenqi-001-02",
       "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
@@ -155,7 +342,7 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-real-conflict-03",
+      "id": "quality-guard-conflict-fenqi-001-03",
       "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
@@ -166,7 +353,7 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-real-conflict-04",
+      "id": "quality-guard-conflict-fenqi-001-04",
       "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
@@ -177,7 +364,7 @@
       "prune_reason": "low_signal_both_match"
     },
     {
-      "id": "quality-repair-comparison-001-01",
+      "id": "quality-guard-or-mapping-001-01",
       "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
       "logic_skill": "comparison",
       "expected_tool": "search",
@@ -188,119 +375,9 @@
       "prune_reason": "unclassified_low_value"
     },
     {
-      "id": "quality-repair-comparison-001-02",
+      "id": "quality-guard-or-mapping-001-02",
       "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
       "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-comparison-002-01",
-      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": true,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
-      "id": "quality-repair-comparison-002-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-comparison-003-01",
-      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": true,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
-      "id": "quality-repair-comparison-003-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-comparison-004-01",
-      "prompt": "两篇数据库选型文章都在比较 PostgreSQL 和 MySQL，但一个强调维护复杂度，另一个强调成本。面向中小团队时，应该先怎么建立比较框架再决定查哪些资料？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "bigmodel_proxy",
-      "baseline_match": true,
-      "pretrained_match": false,
-      "prune_reason": "unclassified_low_value"
-    },
-    {
-      "id": "quality-repair-comparison-004-02",
-      "prompt": "如果要给负责人写数据库选型建议，在比较 PostgreSQL 和 MySQL 前，哪些比较维度必须先固定，否则后面的检索和结论都会漂？",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-conflict_detection-017-01",
-      "prompt": "数据库迁移今晚必须执行：厂商最新文档要求先开启只读窗口，三个月前的官方博客却说不停机也能直接迁移；值班负责人催你10分钟内给建议，但目前没有版本信息和演练记录。此时你第一步该怎么处理，才能避免把冲突建议直接写成结论？",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-conflict_detection-017-02",
-      "prompt": "同一数据库参数的调优建议出现三方冲突：新版官方文档建议开启，社区高赞文章建议关闭，内部旧 runbook 说保持默认。现在用户要求你直接给变更方案，但缺少当前版本号和压测数据。你应如何判断哪些信息缺失到不能直接给最终动作？",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-conflict_detection-017-03",
-      "prompt": "你手头有三份材料：官方 FAQ、供应商技术支持邮件、一次社区故障复盘。它们对是否先回滚再迁移给出了不同建议，而老板只要一句最终判断。若当前证据链互相冲突且缺少日志，你应该怎样明确冲突等级和暂不能下结论的边界？",
-      "logic_skill": "conflict_detection",
-      "expected_tool": "search",
-      "baseline_used_tool": "search",
-      "pretrained_used_tool": "search",
-      "baseline_match": true,
-      "pretrained_match": true,
-      "prune_reason": "low_signal_both_match"
-    },
-    {
-      "id": "quality-repair-conflict_detection-017-04",
-      "prompt": "生产事故处理中，A来源说问题由参数配置导致，B来源说是版本兼容性问题，C来源则建议立即执行高风险修复。现在用户要求你立刻输出行动建议，但关键证据缺失且来源权威等级不一致。你应先如何拆解冲突、限制结论范围，并指出哪些动作暂时不能直接建议？",
-      "logic_skill": "conflict_detection",
       "expected_tool": "search",
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",

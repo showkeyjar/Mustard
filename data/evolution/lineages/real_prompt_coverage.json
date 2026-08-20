@@ -1,13 +1,13 @@
 {
   "track": "real_prompt_coverage",
-  "current_candidate_id": "real_prompt_coverage_20260731T110831Z",
-  "parent_candidate_id": "real_prompt_coverage_20260731T103839Z",
-  "top_gap": "coverage_not_quality",
+  "current_candidate_id": "real_prompt_coverage_20260819T034531Z",
+  "parent_candidate_id": "real_prompt_coverage_20260819T024755Z",
+  "top_gap": "quality_stabilization",
   "target_prompt_count": 20,
-  "current_prompt_count": 4,
-  "current_match_rate": 0.0,
-  "baseline_match_rate": 0.0,
-  "mismatch_case_count": 4,
+  "current_prompt_count": 63,
+  "current_match_rate": 0.7302,
+  "baseline_match_rate": 0.7302,
+  "mismatch_case_count": 17,
   "allowed_operators": [
     "expand_eval_set",
     "filter_candidate_pool",
@@ -19,197 +19,196 @@
   ],
   "history": [
     {
-      "candidate_id": "real_prompt_coverage_20260731T013846Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T013846Z"
+      "candidate_id": "real_prompt_coverage_20260818T065511Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T065511Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T020830Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T020830Z"
+      "candidate_id": "real_prompt_coverage_20260818T075104Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T075104Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T023840Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T023840Z"
+      "candidate_id": "real_prompt_coverage_20260818T084945Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T084945Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T030832Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T030832Z"
+      "candidate_id": "real_prompt_coverage_20260818T095054Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T095054Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T033845Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T033845Z"
+      "candidate_id": "real_prompt_coverage_20260818T105154Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T105154Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T040847Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T040847Z"
+      "candidate_id": "real_prompt_coverage_20260818T115107Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T115107Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T043844Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T043844Z"
+      "candidate_id": "real_prompt_coverage_20260818T125314Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T125314Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T050849Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T050849Z"
+      "candidate_id": "real_prompt_coverage_20260818T135423Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T135423Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T053846Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T053846Z"
+      "candidate_id": "real_prompt_coverage_20260818T145137Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T145137Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T060831Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T060831Z"
+      "candidate_id": "real_prompt_coverage_20260818T154825Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T154825Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T063845Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T063845Z"
+      "candidate_id": "real_prompt_coverage_20260818T165009Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T165009Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T070846Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T070846Z"
+      "candidate_id": "real_prompt_coverage_20260818T175312Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T175312Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T073845Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T073845Z"
+      "candidate_id": "real_prompt_coverage_20260818T184631Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T184631Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T080847Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T080847Z"
+      "candidate_id": "real_prompt_coverage_20260818T195034Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T195034Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T083847Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T083847Z"
+      "candidate_id": "real_prompt_coverage_20260818T205125Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T205125Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T090846Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T090846Z"
+      "candidate_id": "real_prompt_coverage_20260818T214849Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T214849Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T093833Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T093833Z"
+      "candidate_id": "real_prompt_coverage_20260818T225356Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T225356Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T100847Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T100847Z"
+      "candidate_id": "real_prompt_coverage_20260818T235053Z",
+      "status": "in_progress",
+      "decision": "stress_conflict_detection_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260818T235053Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T103839Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T103839Z"
+      "candidate_id": "real_prompt_coverage_20260819T024755Z",
+      "status": "in_progress",
+      "decision": "stabilize_quality_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260819T024755Z"
     },
     {
-      "candidate_id": "real_prompt_coverage_20260731T110831Z",
-      "status": "proposed",
-      "decision": "advance",
-      "prompt_count": 4,
-      "pretrained_match_rate": 0.0,
-      "created_at_utc": "20260731T110831Z"
+      "candidate_id": "real_prompt_coverage_20260819T034531Z",
+      "status": "in_progress",
+      "decision": "stabilize_quality_gap",
+      "prompt_count": 63,
+      "pretrained_match_rate": 0.7302,
+      "created_at_utc": "20260819T034531Z"
     }
   ],
   "last_operator_result": {
     "executed": false,
-    "reason": "target_already_reached",
-    "added_count": 0,
+    "reason": "operator_not_needed",
     "track_state": {
       "track": "real_prompt_coverage",
-      "target_gap": "coverage_not_quality",
-      "current_prompt_count": 4,
+      "target_gap": "quality_stabilization",
+      "current_prompt_count": 63,
       "target_prompt_count": 20,
-      "current_match_rate": 0.0,
-      "baseline_match_rate": 0.0,
-      "mismatch_case_count": 4,
-      "high_signal_count": 0,
-      "bigmodel_proxy_mismatch_count": 0,
+      "current_match_rate": 0.7302,
+      "baseline_match_rate": 0.7302,
+      "mismatch_case_count": 17,
+      "high_signal_count": 5,
+      "bigmodel_proxy_mismatch_count": 6,
       "primary_failure_pattern": "",
-      "operator": "expand_eval_set",
+      "operator": "stabilize_quality_gap",
       "operator_args": {
         "target_prompt_count": 20,
-        "current_prompt_count": 4,
+        "current_prompt_count": 63,
         "primary_failure_pattern": ""
       },
       "hypothesis": "Increase real prompt coverage without reducing current match rate.",
       "expected_metric_delta": {
-        "prompt_count": 16,
+        "prompt_count": 0,
         "pretrained_match_rate": 0.0
       },
-      "status": "proposed",
-      "decision": "advance",
-      "failure_reason": "real_prompt_count_below_target",
-      "repair_hint": "curate_additional_real_prompts_by_logic_skill"
+      "status": "in_progress",
+      "decision": "stabilize_quality_gap",
+      "failure_reason": "high_signal_quality_gap_active",
+      "repair_hint": "inject_repair_and_quality_focus_prompts"
     }
   },
-  "updated_at_utc": "20260731T110831Z"
+  "updated_at_utc": "20260819T034531Z"
 }

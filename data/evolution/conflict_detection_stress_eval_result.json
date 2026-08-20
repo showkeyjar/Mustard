@@ -1,9 +1,9 @@
 {
   "summary": {
     "prompt_count": 4,
-    "baseline_match_rate": 0.75,
+    "baseline_match_rate": 1.0,
     "pretrained_match_rate": 1.0,
-    "baseline_avg_steps": 5.5,
+    "baseline_avg_steps": 7.25,
     "pretrained_avg_steps": 3.75
   },
   "rows": [
@@ -14,11 +14,13 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -34,15 +36,17 @@
       "id": "stress-conflict-detection-002",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
         "WRITE_MEM",
         "CALL_BIGMODEL",
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
-        "ANSWER"
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL",
+        "CALL_BIGMODEL"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -50,7 +54,7 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
+      "baseline_match": true,
       "pretrained_match": true
     },
     {
@@ -60,11 +64,13 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -85,6 +91,7 @@
       "baseline_actions": [
         "WRITE_MEM",
         "CALL_TOOL",
+        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],

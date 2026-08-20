@@ -1,8 +1,8 @@
 # Benchmark Owner Output
 
-- top_gap: eval_coverage_too_low
-- why_this_is_top_gap_now: 当前真实 prompt 覆盖数未达最低目标，基础验证样本仍不足。
-- real_prompt_count: 4
-- real_prompt_match_rate: 0.0000
-- target: prompt_count>=20（优先本地工具调用场景）
-- gap: 16
+- top_gap: new_failure_pattern_stalled
+- why_this_is_top_gap_now: 覆盖数已达标，但系统仍未形成新增发现，当前瓶颈已从 coverage 转向 discovery。
+- real_prompt_count: 63
+- real_prompt_match_rate: 0.7302
+- target: 在后续 1~2 个周期内形成至少 1 个新增 failure pattern 或新弱点簇
+- gap: 329
