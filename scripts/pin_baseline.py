@@ -8,12 +8,15 @@ from carm.training import load_training_config
 
 # State files copied by build_runner_from_state_dir when a snapshot is loaded as
 # source_dir. Keeping this list in sync with that function is what makes the
-# pinned baseline a faithful P_before (controls + trained state).
+# pinned baseline a faithful P_before (controls + trained state). episodes.jsonl
+# is the learned experience and MUST be pinned too, or the baseline evaluates with
+# an empty ExperienceStore (see build_runner_from_state_dir's fallback note).
 SNAPSHOT_STATE_FILES = (
     "policy_state.json",
     "concept_state.json",
     "core_state.json",
     "evolution_state.json",
+    "episodes.jsonl",
 )
 
 

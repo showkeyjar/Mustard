@@ -415,3 +415,54 @@ def test_evaluate_isolated_prompts_survives_hung_runner():
     assert res["rows"][0]["pretrained_timed_out"] is True
     assert res["rows"][0]["baseline_match"] is True
     assert res["rows"][0]["pretrained_match"] is False
+
+
+# ---------------------------------------------------------------------------
+# Regression guard: the runner must evaluate WITH experience, not blind.
+# (2026-08-19: discovered evaluate_isolated_prompts ran with an EMPTY
+# ExperienceStore because episodes.jsonl was never copied into the workspace.)
+# ---------------------------------------------------------------------------
+
+
+def test_build_runner_loads_episodes_into_workspace():
+    snapshot = Path("data/eval/baseline_snapshot")
+    assert (snapshot / "episodes.jsonl").exists(), "re-run scripts.pin_baseline first"
+    with TemporaryDirectory() as tmp:
+        ws = Path(tmp) / "ws"
+        runner = build_runner_from_state_dir(snapshot, ws)
+        eps = ws / "episodes.jsonl"
+        # The learned experience must be physically present and non-empty.
+        assert eps.exists(), "episodes.jsonl was NOT copied into the eval workspace"
+        assert eps.stat().st_size > 0, "episodes.jsonl copied but empty -> runner is blind"
+        # And the runner's ExperienceStore must actually hold episodes.
+        assert len(runner.experience_store.load_all()) > 0
+
+
+def test_build_runner_falls_back_to_default_experience_when_absent():
+    default_eps = Path("data/experience/episodes.jsonl")
+    if not default_eps.exists():
+        import pytest
+
+        pytest.skip("no default episodes.jsonl to fall back to")
+    with TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        snapshot = tmp / "snapshot"
+        snapshot.mkdir()
+        (snapshot / "policy_state.json").write_text("{}", encoding="utf-8")
+        # snapshot intentionally ships NO episodes.jsonl
+        ws = tmp / "ws"
+        runner = build_runner_from_state_dir(snapshot, ws)
+        eps = ws / "episodes.jsonl"
+        assert eps.exists() and eps.stat().st_size > 0, "fallback to default experience failed"
+
+
+def test_provenance_records_non_null_episodes_sha():
+    from scripts.evaluate_real_prompts import _state_shas
+
+    snap = Path("data/eval/baseline_snapshot")
+    assert (snap / "episodes.jsonl").exists(), "re-run scripts.pin_baseline first"
+    prov = _state_shas(snap)
+    # Provenance must surface the episodes hash so a blind run is visible.
+    assert prov["episodes.jsonl"] is not None, "provenance must record episodes sha"
+    assert prov["policy_state.json"] is not None
+    assert prov["runtime_controls.json"] is not None

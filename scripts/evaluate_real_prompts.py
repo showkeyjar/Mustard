@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -15,6 +16,63 @@ from scripts.evaluate_pretraining import build_runner_from_state_dir, load_eval_
 # instead of a stateless default runner, so delta_tool_match_rate (P_after - P_before)
 # becomes discriminative. Missing -> fall back to None (legacy behavior, DeltaP=0).
 BASELINE_SNAPSHOT_DIR = Path("data/eval/baseline_snapshot")
+
+
+# Provenance: record exactly which carrier state each runner actually evaluated, so a
+# result is never "assumed". An empty ExperienceStore (missing episodes.jsonl) is the
+# single most dangerous silent failure mode — these hashes make it visible at a glance.
+_STATE_FILES = (
+    "episodes.jsonl",
+    "policy_state.json",
+    "concept_state.json",
+    "core_state.json",
+    "runtime_controls.json",
+)
+
+
+def _state_shas(source_dir: Path | None) -> dict[str, str | None]:
+    """sha256 (truncated) of each carrier state file in source_dir; None if absent."""
+    out: dict[str, str | None] = {}
+    if source_dir is None or not source_dir.exists():
+        return {name: None for name in _STATE_FILES}
+    for name in _STATE_FILES:
+        p = source_dir / name
+        if p.exists():
+            h = hashlib.sha256()
+            with p.open("rb") as fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    h.update(chunk)
+            out[name] = h.hexdigest()[:16]
+        else:
+            out[name] = None
+    return out
+
+
+def _resolve_ollama() -> dict[str, str]:
+    """Effective LLM endpoint the harness would hit for its *LLM subtasks* only
+    (format-requery / disambiguation). Tool selection itself is SYMBOLIC
+    (policy_state + experience), so this endpoint does NOT drive the match rate.
+
+    Resolution order: explicit env (CARM_OLLAMA_URL / OLLAMA_BASE_URL) ->
+    the production server's compiled-in default (scripts.carm_bfcl_server) ->
+    'unresolved'. Recorded for provenance, not as a guarantee of use.
+    """
+    url = os.environ.get("CARM_OLLAMA_URL") or os.environ.get("OLLAMA_BASE_URL")
+    model = os.environ.get("CARM_OLLAMA_MODEL") or os.environ.get("OLLAMA_MODEL")
+    if not url:
+        try:
+            from scripts import carm_bfcl_server as _srv  # type: ignore
+
+            url = getattr(_srv, "OLLAMA_BASE_URL", None)
+            model = model or getattr(_srv, "OLLAMA_MODEL", None)
+        except Exception:
+            url = url or "unresolved"
+    return {
+        "ollama_url": url or "unresolved",
+        "ollama_model": model or "unresolved",
+        "routing": "symbolic(tool selection) + llm(format subtasks)",
+    }
+
 
 # Wall-clock guard per runner.run. Without this, a single prompt whose agent loops
 # or blocks on an unreachable tool hangs the ENTIRE evaluation forever (observed:
@@ -133,6 +191,13 @@ def evaluate_isolated_prompts(
     total = max(1, len(rows))
     baseline_matches = sum(1 for row in rows if row["baseline_match"])
     pretrained_matches = sum(1 for row in rows if row["pretrained_match"])
+    provenance = {
+        "baseline_source": str(baseline_source) if baseline_source else None,
+        "baseline_state": _state_shas(baseline_source),
+        "pretrained_source": str(artifact_dir),
+        "pretrained_state": _state_shas(artifact_dir),
+        **_resolve_ollama(),
+    }
     return {
         # Self-Harness pillar DeltaP (P_after - P_before) at the aggregate level.
         # Consumed by team_conductor.py (self_harness_eval.require_non_negative_real_prompt_delta
@@ -149,6 +214,9 @@ def evaluate_isolated_prompts(
                 sum(len(row["pretrained_actions"]) for row in rows) / total, 4
             ),
         },
+        # Provenance: what each runner actually evaluated. If baseline_state.episodes
+        # is None, the run was blind (empty ExperienceStore) and DeltaP is meaningless.
+        "provenance": provenance,
         "rows": rows,
     }
 

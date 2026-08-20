@@ -81,6 +81,7 @@ def build_runner_from_state_dir(
             "concept_state.json",
             "core_state.json",
             "evolution_state.json",
+            "episodes.jsonl",
         ):
             source = source_dir / name
             if source.exists():
@@ -90,6 +91,16 @@ def build_runner_from_state_dir(
                     else name
                 )
                 shutil.copyfile(source, target)
+
+    # Experience (learned episodes) MUST be loaded, or the runner evaluates blind
+    # with an empty ExperienceStore (load_all() returns [] on a missing file). If
+    # source_dir did not ship episodes.jsonl (e.g. a baseline snapshot pinned before
+    # episodes were included), fall back to the live default experience so the eval
+    # uses real experience instead of running empty.
+    if not (workspace / "episodes.jsonl").exists():
+        default_episodes = Path("data/experience/episodes.jsonl")
+        if default_episodes.exists():
+            shutil.copyfile(default_episodes, workspace / "episodes.jsonl")
 
     controls_target = workspace / "runtime_controls.json"
 
