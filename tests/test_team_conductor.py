@@ -709,6 +709,8 @@ class TeamConductorTests(unittest.TestCase):
                         "sampling_blind_spot",
                         "frontier_research_blindspot",
                         "no_tool_feedback_loop",
+                        "attention_verification_handoff_gap",
+                        "learning_focus_evidence_tool_routing_gap",
                     ]
                 },
             },

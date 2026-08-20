@@ -10,7 +10,7 @@
     "enabled": true,
     "same_repo_only": true,
     "check_commands": [
-      "python -m unittest discover -s tests -v"
+      "python -m pytest tests/ -v"
     ]
   },
   "auto_merge": {

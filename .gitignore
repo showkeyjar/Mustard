@@ -43,6 +43,8 @@ data/control/
 data/eval/baseline_snapshot/
 # Local ad-hoc baseline run (never overwrite the official latest.json)
 data/eval/baseline_run_local.json
+# Local candidate-DeltaP run (never overwrite the official latest.json)
+data/eval/candidate_delta_local.json
 
 # Concept state snapshots
 concept_state.json
@@ -59,3 +61,83 @@ data/bfcl_v3/datasets/
 # Stray log files
 "D\357\200\272codesMustarddatacarm_server.log"
 "D\357\200\272codesMustarddatacarm_server_err.log"
+nul
+
+# All log files
+*.log
+*.log.*.txt
+
+# Root-level one-off scripts (not part of the project)
+eval_*.py
+run_*.py
+test_carm_*.py
+test_cloud_*.ps1
+test_opt_*.py
+test_server.ps1
+patch_*.py
+verify_*.py
+present_*.py
+read_*.py
+find_*.py
+fix_*.py
+inspect_*.py
+generate_*.py
+direct_*.py
+diag_*.py
+diag_*.md
+
+# PowerShell helper scripts at root
+*.ps1
+
+# Diagnostic scripts in scripts/
+scripts/diag_*.py
+scripts/eval_candidate_delta.py
+scripts/evaluate_bfcl_v4.py
+scripts/evaluate_framework_comparison.py
+scripts/evaluate_frameworks_real.py
+scripts/evaluate_memory_simple.py
+scripts/generate_memory_query*.py
+scripts/poll_bfcl_v2.*
+scripts/rebuild_bfcl_summary.py
+scripts/run_bfcl_overall_v1.py
+scripts/run_memory_eval.py
+scripts/server_launcher.py
+scripts/smoke_*.py
+scripts/stop_carm.ps1
+scripts/test_*.py
+scripts/update_*.py
+scripts/v5_test.py
+scripts/wait_eval.ps1
+
+# Local data directories (not versioned)
+data/data/
+data/experience/
+data/models/
+data/pretrain/
+data/sessions/
+data/review/
+data/bfcl_v2_eval_*.txt
+
+# Local eval intermediates
+data/eval/_*.json
+data/eval/batch_eval.py
+data/eval/bfcl_v*_results.json
+data/eval/bfcl_v4_*.json
+data/eval/bfcl_v4_*.csv
+data/eval/eval_*.log
+data/eval/server_*.log
+data/eval/start_server.py
+
+# Temp eval test
+temp_eval_test/
+
+# Root-level runtime artifacts
+episodes.jsonl
+reviews.jsonl
+runtime_controls.json
+eval_training.json
+datav5_test_server.log
+server_out*.log
+
+# BFCL run artifacts
+bfcl_*.log
