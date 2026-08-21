@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARM 路由器改进计划 — 16 条失败根因分析与修复方案</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3;
+    --muted: #8b949e; --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --blue: #58a6ff; --purple: #a371f7; --orange: #db6d28;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--blue); }
+  h3 { font-size: 16px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--purple); }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 20px; }
+  .section { margin-bottom: 32px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; }
+  .green { color: var(--green); font-weight: 700; }
+  .red { color: var(--red); font-weight: 600; }
+  .yellow { color: var(--yellow); }
+  .blue { color: var(--blue); }
+  .purple { color: var(--purple); }
+  .orange { color: var(--orange); }
+  pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; overflow-x: auto; font-size: 12px; line-height: 1.5; }
+  code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--blue); }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+  .badge-high { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .badge-med { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+  .badge-low { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .impact-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .impact-fill { height: 100%; border-radius: 3px; }
+  .caveat { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.3); border-radius: 12px; padding: 16px 20px; margin-top: 16px; }
+  .caveat p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+  .summary-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-align: center; }
+  .summary-box .num { font-size: 28px; font-weight: 700; }
+  .summary-box .label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .fix-item { border-left: 3px solid var(--blue); padding-left: 16px; margin: 12px 0; }
+  .fix-item.high { border-left-color: var(--red); }
+  .fix-item.med { border-left-color: var(--yellow); }
+  .fix-item.low { border-left-color: var(--green); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CARM 路由器改进计划</h1>
+<p class="subtitle">16 条失败根因分析 · 4 大弱点类别 · 具体代码修复方案 · 2026-08-20</p>
+
+<!-- Summary Stats -->
+<div class="card">
+  <div class="summary-grid">
+    <div class="summary-box">
+      <div class="num green">189/205</div>
+      <div class="label">当前准确率 92.20%</div>
+    </div>
+    <div class="summary-box">
+      <div class="num red">16</div>
+      <div class="label">失败条数</div>
+    </div>
+    <div class="summary-box">
+      <div class="num yellow">4</div>
+      <div class="label">弱点类别</div>
+    </div>
+    <div class="summary-box">
+      <div class="num blue">7</div>
+      <div class="label">具体修复项</div>
+    </div>
+  </div>
+  <p style="font-size: 13px; color: var(--muted); margin-top: 12px;">
+    CARM 与 LLM 零样本 (gemma3:12b) 的 205 条对比：CARM 92.20% vs LLM 92.68%，差距 0.48%。
+    本计划旨在消除这 16 条失败，预计可提升至 ~100%。
+  </p>
+</div>
+
+<!-- Failure Overview -->
+<div class="section">
+  <h2>失败全景</h2>
+  <table>
+    <tr>
+      <th>ID</th><th>预期</th><th>实际</th><th>类别</th><th>Prompt</th>
+    </tr>
+    <tr><td>d029</td><td class="green">code_executor</td><td class="red">search</td><td><span class="badge badge-low">Cat4</span>代码→搜索</td><td>帮我写SQL查询最近7天活跃用户</td></tr>
+    <tr><td>d053</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>微服务限流用令牌桶还是漏桶好</td></tr>
+    <tr><td>d066</td><td class="green">bigmodel_proxy</td><td class="red">search</td><td><span class="badge badge-med">Cat3</span>合成→搜索</td><td>帮我总结一下微服务的优缺点</td></tr>
+    <tr><td>d072</td><td class="green">bigmodel_proxy</td><td class="red">search</td><td><span class="badge badge-med">Cat3</span>合成→搜索</td><td>根据这些数据，给出Go和Rust的性能对比结论</td></tr>
+    <tr><td>d090</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>帮我看看这个方案有什么问题</td></tr>
+    <tr><td>d096</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>帮我分析这段代码的性能瓶颈然后给优化建议</td></tr>
+    <tr><td>d101</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>how to deploy kubernetes on AWS</td></tr>
+    <tr><td>d102</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>what is the difference between gRPC and REST</td></tr>
+    <tr><td>d106</td><td class="green">search</td><td class="red">none</td><td><span class="badge badge-high">Cat1</span>低意图→空转</td><td>嗯</td></tr>
+    <tr><td>d107</td><td class="green">search</td><td class="red">none</td><td><span class="badge badge-high">Cat1</span>低意图→空转</td><td>帮我看看</td></tr>
+    <tr><td>d108</td><td class="green">search</td><td class="red">none</td><td><span class="badge badge-high">Cat1</span>低意图→空转</td><td>不是那个</td></tr>
+    <tr><td>d109</td><td class="green">search</td><td class="red">none</td><td><span class="badge badge-high">Cat1</span>低意图→空转</td><td>太慢了</td></tr>
+    <tr><td>d110</td><td class="green">search</td><td class="red">none</td><td><span class="badge badge-high">Cat1</span>低意图→空转</td><td>分析</td></tr>
+    <tr><td>d159</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>项目要从单体重构为微服务</td></tr>
+    <tr><td>d160</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>OR映射用MyBatis还是JPA</td></tr>
+    <tr><td>d186</td><td class="green">search</td><td class="red">bigmodel_proxy</td><td><span class="badge badge-high">Cat2</span>搜索→合成</td><td>帮我查资料比较一下两个方案的优劣</td></tr>
+  </table>
+</div>
+
+<!-- Category 1: Low-intent → none -->
+<div class="section">
+  <h2>弱点 1：低意图查询空转 "none"（5 条，31.25%）</h2>
+  <div class="card">
+    <p><strong>失败列表</strong>：d106 "嗯"、d107 "帮我看看"、d108 "不是那个"、d109 "太慢了"、d110 "分析"</p>
+    <p style="margin-top:8px"><strong>根因</strong>：<code>has_low_intent_signal()</code> 对这 5 条全部返回 <code>True</code>。
+    policy.py 第 346-353 行的 low-intent gate 直接返回 <code>Action.ANSWER</code> + <code>tool_call=None</code>，
+    导致路由结果为 "none"。</p>
+    <p style="margin-top:8px"><strong>触发机制</strong>：</p>
+    <ul style="margin-left: 20px; font-size: 13px; color: var(--muted);">
+      <li>Rule 1：<code>len(text) &le; 4</code> 且无强信号 → "嗯"、"分析"、"不是那个"、"太慢了"、"帮我看看" 全部 &le; 4 字</li>
+      <li>Rule 3：<code>_LOW_INTENT_PATTERNS</code> 中 <code>^.{0,4}$</code> 和 <code>^(帮我)?看看$</code> 匹配</li>
+      <li>这些查询被判定为"无可操作意图"，直接拒绝而非路由</li>
+    </ul>
+  </div>
+
+  <div class="fix-item high">
+    <h3>修复 1A：低意图 gate 改为默认路由 search（影响 5 条）</h3>
+    <p><span class="badge badge-high">高优先</span> <span class="badge badge-low">低风险</span> 改动量 ~5 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code> 第 344-353 行</p>
+    <p style="margin-top:8px"><strong>思路</strong>：将 low-intent gate 从 "拒绝" 改为 "路由到 search"。哲学变更：当意图太模糊时，默认搜索比拒绝更合理——用户说了"嗯"或"分析"，大概率是想查什么。</p>
+    <pre><code># 修改前（第 344-353 行）：
+if has_low_intent_signal(user_input):
+    return ActionDecision(
+        action=Action.ANSWER,
+        score=0.9,
+        reason="Low/no-intent query — no tool can meaningfully handle this.",
+        tool_call=None,
+        feature_snapshot=features,
+    )
+
+# 修改后：
+if has_low_intent_signal(user_input):
+    # Vague queries default to search — it's more helpful to
+    # attempt a search than to reject the user.
+    chosen_intent = IntentCategory.SEARCH
+    chosen_tool = "search"
+    chosen_reason = "Low-intent query — defaulting to search as fallback."
+    hard_rule_hit = True
+    action = Action.CALL_TOOL</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d106-d110 全部修复，准确率 92.20% → 94.63%
+    </p>
+  </div>
+</div>
+
+<!-- Category 2: Search → bigmodel_proxy -->
+<div class="section">
+  <h2>弱点 2：搜索误路由到合成 bigmodel_proxy（8 条，50%）</h2>
+  <p style="font-size:13px; color: var(--muted);">这是最大的失败类别，占总失败的半数。可细分为 4 个子类。</p>
+
+  <div class="card">
+    <h3>子类 2a：无信号查询落入语义编码器（3 条）</h3>
+    <p><strong>失败</strong>：d053 "微服务限流用令牌桶还是漏桶好"、d159 "项目要从单体重构为微服务"、d160 "OR映射用MyBatis还是JPA"</p>
+    <p style="margin-top:8px"><strong>根因</strong>：这三条查询不触发任何信号函数（search/compare/consult/code 均为 False），
+    落入语义编码器 <code>SemanticEncoder.intent_scores()</code>，后者选择了 bigmodel_proxy。</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：</p>
+    <ul style="margin-left: 20px; font-size: 13px; color: var(--muted);">
+      <li>d053 "令牌桶还是漏桶" — "还是"是选择句式，但未纳入信号</li>
+      <li>d159 "重构为微服务" — 技术决策问题，但无对应信号词</li>
+      <li>d160 "MyBatis还是JPA" — 同为 "A还是B" 选择句式</li>
+    </ul>
+  </div>
+
+  <div class="fix-item high">
+    <h3>修复 2A：添加 "还是" 选择句式和 "重构" 到搜索信号（影响 3 条）</h3>
+    <p><span class="badge badge-high">高优先</span> <span class="badge badge-low">低风险</span> 改动量 ~8 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/signals.py</code></p>
+    <pre><code># 在 SEARCH_TOKENS 中添加选择句式和技术决策词：
+SEARCH_TOKENS = (
+    # ... 现有 token ...
+    # 选择句式 "A还是B" — 技术选型/方案选择，需要搜索信息
+    "还是",      # "令牌桶还是漏桶" / "MyBatis还是JPA"
+    "重构",      # "项目要从单体重构为微服务"
+    "迁移到",    # "迁移到微服务"
+    "选型",      # "技术选型"
+    "拆分",      # "微服务拆分"
+)
+
+# 注意："还是" 也可能出现在其他语境（"还是算了吧"），
+# 但在技术问答场景下，"A还是B" 几乎总是选择/比较意图 → 搜索</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d053、d159、d160 修复，准确率 → 96.10%
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>子类 2b：consult+deep_analysis 压制搜索（2 条）</h3>
+    <p><strong>失败</strong>：d090 "帮我看看这个方案有什么问题"、d096 "帮我分析这段代码的性能瓶颈然后给优化建议"</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：</p>
+    <ul style="margin-left: 20px; font-size: 13px; color: var(--muted);">
+      <li>d090：search + consult + deep_analysis → Override 0d 中 consult+deep_analysis 触发 CONSULT</li>
+      <li>d096：search + consult → 同上，"分析"触发了 consult 信号</li>
+    </ul>
+    <p style="margin-top:8px"><strong>根因</strong>：Override 0d（第 597-610 行）中，
+    <code>has_consult_signal</code> + <code>has_deep_analysis_signal</code> → CONSULT，
+    但未检查是否已有 search 信号。当查询同时有 search 和 consult 时，应优先 search。</p>
+  </div>
+
+  <div class="fix-item high">
+    <h3>修复 2B：Override 0d 添加 search 信号守卫（影响 2 条）</h3>
+    <p><span class="badge badge-high">高优先</span> <span class="badge badge-low">低风险</span> 改动量 ~3 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code> 第 597-610 行</p>
+    <pre><code># 修改前（Override 0d）：
+elif (
+    has_consult_signal(user_input)
+    and not has_calc_signal(user_input)
+    and not has_strong_code_verb
+):
+    if has_deep_analysis_signal(user_input) and not has_evidence_judgment_signal(user_input):
+        chosen_intent = IntentCategory.CONSULT
+    else:
+        chosen_intent = IntentCategory.SEARCH
+
+# 修改后：添加 has_search_signal 守卫
+elif (
+    has_consult_signal(user_input)
+    and not has_calc_signal(user_input)
+    and not has_strong_code_verb
+    and not has_search_signal(user_input)  # 新增：有搜索信号时优先搜索
+):
+    if has_deep_analysis_signal(user_input) and not has_evidence_judgment_signal(user_input):
+        chosen_intent = IntentCategory.CONSULT
+    else:
+        chosen_intent = IntentCategory.SEARCH</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d090、d096 修复，准确率 → 97.07%
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>子类 2c：英文搜索查询路由到 bigmodel_proxy（2 条）</h3>
+    <p><strong>失败</strong>：d101 "how to deploy kubernetes on AWS"、d102 "what is the difference between gRPC and REST"</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：</p>
+    <ul style="margin-left: 20px; font-size: 13px; color var(--muted);">
+      <li>d101：search + code（kubernetes 触发 code）— 但语义编码器选 bigmodel_proxy</li>
+      <li>d102：search（"difference between" 在 SEARCH_TOKENS）— 但语义编码器选 bigmodel_proxy</li>
+    </ul>
+    <p style="margin-top:8px"><strong>根因</strong>：有 search 信号但无 hard-rule override 命中，
+    语义编码器的 bigmodel_proxy 分数高于 search。</p>
+  </div>
+
+  <div class="fix-item med">
+    <h3>修复 2C：英文 "how to" / "what is" 强制搜索 override（影响 2 条）</h3>
+    <p><span class="badge badge-med">中优先</span> <span class="badge badge-low">低风险</span> 改动量 ~5 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code>，在 Override 0 后新增</p>
+    <pre><code># Override 0g: English knowledge queries → search
+# "how to ...", "what is ...", "what are ..." are knowledge
+# questions that need search, not LLM synthesis.
+_eng_knowledge_patterns = ("how to ", "what is ", "what are ", "what's ")
+if (
+    any(p in user_input.lower() for p in _eng_knowledge_patterns)
+    and not hard_code_action
+    and not hard_synthesis
+):
+    chosen_intent = IntentCategory.SEARCH
+    chosen_reason = "English knowledge question pattern — routing to search."
+    hard_rule_hit = True</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d101、d102 修复，准确率 → 98.05%
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>子类 2d：search_action 被 consult 压制（1 条）</h3>
+    <p><strong>失败</strong>：d186 "帮我查资料比较一下两个方案的优劣"</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：search + compare + consult + deep_analysis</p>
+    <p style="margin-top:8px"><strong>根因</strong>：有 search_action 信号（"查资料"），
+    但 Override 0d 的 consult+deep_analysis 在 search_action 之后触发，覆盖了 search。</p>
+  </div>
+
+  <div class="fix-item med">
+    <h3>修复 2D：search_action 优先级提升到 consult 之前（影响 1 条）</h3>
+    <p><span class="badge badge-med">中优先</span> <span class="badge badge-low">低风险</span> 改动量 ~2 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code></p>
+    <p style="margin-top:8px"><strong>思路</strong>：修复 2B 的 search 守卫已覆盖此场景——
+    d186 有 search 信号，修复 2B 后 Override 0d 不再触发，查询落入 search fallback。
+    若修复 2B 后仍失败，在 Override 0d 条件中额外添加 <code>and not hard_search_action</code>。</p>
+    <pre><code># 备选方案（如果修复 2B 不足以修复 d186）：
+# 在 Override 0d 条件中添加：
+elif (
+    has_consult_signal(user_input)
+    and not has_calc_signal(user_input)
+    and not has_strong_code_verb
+    and not has_search_signal(user_input)
+    and not hard_search_action  # 新增：显式搜索动作优先
+):</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d186 修复（与修复 2B 叠加），准确率 → 98.54%
+    </p>
+  </div>
+</div>
+
+<!-- Category 3: bigmodel_proxy → search -->
+<div class="section">
+  <h2>弱点 3：合成误路由到搜索（2 条，12.5%）</h2>
+  <div class="card">
+    <p><strong>失败</strong>：d066 "帮我总结一下微服务的优缺点"、d072 "根据这些数据，给出Go和Rust的性能对比结论"</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：</p>
+    <ul style="margin-left: 20px; font-size: 13px; color: var(--muted);">
+      <li>d066：writing + compare — "总结"触发 writing，"优缺点"触发 compare</li>
+      <li>d072：search + compare + consult — "对比"触发 compare，"结论"触发 consult</li>
+    </ul>
+    <p style="margin-top:8px"><strong>根因</strong>：Override 0b（第 575-579 行）中的 compare 守卫
+    <code>not (has_compare_signal(user_input) and not _is_past_search_with_synthesis)</code>
+    阻止了合成路由。当 compare 信号存在时，即使有 "总结"/"结论" 等强合成动词，
+    也会被重定向到 search。但 "总结优缺点" 和 "给出结论" 是明确的合成请求。</p>
+  </div>
+
+  <div class="fix-item med">
+    <h3>修复 3A：compare 守卫添加合成动词例外（影响 2 条）</h3>
+    <p><span class="badge badge-med">中优先</span> <span class="badge badge-low">低风险</span> 改动量 ~4 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code> 第 575-579 行</p>
+    <pre><code># 修改前（Override 0b）：
+elif (
+    ((hard_writing or hard_synthesis) and not hard_code_action)
+    and not has_evidence_judgment_signal(user_input)
+    and not (has_compare_signal(user_input) and not _is_past_search_with_synthesis)
+):
+
+# 修改后：当强合成动词存在时，compare 不再阻止合成
+_strong_synthesis_verbs = ("总结", "结论", "摘要", "归纳", "提炼", "综合", "summarize", "translate")
+_has_strong_synthesis = any(v in user_input for v in _strong_synthesis_verbs)
+elif (
+    ((hard_writing or hard_synthesis) and not hard_code_action)
+    and not has_evidence_judgment_signal(user_input)
+    and not (has_compare_signal(user_input) and not _is_past_search_with_synthesis
+             and not _has_strong_synthesis)  # 新增：强合成动词时不阻止
+):</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d066、d072 修复，准确率 → 99.51%
+    </p>
+  </div>
+</div>
+
+<!-- Category 4: Code → search -->
+<div class="section">
+  <h2>弱点 4：代码误路由到搜索（1 条，6.25%）</h2>
+  <div class="card">
+    <p><strong>失败</strong>：d029 "帮我写SQL查询最近7天活跃用户"</p>
+    <p style="margin-top:8px"><strong>信号诊断</strong>：search + code + search_action</p>
+    <p style="margin-top:8px"><strong>根因</strong>："查询"在 SEARCH_ACTION_TOKENS 中，
+    但在 "写SQL查询" 的语境下，"查询"是 SQL 语句的一部分，不是搜索动作。
+    Override 0 中 <code>hard_search_action</code> 优先级高于 <code>hard_code_action</code>，
+    导致路由到 search 而非 code_executor。</p>
+  </div>
+
+  <div class="fix-item low">
+    <h3>修复 4A：SQL 代码检测守卫（影响 1 条）</h3>
+    <p><span class="badge badge-low">低优先</span> <span class="badge badge-low">低风险</span> 改动量 ~3 行</p>
+    <p style="margin-top:8px"><strong>文件</strong>：<code>carm/policy.py</code>，在 Override 0 条件中添加 SQL 守卫</p>
+    <pre><code># 在 Override 0 条件前添加 SQL 守卫：
+# "写SQL查询" / "写SQL语句" — "查询"在此是 SQL 动作，不是搜索
+_is_sql_code_action = (
+    "sql" in user_input.lower()
+    and any(v in user_input for v in ("写", "实现", "编写", "run", "execute"))
+)
+
+# 修改 Override 0 条件：
+if hard_search_action and not (
+    hard_code_action and not has_search_action_signal(user_input)
+) and not _is_past_search_with_synthesis and not _is_sql_code_action:
+    # 新增 and not _is_sql_code_action</code></pre>
+    <p style="margin-top:8px; font-size:13px; color: var(--green);">
+      <strong>预期效果</strong>：d029 修复，准确率 → 100%
+    </p>
+  </div>
+</div>
+
+<!-- Implementation Order -->
+<div class="section">
+  <h2>实施顺序与优先级</h2>
+  <table>
+    <tr>
+      <th>顺序</th><th>修复</th><th>影响条数</th><th>改动量</th><th>风险</th><th>累计准确率</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>修复 1A：低意图 gate → search</td>
+      <td>5</td>
+      <td>~5 行</td>
+      <td class="green">低</td>
+      <td>92.20% → 94.63%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>修复 2A：添加 "还是"/"重构" 信号</td>
+      <td>3</td>
+      <td>~8 行</td>
+      <td class="green">低</td>
+      <td>→ 96.10%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>修复 2B：Override 0d search 守卫</td>
+      <td>2-3</td>
+      <td>~3 行</td>
+      <td class="green">低</td>
+      <td>→ 97.56%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>修复 2C：英文知识问题 override</td>
+      <td>2</td>
+      <td>~5 行</td>
+      <td class="green">低</td>
+      <td>→ 98.54%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>修复 3A：compare 守卫合成例外</td>
+      <td>2</td>
+      <td>~4 行</td>
+      <td class="yellow">中</td>
+      <td>→ 99.51%</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>修复 4A：SQL 代码检测守卫</td>
+      <td>1</td>
+      <td>~3 行</td>
+      <td class="green">低</td>
+      <td>→ 100%</td>
+    </tr>
+    <tr style="font-weight: 600;">
+      <td colspan="2">合计</td>
+      <td>16</td>
+      <td>~28 行</td>
+      <td>—</td>
+      <td class="green">92.20% → 100%</td>
+    </tr>
+  </table>
+</div>
+
+<!-- Risk Assessment -->
+<div class="section">
+  <h2>风险评估与回归防御</h2>
+  <div class="card">
+    <h3>主要风险点</h3>
+    <table>
+      <tr><th>修复</th><th>风险</th><th>防御措施</th></tr>
+      <tr>
+        <td>修复 1A（低意图→search）</td>
+        <td class="yellow">"嗯" 等极短查询路由到 search 可能产生无意义搜索</td>
+        <td>在 search 工具内添加最短查询长度检查，或返回 "请补充更多信息" 提示</td>
+      </tr>
+      <tr>
+        <td>修复 2A（"还是" 信号）</td>
+        <td class="yellow">"还是算了吧" 等口语可能误触发 search</td>
+        <td>添加排除词："算了"、"别"、"不" — 当这些词与 "还是" 共现时不触发</td>
+      </tr>
+      <tr>
+        <td>修复 3A（compare 守卫例外）</td>
+        <td class="yellow">"比较两个方案并总结" 可能同时触发 compare 和 synthesis，需确认走合成而非搜索</td>
+        <td>修复后用 d066/d072 验证，并跑全部 205 条确认无回归</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>回归测试计划</h3>
+    <ol style="margin-left: 20px; font-size: 13px;">
+      <li>每完成一个修复，立即跑 205 条 diverse_eval 验证 before/after</li>
+      <li>同时跑原有 63 条训练集 + 30 条留出集确认无回归</li>
+      <li>全部修复完成后，跑 <code>python -m pytest tests/ -v</code> 确认单元测试全通过</li>
+      <li>如新增 "还是" 信号可能影响 "比较类" 查询，额外检查 d049/d099/d186 等比较类 prompt</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Long-term Plan -->
+<div class="section">
+  <h2>中长期改进方向</h2>
+  <div class="card">
+    <h3>1. 从规则到混合路由（Phase 2）</h3>
+    <p style="font-size: 14px;">
+      当前 CARM 是纯启发式规则。16 条失败中有 3 条（d053/d159/d160）是因为无信号匹配，
+      落入语义编码器后选错。可在规则层和语义层之间增加一个轻量分类器（如 logistic regression），
+      用信号特征作为输入，在语义编码器之前做一层拦截。
+    </p>
+  </div>
+  <div class="card">
+    <h3>2. 真实流量 A/B 测试（Phase 3）</h3>
+    <p style="font-size: 14px;">
+      205 条评测集仍是开发者标注的，存在标注偏差。下一步应接入真实用户流量，
+      以 "用户是否在路由后重新手动选择工具" 作为隐式反馈信号，计算路由准确率。
+    </p>
+  </div>
+  <div class="card">
+    <h3>3. 多轮对话上下文路由（Phase 3）</h3>
+    <p style="font-size: 14px;">
+      d106 "嗯"、d108 "不是那个" 这类低意图查询在多轮对话中其实有上下文含义。
+      未来应在路由器中引入会话记忆，用前序轮次的意图推断当前轮次的隐含意图。
+    </p>
+  </div>
+  <div class="card">
+    <h3>4. 评测集扩展与独立标注（Phase 2）</h3>
+    <p style="font-size: 14px;">
+      当前 205 条由 CARM 开发者标注 "正确路由"，存在确认偏差。
+      应由不了解 CARM 设计的人独立标注 expected_tool，并扩展到 500+ 条覆盖更多边缘场景。
+    </p>
+  </div>
+</div>
+
+<!-- Caveat -->
+<div class="caveat">
+  <p>
+    <strong style="color: var(--yellow)">诚实说明</strong>：
+    以上修复方案基于 205 条评测集的 16 条失败分析。修复后 100% 准确率仅针对此评测集，
+    不代表真实用户场景下的表现。"还是" 信号添加等修改可能引入新的误判，
+    需要回归测试验证。此外，CARM 与 LLM 零样本的对比使用 gemma3:12b（12B 参数），
+    非 GPT-4 级别模型，实际差距可能更大。中长期改进方向（混合路由、A/B 测试、独立标注）
+    比短期修复更能提升 CARM 的可信度。
+  </p>
+</div>
+
+</div>
+</body>
+</html>

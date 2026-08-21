@@ -5,17 +5,6 @@
       "prompt": "两个团队对是否启用 CDN 预热有分歧：一组说有效，另一组说会浪费带宽，但两边都没拿出过任何流量日志或压测报告。在没有证据的情况下，我应该怎么推进这个决策？",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "search",
-      "baseline_match": false,
-      "pretrained_match": true,
-      "retain_reason": "separation_positive"
-    },
-    {
-      "id": "candidate-379152",
-      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
-      "logic_skill": "comparison",
-      "expected_tool": "search",
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_match": true,
@@ -23,9 +12,9 @@
       "retain_reason": "context_support"
     },
     {
-      "id": "guard-conflict-fenqi-001",
-      "prompt": "三个同事对缓存策略有分歧，但谁都没有拿出监控数据。我需要了解业界最佳实践再做判断，应该先查什么？",
-      "logic_skill": "conflict_detection",
+      "id": "candidate-379152",
+      "prompt": "比较 PostgreSQL 和 MySQL 在中小团队里的适用性",
+      "logic_skill": "comparison",
       "expected_tool": "search",
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",

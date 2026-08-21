@@ -1,0 +1,39 @@
+{
+  "name": "held_out_v1",
+  "description": "Held-out evaluation set — prompts NOT derived from or patterned after real_prompt_eval.json. Created to test generalization.",
+  "prompts": [
+    {"id": "hold-search-001", "prompt": "帮我查一下 Rust 的所有权机制是什么意思", "expected_tool": "search"},
+    {"id": "hold-search-002", "prompt": "2024年有什么新的前端框架值得关注", "expected_tool": "search"},
+    {"id": "hold-search-003", "prompt": "Kubernetes 的 HPA 怎么配置，给我找个教程", "expected_tool": "search"},
+    {"id": "hold-search-004", "prompt": "我们的微服务最近延迟变高了，帮我查一下常见的排查方法", "expected_tool": "search"},
+    {"id": "hold-search-005", "prompt": "比较 Vite 和 Webpack 在构建速度上的差异", "expected_tool": "search"},
+    {"id": "hold-search-006", "prompt": "两篇关于微服务限流的文章给出了不同建议，一篇说用令牌桶，另一篇说用漏桶，应该先怎么处理？", "expected_tool": "search"},
+    {"id": "hold-search-007", "prompt": "一份2022年的技术报告说 GraphQL 比 REST 快 3 倍，这个结论现在还可靠吗？", "expected_tool": "search"},
+    {"id": "hold-search-008", "prompt": "团队打算引入消息队列但不确定选 Kafka 还是 RocketMQ，先查一下两者的对比", "expected_tool": "search"},
+    {"id": "hold-search-009", "prompt": "帮我搜一下最近有没有关于大模型安全的新论文", "expected_tool": "search"},
+    {"id": "hold-search-010", "prompt": "数据库死锁怎么排查，帮我查一下常见原因和解决方案", "expected_tool": "search"},
+    {"id": "hold-search-011", "prompt": "RAG 和 fine-tuning 各自适合什么场景", "expected_tool": "search"},
+    {"id": "hold-search-012", "prompt": "我想了解 Serverless 在国内的发展现状", "expected_tool": "search"},
+
+    {"id": "hold-calc-001", "prompt": "帮我算一下 15% 的税前工资 28000 是多少税", "expected_tool": "calculator"},
+    {"id": "hold-calc-002", "prompt": "3.14159 乘以 7.5 等于多少", "expected_tool": "calculator"},
+    {"id": "hold-calc-003", "prompt": "我们有 120 台服务器，每台平均功耗 350W，一天总耗电多少度", "expected_tool": "calculator"},
+    {"id": "hold-calc-004", "prompt": "年利率 4.5%，存 50000 元，一年后利息是多少", "expected_tool": "calculator"},
+    {"id": "hold-calc-005", "prompt": "15 加上 27 等于多少", "expected_tool": "calculator"},
+    {"id": "hold-calc-006", "prompt": "一个长方形长 18 米宽 12 米，面积是多少", "expected_tool": "calculator"},
+    {"id": "hold-calc-007", "prompt": "API 限速 1000 QPS，每天能处理多少请求", "expected_tool": "calculator"},
+    {"id": "hold-calc-008", "prompt": "两个方案分别要 3.2 万和 2.8 万，差价多少", "expected_tool": "calculator"},
+
+    {"id": "hold-synth-001", "prompt": "我已经查了三份关于微服务网关的对比资料，信息够了，请帮我总结一份给技术委员会的正式选型建议", "expected_tool": "bigmodel_proxy"},
+    {"id": "hold-synth-002", "prompt": "根据上面给你的数据，帮我写一份面向管理层的迁移风险评估报告", "expected_tool": "bigmodel_proxy"},
+    {"id": "hold-synth-003", "prompt": "我们收集了四个团队的 CI/CD 实践报告，现在请整合成一份总结，指出共同点和差异", "expected_tool": "bigmodel_proxy"},
+    {"id": "hold-synth-004", "prompt": "帮我把这段话翻译成英文：我们的系统架构采用了微服务设计", "expected_tool": "bigmodel_proxy"},
+    {"id": "hold-synth-005", "prompt": "我已经做了三轮搜索，找到了 Redis 和 Memcached 在缓存场景下的性能对比数据，数据充分了，现在应该直接给出结论。", "expected_tool": "bigmodel_proxy"},
+    {"id": "hold-synth-006", "prompt": "根据我提供的架构评审记录和容量数据，帮我写一份迁移决策摘要", "expected_tool": "bigmodel_proxy"},
+
+    {"id": "hold-code-001", "prompt": "帮我写一个 Python 脚本读取 CSV 文件并统计每列的空值数量", "expected_tool": "code_executor"},
+    {"id": "hold-code-002", "prompt": "实现一个二分查找函数，语言用 Python", "expected_tool": "code_executor"},
+    {"id": "hold-code-003", "prompt": "帮我写一段代码，用 matplotlib 画一个柱状图", "expected_tool": "code_executor"},
+    {"id": "hold-code-004", "prompt": "帮我写一个 Go 程序实现简单的 HTTP 健康检查接口", "expected_tool": "code_executor"}
+  ]
+}

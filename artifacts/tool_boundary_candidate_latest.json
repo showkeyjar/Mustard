@@ -4,7 +4,7 @@
     "policy.prefer_calculator_for_mixed_numeric_code": 1,
     "policy.require_conflict_verify_before_answer": 1
   },
-  "artifact_dir": "data\\pretrain",
+  "artifact_dir": "data\\experience",
   "expected_tool": "calculator",
   "baseline_tool": "calculator",
   "candidate_tool": "calculator",
@@ -21,17 +21,26 @@
   "candidate_changes_tool": false,
   "guard_summary": {
     "case_count": 3,
-    "candidate_match_rate": 1.0,
-    "failed_case_ids": []
+    "candidate_match_rate": 0.6667,
+    "failed_case_ids": [
+      "plain-code"
+    ]
   },
   "real_prompt_summary": {
-    "prompt_count": 20,
-    "pretrained_match_rate": 1.0,
-    "pretrained_avg_steps": 3.65
+    "prompt_count": 63,
+    "pretrained_match_rate": 0.9683,
+    "pretrained_avg_steps": 4.0317
   },
   "hard_eval_summary": {
-    "pass_rate": 1.0,
-    "failed_case_ids": []
+    "pass_rate": 0.0,
+    "failed_case_ids": [
+      "conflict-check",
+      "search-looking-calc",
+      "integrate-for-exec",
+      "result-integration",
+      "compare-db",
+      "conflict-no-answer"
+    ]
   },
   "rows": [
     {
@@ -58,10 +67,10 @@
       "id": "plain-code",
       "prompt": "帮我理解这段 Python 脚本为什么会报空指针错误",
       "expected_tool": "code_executor",
-      "baseline_tool": "code_executor",
-      "candidate_tool": "code_executor",
-      "baseline_match": true,
-      "candidate_match": true,
+      "baseline_tool": "search",
+      "candidate_tool": "search",
+      "baseline_match": false,
+      "candidate_match": false,
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
@@ -142,6 +151,9 @@
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -250,7 +262,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -265,6 +276,9 @@
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -277,7 +291,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -292,6 +305,9 @@
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -304,7 +320,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -319,6 +334,9 @@
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -331,7 +349,6 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_match": true
@@ -344,11 +361,571 @@
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-authority-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-authority-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-missing-evidence-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-missing-evidence-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-missing-evidence-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-conflict-missing-evidence-004",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-missing-evidence-decision-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-missing-evidence-decision-002",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-missing-evidence-decision-003",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-comparison-005-variant",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "stress-comparison-deflects-bigmodel-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-step-listing-comparison-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "repair-step-listing-comparison-002",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "code_executor",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": false
+    },
+    {
+      "id": "repair-step-listing-comparison-003",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-formal-synthesis-conflict-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-calc-fan-er-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-synthesis-no-evidence-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-conflict-fenqi-001",
+      "logic_skill": "conflict_detection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "term-judgment-001",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "term-judgment-002",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "term-judgment-003",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "constraint-plan-001",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "constraint-plan-002",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "result-integration-003",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "result-integration-004",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "result-integration-005",
+      "logic_skill": "result_integration",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "evidence-judgment-003",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "evidence-judgment-004",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "step-planning-003",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "step-planning-004",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-ab-test-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-bs-arch-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-or-mapping-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-rw-split-001",
+      "logic_skill": "comparison",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "guard-crud-api-001",
+      "logic_skill": "step_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "tool-selection-search-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "tool-selection-bigmodel-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "bigmodel_proxy",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "tool-selection-calc-boundary-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "calculator",
+      "pretrained_used_tool": "calculator",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "tool-selection-code-001",
+      "logic_skill": "tool_selection",
+      "expected_tool": "code_executor",
+      "pretrained_used_tool": "code_executor",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "term-judgment-004",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "bigmodel_proxy",
+      "pretrained_used_tool": "code_executor",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": false
+    },
+    {
+      "id": "term-judgment-005",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "constraint-plan-003",
+      "logic_skill": "constraint_planning",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "pretrained_match": true
+    },
+    {
+      "id": "evidence-judgment-005",
+      "logic_skill": "evidence_judgment",
+      "expected_tool": "search",
+      "pretrained_used_tool": "search",
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
         "ANSWER"
       ],
       "pretrained_match": true
     }
   ],
-  "decision": "candidate_pass"
+  "decision": "candidate_fail"
 }

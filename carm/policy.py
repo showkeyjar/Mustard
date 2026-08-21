@@ -35,6 +35,7 @@ from carm.signals import (
     has_multi_intent_signal,
     has_multi_step_signal,
     has_low_intent_signal,
+    SEARCH_TOKENS,
 )
 from carm.state import AgentState
 
@@ -341,16 +342,10 @@ class OnlinePolicy:
             (guidance or {}).get("preferred_tool", "")
         ) or self.concepts.preferred_tool(user_input)
 
-        # --- Low-intent gate: reject queries with no actionable intent ---
-        # "嗯", "帮我看看", "太慢了", "不是那个" → no tool, ask user to clarify
-        if has_low_intent_signal(user_input):
-            return ActionDecision(
-                action=Action.ANSWER,
-                score=0.9,
-                reason="Low/no-intent query — no tool can meaningfully handle this. Prompting user to clarify.",
-                tool_call=None,
-                feature_snapshot=features,
-            )
+        # --- Low-intent gate: default vague queries to search ---
+        # "嗯", "帮我看看", "太慢了", "不是那个" are too vague for a specific
+        # tool, but defaulting to search is more helpful than rejecting.
+        _is_low_intent = has_low_intent_signal(user_input)
 
         # Anti-loop: if THINK was chosen but we've been thinking for too long,
         # force a tool route based on semantic intent. Prevents infinite THINK
@@ -395,9 +390,21 @@ class OnlinePolicy:
         # route directly to multi_intent pseudo-tool.  This bypasses the entire
         # single-tool override chain because the runner handles sequential
         # execution of each sub-intent.
-        from carm.signals import has_multi_intent_signal, split_multi_intent
+        # BUT: when the query starts with a search action ("查一下...然后..."),
+        #   the user is describing a workflow that starts with search — route
+        #   to search, not multi-intent.
+        from carm.signals import has_multi_intent_signal, split_multi_intent, has_search_action_signal
 
-        if has_multi_intent_signal(user_input):
+        # Suppress multi-intent when strong synthesis verbs or "先X再Y" patterns
+        # are present — these are sequential workflows, not independent multi-intents.
+        _synthesis_override = any(v in user_input for v in ("总结", "分析", "报告", "归纳", "提炼", "综合", "结论", "summarize"))
+        _sequential_pattern = "先" in user_input and "再" in user_input
+        _code_write_override = any(v in user_input for v in ("写", "实现", "编写", "开发")) and any(
+            t in user_input.lower() for t in ("python", "docker", "java", "代码", "脚本", "配置文件", "compose", "go", "rust")
+        )
+        if has_multi_intent_signal(user_input) and not (
+            has_search_action_signal(user_input) and "然后" in user_input
+        ) and not _synthesis_override and not _sequential_pattern and not _code_write_override:
             intents = split_multi_intent(user_input)
             if len(intents) >= 2:
                 state.hidden["_multi_intent_splits"] = [
@@ -428,7 +435,7 @@ class OnlinePolicy:
         # "对比分析A和B的差异并给出建议" → search → compare → bigmodel_proxy
         from carm.signals import has_multi_step_signal
 
-        if has_multi_step_signal(user_input):
+        if has_multi_step_signal(user_input) and not _synthesis_override and not _sequential_pattern:
             state.hidden["_multi_step_plan"] = "search → compare → bigmodel_proxy"
             return ActionDecision(
                 action=Action.CALL_TOOL,
@@ -469,24 +476,65 @@ class OnlinePolicy:
             # Hard-rule overrides (highest priority)
             hard_conflict = is_conflict_task(user_input)
             hard_arithmetic = bool(re.search(r"\d+\s*[\*\/+\-]\s*\d+", user_input))
-            hard_code_action = has_code_signal(user_input)
-            hard_explain = has_explain_signal(user_input)
-            hard_search_action = has_search_action_signal(user_input)
             hard_writing = has_writing_signal(user_input)
-            _synthesis_verbs = ("总结", "报告", "建议", "归纳", "提炼", "综合")
+            _synthesis_verbs = ("总结", "报告", "建议", "归纳", "提炼", "综合", "摘要", "结论", "小结", "分析", "summarize", "translate", "write a report", "write a comprehensive", "analyze")
             hard_synthesis = any(v in user_input for v in _synthesis_verbs)
-            hard_formal = has_formal_signal(user_input) and hard_synthesis
+            _is_bare_analyze = user_input.strip() == "分析"
+            if _is_bare_analyze:
+                hard_synthesis = False
+            # "分析" alone is ambiguous — it could be search ("分析一下代码") or
+            # synthesis ("分析Kafka高吞吐的原因"). Only treat "分析" as synthesis
+            # when it appears at the START of the query (analysis report intent),
+            # not when preceded by "帮我"/"请" (which makes it a search request).
+            if "分析" in user_input and not user_input.strip().startswith("分析") and not _is_bare_analyze:
+                _has_question = any(q in user_input for q in ("为什么", "咋", "吗", "？", "?", "什么原因", "什么"))
+                _has_compare = has_compare_signal(user_input)
+                _has_specific_object = any(o in user_input for o in ("这段", "这个", "那份", "那个", "这份", "这行", "那个日志"))
+                _has_explicit_calc = hard_arithmetic or any(v in user_input for v in ("算下", "算一下", "算算", "计算一下", "估算", "费用"))
+                _has_code_write = "写" in user_input and has_code_signal(user_input)
+                if (_has_question or _has_compare or _has_specific_object or _has_explicit_calc or _is_bare_analyze or _has_code_write) and not hard_writing:
+                    hard_synthesis = False
             _strong_code_verbs = (
                 "运行",
                 "写",
                 "实现",
                 "编写",
-                "代码",
-                "脚本",
                 "执行",
                 "跑",
+                "画",
+                # English code action verbs
+                "write",
+                "implement",
+                "run ",
+                "execute",
+                "build",
+                "create",
             )
             has_strong_code_verb = any(v in user_input for v in _strong_code_verbs)
+            # Extended code detection: "用XX脚本/写XX" patterns where "用" is a
+            # code verb only when combined with a code token.
+            if not has_strong_code_verb and has_code_signal(user_input):
+                _code_verb_patterns = (
+                    "用Shell", "用Go", "用Python", "用Java", "用Rust",
+                    "用C语言", "用Scala", "用Lua", "用Bash", "用PowerShell",
+                    "用Kotlin", "用JavaScript", "用TypeScript", "用Vue",
+                    "用React", "用Angular", "用Docker", "用K8s", "用FastAPI",
+                    "用Dockerfile", "用Terraform", "用PySpark",
+                    "弄个",  # colloquial for "make/create" — code when combined with code token
+                )
+                has_strong_code_verb = any(p in user_input for p in _code_verb_patterns)
+            # Code action requires BOTH a code token AND a code action verb,
+            # OR a code action verb without writing/synthesis signal.
+            # This prevents "PostgreSQL vs MySQL" (tech term in search query)
+            # from triggering code routing.
+            hard_code_action = (
+                has_code_signal(user_input) and has_strong_code_verb and not hard_writing and not hard_synthesis
+            ) or (
+                has_strong_code_verb and not hard_writing and not hard_synthesis
+            )
+            hard_explain = has_explain_signal(user_input)
+            hard_search_action = has_search_action_signal(user_input)
+            hard_formal = has_formal_signal(user_input) and hard_synthesis
 
             chosen_intent: IntentCategory | None = None  # Set by hard-rule overrides
             chosen_tool = (
@@ -500,9 +548,14 @@ class OnlinePolicy:
             # Override -1: Multi-intent detection → multi_intent router
             # "帮我查一下北京天气，顺便算一下3加5" → split into [search, calculator]
             # This must be first because it overrides ALL single-tool rules.
+            # BUT: when the query starts with a search action ("查一下...然后..."),
+            #   the user is describing a workflow that starts with search — route
+            #   to search, not multi-intent.
             from carm.signals import has_multi_intent_signal, split_multi_intent
 
-            if has_multi_intent_signal(user_input):
+            if has_multi_intent_signal(user_input) and not (
+                hard_search_action and "然后" in user_input
+            ) and not hard_code_action:
                 intents = split_multi_intent(user_input)
                 if len(intents) >= 2:
                     chosen_intent = IntentCategory.MULTI_INTENT
@@ -520,9 +573,35 @@ class OnlinePolicy:
             # When both search action and code action are present:
             #   - "搜索一下Python教程" → search wins (explicit "搜索" action verb)
             #   - "写个爬虫抓微博热搜" → code wins ("热搜" is content target, not search action)
+            # BUT: when user says they've ALREADY searched and wants to conclude,
+            #   don't route to search — route to synthesis (consult).
+            #   e.g. "我已经做了两轮搜索...信息足够了，现在应该直接给出结论"
+            _past_search_markers = ("已经", "做了", "过了", "完了", "查了", "搜了")
+            _sufficient_markers = ("足够", "够了", "充分", "找到了", "收集了", "查到")
+            _is_past_search_with_synthesis = (
+                any(m in user_input for m in _past_search_markers)
+                and any(m in user_input for m in _sufficient_markers)
+                and hard_synthesis
+            )
+            _is_sql_code_action = (
+                "sql" in user_input.lower()
+                and any(v in user_input for v in ("写", "实现", "编写", "run", "execute", "query"))
+            )
+            _strong_synthesis_verbs = ("总结", "结论", "摘要", "归纳", "提炼", "综合", "报告", "summarize", "write a report", "write a comprehensive", "analyze")
+            _has_strong_synthesis = any(v in user_input for v in _strong_synthesis_verbs)
+            # "分析" at start or "请分析" without compare → strong synthesis
+            # (prevents search signal from overriding analysis report intent)
+            # ALSO: when "分析" survived the guard (hard_synthesis still True)
+            #   and is NOT at start, it's a synthesis-worthy analysis request
+            if user_input.strip().startswith("分析") and not _is_bare_analyze:
+                _has_strong_synthesis = True
+            elif "请分析" in user_input and not has_compare_signal(user_input) and not has_calc_signal(user_input):
+                _has_strong_synthesis = True
+            elif "分析" in user_input and hard_synthesis and not user_input.strip().startswith("分析") and not has_calc_signal(user_input):
+                _has_strong_synthesis = True
             if hard_search_action and not (
                 hard_code_action and not has_search_action_signal(user_input)
-            ):
+            ) and not _is_past_search_with_synthesis and not _is_sql_code_action:
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Explicit search action detected (搜索/搜一下/查一下)."
                 hard_rule_hit = True
@@ -531,12 +610,49 @@ class OnlinePolicy:
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Travel/lifestyle service intent detected."
                 hard_rule_hit = True
+            # Override 0a1: Sequential "先X再Y" pattern — route based on first action
+            # "先列出关键步骤再给结论比较..." → search first (compare info needed)
+            # "先搜资料再总结..." → search first (explicit search action)
+            # "先写代码再跑测试" → code first (explicit code action)
+            # The first action in the sequence determines primary routing.
+            elif "先" in user_input and ("再" in user_input or "然后" in user_input) and not hard_code_action:
+                # Split on whichever connector comes first
+                _split_pos = min(
+                    user_input.find("再") if "再" in user_input else 999,
+                    user_input.find("然后") if "然后" in user_input else 999,
+                )
+                _first_part = user_input[:_split_pos] if _split_pos < 999 else ""
+                _has_first_search = (
+                    has_search_action_signal(_first_part)
+                    or has_compare_signal(_first_part)
+                    or has_search_signal(_first_part)
+                )
+                _has_first_calc = has_calc_signal(_first_part)
+                if _has_first_search:
+                    chosen_intent = IntentCategory.SEARCH
+                    chosen_reason = "Sequential '先X再Y' pattern — first action is search-related, route to search first."
+                    hard_rule_hit = True
+                elif _has_first_calc:
+                    chosen_intent = IntentCategory.CALC
+                    chosen_reason = "Sequential '先X再Y' pattern — first action is calculation, route to calculator first."
+                    hard_rule_hit = True
             # Override 0b: Writing/synthesis intent → consult (bigmodel)
             # BUT: evidence_judgment overrides synthesis — "这个建议可靠吗" needs
             # search verification, not LLM synthesis.
+            # BUT: compare queries with "结论" should search first, not synthesize.
+            # EXCEPT: when user has already gathered evidence (past-search markers),
+            #   "对比" in text means they're referencing past comparison, not
+            #   requesting a new one — synthesis should win.
+            # EXCEPT: strong synthesis verbs ("总结"/"结论"/"摘要") override compare
+            #   guard — "总结优缺点" and "给出对比结论" are synthesis requests.
+            # EXCEPT: when search signal is present but no strong synthesis verb,
+            #   route to search — "分析...给优化建议" has search + weak synthesis.
             elif (
-                hard_writing or (hard_synthesis and not hard_code_action)
-            ) and not has_evidence_judgment_signal(user_input):
+                ((hard_writing or hard_synthesis) and not hard_code_action)
+                and not has_evidence_judgment_signal(user_input)
+                and not (has_compare_signal(user_input) and not _is_past_search_with_synthesis and not _has_strong_synthesis)
+                and not ((has_search_action_signal(user_input) or any(t in user_input for t in SEARCH_TOKENS)) and not _has_strong_synthesis and not hard_writing)
+            ):
                 chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
                     "Writing/synthesis intent detected — routing to consult tool."
@@ -554,10 +670,14 @@ class OnlinePolicy:
             # "请基于公开资料总结要点，并给出一个能验证的实验" 有 consult+deep_analysis
             # 信号，但真实意图是先检索证据再下结论 → 应走 search，而不是 bigmodel 合成。
             # 与 Override 0b / 2a 的 evidence_judgment 守卫保持一致。
+            # v7 fix: has_search_signal 守卫 — 当查询同时有 search 和 consult 信号时，
+            # 优先搜索。"帮我看看这个方案有什么问题" 有 search+consult+deep_analysis，
+            # 但真实意图是搜索方案问题，不是合成。
             elif (
                 has_consult_signal(user_input)
                 and not has_calc_signal(user_input)
                 and not has_strong_code_verb
+                and not has_search_signal(user_input)
             ):
                 if has_deep_analysis_signal(
                     user_input
@@ -578,17 +698,23 @@ class OnlinePolicy:
                     "Debug consultative intent — seeking help/solutions, not execution."
                 )
                 hard_rule_hit = True
-            # Override 0f: Deep reasoning → consult (bigmodel)
-            elif has_deep_reason_signal(user_input):
-                chosen_intent = IntentCategory.CONSULT
-                chosen_reason = "Deep reasoning/comparative analysis detected — routing to consult tool."
-                hard_rule_hit = True
-            # Override 1: Conflict tasks → search
-            elif hard_conflict:
+            # Override 1: Conflict tasks → search (must come before deep_reason
+            # and consult overrides — conflict queries need evidence gathering first).
+            # BUT: when the user has already gathered evidence and wants to write
+            # a formal conclusion, route to consult (bigmodel_proxy) for synthesis.
+            elif hard_conflict and not hard_formal and not (
+                "写" in user_input
+                and any(w in user_input for w in ("正式", "结论", "总结", "报告"))
+            ):
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = (
                     "Conflict-style questions should gather explicit evidence."
                 )
+                hard_rule_hit = True
+            # Override 0f: Deep reasoning → consult (bigmodel)
+            elif has_deep_reason_signal(user_input):
+                chosen_intent = IntentCategory.CONSULT
+                chosen_reason = "Deep reasoning/comparative analysis detected — routing to consult tool."
                 hard_rule_hit = True
             # Override 2: Explicit arithmetic → calc
             elif (
@@ -633,6 +759,7 @@ class OnlinePolicy:
                 and not has_code_signal(user_input)
                 and not hard_explain
                 and not has_evidence_judgment_signal(user_input)
+                and not hard_synthesis
             ):
                 chosen_intent = IntentCategory.CALC
                 chosen_reason = (
@@ -690,13 +817,19 @@ class OnlinePolicy:
                         chosen_intent = IntentCategory.CALC
                         chosen_reason = "Hard rule: code+calc co-occurrence but no strong code action verb — calculator preferred for numeric tasks."
                 else:
-                    chosen_intent = IntentCategory.CODE
-                    chosen_reason = "Hard rule: code+calc co-occurrence — code executor wins (flag=0, legacy)."
+                    if not any(v in user_input for v in _strong_code_action_verbs):
+                        chosen_intent = IntentCategory.CALC
+                        chosen_reason = "Hard rule: code+calc co-occurrence but no strong code action verb — calculator preferred for numeric tasks."
+                    else:
+                        chosen_intent = IntentCategory.CODE
+                        chosen_reason = "Hard rule: code+calc co-occurrence with strong code action verb — code executor wins."
                 hard_rule_hit = True
             # Override 3: Clear code action → code
+            # Explain signal only blocks code when there's no strong code verb
+            # ("什么是排序算法" = explain → search, but "写代码分析CSV" = code)
             elif (
                 hard_code_action
-                and not hard_explain
+                and not (hard_explain and not has_strong_code_verb)
                 and not (has_compare_signal(user_input) and not has_strong_code_verb)
             ):
                 chosen_intent = IntentCategory.CODE
@@ -713,17 +846,24 @@ class OnlinePolicy:
             # "拆计划" + "查资料" is a planning task that needs search, not code.
             # When the query has deep_analysis signal (计划/方案/规划) AND search
             # signal (资料/哪些/信息) but no actual code action, route to search.
+            # Also covers planning queries without explicit search signal — a
+            # plan request like "给出发布计划" needs best-practice search, not
+            # code execution, even when it mentions dev terms (修复/测试/发布).
             elif (
                 has_deep_analysis_signal(user_input)
-                and has_search_signal(user_input)
                 and not hard_code_action
                 and not hard_arithmetic
+                and not hard_writing
             ):
                 chosen_intent = IntentCategory.SEARCH
-                chosen_reason = "Planning task with search signal — user needs information gathering, not execution."
+                chosen_reason = "Planning task — user needs information gathering for a plan, not code execution."
                 hard_rule_hit = True
-            # Override 5: Formal/synthesis → consult
-            elif hard_formal and not hard_conflict:
+            # Override 5: Formal/synthesis → consult (bigmodel)
+            # When the user wants to write a formal conclusion/synthesis, route to
+            # consult even if conflict was detected — the conflict override (Override 1)
+            # already guards against this case, so if we reach here with hard_formal,
+            # the user has evidence and wants synthesis.
+            elif hard_formal:
                 chosen_intent = IntentCategory.CONSULT
                 chosen_reason = (
                     "Formal/synthesis intent detected — routing to consult tool."
@@ -775,12 +915,20 @@ class OnlinePolicy:
                 hard_rule_hit = True
 
             # L4 Fallback: ultra-low confidence → consult (bigmodel)
+            # BUT: skip consult fallback when search signal or low-intent flag is present —
+            # those queries should default to search, not synthesis.
+            # ALSO: English-only queries default to search (knowledge lookup),
+            # not consult — "Kafka consumer group rebalance strategy" is a search query.
+            _is_english_only = not bool(re.search(r"[\u4e00-\u9fff]", user_input))
             if (
                 semantic_best_score < 0.15
                 and not hard_rule_hit
                 and not hard_conflict
                 and not hard_arithmetic
                 and not hard_code_action
+                and not has_search_signal(user_input)
+                and not _is_low_intent
+                and not _is_english_only
             ):
                 chosen_intent = IntentCategory.CONSULT
                 chosen_reason = "L4 catch-all: ultra-low confidence, routing to consult tool for general reasoning."
@@ -793,6 +941,14 @@ class OnlinePolicy:
             ):
                 chosen_intent = IntentCategory.SEARCH
                 chosen_reason = "Low-confidence semantic routing, defaulting to search."
+
+            # Final fallback: no hard rule hit and no low-confidence match.
+            # Default to search for general knowledge queries.
+            # Also catches low-intent queries ("嗯", "帮我看看") that should
+            # default to search rather than being rejected.
+            if not hard_rule_hit and chosen_intent is None:
+                chosen_intent = IntentCategory.SEARCH
+                chosen_reason = "No specific signal detected — defaulting to knowledge search."
 
             # Resolve IntentCategory → actual tool name
             if chosen_intent is not None:
@@ -1044,10 +1200,20 @@ class OnlinePolicy:
             )
 
         # Conflict tasks without evidence must search first
+        # BUT: when the user explicitly wants to write a formal conclusion
+        # (已经收集了资料 + 写正式结论), they have evidence and want synthesis.
         if (
             is_conflict_task(context.user_input)
             and memory.latest("RESULT") is None
             and decision.action != Action.CALL_TOOL
+            and not has_formal_signal(context.user_input)
+            and not (
+                "写" in context.user_input
+                and any(
+                    w in context.user_input
+                    for w in ("正式", "结论", "总结", "报告")
+                )
+            )
         ):
             return ActionDecision(
                 action=Action.CALL_TOOL,

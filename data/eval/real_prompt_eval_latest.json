@@ -2,10 +2,31 @@
   "delta_tool_match_rate": 0.0,
   "summary": {
     "prompt_count": 63,
-    "baseline_match_rate": 0.7302,
-    "pretrained_match_rate": 0.7302,
-    "baseline_avg_steps": 6.0317,
-    "pretrained_avg_steps": 3.7937
+    "baseline_match_rate": 0.9365,
+    "pretrained_match_rate": 0.9365,
+    "baseline_avg_steps": 4.1111,
+    "pretrained_avg_steps": 4.1111
+  },
+  "provenance": {
+    "baseline_source": "data\\eval\\baseline_snapshot",
+    "baseline_state": {
+      "episodes.jsonl": "341d2297c26a2ec1",
+      "policy_state.json": "375a7a91ecbc9066",
+      "concept_state.json": "9a9d4508dc782795",
+      "core_state.json": "e3acc0c430790381",
+      "runtime_controls.json": "09d654c77d6aab2d"
+    },
+    "pretrained_source": "data\\experience",
+    "pretrained_state": {
+      "episodes.jsonl": "341d2297c26a2ec1",
+      "policy_state.json": "375a7a91ecbc9066",
+      "concept_state.json": "9a9d4508dc782795",
+      "core_state.json": "e3acc0c430790381",
+      "runtime_controls.json": null
+    },
+    "ollama_url": "unresolved",
+    "ollama_model": "unresolved",
+    "routing": "symbolic(tool selection) + llm(format subtasks)"
   },
   "rows": [
     {
@@ -15,10 +36,8 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -28,6 +47,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -39,7 +60,6 @@
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -49,6 +69,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -58,9 +80,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -71,6 +91,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -83,8 +105,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -93,10 +115,16 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -106,14 +134,9 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -122,6 +145,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -131,10 +156,8 @@
       "baseline_used_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -144,6 +167,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -153,8 +178,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -166,6 +189,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -175,10 +200,8 @@
       "baseline_used_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -188,18 +211,18 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "real-git-triage",
       "logic_skill": "evidence_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -208,8 +231,10 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -219,10 +244,8 @@
       "baseline_used_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -232,18 +255,18 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "real-release-plan",
       "logic_skill": "step_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "code_executor",
-      "pretrained_used_tool": "code_executor",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -252,8 +275,10 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -263,14 +288,9 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -279,6 +299,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -288,8 +310,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -301,6 +321,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -313,8 +335,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -323,10 +345,16 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -336,8 +364,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -349,6 +375,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -361,8 +389,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -371,10 +399,16 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -384,8 +418,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -397,6 +429,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -409,8 +443,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -419,10 +453,16 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -432,8 +472,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -445,6 +483,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -454,8 +494,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -467,6 +505,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -479,8 +519,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -489,54 +529,80 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "stress-conflict-authority-002",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-001",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -546,11 +612,8 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -560,80 +623,104 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-003",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-004",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
+      "baseline_match": true,
       "pretrained_match": true,
-      "delta": 1
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "repair-missing-evidence-decision-001",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -643,8 +730,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -656,29 +741,40 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "repair-missing-evidence-decision-003",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -688,8 +784,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -701,6 +795,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -710,8 +806,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -723,6 +817,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -732,8 +828,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -745,6 +839,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -754,11 +850,8 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -768,6 +861,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -777,8 +872,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -790,53 +883,72 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "guard-formal-synthesis-conflict-001",
       "logic_skill": "result_integration",
       "expected_tool": "bigmodel_proxy",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": true,
-      "pretrained_match": true,
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "guard-calc-fan-er-001",
       "logic_skill": "tool_selection",
       "expected_tool": "calculator",
-      "baseline_used_tool": "calculator",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": true,
-      "pretrained_match": true,
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -846,14 +958,9 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -862,6 +969,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -871,9 +980,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -884,6 +991,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -893,9 +1002,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -906,6 +1013,8 @@
       ],
       "baseline_match": false,
       "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -915,9 +1024,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -928,96 +1035,84 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "term-judgment-003",
       "logic_skill": "termination_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "constraint-plan-001",
       "logic_skill": "constraint_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "constraint-plan-002",
       "logic_skill": "constraint_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1027,9 +1122,7 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1040,6 +1133,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1049,14 +1144,9 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -1065,6 +1155,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1074,9 +1166,7 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1087,6 +1177,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1096,9 +1188,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1109,6 +1199,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1118,9 +1210,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1131,6 +1221,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1140,9 +1232,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1153,6 +1243,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1162,9 +1254,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1175,36 +1265,30 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "guard-ab-test-001",
       "logic_skill": "step_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1214,9 +1298,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1227,6 +1309,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1236,10 +1320,8 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -1249,66 +1331,52 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "guard-rw-split-001",
       "logic_skill": "comparison",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "guard-crud-api-001",
       "logic_skill": "step_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1318,9 +1386,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1331,6 +1397,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1340,14 +1408,9 @@
       "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -1356,6 +1419,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1365,10 +1430,8 @@
       "baseline_used_tool": "calculator",
       "pretrained_used_tool": "calculator",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -1378,6 +1441,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1387,10 +1452,8 @@
       "baseline_used_tool": "code_executor",
       "pretrained_used_tool": "code_executor",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -1400,23 +1463,42 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "term-judgment-004",
       "logic_skill": "termination_judgment",
       "expected_tool": "bigmodel_proxy",
-      "baseline_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "ANSWER"
+      ],
+      "pretrained_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
+      ],
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
+    },
+    {
+      "id": "term-judgment-005",
+      "logic_skill": "termination_judgment",
+      "expected_tool": "search",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
+      "baseline_actions": [
+        "CALL_TOOL",
+        "WRITE_MEM",
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
@@ -1424,67 +1506,31 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": false,
-      "delta": -1
-    },
-    {
-      "id": "term-judgment-005",
-      "logic_skill": "termination_judgment",
-      "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
-      "baseline_actions": [
-        "CALL_TOOL",
-        "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
-      ],
-      "pretrained_actions": [
-        "CALL_TOOL",
-        "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
-      ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
       "id": "constraint-plan-003",
       "logic_skill": "constraint_planning",
       "expected_tool": "search",
-      "baseline_used_tool": "multi_intent",
-      "pretrained_used_tool": "multi_intent",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL",
-        "CALL_TOOL"
+        "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false,
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     },
     {
@@ -1494,9 +1540,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1507,6 +1551,8 @@
       ],
       "baseline_match": true,
       "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
       "delta": 0
     }
   ]

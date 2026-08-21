@@ -2,9 +2,9 @@
 
 - gap_id: new_failure_pattern_stalled
 - problem: 长期停滞但没有新增 failure pattern，说明新增弱点发现环节失灵。
-- current: stagnation_rounds=329; new_failure_pattern_count=0
+- current: stagnation_rounds=330; new_failure_pattern_count=0
 - target: 在后续 1~2 个周期内形成至少 1 个新增 failure pattern 或新弱点簇
-- gap: 329
+- gap: 330
 - owner: researcher + failure_miner + arbiter
 - why_this_is_top_gap_now: 覆盖数已达标，但系统仍未形成新增发现，当前瓶颈已从 coverage 转向 discovery。
 - action_plan:

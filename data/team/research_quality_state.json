@@ -13,14 +13,14 @@
   "coverage_only_gap_streak": 0,
   "zero_bridge_feedback_streak": 0,
   "zero_frontier_observation_streak": 0,
-  "rounds_without_new_failure_pattern": 989,
-  "exploration_without_discovery_rounds": 989,
-  "blind_spot_persistence_rounds": 989,
+  "rounds_without_new_failure_pattern": 992,
+  "exploration_without_discovery_rounds": 992,
+  "blind_spot_persistence_rounds": 992,
   "top_gap": "unknown",
   "quality_exploration_active": true,
   "high_signal_count": 5,
   "recovery_cluster_count": 1,
-  "updated_at_utc": "2026-08-19T03:45:31.129392+00:00",
+  "updated_at_utc": "2026-08-20T07:14:22.430463+00:00",
   "last_failure_pattern_ids": [
     "attention_verification_handoff_gap",
     "repeated_conflict_detection_gap"

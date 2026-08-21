@@ -243,17 +243,21 @@ class AdaptiveReasoningCore:
                 # For calculator results, surface the computation directly
                 if has_calc_signal(user_input) and "=" in raw_result:
                     payload["summary"] = raw_result
+                    payload["support_items"] = ["精确数值"]
                 elif has_code_signal(user_input) or result_source.startswith(
                     "tool/code"
                 ):
                     payload["summary"] = f"执行结果：{raw_result[:80]}..."
+                    payload["support_items"] = [result_text]
                 elif "llm_escalation" in result_source:
                     payload["summary"] = f"基于大模型分析：{raw_result[:80]}..."
+                    payload["support_items"] = [result_text]
                 elif len(raw_result) > 20:
                     payload["summary"] = f"基于检索结果：{raw_result[:80]}..."
+                    payload["support_items"] = [result_text]
                 else:
                     payload["summary"] = "基于外部结果形成初步结论"
-                payload["support_items"] = [result_text]
+                    payload["support_items"] = [result_text]
                 payload["confidence_band"] = "high"
             elif plan is not None:
                 payload["summary"] = "基于当前计划形成待验证结论"

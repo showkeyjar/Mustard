@@ -1,128 +1,202 @@
 {
+  "delta_tool_match_rate": 0.0,
   "summary": {
     "prompt_count": 38,
-    "baseline_match_rate": 0.8421,
-    "pretrained_match_rate": 0.8158,
-    "baseline_avg_steps": 7.0526,
-    "pretrained_avg_steps": 6.1579
+    "baseline_match_rate": 0.9211,
+    "pretrained_match_rate": 0.9211,
+    "baseline_avg_steps": 6.9474,
+    "pretrained_avg_steps": 6.9474
+  },
+  "provenance": {
+    "baseline_source": "data\\eval\\baseline_snapshot",
+    "baseline_state": {
+      "episodes.jsonl": "341d2297c26a2ec1",
+      "policy_state.json": "375a7a91ecbc9066",
+      "concept_state.json": "9a9d4508dc782795",
+      "core_state.json": "e3acc0c430790381",
+      "runtime_controls.json": "09d654c77d6aab2d"
+    },
+    "pretrained_source": "data\\experience",
+    "pretrained_state": {
+      "episodes.jsonl": "341d2297c26a2ec1",
+      "policy_state.json": "375a7a91ecbc9066",
+      "concept_state.json": "9a9d4508dc782795",
+      "core_state.json": "e3acc0c430790381",
+      "runtime_controls.json": null
+    },
+    "ollama_url": "unresolved",
+    "ollama_model": "unresolved",
+    "routing": "symbolic(tool selection) + llm(format subtasks)"
   },
   "rows": [
     {
       "id": "stress-conflict-missing-evidence-004",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": true
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "repair-missing-evidence-decision-003",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "calculator",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-authority-002",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-001",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
         "WRITE_MEM",
-        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "stress-conflict-missing-evidence-003",
       "logic_skill": "conflict_detection",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "real-git-triage",
       "logic_skill": "evidence_judgment",
       "expected_tool": "search",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -131,8 +205,11 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": false,
-      "pretrained_match": false
+      "baseline_match": true,
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "candidate-379152",
@@ -141,8 +218,6 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -153,7 +228,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "guard-conflict-fenqi-001",
@@ -162,9 +240,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -174,31 +250,42 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "guard-formal-synthesis-conflict-001",
       "logic_skill": "result_integration",
       "expected_tool": "bigmodel_proxy",
-      "baseline_used_tool": "bigmodel_proxy",
-      "pretrained_used_tool": "bigmodel_proxy",
+      "baseline_used_tool": "search",
+      "pretrained_used_tool": "search",
       "baseline_actions": [
-        "CALL_BIGMODEL",
+        "CALL_TOOL",
         "WRITE_MEM",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL",
-        "CALL_BIGMODEL"
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER"
       ],
       "pretrained_actions": [
         "CALL_TOOL",
         "WRITE_MEM",
+        "WRITE_MEM",
+        "VERIFY",
+        "ANSWER",
+        "ANSWER",
+        "ANSWER",
         "ANSWER"
       ],
-      "baseline_match": true,
-      "pretrained_match": true
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "guard-or-mapping-001",
@@ -207,10 +294,8 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
         "WRITE_MEM",
-        "VERIFY",
         "ANSWER"
       ],
       "pretrained_actions": [
@@ -219,7 +304,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-004-01",
@@ -231,8 +319,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -248,7 +336,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-004-02",
@@ -260,8 +351,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -277,7 +368,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-004-03",
@@ -289,8 +383,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -306,7 +400,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-004-04",
@@ -318,8 +415,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -335,7 +432,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-repair-missing-evidence-decision-003-01",
@@ -347,8 +447,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -364,7 +464,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-repair-missing-evidence-decision-003-02",
@@ -376,8 +479,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -393,7 +496,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-repair-missing-evidence-decision-003-03",
@@ -405,8 +511,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -422,7 +528,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-repair-missing-evidence-decision-003-04",
@@ -434,8 +543,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -451,7 +560,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-authority-002-01",
@@ -463,8 +575,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -480,7 +592,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-authority-002-02",
@@ -492,8 +607,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -509,7 +624,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-authority-002-03",
@@ -521,8 +639,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -538,7 +656,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-authority-002-04",
@@ -550,8 +671,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -567,7 +688,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-001-01",
@@ -579,8 +703,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -596,7 +720,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-001-02",
@@ -608,8 +735,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -625,7 +752,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-001-03",
@@ -637,8 +767,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -654,7 +784,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-001-04",
@@ -666,8 +799,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -683,7 +816,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-003-01",
@@ -695,8 +831,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -712,7 +848,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-003-02",
@@ -724,8 +863,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -741,7 +880,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-003-03",
@@ -753,8 +895,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -770,7 +912,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-stress-conflict-missing-evidence-003-04",
@@ -782,8 +927,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -799,18 +944,18 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-candidate-379152-01",
       "logic_skill": "comparison",
       "expected_tool": "search",
-      "baseline_used_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_TOOL",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -820,8 +965,11 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": true,
-      "pretrained_match": false
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-candidate-379152-02",
@@ -830,9 +978,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -842,7 +988,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-conflict-fenqi-001-01",
@@ -854,8 +1003,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -871,7 +1020,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-conflict-fenqi-001-02",
@@ -883,8 +1035,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -900,7 +1052,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-conflict-fenqi-001-03",
@@ -912,8 +1067,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -929,7 +1084,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-conflict-fenqi-001-04",
@@ -941,8 +1099,8 @@
         "CALL_TOOL",
         "WRITE_MEM",
         "WRITE_MEM",
-        "WRITE_MEM",
         "VERIFY",
+        "ANSWER",
         "ANSWER",
         "ANSWER",
         "ANSWER"
@@ -958,18 +1116,18 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-or-mapping-001-01",
       "logic_skill": "comparison",
       "expected_tool": "search",
-      "baseline_used_tool": "search",
+      "baseline_used_tool": "bigmodel_proxy",
       "pretrained_used_tool": "bigmodel_proxy",
       "baseline_actions": [
-        "WRITE_MEM",
-        "WRITE_MEM",
-        "CALL_TOOL",
         "CALL_TOOL",
         "WRITE_MEM",
         "ANSWER"
@@ -979,8 +1137,11 @@
         "WRITE_MEM",
         "ANSWER"
       ],
-      "baseline_match": true,
-      "pretrained_match": false
+      "baseline_match": false,
+      "pretrained_match": false,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     },
     {
       "id": "quality-guard-or-mapping-001-02",
@@ -989,9 +1150,7 @@
       "baseline_used_tool": "search",
       "pretrained_used_tool": "search",
       "baseline_actions": [
-        "WRITE_MEM",
         "CALL_TOOL",
-        "WRITE_MEM",
         "WRITE_MEM",
         "ANSWER"
       ],
@@ -1001,7 +1160,10 @@
         "ANSWER"
       ],
       "baseline_match": true,
-      "pretrained_match": true
+      "pretrained_match": true,
+      "baseline_timed_out": false,
+      "pretrained_timed_out": false,
+      "delta": 0
     }
   ]
 }

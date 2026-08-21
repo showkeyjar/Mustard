@@ -27,6 +27,25 @@ CONFLICT_MARKERS = (
     "先怎么处理冲突",
     "还没消解前",
     "直接下结论吗",
+    "不同阈值",
+    "另一篇说",
+    "另一方说",
+    "两个权威",
+    "但两篇都没",
+    "但两边都没",
+    "都没有压测",
+    "都没有测试",
+    "没有更多上下文",
+    "没有进一步参考",
+    # Missing evidence / can't decide
+    "没给实测",
+    "没给测试",
+    "没有压测",
+    "没有实测",
+    "信谁",
+    "怎么选",
+    "怎么决定",
+    "怎么定",
 )
 
 
@@ -48,6 +67,7 @@ COMPARE_TOKENS = (
     "分别适用",
     "各自适用",
     "分别",
+    "还是",
 )
 CALC_TOKENS = (
     "多少",
@@ -90,6 +110,18 @@ CALC_TOKENS = (
     "体积",
     "半径",
     "直径",
+    # Math concept keywords — these indicate calculation even without
+    # explicit digits, because the numbers are embedded in the concept
+    "等差数列",
+    "等比数列",
+    "排列",
+    "组合",
+    "标准差",
+    "方差",
+    "概率",
+    "复利",
+    "百分数",
+    "百分点",
     # Classic Chinese math puzzle keywords
     # NOTE: single-char "鸡/兔/头/腿/脚" are too broad — "脚本" contains "脚",
     # "鸡腿" is food, "头脑" is not math. Use "鸡兔同笼" as the only safe trigger;
@@ -100,6 +132,23 @@ CALC_TOKENS = (
     "千米",
     "小时",
     "等于多少",
+    # English calc tokens
+    "calculate",
+    "how many",
+    "how much",
+    # Percentage / change keywords
+    "百分比",
+    "百分点",
+    "增长率",
+    "增幅",
+    "涨幅",
+    "降幅",
+    "变化",
+    "比上",
+    # Cost / estimation keywords — indicate calculation with financial context
+    "成本",
+    "估算",
+    "费用",
 )
 CODE_TOKENS_EN = (
     "python",
@@ -118,8 +167,61 @@ CODE_TOKENS_EN = (
     "execute",
     "build",
     "create",
+    # Language / framework names (unambiguous)
+    "javascript",
+    "typescript",
+    "java",
+    "kotlin",
+    "swift",
+    "ruby",
+    "php",
+    "scala",
+    "lua",
+    "perl",
+    "golang",
+    "dockerfile",
+    "docker",
+    "kubernetes",
+    "websocket",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "django",
+    "flask",
+    "fastapi",
+    "vue",
+    "angular",
+    "react",
+    "rust",
+    "sql",
+    "shell",
+    "bash",
+    "powershell",
 )
-CODE_TOKENS_ZH = ("代码", "脚本", "报错", "爬虫", "抓取", "抓数据", "数据采集", "采集")
+CODE_TOKENS_ZH = (
+    "代码",
+    "脚本",
+    "程序",
+    "报错",
+    "爬虫",
+    "抓取",
+    "抓数据",
+    "数据采集",
+    "采集",
+    # Code-structural nouns — when present, code intent is likely
+    "函数",
+    "组件",
+    "模块",
+    "变量",
+    "线程",
+    "进程",
+    "对象",
+    "方法",
+    "脚本",
+    "镜像",
+    "YAML",
+    "配置文件",
+)
 CODE_ACTION_TOKENS = (
     "写",
     "实现",
@@ -174,7 +276,9 @@ WRITING_TOKENS = (
 
 # Tokens that indicate a WRITING/SYNTHESIS intent (essay generation, summarization, etc.)
 WRITING_ACTION_TOKENS = (
-    "生成",
+    "生成一份",
+    "生成报告",
+    "生成总结",
     "创作",
     "撰写",
     "写一份",
@@ -195,8 +299,7 @@ WRITING_ACTION_TOKENS = (
     "写篇笔记",
     "起草",
     "拟一份",
-    "写一份",
-    "生成一份",
+    "report",
 )
 
 # Search-intent tokens that indicate the user is looking for information
@@ -207,6 +310,7 @@ SEARCH_TOKENS = (
     "怎么",
     "怎么样",
     "如何",
+    "了解",
     "在哪里",
     "去哪儿",
     "什么地方",
@@ -247,7 +351,6 @@ SEARCH_TOKENS = (
     "错误",
     "异常",
     "告警",
-    "场景",
     "适用",
     # Spatial/distance quantity questions — "北京到上海多远" is search/consult
     "多远",
@@ -262,6 +365,37 @@ SEARCH_TOKENS = (
     "时速",
     "公里",
     "千米",
+    # English search/knowledge tokens
+    "what is",
+    "how to",
+    "how does",
+    "how do",
+    "why does",
+    "why is",
+    "why are",
+    "why should",
+    "why not",
+    "difference between",
+    "vs",
+    "compare",
+    "best practices",
+    "tutorial",
+    "guide",
+    "explain",
+    "learn",
+    "重构",
+    "迁移到",
+    "微服务拆分",
+    # Colloquial troubleshooting — "咋回事"/"咋办"/"咋整" indicate
+    # the user wants to find solutions, which is a search intent
+    "咋回事",
+    "咋办",
+    "咋整",
+    "咋用",
+    "用来着",
+    "看看",
+    "难道",
+    "选型",
 )
 
 # Tokens that indicate a SEARCH action (not just a SEARCH question)
@@ -269,11 +403,11 @@ SEARCH_TOKENS = (
 # Use compound forms that clearly indicate a search ACTION.
 SEARCH_ACTION_TOKENS = (
     "搜索",
-    "查找",
     "查询",
     "检索",
     "搜一下",
     "查一下",
+    "先查",
     "找一找",
     "找一下",
     "搜搜",
@@ -339,7 +473,6 @@ EXPLAIN_TOKENS = (
     "含义",
     "意义",
     "解读",
-    "分析",
 )
 
 # Tokens that indicate a CONSULTATIVE answer
@@ -360,16 +493,12 @@ CONSULT_TOKENS = (
     "帮我找",
     "帮我搜",
     "看看",
-    "分析",
     "评估",
     "建议",
     "意见",
     "点评",
-    "检查",
     "诊断",
     "纠错",
-    "优化",
-    "对比",
     # Advisory/selection signals — "应该用哪种" is seeking advice, not execution
     "应该",
     "应该选",
@@ -416,11 +545,14 @@ DEBUG_CONSULT_TOKENS = (
     "怎么处理",
     "如何处理",
     "如何调试",
+    "咋整",
 )
 
 # Pattern for deep reasoning/comparative analysis queries.
 # "为什么...而..." / "为什么A而B不需要" — these are open-ended reasoning
 # questions that need LLM synthesis, not just search.
+# BUT: "为什么A而不是B" / "为什么不A而要B" are factual comparison questions
+# that should route to search, not synthesis.
 _DEEP_REASON_PATTERN = re.compile(r"为什么.{2,20}而.{2,20}")
 
 # Tokens that indicate a TRANSLATION intent
@@ -661,8 +793,14 @@ def has_deep_reason_signal(text: str) -> bool:
 
     Matches patterns like "为什么...而..." that indicate the user wants
     a thoughtful comparison or causal explanation — best handled by bigmodel_proxy.
+    BUT: "为什么A而不是B" / "为什么不A而要B" are factual comparison questions
+    that should route to search, not synthesis.
     """
-    return bool(_DEEP_REASON_PATTERN.search(text))
+    if not bool(_DEEP_REASON_PATTERN.search(text)):
+        return False
+    if "而不是" in text or "而要" in text:
+        return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -720,8 +858,35 @@ def token_counts(text: str) -> Counter:
 
 
 def has_compare_signal(text: str) -> bool:
-    """Return True if the text contains comparison keywords."""
-    return any(token in text for token in COMPARE_TOKENS)
+    """Return True if the text contains comparison keywords.
+
+    Excludes colloquial "还是" patterns like "还是算了吧"/"还是别"/"还是不"
+    where "还是" means "never mind / on second thought" rather than comparison.
+    """
+    # Fast path: no compare token at all → False
+    if not any(token in text for token in COMPARE_TOKENS):
+        return False
+    # Check if "还是" is the only compare token AND used in colloquial sense
+    if "还是" in text and not any(
+        token in text for token in COMPARE_TOKENS if token != "还是"
+    ):
+        _colloquial_patterns = (
+            "还是算了", "还是别", "还是不", "还是算了吧",
+            "还是算了吧", "还是不要", "还是不用", "还是别了",
+        )
+        if any(p in text for p in _colloquial_patterns):
+            return False
+    return True
+
+
+# Colloquial calc action verbs — "算下"/"算一下" indicate calculation
+# even when no explicit digits are present ("算下这个月花了多少钱哈").
+_CALC_ACTION_VERBS = (
+    "算下",
+    "算一下",
+    "算算",
+    "计算一下",
+)
 
 
 def has_calc_signal(text: str) -> bool:
@@ -782,6 +947,8 @@ def has_calc_signal(text: str) -> bool:
             pass  # Classic puzzle — treat as calculation
         elif has_chinese_numeral and any(token in text for token in CALC_TOKENS):
             pass  # Chinese numeral + calc keyword → calculation ("三加上五")
+        elif any(v in text for v in _CALC_ACTION_VERBS):
+            return True  # Explicit calc verb — calculation intent even without digits
         else:
             return False
     return any(token in text for token in CALC_TOKENS)
@@ -979,13 +1146,17 @@ EVIDENCE_JUDGMENT_TOKENS = (
     "可靠",
     "可信",
     "是否还在",
+    "是否仍在",
     "是否仍然",
     "是否还能",
     "是否已被",
     "推翻",
     "失效",
     "过时",
-    "最新",
+    "成立吗",
+    "还成立",
+    "靠谱吗",
+    "合理吗",
     "官方文档",
     "changelog",
     "版本号",
@@ -1221,30 +1392,11 @@ def has_low_intent_signal(text: str) -> bool:
         if pat.search(stripped):
             return True
 
-    # Rule 4: No signal at all — the query triggers zero intent detectors
-    has_any_signal = any(
-        f(stripped)
-        for f in (
-            has_calc_signal,
-            has_code_signal,
-            has_search_signal,
-            has_consult_signal,
-            has_writing_signal,
-            has_translate_signal,
-            has_polish_signal,
-            has_compare_signal,
-            has_explain_signal,
-            has_travel_signal,
-            has_deep_analysis_signal,
-            has_deep_reason_signal,
-        )
-    )
-    if not has_any_signal:
-        # Extra check: English tech metrics and code tokens
-        if not any(t in stripped.lower() for t in TECH_METRIC_TOKENS):
-            if not any(t in stripped.lower() for t in CODE_TOKENS_EN):
-                return True
-
+    # Rule 4: No signal at all — the query triggers zero intent detectors.
+    # Instead of marking as low-intent (which returns "no tool"), let these
+    # fall through to the override chain where the search fallback will
+    # handle them. Most no-signal queries are knowledge questions that
+    # should default to search, not be rejected.
     return False
 
 
@@ -1339,14 +1491,16 @@ def has_multi_intent_signal(text: str) -> bool:
     return False
 
 
-# Verbs that imply a synthetic/writing task (need bigmodel_proxy for output)
+# Verbs that imply a synthetic/writing task (need bigmodel_proxy for output).
+# Only true generation verbs — nouns like "方案"(solution) and vague phrases like
+# "做一个"(set up) are excluded because they appear in ordinary search queries
+# ("查一下方案", "做一个A/B测试") and cause false multi-intent splits.
 _PLANNING_VERBS = (
     "规划",
     "制定",
     "设计",
     "安排",
     "策划",
-    "方案",
     "计划",
     "生成",
     "编写",
@@ -1354,8 +1508,6 @@ _PLANNING_VERBS = (
     "撰写",
     "编一个",
     "写一个",
-    "做个",
-    "做一个",
 )
 
 

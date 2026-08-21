@@ -45,6 +45,24 @@ class SearchTool:
     def execute(self, query: str, arguments: dict) -> ToolResult:
         top_k = arguments.get("top_k", 5)
 
+        # Guard: very short / vague queries produce meaningless search results.
+        # Return a clarifying prompt instead of wasting time on bad results.
+        # Thresholds: <3 Chinese chars, <2 English words, or pure punctuation/particles.
+        if self._is_vague_query(query):
+            return ToolResult(
+                ok=False,
+                tool_name=self.name,
+                result=(
+                    "搜索关键词太短，无法确定你想找什么。\n"
+                    "可以补充以下信息让搜索更精准：\n"
+                    "  • 具体主题或领域（如「Python 性能优化」）\n"
+                    "  • 你想解决的问题（如「为什么接口响应慢」）\n"
+                    "  • 期望的结果形式（教程/对比/文档/代码示例）"
+                ),
+                confidence=0.20,
+                source="tool/search:vague_query_guard",
+            )
+
         # Strategy 1: DuckDuckGo search (best quality, with timeout)
         if self._ddgs is not None:
             result = self._search_ddgs(query, top_k)
@@ -215,3 +233,34 @@ class SearchTool:
         # English words
         english = re.findall(r"[a-zA-Z]{2,}", text)
         return chinese + english
+
+    def _is_vague_query(self, query: str) -> bool:
+        """Return True if the query is too short/vague to produce useful search results.
+
+        Criteria:
+        - <3 meaningful Chinese characters AND <2 English words
+        - Pure filler/particle words with no content (嗯/哦/好的/不是吧)
+        - Pure punctuation or whitespace
+        """
+        stripped = query.strip()
+        if not stripped or stripped in ("?", "？", "。", "...", "…"):
+            return True
+
+        # Count meaningful Chinese characters (exclude common particles/fillers)
+        _filler_chars = set("嗯哦啊哎唔呢吧嘛啦哟呃")
+        chinese_content = [
+            c for c in stripped
+            if "\u4e00" <= c <= "\u9fff" and c not in _filler_chars
+        ]
+
+        # Count meaningful English words (>=2 letters)
+        english_words = re.findall(r"[a-zA-Z]{2,}", stripped)
+
+        # Count digits
+        has_digits = bool(re.search(r"\d", stripped))
+
+        # Vague if very few content chars/words AND no digits (numbers = calc intent)
+        if has_digits:
+            return False
+
+        return len(chinese_content) < 3 and len(english_words) < 2

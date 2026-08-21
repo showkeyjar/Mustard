@@ -1,20 +1,20 @@
 # Quality Benchmark Report
 
-- retained_count: 3
-- pruned_count: 35
+- retained_count: 2
+- pruned_count: 36
 
 ## Retained
-- stress-conflict-missing-evidence-004 | logic_skill=conflict_detection | reason=separation_positive
+- stress-conflict-missing-evidence-004 | logic_skill=conflict_detection | reason=context_support
 - candidate-379152 | logic_skill=comparison | reason=context_support
-- guard-conflict-fenqi-001 | logic_skill=conflict_detection | reason=context_support
 
 ## Pruned
-- repair-missing-evidence-decision-003 | logic_skill=conflict_detection | reason=unclassified_low_value
-- stress-conflict-authority-002 | logic_skill=conflict_detection | reason=unclassified_low_value
-- stress-conflict-missing-evidence-001 | logic_skill=conflict_detection | reason=unclassified_low_value
-- stress-conflict-missing-evidence-003 | logic_skill=conflict_detection | reason=unclassified_low_value
-- real-git-triage | logic_skill=evidence_judgment | reason=unclassified_low_value
-- guard-formal-synthesis-conflict-001 | logic_skill=result_integration | reason=low_signal_both_match
+- repair-missing-evidence-decision-003 | logic_skill=conflict_detection | reason=low_signal_both_match
+- stress-conflict-authority-002 | logic_skill=conflict_detection | reason=low_signal_both_match
+- stress-conflict-missing-evidence-001 | logic_skill=conflict_detection | reason=low_signal_both_match
+- stress-conflict-missing-evidence-003 | logic_skill=conflict_detection | reason=low_signal_both_match
+- real-git-triage | logic_skill=evidence_judgment | reason=low_signal_both_match
+- guard-conflict-fenqi-001 | logic_skill=conflict_detection | reason=low_signal_both_match
+- guard-formal-synthesis-conflict-001 | logic_skill=result_integration | reason=unclassified_low_value
 - guard-or-mapping-001 | logic_skill=comparison | reason=low_signal_both_match
 - quality-stress-conflict-missing-evidence-004-01 | logic_skill=conflict_detection | reason=low_signal_both_match
 - quality-stress-conflict-missing-evidence-004-02 | logic_skill=conflict_detection | reason=low_signal_both_match

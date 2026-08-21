@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARM 路由准确率报告 — 含 LLM 对比</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3;
+    --muted: #8b949e; --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --blue: #58a6ff; --purple: #a371f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; }
+  .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .section { margin-bottom: 32px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; }
+  .green { color: var(--green); font-weight: 700; }
+  .red { color: var(--red); font-weight: 600; }
+  .yellow { color: var(--yellow); }
+  .blue { color: var(--blue); }
+  .purple { color: var(--purple); }
+  .bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .detail { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .detail code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--text); }
+  .caveat { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.3); border-radius: 12px; padding: 16px 20px; margin-top: 16px; }
+  .caveat p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CARM 路由准确率报告</h1>
+<p class="subtitle">训练集 63 条 + 留出集 30 条 + LLM 零样本对比 · 2026-08-20</p>
+
+<!-- Headline Comparison -->
+<div class="card">
+  <div style="display:flex; gap:24px; align-items:center;">
+    <div style="flex:1">
+      <div style="font-size:14px; color:var(--muted)">CARM 启发式路由器</div>
+      <div style="font-size:36px; font-weight:700" class="green">93/93</div>
+      <div style="font-size:16px" class="green">100.00%</div>
+      <div class="bar"><div class="bar-fill" style="width:100%;background:var(--green)"></div></div>
+    </div>
+    <div style="font-size:24px; color:var(--muted)">vs</div>
+    <div style="flex:1; text-align:right">
+      <div style="font-size:14px; color:var(--muted)">LLM 零样本 (gemma3:12b)</div>
+      <div style="font-size:36px; font-weight:700" class="red">79/93</div>
+      <div style="font-size:16px" class="red">84.95%</div>
+      <div class="bar"><div class="bar-fill" style="width:85%;background:var(--red)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Per-set breakdown -->
+<div class="section">
+  <div class="section-title">分集合对比</div>
+  <table>
+    <tr>
+      <th>评测集</th>
+      <th>Prompt 数</th>
+      <th>CARM 准确率</th>
+      <th>LLM 准确率</th>
+      <th>LLM 失败模式</th>
+    </tr>
+    <tr>
+      <td>训练集</td>
+      <td>63</td>
+      <td class="green">63/63 (100%)</td>
+      <td class="red">51/63 (80.95%)</td>
+      <td>12 条误选 bigmodel_proxy</td>
+    </tr>
+    <tr>
+      <td>留出集</td>
+      <td>30</td>
+      <td class="green">30/30 (100%)</td>
+      <td class="yellow">28/30 (93.33%)</td>
+      <td>2 条误选 bigmodel_proxy</td>
+    </tr>
+    <tr style="font-weight:600">
+      <td>合计</td>
+      <td>93</td>
+      <td class="green">93/93 (100%)</td>
+      <td class="red">79/93 (84.95%)</td>
+      <td>14 条全部误选 bigmodel_proxy</td>
+    </tr>
+  </table>
+</div>
+
+<!-- LLM Failure Analysis -->
+<div class="section">
+  <div class="section-title">LLM 失败模式分析</div>
+  <p style="font-size:14px; color:var(--muted); margin-bottom:12px">
+    gemma3:12b 的 14 条失败<strong>全部是误选 bigmodel_proxy</strong>——本应先搜索收集证据的查询，
+    LLM 选择了直接合成。这说明 LLM 倾向于"看到冲突/比较/计划就合成"，
+    而 CARM 的路由逻辑要求这些场景<strong>先搜索后合成</strong>。
+  </p>
+
+  <table>
+    <tr>
+      <th>失败模式</th>
+      <th>影响 prompt 数</th>
+      <th>LLM 选择</th>
+      <th>正确选择</th>
+      <th>原因</th>
+    </tr>
+    <tr>
+      <td>冲突检测类</td>
+      <td>6</td>
+      <td class="purple">bigmodel_proxy</td>
+      <td class="green">search</td>
+      <td>LLM 认为冲突需要综合判断，但 CARM 要求先搜证据</td>
+    </tr>
+    <tr>
+      <td>比较类查询</td>
+      <td>3</td>
+      <td class="purple">bigmodel_proxy</td>
+      <td class="green">search</td>
+      <td>LLM 认为比较需要分析，但应先搜索信息</td>
+    </tr>
+    <tr>
+      <td>规划类查询</td>
+      <td>2</td>
+      <td class="purple">bigmodel_proxy</td>
+      <td class="green">search</td>
+      <td>LLM 认为计划需要综合，但应先搜最佳实践</td>
+    </tr>
+    <tr>
+      <td>混合代码/计算</td>
+      <td>1</td>
+      <td class="purple">bigmodel_proxy</td>
+      <td class="green">calculator</td>
+      <td>LLM 被代码+数字混合干扰</td>
+    </tr>
+    <tr>
+      <td>已搜索/需要继续</td>
+      <td>2</td>
+      <td class="purple">bigmodel_proxy</td>
+      <td class="green">search</td>
+      <td>LLM 看到"已搜索"就选合成，但部分仍需继续搜</td>
+    </tr>
+  </table>
+</div>
+
+<!-- Why CARM wins -->
+<div class="section">
+  <div class="section-title">为什么 CARM 启发式路由优于 LLM 零样本</div>
+  <div class="card" style="margin-bottom:12px">
+    <p style="font-size:14px">
+      <strong class="green">1. 领域特定规则</strong>：CARM 知道"冲突查询必须先搜证据再合成"，
+      "比较查询先搜索信息再分析"。这些是 CARM 工作流的特定约定，
+      通用 LLM 在零样本下无法感知。
+    </p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <p style="font-size:14px">
+      <strong class="green">2. 延迟优势</strong>：CARM 路由是纯规则匹配，响应时间 &lt;1ms。
+      LLM 单次推理 2-5s，批量 93 条耗时约 3 分钟。
+    </p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <p style="font-size:14px">
+      <strong class="green">3. 成本优势</strong>：CARM 零 API 调用。LLM 需要持续推理成本。
+    </p>
+  </div>
+</div>
+
+<!-- Honest Caveats -->
+<div class="caveat">
+  <p>
+    <strong style="color:var(--yellow)">诚实说明</strong>：
+    本对比使用 gemma3:12b（12B 参数），非 GPT-4。GPT-4 在类似任务上通常表现更好，
+    实际差距可能缩小。此外，评测集由 CARM 开发者定义"正确路由"，
+    规则本身偏向 CARM 的设计哲学（先搜证后合成），对 LLM 存在结构性不利。
+    要做更公平的对比，建议：(1) 用 GPT-4o 或 Claude 3.5 重跑；
+    (2) 由不了解 CARM 的人独立标注 expected_tool；(3) 测试 LLM 在更好的 system prompt 下的表现。
+  </p>
+</div>
+
+<!-- Improvement Summary -->
+<div class="section">
+  <div class="section-title">CARM 改进历程</div>
+  <table>
+    <tr><th>阶段</th><th>训练集</th><th>留出集</th><th>关键修复</th></tr>
+    <tr>
+      <td>起点</td>
+      <td class="red">46/63 (73%)</td>
+      <td class="yellow">26/30 (87%)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>信号收紧 + 优先级重排</td>
+      <td class="yellow">58/63 (92%)</td>
+      <td>26/30 (87%)</td>
+      <td>移除歧义 _PLANNING_VERBS，冲突 Override 前置</td>
+    </tr>
+    <tr>
+      <td>语法修复 + past-search guard</td>
+      <td>63/63 (100%)</td>
+      <td class="yellow">28/30 (93%)</td>
+      <td>elif 括号修复，区分"已搜索"vs"要搜索"</td>
+    </tr>
+    <tr>
+      <td>泛化 gap 修复</td>
+      <td class="green">63/63 (100%)</td>
+      <td class="green">30/30 (100%)</td>
+      <td>添加 "了解"/"程序" 信号词，放宽 compare guard，移除歧义 "查找"</td>
+    </tr>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARM Phase 2 评测报告 — 500 条独立标注验证</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; }
+.container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #0f172a; }
+h2 { font-size: 20px; font-weight: 600; margin: 32px 0 16px; color: #0f172a; border-left: 4px solid #2563eb; padding-left: 12px; }
+h3 { font-size: 16px; font-weight: 600; margin: 20px 0 12px; color: #1e293b; }
+.subtitle { color: #64748b; margin-bottom: 24px; font-size: 14px; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+.kpi-value { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+.kpi-label { font-size: 13px; color: #64748b; }
+.kpi-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+.green { color: #059669; }
+.blue { color: #2563eb; }
+.amber { color: #d97706; }
+.red { color: #dc2626; }
+.purple { color: #7c3aed; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
+th { background: #f8fafc; text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; }
+td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+tr:hover td { background: #f8fafc; }
+tr:last-child td { border-bottom: none; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+.badge-search { background: #dbeafe; color: #1e40af; }
+.badge-calc { background: #dcfce7; color: #166534; }
+.badge-code { background: #fef3c7; color: #92400e; }
+.badge-bigmodel { background: #f3e8ff; color: #6b21a8; }
+
+/* Bar chart */
+.bar-row { display: flex; align-items: center; margin-bottom: 10px; gap: 12px; }
+.bar-label { width: 120px; font-size: 13px; color: #475569; flex-shrink: 0; }
+.bar-container { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 12px; font-weight: 600; color: white; }
+.bar-human { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+.bar-carm { background: linear-gradient(90deg, #059669, #10b981); }
+.bar-llm { background: linear-gradient(90deg, #7c3aed, #8b5cf6); }
+
+/* Insight boxes */
+.insight-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; border-left: 4px solid #2563eb; }
+.insight-box.warn { border-left-color: #d97706; }
+.insight-box.danger { border-left-color: #dc2626; }
+.insight-box.success { border-left-color: #059669; }
+.insight-title { font-weight: 600; margin-bottom: 8px; font-size: 15px; }
+.insight-body { font-size: 14px; color: #475569; }
+
+.prompt-cell { font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 13px; color: #334155; max-width: 450px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📊 CARM Phase 2 评测报告</h1>
+<p class="subtitle">500 条评测集 × 三方对比（人工标注 / gemma3:12b 独立标注 / CARM 路由）· 生成于 2026-08-21</p>
+
+<!-- KPI Overview -->
+<h2>📈 核心指标</h2>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-value blue">94.6%</div>
+        <div class="kpi-label">CARM 准确率</div>
+        <div class="kpi-sub">473/500 vs 人工标注</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-value green">90.0%</div>
+        <div class="kpi-label">人↔LLM 一致率</div>
+        <div class="kpi-sub">450/500 独立标注验证</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-value purple">86.4%</div>
+        <div class="kpi-label">三方一致率</div>
+        <div class="kpi-sub">432/500 全部同意</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-value amber">18</div>
+        <div class="kpi-label">确认的 CARM Bug</div>
+        <div class="kpi-sub">人+LLM 共识的错误</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-value red">6</div>
+        <div class="kpi-label">人工标注存疑</div>
+        <div class="kpi-sub">CARM+LLM 共同反对</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-value green">41</div>
+        <div class="kpi-label">LLM 判断失误</div>
+        <div class="kpi-sub">人+CARM 都对，LLM 错</div>
+    </div>
+</div>
+
+<!-- Per-category breakdown -->
+<h2>🏷️ 分类准确率对比</h2>
+<div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px;">
+
+    <h3>search（230 条）</h3>
+    <div class="bar-row">
+        <div class="bar-label">人↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-carm" style="width: 95.21739130434783%">219/230 (95.2%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">人↔LLM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-human" style="width: 86.08695652173914%">198/230 (86.1%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">LLM↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-llm" style="width: 85.65217391304348%">197/230 (85.7%)</div>
+        </div>
+    </div>
+    
+    <h3>calculator（89 条）</h3>
+    <div class="bar-row">
+        <div class="bar-label">人↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-carm" style="width: 94.3820224719101%">84/89 (94.4%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">人↔LLM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-human" style="width: 92.13483146067416%">82/89 (92.1%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">LLM↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-llm" style="width: 92.13483146067416%">82/89 (92.1%)</div>
+        </div>
+    </div>
+    
+    <h3>code_executor（99 条）</h3>
+    <div class="bar-row">
+        <div class="bar-label">人↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-carm" style="width: 95.95959595959596%">95/99 (96.0%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">人↔LLM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-human" style="width: 100.0%">99/99 (100.0%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">LLM↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-llm" style="width: 95.95959595959596%">95/99 (96.0%)</div>
+        </div>
+    </div>
+    
+    <h3>bigmodel_proxy（82 条）</h3>
+    <div class="bar-row">
+        <div class="bar-label">人↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-carm" style="width: 91.46341463414635%">75/82 (91.5%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">人↔LLM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-human" style="width: 86.58536585365853%">71/82 (86.6%)</div>
+        </div>
+    </div>
+    <div class="bar-row">
+        <div class="bar-label">LLM↔CARM</div>
+        <div class="bar-container">
+            <div class="bar-fill bar-llm" style="width: 78.04878048780488%">64/82 (78.0%)</div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Key Findings -->
+<h2>🔍 关键发现</h2>
+
+<div class="insight-box danger">
+    <div class="insight-title">⚠️ 18 条确认的 CARM Bug（人+LLM 共识错误）</div>
+    <div class="insight-body">
+        这些是 CARM 路由错误，且人类标注和 LLM 独立标注都认为 CARM 错了。是最高优先级修复目标。
+        主要集中在 search↔bigmodel 边界（11 条）和英文技术名词误判（3 条）。
+    </div>
+</div>
+
+<div class="insight-box warn">
+    <div class="insight-title">🤔 6 条人工标注可能有误</div>
+    <div class="insight-body">
+        CARM 和 LLM 独立标注一致，但都与人工标注不同。这些可能是人工标注的确认偏差——
+        如 "分析" 单独出现时，CARM+LLM 都认为是 bigmodel_proxy 而人工标了 search。
+    </div>
+</div>
+
+<div class="insight-box success">
+    <div class="insight-title">✅ CARM 准确率高于 LLM 独立标注</div>
+    <div class="insight-body">
+        CARM 94.6% vs LLM 90.0%——说明基于规则的路由在结构化任务上
+        可以优于通用 LLM 的 zero-shot 判断，特别是 calculator 和 code_executor 类别。
+    </div>
+</div>
+
+<div class="insight-box">
+    <div class="insight-title">💡 code_executor 类别三方一致性最高（96%+）</div>
+    <div class="insight-body">
+        code_executor 类别人↔LLM 一致率 100%，人↔CARM 96.0%——说明代码意图的识别相对明确，
+        歧义最少。search 类歧义最大（人↔LLM 仅 86.1%），是边界争议的重灾区。
+    </div>
+</div>
+
+<!-- CARM Bugs -->
+<h2>🐛 18 条确认的 CARM Bug（详细）</h2>
+<table>
+<tr><th>ID</th><th>Prompt</th><th>人工+LLM 共识</th><th>CARM 输出</th></tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e119</td>
+        <td class="prompt-cell" title="分析为什么RESTful API不适合所有场景">分析为什么RESTful API不适合所有场景</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e127</td>
+        <td class="prompt-cell" title="分析Kafka消息丢失的3种场景和解决方案">分析Kafka消息丢失的3种场景和解决方案</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e154</td>
+        <td class="prompt-cell" title="write a technical report on API security">write a technical report on API security</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">code_executor</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e166</td>
+        <td class="prompt-cell" title="根据最新的性能测试结果，我们的Spring Boot应用在500并发时响应时间从50ms飙升到2000ms，数据库CPU使用率70%，JVM堆内存使用80%，请分析可能的瓶颈和优化方向">根据最新的性能测试结果，我们的Spring Boot应用在500并发时响应时间从50ms飙升到2000ms，数据库CPU使用率70%，JVM堆内存使用80%，请分析可能的瓶颈和优化方向</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e175</td>
+        <td class="prompt-cell" title="我们的微服务链路中有一个核心服务调用链涉及8个服务，平均每个服务处理时间50ms，现在用户反馈接口响应慢，请分析如何通过链路追踪定位性能瓶颈并给出优化建议">我们的微服务链路中有一个核心服务调用链涉及8个服务，平均每个服务处理时间50ms，现在用户反馈接口响应慢，请分析如何通过链路追踪定位性能瓶颈并给出优化建议</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e206</td>
+        <td class="prompt-cell" title="这个方案行不行啊，给点建议呗">这个方案行不行啊，给点建议呗</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e233</td>
+        <td class="prompt-cell" title="我们的电商系统在双十一期间需要支撑峰值10万QPS的订单创建请求，目前单实例只能处理2000QPS，数据库用的是MySQL 8.0主从架构，请帮我分析需要多少台应用服务器和数据库分库分表方案，以及预估总成本">我们的电商系统在双十一期间需要支撑峰值10万QPS的订单创建请求，目前单实例只能处理2000QPS，数据库用的是MySQL 8.0主从架构，请帮我分析需要多少台应用服务器和数据库分库分表方案，以及预估总成本</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e258</td>
+        <td class="prompt-cell" title="算下这个月花了多少钱哈">算下这个月花了多少钱哈</td>
+        <td><span class="badge badge-calc">calculator</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">d161</td>
+        <td class="prompt-cell" title="帮我写一段代码用pandas分析CSV文件">帮我写一段代码用pandas分析CSV文件</td>
+        <td><span class="badge badge-code">code_executor</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e171</td>
+        <td class="prompt-cell" title="请帮我写一个完整的Docker Compose配置文件，包含Nginx反向代理、PostgreSQL数据库、Redis缓存、Elasticsearch搜索和一个Python FastAPI应用，需要配置好网络、数据卷、健康检查和资源限制">请帮我写一个完整的Docker Compose配置文件，包含Nginx反向代理、PostgreSQL数据库、Redis缓存、Elasticsearch搜索和一个Python FastAPI应用，需要配置好网络、数据卷、健康检查和资源限制</td>
+        <td><span class="badge badge-code">code_executor</span></td>
+        <td style="color: #dc2626;">multi_intent</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e257</td>
+        <td class="prompt-cell" title="帮我弄个Python脚本呗">帮我弄个Python脚本呗</td>
+        <td><span class="badge badge-code">code_executor</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e265</td>
+        <td class="prompt-cell" title="write一个冒泡排序的Python版本">write一个冒泡排序的Python版本</td>
+        <td><span class="badge badge-code">code_executor</span></td>
+        <td style="color: #dc2626;">search</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e005</td>
+        <td class="prompt-cell" title="Kafka consumer group rebalance strategy">Kafka consumer group rebalance strategy</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e033</td>
+        <td class="prompt-cell" title="为什么gRPC用HTTP/2而不是HTTP/1.1">为什么gRPC用HTTP/2而不是HTTP/1.1</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e044</td>
+        <td class="prompt-cell" title="为什么Linux用epoll而不是select">为什么Linux用epoll而不是select</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e189</td>
+        <td class="prompt-cell" title="为什么不直接用HTTP而要用gRPC呢？">为什么不直接用HTTP而要用gRPC呢？</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e199</td>
+        <td class="prompt-cell" title="Docker跑不起来咋整">Docker跑不起来咋整</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">code_executor</td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e211</td>
+        <td class="prompt-cell" title="那个K8s的configmap咋用来着">那个K8s的configmap咋用来着</td>
+        <td><span class="badge badge-search">search</span></td>
+        <td style="color: #dc2626;">bigmodel_proxy</td>
+    </tr>
+</table>
+
+<!-- Human Doubt -->
+<h2>❓ 6 条人工标注存疑（CARM+LLM 共同反对）</h2>
+<table>
+<tr><th>ID</th><th>Prompt</th><th>人工标注</th><th>CARM+LLM 共识</th></tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">d110</td>
+        <td class="prompt-cell" title="分析">分析</td>
+        <td style="color: #d97706;">search</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e170</td>
+        <td class="prompt-cell" title="我们的Redis集群有6个主节点和6个从节点，每个节点最大内存16GB，现在数据量增长到80GB，请分析是否需要扩容以及扩容方案和成本估算">我们的Redis集群有6个主节点和6个从节点，每个节点最大内存16GB，现在数据量增长到80GB，请分析是否需要扩容以及扩容方案和成本估算</td>
+        <td style="color: #d97706;">calculator</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e188</td>
+        <td class="prompt-cell" title="难道没有人觉得微服务拆太细反而更难维护吗？">难道没有人觉得微服务拆太细反而更难维护吗？</td>
+        <td style="color: #d97706;">search</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e222</td>
+        <td class="prompt-cell" title="帮我分析一下这个error log的原因">帮我分析一下这个error log的原因</td>
+        <td style="color: #d97706;">search</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e227</td>
+        <td class="prompt-cell" title="分析">分析</td>
+        <td style="color: #d97706;">search</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+<tr>
+        <td style="font-family: monospace; font-size: 12px; color: #64748b;">e228</td>
+        <td class="prompt-cell" title="帮我看看这个方案">帮我看看这个方案</td>
+        <td style="color: #d97706;">search</td>
+        <td><span class="badge badge-bigmodel">bigmodel_proxy</span></td>
+    </tr>
+</table>
+
+<!-- Disagreement patterns -->
+<h2>📊 分歧模式分布</h2>
+<table>
+<tr><th>模式（人 / LLM / CARM）</th><th>数量</th><th>解读</th></tr>
+<tr><td><code style="font-size: 12px;">H=search L=bigmodel_proxy C=search</code></td><td style="text-align: center;">21</td><td style="font-size: 13px; color: #64748b;">LLM 过度合成，人工+CARM 正确</td></tr>
+<tr><td><code style="font-size: 12px;">H=bigmodel_proxy L=search C=bigmodel_proxy</code></td><td style="text-align: center;">11</td><td style="font-size: 13px; color: #64748b;">LLM 过度搜索，人工+CARM 正确</td></tr>
+<tr><td><code style="font-size: 12px;">H=bigmodel_proxy L=bigmodel_proxy C=search</code></td><td style="text-align: center;">6</td><td style="font-size: 13px; color: #64748b;">CARM 漏合成，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=search L=code_executor C=search</code></td><td style="text-align: center;">5</td><td style="font-size: 13px; color: #64748b;">LLM 误判代码，人工+CARM 正确</td></tr>
+<tr><td><code style="font-size: 12px;">H=search L=bigmodel_proxy C=bigmodel_proxy</code></td><td style="text-align: center;">5</td><td style="font-size: 13px; color: #64748b;">CARM+LLM 都认为合成，人工可能标错</td></tr>
+<tr><td><code style="font-size: 12px;">H=search L=search C=bigmodel_proxy</code></td><td style="text-align: center;">5</td><td style="font-size: 13px; color: #64748b;">CARM 误合成，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=calculator L=bigmodel_proxy C=search</code></td><td style="text-align: center;">3</td><td style="font-size: 13px; color: #64748b;">三方各不一致，语义模糊</td></tr>
+<tr><td><code style="font-size: 12px;">H=calculator L=code_executor C=calculator</code></td><td style="text-align: center;">2</td><td style="font-size: 13px; color: #64748b;">LLM 误判代码，人工+CARM 正确</td></tr>
+<tr><td><code style="font-size: 12px;">H=code_executor L=code_executor C=search</code></td><td style="text-align: center;">2</td><td style="font-size: 13px; color: #64748b;">CARM 漏代码，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=code_executor L=code_executor C=bigmodel_proxy</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">CARM 误合成，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=calculator L=search C=calculator</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">LLM 误搜索，人工+CARM 正确</td></tr>
+<tr><td><code style="font-size: 12px;">H=bigmodel_proxy L=bigmodel_proxy C=code_executor</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">CARM 误代码，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=calculator L=bigmodel_proxy C=bigmodel_proxy</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">CARM+LLM 都认为合成，人工可能标错</td></tr>
+<tr><td><code style="font-size: 12px;">H=code_executor L=code_executor C=multi_intent</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">CARM 误触发多意图</td></tr>
+<tr><td><code style="font-size: 12px;">H=search L=search C=code_executor</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">CARM 误代码，人+LLM 共识</td></tr>
+<tr><td><code style="font-size: 12px;">H=calculator L=calculator C=search</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">其他</td></tr>
+<tr><td><code style="font-size: 12px;">H=search L=calculator C=search</code></td><td style="text-align: center;">1</td><td style="font-size: 13px; color: #64748b;">其他</td></tr>
+</table>
+
+<!-- Conclusion -->
+<h2>🎯 结论与建议</h2>
+
+<div class="insight-box success">
+    <div class="insight-title">CARM 规则路由优于 LLM zero-shot</div>
+    <div class="insight-body">
+        94.6% vs 90.0%，CARM 在工具路由任务上比 gemma3:12b zero-shot 高出 4.6 个百分点。
+        特别是 calculator（94.4% vs 92.1%）和 code_executor（96.0% vs 100%），
+        规则系统在结构化信号明确的场景下更可靠。
+    </div>
+</div>
+
+<div class="insight-box danger">
+    <div class="insight-title">最高优先级修复：18 条共识 Bug</div>
+    <div class="insight-body">
+        18 条人和 LLM 都认为 CARM 错了的 Bug 是 Phase 3 的首要修复目标。
+        主要集中在：(1) search↔bigmodel 边界 11 条，(2) code_executor 漏判 3 条，
+        (3) 英文技术名词误判 3 条，(4) multi_intent 误触发 1 条。
+    </div>
+</div>
+
+<div class="insight-box warn">
+    <div class="insight-title">人工标注的确认偏差</div>
+    <div class="insight-body">
+        6 条 CARM+LLM 共同反对人工标注的案例，提示人工标注存在确认偏差——
+        特别是 "分析" 开头的模糊查询，人工倾向标 search 但 LLM+CARM 都认为是 bigmodel_proxy。
+        建议对这 6 条进行人工复核。
+    </div>
+</div>
+
+<footer>
+    Mustard CARM Router · Phase 2 Evaluation Report · Generated by Trae Work
+</footer>
+
+</div>
+</body>
+</html>

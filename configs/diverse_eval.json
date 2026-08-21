@@ -1,0 +1,2506 @@
+{
+  "name": "diverse_eval_v1",
+  "description": "500+ diverse prompts for honest evaluation.",
+  "prompts": [
+    {
+      "id": "d001",
+      "prompt": "3加5等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d002",
+      "prompt": "15乘以7等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d003",
+      "prompt": "100减去37等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d004",
+      "prompt": "2的10次方是多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d005",
+      "prompt": "帮我算 128 * 45",
+      "expected": "calculator"
+    },
+    {
+      "id": "d006",
+      "prompt": "一个圆半径5厘米，面积多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d007",
+      "prompt": "我们团队12人，每席位89元/月，一年多少钱",
+      "expected": "calculator"
+    },
+    {
+      "id": "d008",
+      "prompt": "旧方案月费3200，新方案4500，差多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d009",
+      "prompt": "年利率3.5%，存10万一年利息多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d010",
+      "prompt": "API限速500 QPS，一天能处理多少请求",
+      "expected": "calculator"
+    },
+    {
+      "id": "d011",
+      "prompt": "请计算 999 / 3",
+      "expected": "calculator"
+    },
+    {
+      "id": "d012",
+      "prompt": "一组长方形长15宽8，周长是多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d013",
+      "prompt": "鸡兔同笼，共10个头26条腿，各几只",
+      "expected": "calculator"
+    },
+    {
+      "id": "d014",
+      "prompt": "帮我算一下 45 + 67 * 2",
+      "expected": "calculator"
+    },
+    {
+      "id": "d015",
+      "prompt": "3.14乘以7.5等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d016",
+      "prompt": "50的平方根是多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d017",
+      "prompt": "每月成本18600，下月涨35%，多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d018",
+      "prompt": "80台服务器每台功耗400W，一天多少度电",
+      "expected": "calculator"
+    },
+    {
+      "id": "d019",
+      "prompt": "请严格计算 890 * 5 * 12",
+      "expected": "calculator"
+    },
+    {
+      "id": "d020",
+      "prompt": "两个方案3.2万和2.8万，差价多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d021",
+      "prompt": "帮我写一个Python快速排序",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d022",
+      "prompt": "实现一个二分查找函数",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d023",
+      "prompt": "写段代码读取CSV并统计空值",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d024",
+      "prompt": "用matplotlib画一个柱状图",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d025",
+      "prompt": "帮我写个爬虫抓豆瓣电影评分",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d026",
+      "prompt": "写一个Go程序实现HTTP健康检查",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d027",
+      "prompt": "帮我写一个JavaScript函数实现防抖",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d028",
+      "prompt": "用Python实现一个简单的LRU缓存",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d029",
+      "prompt": "帮我写SQL查询最近7天活跃用户",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d030",
+      "prompt": "写一个shell脚本批量重命名文件",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d031",
+      "prompt": "帮我实现一个生产者消费者模式",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d032",
+      "prompt": "用Python写一个斐波那契数列生成器",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d033",
+      "prompt": "帮我写一个React组件显示倒计时",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d034",
+      "prompt": "写个脚本监控目录变化并告警",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d035",
+      "prompt": "帮我用Python实现Dijkstra最短路径",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d036",
+      "prompt": "什么是微服务架构",
+      "expected": "search"
+    },
+    {
+      "id": "d037",
+      "prompt": "Kubernetes和Docker Swarm有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d038",
+      "prompt": "帮我查一下React 19的新特性",
+      "expected": "search"
+    },
+    {
+      "id": "d039",
+      "prompt": "2024年有什么新的前端框架",
+      "expected": "search"
+    },
+    {
+      "id": "d040",
+      "prompt": "PostgreSQL和MySQL在OLTP场景哪个更好",
+      "expected": "search"
+    },
+    {
+      "id": "d041",
+      "prompt": "我想了解Serverless在国内的发展现状",
+      "expected": "search"
+    },
+    {
+      "id": "d042",
+      "prompt": "Redis和Memcached有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d043",
+      "prompt": "什么是CAP定理",
+      "expected": "search"
+    },
+    {
+      "id": "d044",
+      "prompt": "帮我搜一下最近大模型安全的新论文",
+      "expected": "search"
+    },
+    {
+      "id": "d045",
+      "prompt": "数据库死锁怎么排查",
+      "expected": "search"
+    },
+    {
+      "id": "d046",
+      "prompt": "RAG和fine-tuning各自适合什么场景",
+      "expected": "search"
+    },
+    {
+      "id": "d047",
+      "prompt": "Vite和Webpack构建速度差多少",
+      "expected": "search"
+    },
+    {
+      "id": "d048",
+      "prompt": "什么是事件驱动架构",
+      "expected": "search"
+    },
+    {
+      "id": "d049",
+      "prompt": "帮我查一下GraphQL和REST的优缺点",
+      "expected": "search"
+    },
+    {
+      "id": "d050",
+      "prompt": "Kafka和RabbitMQ在大规模场景哪个好",
+      "expected": "search"
+    },
+    {
+      "id": "d051",
+      "prompt": "什么是最终一致性",
+      "expected": "search"
+    },
+    {
+      "id": "d052",
+      "prompt": "帮我查一下2024年最受欢迎的编程语言",
+      "expected": "search"
+    },
+    {
+      "id": "d053",
+      "prompt": "微服务限流用令牌桶还是漏桶好",
+      "expected": "search"
+    },
+    {
+      "id": "d054",
+      "prompt": "如何选择适合的API网关",
+      "expected": "search"
+    },
+    {
+      "id": "d055",
+      "prompt": "什么是DDD领域驱动设计",
+      "expected": "search"
+    },
+    {
+      "id": "d056",
+      "prompt": "帮我查一下常见的并发编程陷阱",
+      "expected": "search"
+    },
+    {
+      "id": "d057",
+      "prompt": "Rust的所有权机制是什么",
+      "expected": "search"
+    },
+    {
+      "id": "d058",
+      "prompt": "什么是向量数据库",
+      "expected": "search"
+    },
+    {
+      "id": "d059",
+      "prompt": "帮我查一下常见的内存泄漏排查方法",
+      "expected": "search"
+    },
+    {
+      "id": "d060",
+      "prompt": "什么是服务网格",
+      "expected": "search"
+    },
+    {
+      "id": "d061",
+      "prompt": "FastAPI和Flask性能差多少",
+      "expected": "search"
+    },
+    {
+      "id": "d062",
+      "prompt": "什么是观察者模式",
+      "expected": "search"
+    },
+    {
+      "id": "d063",
+      "prompt": "Elasticsearch和Solr有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d064",
+      "prompt": "帮我查一下容器安全最佳实践",
+      "expected": "search"
+    },
+    {
+      "id": "d065",
+      "prompt": "什么是蓝绿部署",
+      "expected": "search"
+    },
+    {
+      "id": "d066",
+      "prompt": "帮我总结一下微服务的优缺点",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d067",
+      "prompt": "帮我把这段话翻译成英文：我们采用了微服务架构",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d068",
+      "prompt": "请润色一下这段文字使其更正式",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d069",
+      "prompt": "根据以上三份报告，帮我写一份面向管理层的风险评估摘要",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d070",
+      "prompt": "请帮我归纳一下Kubernetes的核心概念",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d071",
+      "prompt": "帮我写一篇关于云原生技术的短文",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d072",
+      "prompt": "根据这些数据，给出Go和Rust的性能对比结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d073",
+      "prompt": "帮我把这段技术文档翻译成中文",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d074",
+      "prompt": "请综合这几份测试报告给出选型建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d075",
+      "prompt": "帮我起草一份技术方案评审纪要",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d076",
+      "prompt": "我已经做了三轮搜索找到了PostgreSQL和MySQL的基准数据，信息够了，请给结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d077",
+      "prompt": "收集了三份架构分析报告，信息充足，请帮我写正式结论摘要",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d078",
+      "prompt": "已经查了两轮资料，数据充分了，现在应该直接给结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d079",
+      "prompt": "根据我提供的容量数据和成本分析，写一份迁移决策摘要",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d080",
+      "prompt": "整合Go QPS 12k、Rust QPS 18k、Java QPS 9k，写技术委员会结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d081",
+      "prompt": "两篇文章对数据库连接池给了相反建议，怎么办",
+      "expected": "search"
+    },
+    {
+      "id": "d082",
+      "prompt": "官方文档说连接池设CPU核数2倍，博客说4倍，信哪个",
+      "expected": "search"
+    },
+    {
+      "id": "d083",
+      "prompt": "两个同事对缓存策略有分歧但都没数据，应该先查什么",
+      "expected": "search"
+    },
+    {
+      "id": "d084",
+      "prompt": "有人说gRPC更快有人说REST更稳但都没压测，怎么推进",
+      "expected": "search"
+    },
+    {
+      "id": "d085",
+      "prompt": "两篇分区策略文章都没给实测数据，怎么选",
+      "expected": "search"
+    },
+    {
+      "id": "d086",
+      "prompt": "一段2022年博客说GraphQL比REST快3倍，现在还可靠吗",
+      "expected": "search"
+    },
+    {
+      "id": "d087",
+      "prompt": "2019年高赞回答推荐asyncio而非threading，现在还准吗",
+      "expected": "search"
+    },
+    {
+      "id": "d088",
+      "prompt": "一篇2020年文章说Docker Compose适合生产，现在还成立吗",
+      "expected": "search"
+    },
+    {
+      "id": "d089",
+      "prompt": "这个建议现在还可靠吗",
+      "expected": "search"
+    },
+    {
+      "id": "d090",
+      "prompt": "帮我看看这个方案有什么问题",
+      "expected": "search"
+    },
+    {
+      "id": "d091",
+      "prompt": "你觉得应该用哪个工具",
+      "expected": "search"
+    },
+    {
+      "id": "d092",
+      "prompt": "这个问题里既有Python代码又要算48000/6000分几批，先走哪类",
+      "expected": "calculator"
+    },
+    {
+      "id": "d093",
+      "prompt": "帮我查一下Python性能优化方法然后计算提速百分比",
+      "expected": "search"
+    },
+    {
+      "id": "d094",
+      "prompt": "写个脚本计算斐波那契数列前100项的和",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d095",
+      "prompt": "搜索一下Redis的基准测试数据然后总结成报告",
+      "expected": "search"
+    },
+    {
+      "id": "d096",
+      "prompt": "帮我分析这段代码的性能瓶颈然后给优化建议",
+      "expected": "search"
+    },
+    {
+      "id": "d097",
+      "prompt": "查一下最新的安全漏洞然后写一个检测脚本",
+      "expected": "search"
+    },
+    {
+      "id": "d098",
+      "prompt": "帮我写一个函数计算圆的面积，半径从用户输入获取",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d099",
+      "prompt": "对比一下这两个框架的性能",
+      "expected": "search"
+    },
+    {
+      "id": "d100",
+      "prompt": "帮我制定一个两周发布计划",
+      "expected": "search"
+    },
+    {
+      "id": "d101",
+      "prompt": "how to deploy kubernetes on AWS",
+      "expected": "search"
+    },
+    {
+      "id": "d102",
+      "prompt": "what is the difference between gRPC and REST",
+      "expected": "search"
+    },
+    {
+      "id": "d103",
+      "prompt": "calculate the sum of 1 to 100",
+      "expected": "calculator"
+    },
+    {
+      "id": "d104",
+      "prompt": "write a Python script to reverse a string",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d105",
+      "prompt": "summarize the key points of microservices",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d106",
+      "prompt": "嗯",
+      "expected": "search"
+    },
+    {
+      "id": "d107",
+      "prompt": "帮我看看",
+      "expected": "search"
+    },
+    {
+      "id": "d108",
+      "prompt": "不是那个",
+      "expected": "search"
+    },
+    {
+      "id": "d109",
+      "prompt": "太慢了",
+      "expected": "search"
+    },
+    {
+      "id": "d110",
+      "prompt": "分析",
+      "expected": "search"
+    },
+    {
+      "id": "d111",
+      "prompt": "帮我查一下Kubernetes HPA怎么配置",
+      "expected": "search"
+    },
+    {
+      "id": "d112",
+      "prompt": "我想知道为什么我的Docker容器总是重启",
+      "expected": "search"
+    },
+    {
+      "id": "d113",
+      "prompt": "帮我查一下Nginx反向代理配置",
+      "expected": "search"
+    },
+    {
+      "id": "d114",
+      "prompt": "Git rebase和merge有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d115",
+      "prompt": "什么是CI/CD",
+      "expected": "search"
+    },
+    {
+      "id": "d116",
+      "prompt": "帮我查一下Prometheus监控配置",
+      "expected": "search"
+    },
+    {
+      "id": "d117",
+      "prompt": "什么是OAuth 2.0",
+      "expected": "search"
+    },
+    {
+      "id": "d118",
+      "prompt": "JWT和Session有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d119",
+      "prompt": "帮我查一下常见的SQL优化技巧",
+      "expected": "search"
+    },
+    {
+      "id": "d120",
+      "prompt": "什么是WASM",
+      "expected": "search"
+    },
+    {
+      "id": "d121",
+      "prompt": "帮我写一个Python脚本实现冒泡排序",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d122",
+      "prompt": "实现一个LRU缓存",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d123",
+      "prompt": "写个函数判断回文",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d124",
+      "prompt": "帮我用Python写一个简单的HTTP服务器",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d125",
+      "prompt": "写一个TypeScript泛型工具类型",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d126",
+      "prompt": "帮我写一个正则表达式匹配邮箱",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d127",
+      "prompt": "用Python实现一个简单的区块链",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d128",
+      "prompt": "写个shell脚本统计日志中ERROR出现次数",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d129",
+      "prompt": "帮我写一个Dockerfile构建Node应用",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d130",
+      "prompt": "用Rust写一个hello world",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d131",
+      "prompt": "帮我算一下15%的税前工资28000是多少税",
+      "expected": "calculator"
+    },
+    {
+      "id": "d132",
+      "prompt": "一个三角形底6高4，面积多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d133",
+      "prompt": "帮我算 2.5 * 3.7",
+      "expected": "calculator"
+    },
+    {
+      "id": "d134",
+      "prompt": "1500除以3等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d135",
+      "prompt": "一栋楼5层每层12个房间共多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d136",
+      "prompt": "请计算 7的阶乘",
+      "expected": "calculator"
+    },
+    {
+      "id": "d137",
+      "prompt": "每小时60公里，3.5小时走多远",
+      "expected": "calculator"
+    },
+    {
+      "id": "d138",
+      "prompt": "帮我算一下年化收益率 8% 的 5 万本金一年赚多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d139",
+      "prompt": "256开平方是多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d140",
+      "prompt": "3万乘以1.15等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d141",
+      "prompt": "帮我总结一下DevOps的核心实践",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d142",
+      "prompt": "请把以下内容翻译成英文：这个系统使用事件驱动架构",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d143",
+      "prompt": "根据这些测试数据帮我写一份选型建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d144",
+      "prompt": "请帮我提炼这份技术报告的三个要点",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d145",
+      "prompt": "把这段话改写得更简洁专业",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d146",
+      "prompt": "我已经查了三份网关对比资料信息够了请帮我总结选型建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d147",
+      "prompt": "已经收集了足够的性能数据请直接给结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d148",
+      "prompt": "两篇关于缓存策略的文章给了相反建议应该先查什么",
+      "expected": "search"
+    },
+    {
+      "id": "d149",
+      "prompt": "有人说容器化提升40%利用率有人说降低IO性能但都没数据怎么选",
+      "expected": "search"
+    },
+    {
+      "id": "d150",
+      "prompt": "官方说用连接池社区说不用到底信谁",
+      "expected": "search"
+    },
+    {
+      "id": "d151",
+      "prompt": "2018年博客推荐Docker Compose做生产编排现在可靠吗",
+      "expected": "search"
+    },
+    {
+      "id": "d152",
+      "prompt": "2020年的回答说用Threading现在还需要查证吗",
+      "expected": "search"
+    },
+    {
+      "id": "d153",
+      "prompt": "帮我先查一下业界微服务拆分流程",
+      "expected": "search"
+    },
+    {
+      "id": "d154",
+      "prompt": "团队只有2人不能引入新语言栈查一下合适的API网关",
+      "expected": "search"
+    },
+    {
+      "id": "d155",
+      "prompt": "费用上限5万工期3周查一下监控方案",
+      "expected": "search"
+    },
+    {
+      "id": "d156",
+      "prompt": "先查A/B测试最佳实践和常见陷阱",
+      "expected": "search"
+    },
+    {
+      "id": "d157",
+      "prompt": "从单体到微服务先查一下迁移经验",
+      "expected": "search"
+    },
+    {
+      "id": "d158",
+      "prompt": "我们打算做A/B测试验证注册转化率",
+      "expected": "search"
+    },
+    {
+      "id": "d159",
+      "prompt": "项目要从单体重构为微服务",
+      "expected": "search"
+    },
+    {
+      "id": "d160",
+      "prompt": "OR映射用MyBatis还是JPA",
+      "expected": "search"
+    },
+    {
+      "id": "d161",
+      "prompt": "帮我写一段代码用pandas分析CSV文件",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d162",
+      "prompt": "实现一个观察者模式",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d163",
+      "prompt": "写个Python脚本批量下载图片",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d164",
+      "prompt": "帮我写一个WebSocket聊天服务器",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d165",
+      "prompt": "用Go写一个简单的REST API",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d166",
+      "prompt": "2加3等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d167",
+      "prompt": "帮我算100的平方",
+      "expected": "calculator"
+    },
+    {
+      "id": "d168",
+      "prompt": "每天8小时一周多少小时",
+      "expected": "calculator"
+    },
+    {
+      "id": "d169",
+      "prompt": "一块地长20米宽15米面积多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d170",
+      "prompt": "月费5万12个月多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d171",
+      "prompt": "什么是零信任架构",
+      "expected": "search"
+    },
+    {
+      "id": "d172",
+      "prompt": "帮我查一下云原生的定义",
+      "expected": "search"
+    },
+    {
+      "id": "d173",
+      "prompt": "SSE和WebSocket有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "d174",
+      "prompt": "什么是基础设施即代码",
+      "expected": "search"
+    },
+    {
+      "id": "d175",
+      "prompt": "帮我查一下常见的Python性能优化方法",
+      "expected": "search"
+    },
+    {
+      "id": "d176",
+      "prompt": "帮我写一份给负责人的正式结论摘要",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d177",
+      "prompt": "请综合以上分析给出最终选型建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d178",
+      "prompt": "根据收集到的研究资料写一份技术调研报告",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d179",
+      "prompt": "把这段技术方案翻译成英文",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d180",
+      "prompt": "请帮我总结一下RESTful API的设计原则",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d181",
+      "prompt": "比较SQLite和PostgreSQL的维护复杂度",
+      "expected": "search"
+    },
+    {
+      "id": "d182",
+      "prompt": "比较Redis和Memcached的缓存性能",
+      "expected": "search"
+    },
+    {
+      "id": "d183",
+      "prompt": "比较gRPC和REST在微服务通信中的延迟",
+      "expected": "search"
+    },
+    {
+      "id": "d184",
+      "prompt": "比较Kafka和RabbitMQ的消息吞吐量",
+      "expected": "search"
+    },
+    {
+      "id": "d185",
+      "prompt": "比较Nginx和Caddy的反向代理性能",
+      "expected": "search"
+    },
+    {
+      "id": "d186",
+      "prompt": "帮我查资料比较一下两个方案的优劣",
+      "expected": "search"
+    },
+    {
+      "id": "d187",
+      "prompt": "先列出关键步骤再给结论比较MongoDB和PostgreSQL",
+      "expected": "search"
+    },
+    {
+      "id": "d188",
+      "prompt": "两份方案没有压测数据应该怎么选",
+      "expected": "search"
+    },
+    {
+      "id": "d189",
+      "prompt": "我需要给出最终选型建议但两边都没数据",
+      "expected": "search"
+    },
+    {
+      "id": "d190",
+      "prompt": "搜索结果都很笼统应该换关键词还是先用现有信息",
+      "expected": "search"
+    },
+    {
+      "id": "d191",
+      "prompt": "帮我写个Python函数计算阶乘",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d192",
+      "prompt": "写个脚本实现快速排序并测试",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d193",
+      "prompt": "帮我写一个简单的Todo应用后端",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d194",
+      "prompt": "用Python实现单例模式",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d195",
+      "prompt": "写个函数判断链表是否有环",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d196",
+      "prompt": "45加32等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d197",
+      "prompt": "帮我算年利率5%的10万存3年利息",
+      "expected": "calculator"
+    },
+    {
+      "id": "d198",
+      "prompt": "一台机器8核16G能跑多少容器",
+      "expected": "calculator"
+    },
+    {
+      "id": "d199",
+      "prompt": "帮我算一下1000的平方根",
+      "expected": "calculator"
+    },
+    {
+      "id": "d200",
+      "prompt": "月租3500一年多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "d201",
+      "prompt": "帮我查一下微服务网关选型",
+      "expected": "search"
+    },
+    {
+      "id": "d202",
+      "prompt": "什么是服务降级",
+      "expected": "search"
+    },
+    {
+      "id": "d203",
+      "prompt": "帮我搜一下分布式锁的实现方案",
+      "expected": "search"
+    },
+    {
+      "id": "d204",
+      "prompt": "什么是熔断器模式",
+      "expected": "search"
+    },
+    {
+      "id": "d205",
+      "prompt": "查一下常见的性能监控指标有哪些",
+      "expected": "search"
+    },
+    {
+      "id": "d206",
+      "prompt": "比较两个方案并总结优缺点",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d207",
+      "prompt": "比较A和B哪个好",
+      "expected": "search"
+    },
+    {
+      "id": "d208",
+      "prompt": "先搜资料再总结微服务架构",
+      "expected": "search"
+    },
+    {
+      "id": "d209",
+      "prompt": "信息够了，比较一下给出结论",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "d210",
+      "prompt": "还是算了吧不用查了",
+      "expected": "search"
+    },
+    {
+      "id": "d211",
+      "prompt": "还是别用这个方案了",
+      "expected": "search"
+    },
+    {
+      "id": "d212",
+      "prompt": "帮我写个SQL查询用户订单",
+      "expected": "code_executor"
+    },
+    {
+      "id": "d213",
+      "prompt": "搜索Python最佳实践",
+      "expected": "search"
+    },
+    {
+      "id": "e001",
+      "prompt": "what is kubernetes",
+      "expected": "search"
+    },
+    {
+      "id": "e002",
+      "prompt": "how does grpc work",
+      "expected": "search"
+    },
+    {
+      "id": "e003",
+      "prompt": "redis vs memcached performance benchmarks",
+      "expected": "search"
+    },
+    {
+      "id": "e004",
+      "prompt": "PostgreSQL connection pool best practices",
+      "expected": "search"
+    },
+    {
+      "id": "e005",
+      "prompt": "Kafka consumer group rebalance strategy",
+      "expected": "search"
+    },
+    {
+      "id": "e006",
+      "prompt": "Elasticsearch vs OpenSearch differences",
+      "expected": "search"
+    },
+    {
+      "id": "e007",
+      "prompt": "GraphQL pagination cursor vs offset",
+      "expected": "search"
+    },
+    {
+      "id": "e008",
+      "prompt": "gRPC vs REST vs GraphQL comparison",
+      "expected": "search"
+    },
+    {
+      "id": "e009",
+      "prompt": "为什么Kafka比RabbitMQ吞吐量高",
+      "expected": "search"
+    },
+    {
+      "id": "e010",
+      "prompt": "Vue3的Composition API和Options API区别",
+      "expected": "search"
+    },
+    {
+      "id": "e011",
+      "prompt": "Rust的所有权机制怎么理解",
+      "expected": "search"
+    },
+    {
+      "id": "e012",
+      "prompt": "K8s的Ingress和Service有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e013",
+      "prompt": "为什么Go的GMP调度器比线程池高效",
+      "expected": "search"
+    },
+    {
+      "id": "e014",
+      "prompt": "PostgreSQL的MVCC机制原理",
+      "expected": "search"
+    },
+    {
+      "id": "e015",
+      "prompt": "WebSocket和Server-Sent Events哪个更适合实时推送",
+      "expected": "search"
+    },
+    {
+      "id": "e016",
+      "prompt": "微服务熔断器Hystrix和Resilience4j对比",
+      "expected": "search"
+    },
+    {
+      "id": "e017",
+      "prompt": "Docker的overlay2和device mapper存储驱动区别",
+      "expected": "search"
+    },
+    {
+      "id": "e018",
+      "prompt": "什么是云原生架构",
+      "expected": "search"
+    },
+    {
+      "id": "e019",
+      "prompt": "Service Mesh Istio和Linkerd选哪个",
+      "expected": "search"
+    },
+    {
+      "id": "e020",
+      "prompt": "MongoDB的分片和副本集有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e021",
+      "prompt": "为什么TypeScript比JavaScript更适合大型项目",
+      "expected": "search"
+    },
+    {
+      "id": "e022",
+      "prompt": "Apache Pulsar和Kafka的架构差异",
+      "expected": "search"
+    },
+    {
+      "id": "e023",
+      "prompt": "什么是CAP理论",
+      "expected": "search"
+    },
+    {
+      "id": "e024",
+      "prompt": "Redis的持久化RDB和AOF怎么选",
+      "expected": "search"
+    },
+    {
+      "id": "e025",
+      "prompt": "Nginx和Envoy做网关哪个好",
+      "expected": "search"
+    },
+    {
+      "id": "e026",
+      "prompt": "为什么React的虚拟DOM比直接操作DOM快",
+      "expected": "search"
+    },
+    {
+      "id": "e027",
+      "prompt": "什么是Event Sourcing模式",
+      "expected": "search"
+    },
+    {
+      "id": "e028",
+      "prompt": "CQRS和传统CRUD有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e029",
+      "prompt": "Prometheus和Grafana监控体系怎么搭建",
+      "expected": "search"
+    },
+    {
+      "id": "e030",
+      "prompt": "为什么Raft比Paxos更容易理解",
+      "expected": "search"
+    },
+    {
+      "id": "e031",
+      "prompt": "什么是BPF和eBPF技术",
+      "expected": "search"
+    },
+    {
+      "id": "e032",
+      "prompt": "Sidecar模式和Ambassador模式区别",
+      "expected": "search"
+    },
+    {
+      "id": "e033",
+      "prompt": "为什么gRPC用HTTP/2而不是HTTP/1.1",
+      "expected": "search"
+    },
+    {
+      "id": "e034",
+      "prompt": "什么是Saga分布式事务模式",
+      "expected": "search"
+    },
+    {
+      "id": "e035",
+      "prompt": "OAuth2.0和OIDC有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e036",
+      "prompt": "为什么MyBatis-Plus比MyBatis好用",
+      "expected": "search"
+    },
+    {
+      "id": "e037",
+      "prompt": "ClickHouse为什么查询快",
+      "expected": "search"
+    },
+    {
+      "id": "e038",
+      "prompt": "什么是向量数据库",
+      "expected": "search"
+    },
+    {
+      "id": "e039",
+      "prompt": "Redis Cluster和Sentinel模式区别",
+      "expected": "search"
+    },
+    {
+      "id": "e040",
+      "prompt": "为什么Kubernetes要弃用Docker",
+      "expected": "search"
+    },
+    {
+      "id": "e041",
+      "prompt": "什么是GitOps",
+      "expected": "search"
+    },
+    {
+      "id": "e042",
+      "prompt": "Quarkus和Spring Native哪个更适合GraalVM",
+      "expected": "search"
+    },
+    {
+      "id": "e043",
+      "prompt": "Terraform和Pulumi基础设施即代码对比",
+      "expected": "search"
+    },
+    {
+      "id": "e044",
+      "prompt": "为什么Linux用epoll而不是select",
+      "expected": "search"
+    },
+    {
+      "id": "e045",
+      "prompt": "什么是WebAssembly",
+      "expected": "search"
+    },
+    {
+      "id": "e046",
+      "prompt": "Edge Computing和CDN有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e047",
+      "prompt": "什么是零信任安全架构",
+      "expected": "search"
+    },
+    {
+      "id": "e048",
+      "prompt": "PostgreSQL的逻辑复制和物理复制区别",
+      "expected": "search"
+    },
+    {
+      "id": "e049",
+      "prompt": "如果每月存3000，年利率2.75%，5年后本息合计多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e050",
+      "prompt": "一台服务器功耗350W，PUE 1.3，一年电费多少（电价0.8元/度）",
+      "expected": "calculator"
+    },
+    {
+      "id": "e051",
+      "prompt": "圆环外径30cm内径20cm面积多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e052",
+      "prompt": "GDP增长率去年6.2今年6.8，提高了几个百分点",
+      "expected": "calculator"
+    },
+    {
+      "id": "e053",
+      "prompt": "复利计算：本金10万，年化5%，10年后多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e054",
+      "prompt": "三角形三边3,4,5面积多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e055",
+      "prompt": "等差数列首项2公差3前20项和",
+      "expected": "calculator"
+    },
+    {
+      "id": "e056",
+      "prompt": "等比数列首项1公比2前10项和",
+      "expected": "calculator"
+    },
+    {
+      "id": "e057",
+      "prompt": "圆柱体积半径5高10",
+      "expected": "calculator"
+    },
+    {
+      "id": "e058",
+      "prompt": "球体积半径6",
+      "expected": "calculator"
+    },
+    {
+      "id": "e059",
+      "prompt": "排列从5个中取3个",
+      "expected": "calculator"
+    },
+    {
+      "id": "e060",
+      "prompt": "组合从8个中取3个",
+      "expected": "calculator"
+    },
+    {
+      "id": "e061",
+      "prompt": "方差计算：2,4,6,8,10",
+      "expected": "calculator"
+    },
+    {
+      "id": "e062",
+      "prompt": "标准差：1,3,5,7,9",
+      "expected": "calculator"
+    },
+    {
+      "id": "e063",
+      "prompt": "百分比变化：从125到150增长百分之几",
+      "expected": "calculator"
+    },
+    {
+      "id": "e064",
+      "prompt": "汇率换算：500美元兑人民币多少（汇率7.25）",
+      "expected": "calculator"
+    },
+    {
+      "id": "e065",
+      "prompt": "贷款月供计算：本金50万，年利率4.9%，30年等额本息",
+      "expected": "calculator"
+    },
+    {
+      "id": "e066",
+      "prompt": "BMI计算：身高1.75m体重70kg",
+      "expected": "calculator"
+    },
+    {
+      "id": "e067",
+      "prompt": "速度计算：100km/h等于多少m/s",
+      "expected": "calculator"
+    },
+    {
+      "id": "e068",
+      "prompt": "面积换算：3亩等于多少平方米（1亩=666.67平方米）",
+      "expected": "calculator"
+    },
+    {
+      "id": "e069",
+      "prompt": "温度转换：98.6华氏度等于多少摄氏度",
+      "expected": "calculator"
+    },
+    {
+      "id": "e070",
+      "prompt": "浓度计算：500ml溶液含盐15g，质量分数多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e071",
+      "prompt": "功率计算：电压220V电流10A，功率多少瓦",
+      "expected": "calculator"
+    },
+    {
+      "id": "e072",
+      "prompt": "数据量估算：每天1亿条日志每条500字节，一个月多少TB",
+      "expected": "calculator"
+    },
+    {
+      "id": "e073",
+      "prompt": "税率计算：月薪25000，五险一金10%，个税起征点5000，税后多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e074",
+      "prompt": "折扣计算：原价1280打8.5折再减200，最终多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e075",
+      "prompt": "概率计算：掷两个骰子点数和为7的概率",
+      "expected": "calculator"
+    },
+    {
+      "id": "e076",
+      "prompt": "时间计算：3小时15分钟加2小时45分钟等于多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e077",
+      "prompt": "写一个JavaScript函数实现深拷贝",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e078",
+      "prompt": "用Go实现一个简单的HTTP服务器",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e079",
+      "prompt": "写Rust代码实现一个链表",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e080",
+      "prompt": "用Java实现生产者消费者模式",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e081",
+      "prompt": "写SQL查询每个部门工资前三的员工",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e082",
+      "prompt": "用Python实现一个LRU缓存",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e083",
+      "prompt": "写一个TypeScript泛型函数",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e084",
+      "prompt": "用Shell脚本批量重命名文件",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e085",
+      "prompt": "写Docker Compose配置运行Redis和PostgreSQL",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e086",
+      "prompt": "用Kotlin实现一个协程",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e087",
+      "prompt": "写一个C语言内存池实现",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e088",
+      "prompt": "用Scala实现尾递归阶乘",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e089",
+      "prompt": "写Lua脚本处理JSON",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e090",
+      "prompt": "用Bash写一个日志清理脚本",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e091",
+      "prompt": "写PowerShell脚本获取系统信息",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e092",
+      "prompt": "用Python pandas读取Excel并做透视表",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e093",
+      "prompt": "写一个SQL存储过程批量更新",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e094",
+      "prompt": "用FastAPI写一个CRUD接口",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e095",
+      "prompt": "写React组件实现Todo List",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e096",
+      "prompt": "用Vue3 Composition API写一个计数器",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e097",
+      "prompt": "写一个WebSocket心跳检测的JavaScript代码",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e098",
+      "prompt": "用Python写一个简单的线程池",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e099",
+      "prompt": "写SQL递归查询组织架构树",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e100",
+      "prompt": "用Python实现快速排序并测试",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e101",
+      "prompt": "写一个正则表达式匹配邮箱",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e102",
+      "prompt": "用Dockerfile构建一个Python应用镜像",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e103",
+      "prompt": "写Kubernetes YAML部署一个nginx",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e104",
+      "prompt": "用Python asyncio写一个并发爬虫",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e105",
+      "prompt": "写一个Terraform配置创建AWS EC2",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e106",
+      "prompt": "用SQL实现行转列",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e107",
+      "prompt": "用Python matplotlib画一个饼图",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e108",
+      "prompt": "写一份关于微服务架构的技术调研报告",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e109",
+      "prompt": "分析Kafka高吞吐的三大设计原因",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e110",
+      "prompt": "总结Redis常见的5种应用场景",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e111",
+      "prompt": "归纳CAP理论在分布式系统中的实践意义",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e112",
+      "prompt": "提炼Docker容器化的核心优势",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e113",
+      "prompt": "综合评价Spring Cloud和Dubbo的优劣",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e114",
+      "prompt": "写一份K8s集群性能优化建议书",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e115",
+      "prompt": "翻译这段技术文档：The Spring Framework provides a comprehensive programming and configuration model for modern Java-based enterprise applications",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e116",
+      "prompt": "润色这段文字：我们的系统很好用，性能不错，大家可以试试",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e117",
+      "prompt": "根据以下信息写结论：Go编译快、并发好、内存少，但泛型弱、生态不如Java",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e118",
+      "prompt": "总结微服务拆分的5个原则",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e119",
+      "prompt": "分析为什么RESTful API不适合所有场景",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e120",
+      "prompt": "写一份容器化迁移风险评估报告",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e121",
+      "prompt": "归纳API网关的4个核心功能",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e122",
+      "prompt": "总结DevOps落地的3个关键步骤",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e123",
+      "prompt": "提炼云原生的4个要素并展开说明",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e124",
+      "prompt": "分析单体架构到微服务架构的演进路径",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e125",
+      "prompt": "写一份技术债评估报告模板",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e126",
+      "prompt": "总结2024年前端框架趋势",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e127",
+      "prompt": "分析Kafka消息丢失的3种场景和解决方案",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e128",
+      "prompt": "综合对比3种数据库连接池的优劣",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e129",
+      "prompt": "归纳分布式锁的3种实现方式",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e130",
+      "prompt": "写一份CI/CD流水线设计文档大纲",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e131",
+      "prompt": "总结常见的5种缓存策略及适用场景",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e132",
+      "prompt": "分析为什么微服务需要服务注册发现",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e133",
+      "prompt": "写一份数据库选型报告：MySQL vs PostgreSQL vs MongoDB",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e134",
+      "prompt": "提炼分布式事务的4种解决方案并比较",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e135",
+      "prompt": "总结K8s Pod调度策略",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e136",
+      "prompt": "分析容器安全加固的5个要点",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e137",
+      "prompt": "写一份微服务监控体系设计文档",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e138",
+      "prompt": "explain how JWT authentication works",
+      "expected": "search"
+    },
+    {
+      "id": "e139",
+      "prompt": "what is the difference between SQL and NoSQL",
+      "expected": "search"
+    },
+    {
+      "id": "e140",
+      "prompt": "how to optimize MySQL query performance",
+      "expected": "search"
+    },
+    {
+      "id": "e141",
+      "prompt": "write a Python function to reverse a string",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e142",
+      "prompt": "calculate the factorial of 10",
+      "expected": "calculator"
+    },
+    {
+      "id": "e143",
+      "prompt": "implement a binary search tree in Java",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e144",
+      "prompt": "summarize the benefits of microservices",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e145",
+      "prompt": "compare Docker and virtual machines",
+      "expected": "search"
+    },
+    {
+      "id": "e146",
+      "prompt": "what is ACID compliance in databases",
+      "expected": "search"
+    },
+    {
+      "id": "e147",
+      "prompt": "write a regex to validate email addresses",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e148",
+      "prompt": "how does garbage collection work in Java",
+      "expected": "search"
+    },
+    {
+      "id": "e149",
+      "prompt": "what is the CAP theorem",
+      "expected": "search"
+    },
+    {
+      "id": "e150",
+      "prompt": "explain eventual consistency",
+      "expected": "search"
+    },
+    {
+      "id": "e151",
+      "prompt": "write a SQL query to find duplicate records",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e152",
+      "prompt": "calculate compound interest for 10000 at 5% for 3 years",
+      "expected": "calculator"
+    },
+    {
+      "id": "e153",
+      "prompt": "implement merge sort in Python",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e154",
+      "prompt": "write a technical report on API security",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e155",
+      "prompt": "what is idempotency in REST APIs",
+      "expected": "search"
+    },
+    {
+      "id": "e156",
+      "prompt": "how to handle concurrency in Go",
+      "expected": "search"
+    },
+    {
+      "id": "e157",
+      "prompt": "explain the reactor design pattern",
+      "expected": "search"
+    },
+    {
+      "id": "e158",
+      "prompt": "what is backpressure in reactive streams",
+      "expected": "search"
+    },
+    {
+      "id": "e159",
+      "prompt": "calculate the GCD of 48 and 36",
+      "expected": "calculator"
+    },
+    {
+      "id": "e160",
+      "prompt": "write a Dockerfile for a Node.js app",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e161",
+      "prompt": "summarize SOLID principles",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e162",
+      "prompt": "what is CQRS pattern",
+      "expected": "search"
+    },
+    {
+      "id": "e163",
+      "prompt": "在我们的微服务架构中，订单服务和库存服务之间需要保证数据一致性，但是又不想使用两阶段提交因为性能太差，现在考虑使用Saga模式或者本地消息表方案，这两个方案各有什么优缺点，在什么场景下应该选哪个，有没有实际的生产案例可以参考",
+      "expected": "search"
+    },
+    {
+      "id": "e164",
+      "prompt": "请帮我分析一下为什么我们的Kubernetes集群在高峰期会出现Pod频繁重启的问题，已经检查了资源限制和HPA配置都没问题，怀疑是网络或者存储的问题，请问还有什么可能的原因和排查思路",
+      "expected": "search"
+    },
+    {
+      "id": "e165",
+      "prompt": "我们团队正在做技术选型，需要为一个日活百万的社交应用选择消息队列，目前在Kafka、RocketMQ和Pulsar之间纠结，请从吞吐量、延迟、可靠性、运维复杂度和社区活跃度五个维度对比分析",
+      "expected": "search"
+    },
+    {
+      "id": "e166",
+      "prompt": "根据最新的性能测试结果，我们的Spring Boot应用在500并发时响应时间从50ms飙升到2000ms，数据库CPU使用率70%，JVM堆内存使用80%，请分析可能的瓶颈和优化方向",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e167",
+      "prompt": "请写一份详细的技术方案文档，内容包括微服务拆分策略、服务间通信方案、数据一致性保障机制、服务注册发现方案、配置中心选型、链路追踪方案和容错降级策略",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e168",
+      "prompt": "我们有一个Python数据处理管道每天处理10亿条记录，目前用Pandas单机跑需要4小时，现在想迁移到Spark集群上，请帮我写一个PySpark的数据处理脚本实现等价逻辑",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e169",
+      "prompt": "请计算一下如果我们的API从当前的500QPS提升到2000QPS，需要增加多少台4核8G的服务器，假设每台服务器当前处理50QPS，考虑20%的冗余",
+      "expected": "calculator"
+    },
+    {
+      "id": "e170",
+      "prompt": "我们的Redis集群有6个主节点和6个从节点，每个节点最大内存16GB，现在数据量增长到80GB，请分析是否需要扩容以及扩容方案和成本估算",
+      "expected": "calculator"
+    },
+    {
+      "id": "e171",
+      "prompt": "请帮我写一个完整的Docker Compose配置文件，包含Nginx反向代理、PostgreSQL数据库、Redis缓存、Elasticsearch搜索和一个Python FastAPI应用，需要配置好网络、数据卷、健康检查和资源限制",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e172",
+      "prompt": "根据Gartner的技术成熟度曲线和我们的实际经验，请总结2024年到2025年最值得关注的10个后端技术趋势，每个趋势需要说明应用场景、成熟度和采纳建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e173",
+      "prompt": "我们的电商系统在大促时遇到了缓存击穿问题，热点商品的QPS达到5万，目前用的是Redis单节点，请分析现有的缓存策略存在什么问题，以及应该采用什么方案来解决缓存击穿和雪崩问题",
+      "expected": "search"
+    },
+    {
+      "id": "e174",
+      "prompt": "请帮我写一个完整的Kubernetes Deployment YAML文件，部署一个有状态的MySQL实例，需要配置PVC持久化存储、ConfigMap管理配置、Secret管理密码、就绪探针和存活探针，还要设置合理的资源限制",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e175",
+      "prompt": "我们的微服务链路中有一个核心服务调用链涉及8个服务，平均每个服务处理时间50ms，现在用户反馈接口响应慢，请分析如何通过链路追踪定位性能瓶颈并给出优化建议",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e176",
+      "prompt": "请分析对比React、Vue和Angular三个前端框架在大型企业级应用中的表现，从组件化、状态管理、路由、性能优化、TypeScript支持、学习曲线和生态成熟度七个维度展开",
+      "expected": "search"
+    },
+    {
+      "id": "e177",
+      "prompt": "我们的日志系统每天产生500GB数据，需要存储30天，当前用ELK方案成本太高，请分析有哪些替代方案可以降低成本，并计算各方案的存储成本对比",
+      "expected": "calculator"
+    },
+    {
+      "id": "e178",
+      "prompt": "先查一下Redis集群的配置最佳实践，然后帮我总结成文档",
+      "expected": "search"
+    },
+    {
+      "id": "e179",
+      "prompt": "先搜索K8s Pod重启的常见原因，再给我一个排查清单",
+      "expected": "search"
+    },
+    {
+      "id": "e180",
+      "prompt": "先帮我写个Python脚本测试API响应时间，然后跑一下",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e181",
+      "prompt": "先算一下服务器成本，然后写个预算报告",
+      "expected": "calculator"
+    },
+    {
+      "id": "e182",
+      "prompt": "先查资料再分析再总结微服务的3个核心问题",
+      "expected": "search"
+    },
+    {
+      "id": "e183",
+      "prompt": "先搜Docker网络模式对比再给结论",
+      "expected": "search"
+    },
+    {
+      "id": "e184",
+      "prompt": "先写代码实现一个JWT工具类，然后测试",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e185",
+      "prompt": "先搜索对比PostgreSQL和MySQL的性能，再写技术选型报告",
+      "expected": "search"
+    },
+    {
+      "id": "e186",
+      "prompt": "先查一下Kafka的配置参数，然后帮我优化",
+      "expected": "search"
+    },
+    {
+      "id": "e187",
+      "prompt": "先计算一下每月云成本，然后写优化建议",
+      "expected": "calculator"
+    },
+    {
+      "id": "e188",
+      "prompt": "难道没有人觉得微服务拆太细反而更难维护吗？",
+      "expected": "search"
+    },
+    {
+      "id": "e189",
+      "prompt": "为什么不直接用HTTP而要用gRPC呢？",
+      "expected": "search"
+    },
+    {
+      "id": "e190",
+      "prompt": "JWT存localStorage真的安全吗？有没有XSS风险？",
+      "expected": "search"
+    },
+    {
+      "id": "e191",
+      "prompt": "Kafka的ISR机制真的能保证消息不丢失吗？",
+      "expected": "search"
+    },
+    {
+      "id": "e192",
+      "prompt": "为什么大家都在说云原生好，到底好在哪？",
+      "expected": "search"
+    },
+    {
+      "id": "e193",
+      "prompt": "React的useEffect真的会导致性能问题吗？怎么解决？",
+      "expected": "search"
+    },
+    {
+      "id": "e194",
+      "prompt": "Docker容器和虚拟机到底有什么本质区别？",
+      "expected": "search"
+    },
+    {
+      "id": "e195",
+      "prompt": "到底该不该用ORM？性能损失真的那么大吗？",
+      "expected": "search"
+    },
+    {
+      "id": "e196",
+      "prompt": "Service Mesh到底是银弹还是过度设计？",
+      "expected": "search"
+    },
+    {
+      "id": "e197",
+      "prompt": "为什么说过早优化是万恶之源？什么情况下该优化？",
+      "expected": "search"
+    },
+    {
+      "id": "e198",
+      "prompt": "帮我看下这个报错咋回事：java.lang.NullPointerException",
+      "expected": "search"
+    },
+    {
+      "id": "e199",
+      "prompt": "Docker跑不起来咋整",
+      "expected": "search"
+    },
+    {
+      "id": "e200",
+      "prompt": "这俩方案哪个靠谱点",
+      "expected": "search"
+    },
+    {
+      "id": "e201",
+      "prompt": "Redis挂了咋办哈",
+      "expected": "search"
+    },
+    {
+      "id": "e202",
+      "prompt": "K8s pod起不来咋排查",
+      "expected": "search"
+    },
+    {
+      "id": "e203",
+      "prompt": "帮我写个pyton脚本",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e204",
+      "prompt": "写个java冒泡排序",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e205",
+      "prompt": "帮我算下12.5乘以8",
+      "expected": "calculator"
+    },
+    {
+      "id": "e206",
+      "prompt": "这个方案行不行啊，给点建议呗",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e207",
+      "prompt": "总结下微服务呗，简单点就行",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e208",
+      "prompt": "帮我查查PostgrSQL怎么优化",
+      "expected": "search"
+    },
+    {
+      "id": "e209",
+      "prompt": "写个scrip批量删日志",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e210",
+      "prompt": "帮我算个账，月费398加流量费68总共多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e211",
+      "prompt": "那个K8s的configmap咋用来着",
+      "expected": "search"
+    },
+    {
+      "id": "e212",
+      "prompt": "给个技术报告呗，关于容器化的",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e213",
+      "prompt": "帮我search一下Redis的cluster配置",
+      "expected": "search"
+    },
+    {
+      "id": "e214",
+      "prompt": "写个function实现debounce功能",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e215",
+      "prompt": "calculate一下2的16次方",
+      "expected": "calculator"
+    },
+    {
+      "id": "e216",
+      "prompt": "summarize一下docker网络模式",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e217",
+      "prompt": "帮我debug一下这个NullPointerException",
+      "expected": "search"
+    },
+    {
+      "id": "e218",
+      "prompt": "对比一下Kafka和RocketMQ的throughput",
+      "expected": "search"
+    },
+    {
+      "id": "e219",
+      "prompt": "帮我review一下这段代码有没有bug",
+      "expected": "search"
+    },
+    {
+      "id": "e220",
+      "prompt": "写个script部署nginx到k8s",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e221",
+      "prompt": "这个design pattern靠谱吗",
+      "expected": "search"
+    },
+    {
+      "id": "e222",
+      "prompt": "帮我分析一下这个error log的原因",
+      "expected": "search"
+    },
+    {
+      "id": "e223",
+      "prompt": "嗯",
+      "expected": "search"
+    },
+    {
+      "id": "e224",
+      "prompt": "哦",
+      "expected": "search"
+    },
+    {
+      "id": "e225",
+      "prompt": "看看",
+      "expected": "search"
+    },
+    {
+      "id": "e226",
+      "prompt": "帮我",
+      "expected": "search"
+    },
+    {
+      "id": "e227",
+      "prompt": "分析",
+      "expected": "search"
+    },
+    {
+      "id": "e228",
+      "prompt": "帮我看看这个方案",
+      "expected": "search"
+    },
+    {
+      "id": "e229",
+      "prompt": "这个代码有问题吗",
+      "expected": "search"
+    },
+    {
+      "id": "e230",
+      "prompt": "帮我理解一下Docker",
+      "expected": "search"
+    },
+    {
+      "id": "e231",
+      "prompt": "这个架构合理吗",
+      "expected": "search"
+    },
+    {
+      "id": "e232",
+      "prompt": "这个方案行吗",
+      "expected": "search"
+    },
+    {
+      "id": "e233",
+      "prompt": "我们的电商系统在双十一期间需要支撑峰值10万QPS的订单创建请求，目前单实例只能处理2000QPS，数据库用的是MySQL 8.0主从架构，请帮我分析需要多少台应用服务器和数据库分库分表方案，以及预估总成本",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e234",
+      "prompt": "请帮我写一个完整的Python CI/CD流水线脚本，需要实现代码检查、单元测试、构建Docker镜像、推送到镜像仓库、部署到K8s集群、运行集成测试和通知企业微信等功能",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e235",
+      "prompt": "我们的微服务架构中有30个服务，目前用Spring Cloud Eureka做服务发现，但性能和稳定性遇到瓶颈，考虑迁移到Nacos或Consul，请从一致性模型、健康检查机制、多数据中心支持和社区活跃度对比",
+      "expected": "search"
+    },
+    {
+      "id": "e236",
+      "prompt": "请计算我们的云成本：10台4核8G的ECS每月320元/台，5台8核16G的ECS每月640元/台，2个1TB的OSS存储每月0.12元/GB/月，3个Redis 4G实例每月120元/个，加上带宽费500元/月，总计多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e237",
+      "prompt": "请帮我总结一下从单体到微服务到云原生到Serverless的架构演进历史，每个阶段的技术特征、优缺点和典型代表案例",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e238",
+      "prompt": "how to configure nginx reverse proxy",
+      "expected": "search"
+    },
+    {
+      "id": "e239",
+      "prompt": "explain event-driven architecture",
+      "expected": "search"
+    },
+    {
+      "id": "e240",
+      "prompt": "write a Rust struct with traits",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e241",
+      "prompt": "calculate 15% tip on 86.50",
+      "expected": "calculator"
+    },
+    {
+      "id": "e242",
+      "prompt": "analyze the tradeoffs of NoSQL databases",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e243",
+      "prompt": "what is eventual consistency in distributed systems",
+      "expected": "search"
+    },
+    {
+      "id": "e244",
+      "prompt": "implement a hash map in C",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e245",
+      "prompt": "how to handle distributed transactions",
+      "expected": "search"
+    },
+    {
+      "id": "e246",
+      "prompt": "calculate monthly payment for 200000 at 4.5% for 30 years",
+      "expected": "calculator"
+    },
+    {
+      "id": "e247",
+      "prompt": "summarize the principles of clean architecture",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e248",
+      "prompt": "what is the difference between TCP and UDP",
+      "expected": "search"
+    },
+    {
+      "id": "e249",
+      "prompt": "write a Go HTTP middleware for logging",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e250",
+      "prompt": "how does TLS handshake work",
+      "expected": "search"
+    },
+    {
+      "id": "e251",
+      "prompt": "calculate the area of a circle with radius 12.5",
+      "expected": "calculator"
+    },
+    {
+      "id": "e252",
+      "prompt": "write a comprehensive report on microservices security",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e253",
+      "prompt": "为什么有人说不要过早优化代码？什么标准算过早？",
+      "expected": "search"
+    },
+    {
+      "id": "e254",
+      "prompt": "微服务拆分的粒度到底多细才算合理？有没有标准？",
+      "expected": "search"
+    },
+    {
+      "id": "e255",
+      "prompt": "到底应该用TypeScript还是JavaScript？纯JS真的不行吗？",
+      "expected": "search"
+    },
+    {
+      "id": "e256",
+      "prompt": "这咋回事啊，接口一直超时",
+      "expected": "search"
+    },
+    {
+      "id": "e257",
+      "prompt": "帮我弄个Python脚本呗",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e258",
+      "prompt": "算下这个月花了多少钱哈",
+      "expected": "calculator"
+    },
+    {
+      "id": "e259",
+      "prompt": "总结下呗，K8s咋用",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e260",
+      "prompt": "先搜资料再写代码再测试一个JWT认证模块",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e261",
+      "prompt": "先查问题原因再分析再总结Redis雪崩的解决方案",
+      "expected": "search"
+    },
+    {
+      "id": "e262",
+      "prompt": "帮我写个javscript函数",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e263",
+      "prompt": "写个sql查询最近一周数据",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e264",
+      "prompt": "帮我compare一下Spring Boot和Quarkus",
+      "expected": "search"
+    },
+    {
+      "id": "e265",
+      "prompt": "write一个冒泡排序的Python版本",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e266",
+      "prompt": "查",
+      "expected": "search"
+    },
+    {
+      "id": "e267",
+      "prompt": "算",
+      "expected": "search"
+    },
+    {
+      "id": "e268",
+      "prompt": "用Python实现一个装饰器记录函数执行时间和参数",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e269",
+      "prompt": "写一个完整的Rust struct实现Builder模式",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e270",
+      "prompt": "用Go写一个worker pool处理并发任务",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e271",
+      "prompt": "写一个JavaScript Promise实现重试逻辑",
+      "expected": "code_executor"
+    },
+    {
+      "id": "e272",
+      "prompt": "等额本息月供计算：贷款80万，年利率4.2%，期限25年，每月还多少",
+      "expected": "calculator"
+    },
+    {
+      "id": "e273",
+      "prompt": "计算 256 * 128 + 45 * 23 - 1000",
+      "expected": "calculator"
+    },
+    {
+      "id": "e274",
+      "prompt": "如果年化收益率8%，每月定投2000，10年后多少（复利）",
+      "expected": "calculator"
+    },
+    {
+      "id": "e275",
+      "prompt": "最新的Rust 1.75有什么新特性",
+      "expected": "search"
+    },
+    {
+      "id": "e276",
+      "prompt": "Python 3.12的type parameter syntax怎么用",
+      "expected": "search"
+    },
+    {
+      "id": "e277",
+      "prompt": "Java 21的虚拟线程和Go的goroutine有什么区别",
+      "expected": "search"
+    },
+    {
+      "id": "e278",
+      "prompt": "为什么Rust没有GC也能内存安全",
+      "expected": "search"
+    },
+    {
+      "id": "e279",
+      "prompt": "ClickHouse vs Doris vs StarRocks对比",
+      "expected": "search"
+    },
+    {
+      "id": "e280",
+      "prompt": "什么是WASM和它的应用场景",
+      "expected": "search"
+    },
+    {
+      "id": "e281",
+      "prompt": "为什么Zookeeper不适合做大规模服务发现",
+      "expected": "search"
+    },
+    {
+      "id": "e282",
+      "prompt": "Envoy和Nginx做API Gateway对比",
+      "expected": "search"
+    },
+    {
+      "id": "e283",
+      "prompt": "写一份从零到一的DevOps转型路线图",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e284",
+      "prompt": "分析为什么分布式系统很难做到强一致性",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e285",
+      "prompt": "总结云原生安全的三个层次",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e286",
+      "prompt": "归纳微服务可观测性的三大支柱",
+      "expected": "bigmodel_proxy"
+    },
+    {
+      "id": "e287",
+      "prompt": "提炼高并发系统设计的核心原则",
+      "expected": "bigmodel_proxy"
+    }
+  ]
+}
